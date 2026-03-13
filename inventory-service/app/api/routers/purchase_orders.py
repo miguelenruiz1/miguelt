@@ -1,0 +1,355 @@
+"""Purchase orders endpoints."""
+from __future__ import annotations
+
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi.responses import ORJSONResponse
+
+from app.api.deps import ModuleUser, require_permission
+from app.db.models import POStatus
+from app.db.session import get_db_session
+from app.domain.schemas import PaginatedPOs, POCreate, POOut, POUpdate, ReceivePOIn
+from app.domain.schemas.purchase_order import (
+    ConsolidateRequest, ConsolidationCandidate, ConsolidationResult, ConsolidationInfo,
+)
+from app.services.po_service import POService
+from app.services.po_consolidation_service import POConsolidationService
+from app.services.audit_service import InventoryAuditService
+from sqlalchemy.ext.asyncio import AsyncSession
+
+router = APIRouter(prefix="/api/v1/purchase-orders", tags=["purchase-orders"])
+
+
+def _ip(request: Request) -> str | None:
+    ff = request.headers.get("X-Forwarded-For")
+    return ff.split(",")[0].strip() if ff else (request.client.host if request.client else None)
+
+
+@router.get("", response_model=PaginatedPOs)
+async def list_pos(
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.view"))],
+    db: AsyncSession = Depends(get_db_session),
+    status: POStatus | None = None,
+    supplier_id: str | None = None,
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+) -> ORJSONResponse:
+    svc = POService(db)
+    items, total = await svc.list(
+        tenant_id=current_user["tenant_id"],
+        status=status,
+        supplier_id=supplier_id,
+        offset=offset,
+        limit=limit,
+    )
+    return ORJSONResponse({
+        "items": [POOut.model_validate(po).model_dump(mode="json") for po in items],
+        "total": total,
+        "offset": offset,
+        "limit": limit,
+    })
+
+
+@router.post("", response_model=POOut, status_code=201)
+async def create_po(
+    body: POCreate,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    svc = POService(db)
+    audit = InventoryAuditService(db)
+    data = body.model_dump()
+    lines_raw = data.pop("lines", [])
+    lines = [
+        {
+            "product_id": ln["product_id"],
+            "qty_ordered": ln["qty_ordered"],
+            "unit_cost": ln["unit_cost"],
+            "line_total": ln["qty_ordered"] * ln["unit_cost"],
+            "notes": ln.get("notes"),
+        }
+        for ln in lines_raw
+    ]
+    po = await svc.create_draft(
+        tenant_id=current_user["tenant_id"],
+        data={**data, "lines": lines, "created_by": current_user.get("id")},
+    )
+    po = await svc.get(po.id, current_user["tenant_id"])
+    supplier_name = await svc.resolve_supplier_name(data.get("supplier_id"), current_user["tenant_id"])
+    await audit.log(
+        tenant_id=current_user["tenant_id"], user=current_user,
+        action="inventory.po.create", resource_type="purchase_order",
+        resource_id=po.id,
+        new_data={
+            "order_number": po.po_number,
+            "supplier_name": supplier_name,
+            "lines_count": len(lines),
+            **body.model_dump(mode="json"),
+        },
+        ip_address=_ip(request),
+    )
+    return ORJSONResponse(POOut.model_validate(po).model_dump(mode="json"), status_code=201)
+
+
+# ── Consolidation (static paths — must come before /{po_id}) ──────────
+
+
+@router.post("/consolidate", response_model=ConsolidationResult, status_code=201)
+async def consolidate_purchase_orders(
+    body: ConsolidateRequest,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    svc = POConsolidationService(db)
+    result = await svc.consolidate(body.po_ids, current_user["tenant_id"], current_user.get("id", ""))
+    audit = InventoryAuditService(db)
+    await audit.log(
+        tenant_id=current_user["tenant_id"], user=current_user,
+        action="inventory.po.consolidate", resource_type="purchase_order",
+        resource_id=result["consolidated_po"].id,
+        new_data={"po_ids": body.po_ids},
+        ip_address=_ip(request),
+    )
+    return ORJSONResponse(
+        ConsolidationResult(
+            consolidated_po=POOut.model_validate(result["consolidated_po"]),
+            original_pos=[POOut.model_validate(po) for po in result["original_pos"]],
+            lines_merged=result["lines_merged"],
+            message=result["message"],
+        ).model_dump(mode="json"),
+        status_code=201,
+    )
+
+
+@router.get("/consolidation-candidates", response_model=list[ConsolidationCandidate])
+async def consolidation_candidates(
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.view"))],
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    svc = POConsolidationService(db)
+    candidates = await svc.get_consolidation_candidates(current_user["tenant_id"])
+    return ORJSONResponse([
+        ConsolidationCandidate(
+            supplier_id=c["supplier_id"],
+            supplier_name=c["supplier_name"],
+            po_count=c["po_count"],
+            total_amount=c["total_amount"],
+            pos=[POOut.model_validate(po) for po in c["pos"]],
+        ).model_dump(mode="json")
+        for c in candidates
+    ])
+
+
+@router.delete("/{po_id}", status_code=204)
+async def delete_po(
+    po_id: str,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+) -> Response:
+    svc = POService(db)
+    audit = InventoryAuditService(db)
+    po = await svc.get(po_id, current_user["tenant_id"])
+    await audit.log(
+        tenant_id=current_user["tenant_id"], user=current_user,
+        action="inventory.po.delete", resource_type="purchase_order",
+        resource_id=po_id,
+        old_data={"order_number": po.po_number, "status": po.status.value if hasattr(po.status, "value") else str(po.status)},
+        new_data={"order_number": po.po_number},
+        ip_address=_ip(request),
+    )
+    await svc.delete(po_id, current_user["tenant_id"])
+    return Response(status_code=204)
+
+
+@router.get("/{po_id}", response_model=POOut)
+async def get_po(
+    po_id: str,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.view"))],
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    svc = POService(db)
+    po = await svc.get(po_id, current_user["tenant_id"])
+    return ORJSONResponse(POOut.model_validate(po).model_dump(mode="json"))
+
+
+@router.patch("/{po_id}", response_model=POOut)
+async def update_po(
+    po_id: str,
+    body: POUpdate,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    svc = POService(db)
+    audit = InventoryAuditService(db)
+    old = await svc.get(po_id, current_user["tenant_id"])
+    old_data = POOut.model_validate(old).model_dump(mode="json")
+    update_data = body.model_dump(exclude_none=True)
+    update_data["updated_by"] = current_user.get("id")
+    po = await svc.update(po_id, current_user["tenant_id"], update_data)
+    po = await svc.get(po.id, current_user["tenant_id"])
+    await audit.log(
+        tenant_id=current_user["tenant_id"], user=current_user,
+        action="inventory.po.update", resource_type="purchase_order",
+        resource_id=po.id, old_data=old_data,
+        new_data={"order_number": po.po_number, **body.model_dump(exclude_none=True)},
+        ip_address=_ip(request),
+    )
+    return ORJSONResponse(POOut.model_validate(po).model_dump(mode="json"))
+
+
+@router.post("/{po_id}/send", response_model=POOut)
+async def send_po(
+    po_id: str,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    svc = POService(db)
+    audit = InventoryAuditService(db)
+    old_po = await svc.get(po_id, current_user["tenant_id"])
+    old_status = old_po.status.value if hasattr(old_po.status, "value") else str(old_po.status)
+    po = await svc.send(po_id, current_user["tenant_id"])
+    po = await svc.get(po.id, current_user["tenant_id"])
+    await audit.log(
+        tenant_id=current_user["tenant_id"], user=current_user,
+        action="inventory.po.send", resource_type="purchase_order",
+        resource_id=po.id,
+        old_data={"status": old_status},
+        new_data={"order_number": po.po_number, "status": "sent"},
+        ip_address=_ip(request),
+    )
+    return ORJSONResponse(POOut.model_validate(po).model_dump(mode="json"))
+
+
+@router.post("/{po_id}/confirm", response_model=POOut)
+async def confirm_po(
+    po_id: str,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    svc = POService(db)
+    audit = InventoryAuditService(db)
+    old_po = await svc.get(po_id, current_user["tenant_id"])
+    old_status = old_po.status.value if hasattr(old_po.status, "value") else str(old_po.status)
+    po = await svc.confirm(po_id, current_user["tenant_id"])
+    po = await svc.get(po.id, current_user["tenant_id"])
+    await audit.log(
+        tenant_id=current_user["tenant_id"], user=current_user,
+        action="inventory.po.confirm", resource_type="purchase_order",
+        resource_id=po.id,
+        old_data={"status": old_status},
+        new_data={"order_number": po.po_number, "status": "confirmed"},
+        ip_address=_ip(request),
+    )
+    return ORJSONResponse(POOut.model_validate(po).model_dump(mode="json"))
+
+
+@router.post("/{po_id}/cancel", response_model=POOut)
+async def cancel_po(
+    po_id: str,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    svc = POService(db)
+    audit = InventoryAuditService(db)
+    old_po = await svc.get(po_id, current_user["tenant_id"])
+    old_status = old_po.status.value if hasattr(old_po.status, "value") else str(old_po.status)
+    po = await svc.cancel(po_id, current_user["tenant_id"])
+    po = await svc.get(po.id, current_user["tenant_id"])
+    await audit.log(
+        tenant_id=current_user["tenant_id"], user=current_user,
+        action="inventory.po.cancel", resource_type="purchase_order",
+        resource_id=po.id,
+        old_data={"status": old_status},
+        new_data={"order_number": po.po_number, "status": "canceled"},
+        ip_address=_ip(request),
+    )
+    return ORJSONResponse(POOut.model_validate(po).model_dump(mode="json"))
+
+
+@router.post("/{po_id}/receive", response_model=POOut)
+async def receive_po(
+    po_id: str,
+    body: ReceivePOIn,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    svc = POService(db)
+    audit = InventoryAuditService(db)
+    po = await svc.receive_items(
+        po_id=po_id,
+        tenant_id=current_user["tenant_id"],
+        line_receipts=[lr.model_dump() for lr in body.lines],
+        performed_by=current_user.get("id"),
+    )
+    po = await svc.get(po.id, current_user["tenant_id"])
+    await audit.log(
+        tenant_id=current_user["tenant_id"], user=current_user,
+        action="inventory.po.receive", resource_type="purchase_order",
+        resource_id=po.id,
+        new_data={"order_number": po.po_number, **body.model_dump(mode="json")},
+        ip_address=_ip(request),
+    )
+    return ORJSONResponse(POOut.model_validate(po).model_dump(mode="json"))
+
+
+# ── Consolidation info / deconsolidate (parameterised paths) ──────────
+
+
+@router.get("/{po_id}/consolidation-info", response_model=ConsolidationInfo)
+async def get_consolidation_info(
+    po_id: str,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.view"))],
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    svc = POConsolidationService(db)
+    info = await svc.get_consolidation_info(po_id, current_user["tenant_id"])
+    return ORJSONResponse(
+        ConsolidationInfo(
+            type=info["type"],
+            consolidated_po=POOut.model_validate(info["consolidated_po"]) if info["consolidated_po"] else None,
+            original_pos=[POOut.model_validate(po) for po in info["original_pos"]] if info["original_pos"] else None,
+            consolidated_at=info["consolidated_at"],
+            consolidated_by=info["consolidated_by"],
+        ).model_dump(mode="json")
+    )
+
+
+@router.post("/{po_id}/deconsolidate")
+async def deconsolidate_purchase_order(
+    po_id: str,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    svc = POConsolidationService(db)
+    originals = await svc.deconsolidate(po_id, current_user["tenant_id"])
+    audit = InventoryAuditService(db)
+    await audit.log(
+        tenant_id=current_user["tenant_id"], user=current_user,
+        action="inventory.po.deconsolidate", resource_type="purchase_order",
+        resource_id=po_id,
+        ip_address=_ip(request),
+    )
+    return ORJSONResponse([POOut.model_validate(po).model_dump(mode="json") for po in originals])

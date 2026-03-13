@@ -1,0 +1,245 @@
+import { useState, useDeferredValue } from 'react'
+import { FolderTree, Plus, Pencil, Trash2, Search, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import {
+  useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory,
+} from '@/hooks/useInventory'
+import type { Category } from '@/types/inventory'
+
+function CategoryModal({
+  category,
+  categories,
+  onClose,
+}: {
+  category: Category | null
+  categories: Category[]
+  onClose: () => void
+}) {
+  const create = useCreateCategory()
+  const update = useUpdateCategory()
+  const [error, setError] = useState('')
+  const [form, setForm] = useState({
+    name: category?.name ?? '',
+    description: category?.description ?? '',
+    parent_id: category?.parent_id ?? '',
+    is_active: category?.is_active ?? true,
+  })
+
+  const isPending = create.isPending || update.isPending
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    try {
+      const payload = {
+        name: form.name,
+        description: form.description || null,
+        parent_id: form.parent_id || null,
+        is_active: form.is_active,
+      }
+      if (category) {
+        await update.mutateAsync({ id: category.id, data: payload })
+      } else {
+        await create.mutateAsync(payload)
+      }
+      onClose()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al guardar')
+    }
+  }
+
+  // Filter out self and descendants to prevent circular parent references
+  const parentOptions = categories.filter(c => !category || c.id !== category.id)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-slate-900">
+            {category ? 'Editar categoría' : 'Nueva categoría'}
+          </h2>
+          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-lg">
+            <X className="h-4 w-4 text-slate-400" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1">Nombre *</label>
+            <input
+              required
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              placeholder="Ej: Materias primas"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1">Descripción</label>
+            <textarea
+              value={form.description}
+              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              rows={2}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              placeholder="Descripción opcional"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1">Categoría padre</label>
+            <select
+              value={form.parent_id}
+              onChange={e => setForm(f => ({ ...f, parent_id: e.target.value }))}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            >
+              <option value="">Sin padre (raíz)</option>
+              {parentOptions.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={form.is_active}
+              onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))}
+              id="cat-active"
+              className="rounded border-slate-300"
+            />
+            <label htmlFor="cat-active" className="text-sm text-slate-600">Activa</label>
+          </div>
+          {error && (
+            <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+              Cancelar
+            </button>
+            <button type="submit" disabled={isPending} className="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+              {isPending ? 'Guardando...' : category ? 'Guardar' : 'Crear'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+export function CategoriesPage() {
+  const [showModal, setShowModal] = useState(false)
+  const [editing, setEditing] = useState<Category | null>(null)
+  const [searchText, setSearchText] = useState('')
+  const [showInactive, setShowInactive] = useState(false)
+  const deferredSearch = useDeferredValue(searchText)
+  const deleteMut = useDeleteCategory()
+
+  const { data, isLoading } = useCategories({
+    search: deferredSearch || undefined,
+    is_active: showInactive ? undefined : true,
+  })
+
+  const categories = data?.items ?? []
+
+  function handleEdit(cat: Category) {
+    setEditing(cat)
+    setShowModal(true)
+  }
+
+  function handleClose() {
+    setShowModal(false)
+    setEditing(null)
+  }
+
+  async function handleDelete(cat: Category) {
+    if (!confirm(`Eliminar categoría "${cat.name}"?`)) return
+    await deleteMut.mutateAsync(cat.id)
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <FolderTree className="h-6 w-6 text-indigo-600" />
+          <h1 className="text-2xl font-bold text-slate-900">Categorías de producto</h1>
+        </div>
+        <button
+          onClick={() => { setEditing(null); setShowModal(true) }}
+          className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm"
+        >
+          <Plus className="h-4 w-4" /> Nueva categoría
+        </button>
+      </div>
+
+      {/* Search + filters */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchText}
+            onChange={e => setSearchText(e.target.value)}
+            placeholder="Buscar categorías..."
+            className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          />
+        </div>
+        <button
+          onClick={() => setShowInactive(v => !v)}
+          className={cn(
+            'rounded-xl px-3 py-2 text-xs font-semibold transition-colors',
+            showInactive ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+          )}
+        >
+          {showInactive ? 'Mostrando inactivas' : 'Solo activas'}
+        </button>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        {isLoading ? (
+          <div className="p-8 text-center text-slate-400">Cargando...</div>
+        ) : !categories.length ? (
+          <div className="p-8 text-center text-slate-400">Sin categorías</div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 border-b border-slate-100">
+              <tr>
+                {['Nombre', 'Descripción', 'Categoría padre', 'Estado', 'Acciones'].map(h => (
+                  <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {categories.map(cat => (
+                <tr key={cat.id} className="hover:bg-slate-50">
+                  <td className="px-5 py-3 font-medium text-slate-800">{cat.name}</td>
+                  <td className="px-5 py-3 text-slate-500 text-xs max-w-[250px] truncate">{cat.description || '\u2014'}</td>
+                  <td className="px-5 py-3 text-slate-500 text-xs">{cat.parent_name || '\u2014'}</td>
+                  <td className="px-5 py-3">
+                    <span className={cn(
+                      'inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                      cat.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500',
+                    )}>
+                      {cat.is_active ? 'Activa' : 'Inactiva'}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleEdit(cat)} className="p-1.5 hover:bg-slate-100 rounded-lg" title="Editar">
+                        <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                      </button>
+                      <button onClick={() => handleDelete(cat)} className="p-1.5 hover:bg-red-50 rounded-lg" title="Eliminar" disabled={deleteMut.isPending}>
+                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {showModal && <CategoryModal category={editing} categories={categories} onClose={handleClose} />}
+    </div>
+  )
+}
