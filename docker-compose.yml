@@ -383,7 +383,7 @@ services:
     container_name: compliance-api
     environment:
       DATABASE_URL: postgresql+asyncpg://cmp_svc:cmppass@compliance-postgres:5432/compliancedb
-      REDIS_URL: redis://redis:6379/5
+      REDIS_URL: redis://redis:6379/6
       USER_SERVICE_URL: http://user-api:8001
       SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
       TRACE_SERVICE_URL: http://trace-api:8000
