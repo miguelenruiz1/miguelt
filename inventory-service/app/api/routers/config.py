@@ -227,6 +227,33 @@ async def create_location(
     )
     return result
 
+@router.post("/locations/bulk", response_model=list[LocationOut], status_code=201)
+async def bulk_create_locations(
+    body: list[LocationCreate],
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.config"))],
+    request: Request,
+    svc: DynamicConfigService = Depends(_dyn_svc),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Create multiple locations at once. Max 500 per request."""
+    if len(body) > 500:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Max 500 locations per bulk request")
+    tenant_id = current_user.get("tenant_id", "default")
+    audit = InventoryAuditService(db)
+    results = []
+    for loc in body:
+        result = await svc.create_location(tenant_id, loc.model_dump())
+        results.append(result)
+    await audit.log(
+        tenant_id=tenant_id, user=current_user,
+        action="inventory.config.location.bulk_create", resource_type="config",
+        resource_id="bulk", new_data={"count": len(results)}, ip_address=_ip(request),
+    )
+    return results
+
+
 @router.patch("/locations/{location_id}", response_model=LocationOut)
 async def update_location(
     location_id: str,

@@ -62,6 +62,11 @@ class LocationCreate(BaseModel):
     description: str | None = None
     location_type: str = "bin"
     is_active: bool = True
+    max_weight_kg: float | None = None
+    max_capacity: int | None = None
+    blocked_inbound: bool = False
+    blocked_outbound: bool = False
+    block_reason: str | None = None
     sort_order: int = 0
 
 
@@ -72,6 +77,11 @@ class LocationUpdate(BaseModel):
     description: str | None = None
     location_type: str | None = None
     is_active: bool | None = None
+    max_weight_kg: float | None = None
+    max_capacity: int | None = None
+    blocked_inbound: bool | None = None
+    blocked_outbound: bool | None = None
+    block_reason: str | None = None
     sort_order: int | None = None
 
 
@@ -85,4 +95,9 @@ class LocationOut(OrmBase):
     description: str | None
     location_type: str
     is_active: bool
+    max_weight_kg: float | None = None
+    max_capacity: int | None = None
+    blocked_inbound: bool = False
+    blocked_outbound: bool = False
+    block_reason: str | None = None
     sort_order: int
