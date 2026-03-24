@@ -270,3 +270,18 @@ async def delete_pnl_memory(
     ai_svc = AiAnalysisService(db, redis)
     deleted = await ai_svc.delete_tenant_memory(tenant_id)
     return {"status": "ok", "deleted": deleted}
+
+
+@router.delete("/pnl/last")
+async def delete_pnl_last(
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("reports.view"))],
+    db: AsyncSession = Depends(get_db_session),
+    redis: aioredis.Redis = Depends(get_redis),
+):
+    """Delete last saved analysis. Forces fresh analysis on next request."""
+    from app.services.ai_analysis_service import AiAnalysisService
+    tenant_id = current_user.get("tenant_id", "default")
+    ai_svc = AiAnalysisService(db, redis)
+    deleted = await ai_svc.delete_last_analysis(tenant_id)
+    return {"status": "ok", "deleted": deleted}

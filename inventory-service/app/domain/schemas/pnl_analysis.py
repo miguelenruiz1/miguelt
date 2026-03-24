@@ -1,6 +1,7 @@
 """Schemas for AI-powered P&L analysis."""
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel
@@ -39,3 +40,6 @@ class PnLAnalysis(BaseModel):
     oportunidades: list[PnLOportunidad] = []
     productos_estrella: list[PnLProductoEstrella] = []
     recomendaciones: list[PnLRecomendacion] = []
+    is_cached: bool = False
+    cached_at: datetime | None = None
+    cache_source: Literal["fresh", "session_cache", "last_saved"] = "fresh"
