@@ -15,9 +15,6 @@ node_modules/
 dist/
 .vite/
 *.tsbuildinfo
-package-lock.json
-pnpm-lock.yaml
-yarn.lock
 
 # Environment
 .env
