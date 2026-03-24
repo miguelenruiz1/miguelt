@@ -8,11 +8,11 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { useToast } from '@/store/toast'
 
-const SUB_API = import.meta.env.VITE_SUBSCRIPTION_API_URL ?? 'http://localhost:9002'
+const AI_API = import.meta.env.VITE_AI_API_URL ?? 'http://localhost:9006'
 
 function subRequest<T>(path: string, opts?: RequestInit): Promise<T> {
   const token = useAuthStore.getState().accessToken
-  return fetch(`${SUB_API}${path}`, {
+  return fetch(`${AI_API}${path}`, {
     ...opts,
     headers: {
       'Content-Type': 'application/json',
@@ -65,24 +65,24 @@ interface AIMetrics {
 // ─── Hooks ───────────────────────────────────────────────────────────────────
 
 function useAISettings() {
-  return useQuery<AISettings>({ queryKey: ['platform', 'ai', 'settings'], queryFn: () => subRequest('/api/v1/platform/ai/settings') })
+  return useQuery<AISettings>({ queryKey: ['platform', 'ai', 'settings'], queryFn: () => subRequest('/api/v1/settings') })
 }
 function useAIMetrics() {
-  return useQuery<AIMetrics>({ queryKey: ['platform', 'ai', 'metrics'], queryFn: () => subRequest('/api/v1/platform/ai/metrics'), staleTime: 30_000 })
+  return useQuery<AIMetrics>({ queryKey: ['platform', 'ai', 'metrics'], queryFn: () => subRequest('/api/v1/metrics'), staleTime: 30_000 })
 }
 function useUpdateAISettings() {
   const qc = useQueryClient()
-  return useMutation({ mutationFn: (data: Partial<AISettings>) => subRequest('/api/v1/platform/ai/settings', { method: 'POST', body: JSON.stringify(data) }), onSuccess: () => qc.invalidateQueries({ queryKey: ['platform', 'ai'] }) })
+  return useMutation({ mutationFn: (data: Partial<AISettings>) => subRequest('/api/v1/settings', { method: 'POST', body: JSON.stringify(data) }), onSuccess: () => qc.invalidateQueries({ queryKey: ['platform', 'ai'] }) })
 }
 function useUpdateApiKey() {
   const qc = useQueryClient()
-  return useMutation({ mutationFn: (api_key: string) => subRequest('/api/v1/platform/ai/settings/api-key', { method: 'PATCH', body: JSON.stringify({ api_key }) }), onSuccess: () => qc.invalidateQueries({ queryKey: ['platform', 'ai'] }) })
+  return useMutation({ mutationFn: (api_key: string) => subRequest('/api/v1/settings/api-key', { method: 'PATCH', body: JSON.stringify({ api_key }) }), onSuccess: () => qc.invalidateQueries({ queryKey: ['platform', 'ai'] }) })
 }
 function useTestConnection() {
-  return useMutation<TestResult>({ mutationFn: () => subRequest('/api/v1/platform/ai/settings/test', { method: 'POST' }) })
+  return useMutation<TestResult>({ mutationFn: () => subRequest('/api/v1/settings/test', { method: 'POST' }) })
 }
 function useClearCache() {
-  return useMutation({ mutationFn: () => subRequest('/api/v1/platform/ai/cache', { method: 'DELETE', body: JSON.stringify({ confirm: true }) }) })
+  return useMutation({ mutationFn: () => subRequest('/api/v1/metrics/cache', { method: 'DELETE', body: JSON.stringify({ confirm: true }) }) })
 }
 
 // ─── Tab: Configuración ──────────────────────────────────────────────────────

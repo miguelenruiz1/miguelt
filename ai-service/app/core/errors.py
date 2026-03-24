@@ -21,11 +21,6 @@ class NotFoundError(AppError):
     error_code = "NOT_FOUND"
 
 
-class ConflictError(AppError):
-    status_code = status.HTTP_409_CONFLICT
-    error_code = "CONFLICT"
-
-
 class ValidationError(AppError):
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
     error_code = "VALIDATION_ERROR"
@@ -36,29 +31,28 @@ class ForbiddenError(AppError):
     error_code = "FORBIDDEN"
 
 
-class BadRequestError(AppError):
-    status_code = status.HTTP_400_BAD_REQUEST
-    error_code = "BAD_REQUEST"
+class RateLimitError(AppError):
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS
+    error_code = "AI_RATE_LIMIT_EXCEEDED"
 
 
-class UnauthorizedError(AppError):
-    status_code = status.HTTP_401_UNAUTHORIZED
-    error_code = "UNAUTHORIZED"
+class AiNotConfiguredError(AppError):
+    status_code = status.HTTP_501_NOT_IMPLEMENTED
+    error_code = "AI_NOT_CONFIGURED"
 
 
-def _error_response(
-    request: Request,
-    status_code: int,
-    error_code: str,
-    detail: str,
-    extra: dict | None = None,
-) -> ORJSONResponse:
+class AiFeatureDisabledError(AppError):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    error_code = "AI_FEATURE_DISABLED"
+
+
+def _error_response(request: Request, status_code: int, error_code: str, detail: str, extra: dict | None = None) -> ORJSONResponse:
     body: dict[str, Any] = {"error": {"code": error_code, "message": detail}}
     if extra:
         body["error"]["detail"] = extra
-    correlation_id = getattr(request.state, "correlation_id", None)
-    if correlation_id:
-        body["error"]["correlation_id"] = correlation_id
+    cid = getattr(request.state, "correlation_id", None)
+    if cid:
+        body["error"]["correlation_id"] = cid
     return ORJSONResponse(status_code=status_code, content=body)
 
 
@@ -68,25 +62,11 @@ def register_exception_handlers(app: FastAPI) -> None:
         return _error_response(request, exc.status_code, exc.error_code, exc.detail)
 
     @app.exception_handler(RequestValidationError)
-    async def validation_error_handler(
-        request: Request, exc: RequestValidationError
-    ) -> ORJSONResponse:
-        return _error_response(
-            request,
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "VALIDATION_ERROR",
-            "Request validation failed",
-            {"errors": exc.errors()},
-        )
+    async def validation_error_handler(request: Request, exc: RequestValidationError) -> ORJSONResponse:
+        return _error_response(request, 422, "VALIDATION_ERROR", "Request validation failed", {"errors": exc.errors()})
 
     @app.exception_handler(Exception)
     async def unhandled_error_handler(request: Request, exc: Exception) -> ORJSONResponse:
         import structlog
-        log = structlog.get_logger(__name__)
-        log.error("unhandled_exception", exc_info=exc, path=str(request.url))
-        return _error_response(
-            request,
-            status.HTTP_500_INTERNAL_SERVER_ERROR,
-            "INTERNAL_ERROR",
-            "An unexpected error occurred",
-        )
+        structlog.get_logger(__name__).error("unhandled_exception", exc_info=exc, path=str(request.url))
+        return _error_response(request, 500, "INTERNAL_ERROR", "An unexpected error occurred")
