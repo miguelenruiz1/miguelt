@@ -5,6 +5,7 @@ import {
   CheckCircle2, MapPin, Ruler, DollarSign,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useFormValidation } from '@/hooks/useFormValidation'
 import { CopyableId } from '@/components/inventory/CopyableId'
 import {
   useWarehouses, useCreateWarehouse, useUpdateWarehouse, useDeleteWarehouse,
@@ -14,7 +15,7 @@ import { useUserLookup } from '@/hooks/useUserLookup'
 import type { Warehouse } from '@/types/inventory'
 
 const WAREHOUSE_COLORS: Record<string, { bg: string; text: string }> = {
-  main:      { bg: 'bg-indigo-50',  text: 'text-indigo-600' },
+  main:      { bg: 'bg-primary/10',  text: 'text-primary' },
   secondary: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
   virtual:   { bg: 'bg-purple-50',  text: 'text-purple-600' },
   transit:   { bg: 'bg-amber-50',   text: 'text-amber-600' },
@@ -47,8 +48,7 @@ function WarehouseModal({
     max_stock_capacity: warehouse?.max_stock_capacity ?? null as number | null,
   })
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function doSubmit() {
     const data = { ...form, warehouse_type_id: form.warehouse_type_id || null, cost_per_sqm: form.cost_per_sqm, total_area_sqm: form.total_area_sqm, max_stock_capacity: form.max_stock_capacity }
     if (warehouse) {
       await update.mutateAsync({ id: warehouse.id, data })
@@ -58,8 +58,10 @@ function WarehouseModal({
     onClose()
   }
 
+  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
+
   const isPending = create.isPending || update.isPending
-  const inputCls = 'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-indigo-300 focus:outline-none focus:ring-3 focus:ring-indigo-500/20'
+  const inputCls = 'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
@@ -74,7 +76,7 @@ function WarehouseModal({
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+        <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="px-6 py-5 space-y-4">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">Nombre *</label>
             <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -177,7 +179,7 @@ function WarehouseModal({
               const formEl = document.querySelector<HTMLFormElement>('form')
               formEl?.requestSubmit()
             }}
-            className="flex-1 rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-600 disabled:opacity-60 shadow-sm transition">
+            className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary disabled:opacity-60 shadow-sm transition">
             {isPending ? 'Guardando…' : warehouse ? 'Guardar' : 'Crear bodega'}
           </button>
         </div>
@@ -210,7 +212,7 @@ export function WarehousesPage() {
         <ol className="flex items-center gap-2 text-sm">
           <li className="text-gray-500">Inventario</li>
           <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
-          <li className="text-indigo-500">Bodegas</li>
+          <li className="text-primary">Bodegas</li>
         </ol>
       </nav>
 
@@ -222,7 +224,7 @@ export function WarehousesPage() {
         </div>
         <button
           onClick={() => setModal('new')}
-          className="flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-600 shadow-sm transition"
+          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary shadow-sm transition"
         >
           <Plus className="h-4 w-4" /> Nueva bodega
         </button>
@@ -271,7 +273,7 @@ export function WarehousesPage() {
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); setModal(wh) }}
-                    className="rounded-lg p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                    className="rounded-lg p-2 text-gray-400 hover:text-primary hover:bg-primary/10 transition-colors"
                     title="Editar bodega"
                   >
                     <Pencil className="h-4 w-4" />
@@ -296,7 +298,7 @@ export function WarehousesPage() {
                 {/* Description / type */}
                 <p className="mt-2 text-sm text-gray-500 leading-relaxed">
                   {whType ? whType.name : wh.type.charAt(0).toUpperCase() + wh.type.slice(1)}
-                  {wh.is_default && <span className="text-indigo-500 font-medium"> · Predeterminada</span>}
+                  {wh.is_default && <span className="text-primary font-medium"> · Predeterminada</span>}
                 </p>
 
                 {/* Feature tags */}
@@ -315,7 +317,7 @@ export function WarehousesPage() {
                     </span>
                   )}
                   {wh.max_stock_capacity != null && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs text-indigo-600">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs text-primary">
                       Max: {wh.max_stock_capacity}
                     </span>
                   )}

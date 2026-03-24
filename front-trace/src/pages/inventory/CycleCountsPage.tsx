@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { Plus, ClipboardCheck, ChevronRight } from 'lucide-react'
+import { useFormValidation } from '@/hooks/useFormValidation'
 import { useCycleCounts, useCreateCycleCount, useWarehouses, useProducts } from '@/hooks/useInventory'
 import { useUserLookup } from '@/hooks/useUserLookup'
 
@@ -32,6 +33,8 @@ const statusLabels: Record<string, string> = {
 export function CycleCountsPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [showCreate, setShowCreate] = useState(false)
+  const location = useLocation()
+  useEffect(() => { setShowCreate(false) }, [location.key])
   const { data, isLoading } = useCycleCounts({
     status: statusFilter || undefined,
   })
@@ -42,8 +45,8 @@ export function CycleCountsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-indigo-50">
-            <ClipboardCheck className="h-6 w-6 text-indigo-600" />
+          <div className="p-2 rounded-xl bg-primary/10">
+            <ClipboardCheck className="h-6 w-6 text-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Conteo Ciclico</h1>
@@ -52,7 +55,7 @@ export function CycleCountsPage() {
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm"
+          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm"
         >
           <Plus className="h-4 w-4" /> Nuevo conteo
         </button>
@@ -66,7 +69,7 @@ export function CycleCountsPage() {
             onClick={() => setStatusFilter(opt.value)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
               statusFilter === opt.value
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-primary text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
@@ -88,7 +91,7 @@ export function CycleCountsPage() {
             {data.items.map((cc) => (
               <Link key={cc.id} to={`/inventario/conteos/${cc.id}`} className="block rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-indigo-600">{cc.count_number}</span>
+                  <span className="font-medium text-primary">{cc.count_number}</span>
                   <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[cc.status] ?? 'bg-slate-100 text-slate-600'}`}>
                     {statusLabels[cc.status] ?? cc.status}
                   </span>
@@ -121,7 +124,7 @@ export function CycleCountsPage() {
               {data.items.map((cc) => (
                 <tr key={cc.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3 font-medium text-slate-900">
-                    <Link to={`/inventario/conteos/${cc.id}`} className="text-indigo-600 hover:underline">
+                    <Link to={`/inventario/conteos/${cc.id}`} className="text-primary hover:underline">
                       {cc.count_number}
                     </Link>
                   </td>
@@ -173,8 +176,7 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
   const [scheduledDate, setScheduledDate] = useState('')
   const [notes, setNotes] = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  async function doSubmit() {
     if (!warehouseId) return
     await createMut.mutateAsync({
       warehouse_id: warehouseId,
@@ -188,6 +190,8 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
     onClose()
   }
 
+  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
+
   const toggleProduct = (id: string) => {
     setSelectedProducts((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
@@ -197,7 +201,9 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <form
-        onSubmit={handleSubmit}
+        ref={formRef}
+        onSubmit={validateAndSubmit}
+        noValidate
         className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 space-y-5 max-h-[80vh] overflow-y-auto"
       >
         <h2 className="text-lg font-bold text-slate-900">Nuevo Conteo Ciclico</h2>
@@ -209,7 +215,7 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
             value={warehouseId}
             onChange={(e) => setWarehouseId(e.target.value)}
             required
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:border-primary"
           >
             <option value="">Seleccionar bodega</option>
             {warehouses?.map((w) => (
@@ -230,7 +236,7 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
                   type="checkbox"
                   checked={selectedProducts.includes(p.id)}
                   onChange={() => toggleProduct(p.id)}
-                  className="rounded text-indigo-600"
+                  className="rounded text-primary"
                 />
                 <span className="text-sm text-slate-700">{p.sku} — {p.name}</span>
               </label>
@@ -247,7 +253,7 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
           <select
             value={methodology}
             onChange={(e) => setMethodology(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:border-primary"
           >
             <option value="">Sin metodologia especifica</option>
             <option value="control_group">Grupo de control</option>
@@ -268,7 +274,7 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
               min={1}
               value={assignedCounters}
               onChange={(e) => setAssignedCounters(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
             />
           </div>
           <div>
@@ -278,7 +284,7 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
               min={1}
               value={minutesPerCount}
               onChange={(e) => setMinutesPerCount(Math.max(1, parseInt(e.target.value) || 2))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
             />
           </div>
         </div>
@@ -290,7 +296,7 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
             type="date"
             value={scheduledDate}
             onChange={(e) => setScheduledDate(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -301,7 +307,7 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -317,7 +323,7 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
           <button
             type="submit"
             disabled={!warehouseId || createMut.isPending}
-            className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:opacity-50"
+            className="px-5 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-50"
           >
             {createMut.isPending ? 'Creando...' : 'Crear conteo'}
           </button>

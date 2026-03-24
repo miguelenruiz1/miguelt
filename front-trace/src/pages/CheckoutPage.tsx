@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
-  CreditCard, CheckCircle2, AlertCircle, ArrowLeft, ShieldCheck, Zap,
+  CreditCard, CheckCircle2, AlertCircle, ArrowLeft, ShieldCheck, Zap, Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { usePlans } from '@/hooks/usePlans'
 import { useActiveGateway } from '@/hooks/usePayments'
+import { useCheckout } from '@/hooks/useBilling'
 import { useAuthStore } from '@/store/auth'
+import { useToast } from '@/store/toast'
 
 
 // Plan sort order for display
@@ -17,7 +19,7 @@ const PLAN_SORT: Record<string, number> = {
 const PLAN_COLORS: Record<string, string> = {
   free:         'from-slate-400 to-slate-500',
   starter:      'from-blue-500 to-blue-600',
-  professional: 'from-indigo-500 to-purple-600',
+  professional: 'from-primary to-purple-600',
   enterprise:   'from-slate-800 to-slate-900',
 }
 
@@ -45,6 +47,8 @@ export function CheckoutPage() {
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const [paymentDone, setPaymentDone] = useState(false)
+  const checkoutMut = useCheckout()
+  const toast = useToast()
 
   // Filter plans that include the module (sorted by price)
   const eligiblePlans = plans
@@ -55,13 +59,19 @@ export function CheckoutPage() {
 
   const isLoading = plansLoading || gatewayLoading
 
-  // ─── Payment submitted (mock — real integration via gateway SDK) ─────────────
-  function handlePay() {
-    if (!selectedPlan) return
-    if (!activeGateway) return
-    // In production: redirect to gateway hosted page or open SDK widget
-    // For now: show success state
-    setPaymentDone(true)
+  // ─── Redirect to Wompi checkout ─────────────────────────────────────────────
+  async function handlePay() {
+    if (!selectedPlan || !activeGateway) return
+    try {
+      const result = await checkoutMut.mutateAsync({
+        plan_slug: selectedPlan.slug,
+        tenant_id: userTenantId,
+      })
+      // Redirect to Wompi hosted checkout
+      window.location.href = result.checkout_url
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Error al crear la sesión de pago')
+    }
   }
 
   // ─── Success screen ───────────────────────────────────────────────────────────
@@ -83,7 +93,7 @@ export function CheckoutPage() {
           </div>
           <button
             onClick={() => navigate('/marketplace')}
-            className="w-full rounded-2xl bg-indigo-600 py-3 text-sm font-bold text-white hover:bg-indigo-700 transition-colors"
+            className="w-full rounded-2xl bg-primary py-3 text-sm font-bold text-white hover:bg-primary/90 transition-colors"
           >
             Ir al Marketplace
           </button>
@@ -107,14 +117,14 @@ export function CheckoutPage() {
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex justify-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-purple-600 shadow-lg">
               <CreditCard className="h-7 w-7 text-white" />
             </div>
           </div>
           <h1 className="text-3xl font-bold text-slate-900">Completa tu suscripción</h1>
           {moduleSlug && (
             <p className="text-sm text-slate-500">
-              Para usar el módulo <span className="font-semibold text-indigo-600 capitalize">{moduleSlug}</span> necesitas un plan que lo incluya
+              Para usar el módulo <span className="font-semibold text-primary capitalize">{moduleSlug}</span> necesitas un plan que lo incluya
             </p>
           )}
         </div>
@@ -150,7 +160,7 @@ export function CheckoutPage() {
                         className={cn(
                           'w-full text-left rounded-3xl border bg-white p-5 transition-all duration-200 shadow-sm',
                           isSelected
-                            ? 'border-indigo-400 ring-2 ring-indigo-200 shadow-indigo-50'
+                            ? 'border-primary/70 ring-2 ring-ring/30 shadow-primary/10'
                             : 'border-slate-200 hover:border-slate-300 hover:shadow-md',
                         )}
                       >
@@ -166,7 +176,7 @@ export function CheckoutPage() {
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-slate-900">{plan.name}</span>
                                 {isHighlighted && (
-                                  <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
+                                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">
                                     Recomendado
                                   </span>
                                 )}
@@ -226,7 +236,7 @@ export function CheckoutPage() {
                       </div>
                       <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
                         <span className="font-semibold text-slate-800">Total / mes</span>
-                        <span className="text-xl font-bold text-indigo-700">
+                        <span className="text-xl font-bold text-primary">
                           {selectedPlan.price_monthly === 0
                             ? '$0'
                             : `$${selectedPlan.price_monthly.toLocaleString()}`}
@@ -273,15 +283,19 @@ export function CheckoutPage() {
                 <div className="px-5 pb-5">
                   <button
                     onClick={handlePay}
-                    disabled={!selectedPlan || !activeGateway || selectedPlan.price_monthly === 0}
+                    disabled={!selectedPlan || !activeGateway || selectedPlan.price_monthly === 0 || checkoutMut.isPending}
                     className={cn(
                       'w-full rounded-2xl py-3.5 text-sm font-bold text-white transition-all shadow-sm',
                       selectedPlan && activeGateway && selectedPlan.price_monthly > 0
-                        ? 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-md'
+                        ? 'bg-[#5C2D91] hover:bg-[#5C2D91]/90 hover:shadow-md'
                         : 'bg-slate-300 cursor-not-allowed',
                     )}
                   >
-                    {!activeGateway
+                    {checkoutMut.isPending ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Conectando con Wompi…
+                      </span>
+                    ) : !activeGateway
                       ? 'Sin pasarela configurada'
                       : !selectedPlan
                         ? 'Selecciona un plan'
@@ -290,7 +304,7 @@ export function CheckoutPage() {
                           : (
                             <span className="flex items-center justify-center gap-2">
                               <Zap className="h-4 w-4" />
-                              Pagar con {activeGateway.display_name}
+                              Pagar con Wompi
                             </span>
                           )
                     }

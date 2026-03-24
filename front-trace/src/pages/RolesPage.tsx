@@ -25,7 +25,7 @@ function PermCell({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(roleId, permId, e.target.checked)}
-        className="h-4 w-4 rounded border-slate-300 text-indigo-600 cursor-pointer"
+        className="h-4 w-4 rounded border-slate-300 text-primary cursor-pointer"
       />
     </td>
   )
@@ -38,8 +38,8 @@ function NewRoleRow({ onSave }: { onSave: (name: string, slug: string) => void }
   const [slug, setSlug] = useState('')
 
   return (
-    <tr className="bg-indigo-50/50 border-b border-slate-200">
-      <td className="px-4 py-2 sticky left-0 z-10 bg-indigo-50/50">
+    <tr className="bg-primary/5 border-b border-slate-200">
+      <td className="px-4 py-2 sticky left-0 z-10 bg-primary/5">
         <div className="flex items-center gap-2">
           <input
             value={name}
@@ -48,17 +48,17 @@ function NewRoleRow({ onSave }: { onSave: (name: string, slug: string) => void }
               setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))
             }}
             placeholder="Nombre del rol"
-            className="w-36 rounded-lg border border-indigo-300 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-36 rounded-lg border border-primary/50 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <input
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder="slug"
-            className="w-24 rounded-lg border border-indigo-300 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-24 rounded-lg border border-primary/50 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <button
             onClick={() => { if (name && slug) { onSave(name, slug); setName(''); setSlug('') } }}
-            className="rounded-lg bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-700 flex items-center gap-1"
+            className="rounded-lg bg-primary px-2 py-1 text-xs text-white hover:bg-primary/90 flex items-center gap-1"
           >
             <Plus className="h-3 w-3" /> Agregar
           </button>
@@ -177,7 +177,7 @@ export function RolesPage() {
           </button>
           <button
             onClick={() => setTemplateOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
+            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors"
           >
             <LayoutTemplate className="h-4 w-4" />
             Crear desde plantilla
@@ -192,7 +192,7 @@ export function RolesPage() {
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Buscar permiso..."
-          className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 
@@ -270,7 +270,7 @@ export function RolesPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold hover:bg-indigo-400 disabled:opacity-60 transition-colors"
+            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold hover:bg-primary/70 disabled:opacity-60 transition-colors"
           >
             <Save className="h-4 w-4" />
             {saving ? 'Guardando...' : 'Guardar cambios'}

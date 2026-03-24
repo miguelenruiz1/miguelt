@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Plus, Search, RefreshCw, Package, Sparkles } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { Spinner, EmptyState } from '@/components/ui/Misc'
 import { AssetCard } from '@/components/assets/AssetCard'
 import { CreateAssetModal } from '@/components/assets/CreateAssetModal'
@@ -11,17 +11,21 @@ import { useAssetList } from '@/hooks/useAssets'
 import type { AssetState } from '@/types/api'
 
 const STATE_OPTIONS: { value: AssetState | ''; label: string }[] = [
-  { value: '',           label: 'Todos los estados' },
-  { value: 'in_custody', label: 'En Custodia' },
-  { value: 'in_transit', label: 'En Tránsito' },
-  { value: 'loaded',     label: 'Cargado' },
-  { value: 'qc_passed',  label: 'QC Aprobado' },
-  { value: 'qc_failed',  label: 'QC Rechazado' },
-  { value: 'released',   label: 'Liberado' },
-  { value: 'burned',     label: 'Completado' },
+  { value: '',              label: 'Todos los estados' },
+  { value: 'in_custody',    label: 'En Custodia' },
+  { value: 'in_transit',    label: 'En Tránsito' },
+  { value: 'loaded',        label: 'Cargado' },
+  { value: 'sealed',        label: 'Sellado' },
+  { value: 'customs_hold',  label: 'Aduana' },
+  { value: 'qc_passed',     label: 'QC Aprobado' },
+  { value: 'qc_failed',     label: 'QC Rechazado' },
+  { value: 'damaged',       label: 'Dañado' },
+  { value: 'delivered',     label: 'Entregado' },
+  { value: 'released',      label: 'Liberado' },
+  { value: 'burned',        label: 'Completado' },
 ]
 
-const fieldCls = 'rounded-xl border border-white/60 bg-white/50 backdrop-blur-md px-4 py-2.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 hover:bg-white/70 hover:border-indigo-300 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all shadow-sm'
+const fieldCls = 'rounded-xl border border-white/60 bg-white/50 backdrop-blur-md px-4 py-2.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 hover:bg-white/70 hover:border-primary/50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-ring/20 focus:outline-none transition-all shadow-sm'
 
 export function AssetsPage() {
   const [searchParams] = useSearchParams()

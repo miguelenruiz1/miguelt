@@ -11,7 +11,7 @@ from app.repositories.product_repo import ProductRepository
 
 # Fields that become immutable once the product has stock movements.
 # Changing these would break traceability / historical accuracy.
-LOCKED_FIELDS_WITH_MOVEMENTS = {"sku", "unit_of_measure", "track_batches"}
+LOCKED_FIELDS_WITH_MOVEMENTS = {"sku", "unit_of_measure", "track_batches", "valuation_method"}
 
 
 class ProductService:
@@ -55,10 +55,38 @@ class ProductService:
         return count > 0
 
     async def create(self, tenant_id: str, data: dict) -> Product:
+        # Apply ProductType defaults if a type is set
+        product_type_id = data.get("product_type_id")
+        if product_type_id:
+            from app.db.models.config import ProductType
+            pt = (await self.db.execute(
+                select(ProductType).where(ProductType.id == product_type_id, ProductType.tenant_id == tenant_id)
+            )).scalar_one_or_none()
+            if pt:
+                # Default category from type if not explicitly set
+                if not data.get("category_id") and pt.default_category_id:
+                    data["category_id"] = pt.default_category_id
+                # Default track_batches from type
+                if "track_batches" not in data or not data["track_batches"]:
+                    data["track_batches"] = pt.tracks_batches
+                # Auto-generate SKU with prefix if SKU not provided or is empty
+                if pt.sku_prefix and (not data.get("sku") or data["sku"].strip() == ""):
+                    data["sku"] = await self._next_sku(tenant_id, pt.sku_prefix)
+
         if await self.repo.get_by_sku(data["sku"], tenant_id):
             raise ConflictError(f"SKU {data['sku']!r} already exists for this tenant")
         product = await self.repo.create({"tenant_id": tenant_id, **data})
         return product
+
+    async def _next_sku(self, tenant_id: str, prefix: str) -> str:
+        """Generate next sequential SKU: PREFIX-0001, PREFIX-0002, etc."""
+        result = await self.db.execute(
+            select(func.count())
+            .select_from(Product)
+            .where(Product.tenant_id == tenant_id, Product.sku.like(f"{prefix}-%"))
+        )
+        count = result.scalar_one()
+        return f"{prefix}-{count + 1:04d}"
 
     async def update(self, product_id: str, tenant_id: str, data: dict) -> Product:
         product = await self.get(product_id, tenant_id)
@@ -68,7 +96,7 @@ class ProductService:
             if k in data and data[k] != getattr(product, k)
         }
         if attempted_locked and await self.has_movements(product_id, tenant_id):
-            labels = {"sku": "SKU", "unit_of_measure": "Unidad de medida", "track_batches": "Rastreo por lotes"}
+            labels = {"sku": "SKU", "unit_of_measure": "Unidad de medida", "track_batches": "Rastreo por lotes", "valuation_method": "Método de valorización"}
             names = ", ".join(labels.get(f, f) for f in attempted_locked)
             raise ValidationError(
                 f"No se puede modificar {names} porque el producto ya tiene movimientos de inventario"
@@ -78,6 +106,12 @@ class ProductService:
             if existing:
                 raise ConflictError(f"SKU {data['sku']!r} already exists for this tenant")
         product = await self.repo.update(product, data)
+
+        # Auto-recalculate prices when margins change
+        if any(k in data for k in ("margin_target", "margin_minimum", "margin_cost_method")):
+            from app.services.pricing_engine import PricingEngine
+            engine = PricingEngine(self.db)
+            await engine.recalculate_product_prices(product, tenant_id)
 
         # Propagate reorder_point / min_stock_level changes to StockLevels
         # that still use the product-level default (i.e. have no warehouse override)

@@ -47,13 +47,13 @@ export function LoginPage() {
               {/* Logo */}
               <div className="flex items-center gap-2.5 mb-6">
                 <svg width="34" height="34" viewBox="0 0 34 34" fill="none" className="shrink-0">
-                  <rect width="34" height="34" rx="8" fill="#4F46E5" />
+                  <rect width="34" height="34" rx="8" fill="#16a34a" />
                   <path d="M8 11h18v2.5H18.5V25H15V13.5H8V11Z" fill="white" />
                   <path d="M20 17h2.5v5.5H27V25H20V17Z" fill="white" opacity="0.7" />
                 </svg>
                 <p className="text-[19px] leading-none tracking-tight">
                   <span className="font-bold text-gray-900">Trace</span>
-                  <span className="font-medium text-indigo-600">Log</span>
+                  <span className="font-medium text-primary">Log</span>
                 </p>
               </div>
 
@@ -79,7 +79,7 @@ export function LoginPage() {
                         type="email"
                         autoComplete="email"
                         placeholder="tu@email.com"
-                        className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-indigo-300 focus:outline-none focus:ring-3 focus:ring-indigo-500/20"
+                        className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20"
                       />
                       {errors.email && (
                         <p className="mt-1.5 text-xs text-red-500">{errors.email.message}</p>
@@ -96,7 +96,7 @@ export function LoginPage() {
                           type={showPassword ? 'text' : 'password'}
                           autoComplete="current-password"
                           placeholder="Ingresa tu contraseña"
-                          className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-indigo-300 focus:outline-none focus:ring-3 focus:ring-indigo-500/20"
+                          className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20"
                         />
                         <span
                           onClick={() => setShowPassword(!showPassword)}
@@ -116,14 +116,14 @@ export function LoginPage() {
 
                     <div className="flex items-center justify-between">
                       <label className="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-ring" />
                         <span className="text-sm font-normal text-gray-700">
                           Mantener sesión
                         </span>
                       </label>
                       <Link
                         to="/forgot-password"
-                        className="text-sm text-indigo-500 hover:text-indigo-600"
+                        className="text-sm text-primary hover:text-primary"
                       >
                         ¿Olvidaste tu contraseña?
                       </Link>
@@ -139,7 +139,7 @@ export function LoginPage() {
                       <button
                         type="submit"
                         disabled={login.isPending}
-                        className="flex w-full items-center justify-center rounded-lg bg-indigo-500 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {login.isPending ? 'Iniciando...' : 'Iniciar sesión'}
                       </button>
@@ -150,7 +150,7 @@ export function LoginPage() {
                 <div className="mt-5">
                   <p className="text-sm font-normal text-center text-gray-700 sm:text-start">
                     ¿No tienes cuenta?{' '}
-                    <Link to="/register" className="text-indigo-500 hover:text-indigo-600">
+                    <Link to="/register" className="text-primary hover:text-primary">
                       Regístrate
                     </Link>
                   </p>

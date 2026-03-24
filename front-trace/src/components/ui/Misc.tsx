@@ -7,7 +7,7 @@ import { cn, copyToClipboard, shortHash } from '@/lib/utils'
 
 export function Spinner({ className }: { className?: string }) {
   return (
-    <svg className={cn('animate-spin h-5 w-5 text-indigo-600', className)} viewBox="0 0 24 24" fill="none">
+    <svg className={cn('animate-spin h-5 w-5 text-primary', className)} viewBox="0 0 24 24" fill="none">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
     </svg>
@@ -20,7 +20,7 @@ interface CardProps { className?: string; children: React.ReactNode }
 
 export function Card({ className, children }: CardProps) {
   return (
-    <div className={cn('rounded-xl border border-gray-200 bg-white shadow-sm p-6', className)}>
+    <div className={cn('rounded-md border border-border bg-card shadow-sm p-6', className)}>
       {children}
     </div>
   )
@@ -42,9 +42,9 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-3">
-      {icon && <div className="text-gray-300 mb-1">{icon}</div>}
-      <p className="text-sm font-medium text-gray-600">{title}</p>
-      {description && <p className="text-xs text-gray-400 max-w-xs">{description}</p>}
+      {icon && <div className="text-muted-foreground/50 mb-1">{icon}</div>}
+      <p className="text-sm font-medium text-foreground">{title}</p>
+      {description && <p className="text-xs text-muted-foreground max-w-xs">{description}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>
   )
@@ -69,8 +69,8 @@ export function HashChip({ hash, head = 8, tail = 4, className }: HashChipProps)
       title={hash}
       className={cn(
         'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5',
-        'font-mono text-xs text-gray-500 hover:text-gray-800',
-        'bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors cursor-pointer',
+        'font-mono text-xs text-muted-foreground hover:text-foreground',
+        'bg-muted hover:bg-muted/80 border border-border transition-colors cursor-pointer',
         className,
       )}
     >
@@ -86,7 +86,7 @@ export function HashChip({ hash, head = 8, tail = 4, className }: HashChipProps)
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded-lg bg-gray-200', className)} />
+  return <div className={cn('animate-pulse rounded-md bg-primary/10', className)} />
 }
 
 // ─── StatCard ─────────────────────────────────────────────────────────────────
@@ -100,27 +100,27 @@ interface StatCardProps {
 }
 
 const statBorder = {
-  default: 'border-gray-200',
-  success: 'border-emerald-200',
-  warning: 'border-amber-200',
-  danger: 'border-red-200',
+  default: 'border-border',
+  success: 'border-emerald-500/20',
+  warning: 'border-amber-500/20',
+  danger: 'border-red-500/20',
 }
 
 const statIconBg = {
-  default: 'bg-gray-100 text-gray-600 shadow-inner',
-  success: 'bg-emerald-100 text-emerald-700 shadow-inner',
-  warning: 'bg-amber-100 text-amber-700 shadow-inner',
-  danger: 'bg-red-100 text-red-700 shadow-inner',
+  default: 'bg-muted text-muted-foreground',
+  success: 'bg-emerald-500/15 text-emerald-700',
+  warning: 'bg-amber-500/15 text-amber-700',
+  danger: 'bg-red-500/15 text-red-700',
 }
 
 export function StatCard({ label, value, icon, variant = 'default', sub }: StatCardProps) {
   return (
-    <div className={cn('rounded-xl border border-gray-200 bg-white shadow-sm py-6 px-7 transition-all', statBorder[variant])}>
+    <div className={cn('rounded-md border border-border bg-card shadow-sm py-6 px-7 transition-all', statBorder[variant])}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-500">{label}</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
-          {sub && <p className="mt-1 text-xs font-medium text-gray-400">{sub}</p>}
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          <p className="mt-2 text-2xl font-bold text-foreground">{value}</p>
+          {sub && <p className="mt-1 text-xs font-medium text-muted-foreground">{sub}</p>}
         </div>
         <div className={cn('flex h-11 w-11 items-center justify-center rounded-full shrink-0', statIconBg[variant])}>
           {icon}

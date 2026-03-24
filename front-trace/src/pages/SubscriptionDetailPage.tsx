@@ -89,7 +89,7 @@ function NoSubscription() {
       </p>
       <button
         onClick={() => navigate('/marketplace')}
-        className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
+        className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary/90 transition-colors"
       >
         <ShoppingBag className="h-4 w-4" /> Ir al Marketplace
       </button>
@@ -121,7 +121,7 @@ export function SubscriptionDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-16">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
       </div>
     )
   }
@@ -156,13 +156,13 @@ export function SubscriptionDetailPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100">
-            <CreditCard className="h-6 w-6 text-indigo-600" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15">
+            <CreditCard className="h-6 w-6 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-slate-900">Mi Suscripcion</h1>
-              <span className="rounded-lg bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">
+              <span className="rounded-lg bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
                 {sub.plan.name}
               </span>
               <StatusBadge status={sub.status} />
@@ -312,7 +312,7 @@ export function SubscriptionDetailPage() {
             className={cn(
               'px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px',
               tab === t.key
-                ? 'border-indigo-500 text-indigo-700'
+                ? 'border-primary text-primary'
                 : 'border-transparent text-slate-500 hover:text-slate-700',
             )}
           >
@@ -328,7 +328,7 @@ export function SubscriptionDetailPage() {
             <button
               onClick={() => createInvoice.mutate(tid)}
               disabled={createInvoice.isPending}
-              className="flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
             >
               <Plus className="h-4 w-4" /> Generar factura
             </button>

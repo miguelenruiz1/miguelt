@@ -1,210 +1,270 @@
 import { useState } from 'react'
-import { FileDown, Package, BarChart2, ArrowLeftRight, Loader2, CheckCircle, Truck, AlertTriangle, Hash, Layers, ShoppingCart } from 'lucide-react'
-import { useDownloadReport } from '@/hooks/useInventory'
+import {
+  Download, Box, Warehouse, ArrowLeftRight, Loader2, Check,
+  Users2, Zap, Fingerprint, Grid3x3, ShoppingCart,
+  TrendingUp, FileText, FileSpreadsheet,
+} from 'lucide-react'
+import { useDownloadReport, useFeatureToggles } from '@/hooks/useInventory'
+import { inventoryPnLApi } from '@/lib/inventory-api'
 import { cn } from '@/lib/utils'
 
-interface ReportCard {
-  id: 'products' | 'stock' | 'movements' | 'suppliers' | 'events' | 'serials' | 'batches' | 'purchase-orders'
+type ReportId = 'products' | 'stock' | 'movements' | 'suppliers' | 'events' | 'serials' | 'batches' | 'purchase-orders' | 'pnl-csv' | 'pnl-pdf'
+
+interface ReportDef {
+  id: ReportId
   label: string
-  description: string
+  desc: string
   icon: React.ElementType
-  color: string
-  bg: string
+  gradient: string
+  iconBg: string
   hasDateFilter: boolean
+  format: 'csv' | 'pdf' | 'zip'
+  feature?: string  // if set, only show when this feature toggle is active
 }
 
-const REPORTS: ReportCard[] = [
+const REPORTS: ReportDef[] = [
+  {
+    id: 'pnl-pdf',
+    label: 'Rentabilidad PDF',
+    desc: 'Reporte ejecutivo de P&L con graficas y analisis por producto',
+    icon: TrendingUp,
+    gradient: 'from-primary to-violet-500',
+    iconBg: 'bg-white/20',
+    hasDateFilter: true,
+    format: 'pdf',
+  },
+  {
+    id: 'pnl-csv',
+    label: 'Rentabilidad CSV',
+    desc: 'Datos de compras, ventas y utilidad en formato tabular',
+    icon: TrendingUp,
+    gradient: 'from-violet-500 to-purple-500',
+    iconBg: 'bg-white/20',
+    hasDateFilter: true,
+    format: 'zip',
+  },
   {
     id: 'products',
-    label: 'Reporte de Productos',
-    description: 'Exporta todo el catálogo de productos con precios, categorías y configuración de stock.',
-    icon: Package,
-    color: 'text-indigo-600',
-    bg: 'bg-indigo-100',
+    label: 'Catalogo de Productos',
+    desc: 'Todo tu catalogo con precios, categorias y stock',
+    icon: Box,
+    gradient: 'from-blue-500 to-cyan-500',
+    iconBg: 'bg-white/20',
     hasDateFilter: false,
+    format: 'csv',
   },
   {
     id: 'stock',
-    label: 'Reporte de Stock',
-    description: 'Niveles actuales de inventario por producto y bodega, incluyendo cantidades reservadas.',
-    icon: BarChart2,
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-100',
+    label: 'Inventario Actual',
+    desc: 'Niveles de stock por producto y bodega en tiempo real',
+    icon: Warehouse,
+    gradient: 'from-emerald-500 to-teal-500',
+    iconBg: 'bg-white/20',
     hasDateFilter: false,
+    format: 'csv',
   },
   {
     id: 'movements',
-    label: 'Reporte de Movimientos',
-    description: 'Historial completo de entradas, salidas, transferencias y ajustes. Filtrable por fecha.',
+    label: 'Movimientos',
+    desc: 'Entradas, salidas, transferencias y ajustes',
     icon: ArrowLeftRight,
-    color: 'text-amber-600',
-    bg: 'bg-amber-100',
+    gradient: 'from-amber-500 to-orange-500',
+    iconBg: 'bg-white/20',
     hasDateFilter: true,
-  },
-  {
-    id: 'suppliers',
-    label: 'Reporte de Proveedores',
-    description: 'Listado de todos los proveedores con tipo, contacto, términos de pago y tiempo de entrega.',
-    icon: Truck,
-    color: 'text-orange-600',
-    bg: 'bg-orange-100',
-    hasDateFilter: false,
-  },
-  {
-    id: 'events',
-    label: 'Reporte de Eventos',
-    description: 'Historial de eventos de inventario con tipo, severidad, estado e impactos.',
-    icon: AlertTriangle,
-    color: 'text-red-600',
-    bg: 'bg-red-100',
-    hasDateFilter: true,
-  },
-  {
-    id: 'serials',
-    label: 'Reporte de Seriales',
-    description: 'Listado de números seriales con producto, estado, bodega y ubicación.',
-    icon: Hash,
-    color: 'text-cyan-600',
-    bg: 'bg-cyan-100',
-    hasDateFilter: false,
-  },
-  {
-    id: 'batches',
-    label: 'Reporte de Lotes',
-    description: 'Listado de lotes con producto, cantidad, fechas de fabricación y expiración.',
-    icon: Layers,
-    color: 'text-purple-600',
-    bg: 'bg-purple-100',
-    hasDateFilter: false,
+    format: 'csv',
   },
   {
     id: 'purchase-orders',
-    label: 'Reporte de Órdenes de Compra',
-    description: 'Órdenes de compra con proveedor, estado, líneas de producto y totales. Filtrable por fecha.',
+    label: 'Ordenes de Compra',
+    desc: 'OC con proveedor, estado, lineas y totales',
     icon: ShoppingCart,
-    color: 'text-teal-600',
-    bg: 'bg-teal-100',
+    gradient: 'from-teal-500 to-emerald-500',
+    iconBg: 'bg-white/20',
     hasDateFilter: true,
+    format: 'csv',
+  },
+  {
+    id: 'suppliers',
+    label: 'Socios Comerciales',
+    desc: 'Proveedores y clientes con contacto y condiciones',
+    icon: Users2,
+    gradient: 'from-pink-500 to-rose-500',
+    iconBg: 'bg-white/20',
+    hasDateFilter: false,
+    format: 'csv',
+  },
+  {
+    id: 'events',
+    label: 'Eventos',
+    desc: 'Incidentes con severidad, estado e impactos',
+    icon: Zap,
+    gradient: 'from-red-500 to-orange-500',
+    iconBg: 'bg-white/20',
+    hasDateFilter: true,
+    format: 'csv',
+    feature: 'eventos',
+  },
+  {
+    id: 'serials',
+    label: 'Seriales',
+    desc: 'Numeros de serie con estado y ubicacion',
+    icon: Fingerprint,
+    gradient: 'from-cyan-500 to-blue-500',
+    iconBg: 'bg-white/20',
+    hasDateFilter: false,
+    format: 'csv',
+    feature: 'seriales',
+  },
+  {
+    id: 'batches',
+    label: 'Lotes',
+    desc: 'Lotes con fechas de fabricacion y vencimiento',
+    icon: Grid3x3,
+    gradient: 'from-purple-500 to-primary',
+    iconBg: 'bg-white/20',
+    hasDateFilter: false,
+    format: 'csv',
+    feature: 'lotes',
   },
 ]
 
-function ReportCardItem({ report }: { report: ReportCard }) {
+const FORMAT_LABELS: Record<string, { label: string; icon: React.ElementType }> = {
+  csv: { label: 'CSV', icon: FileSpreadsheet },
+  zip: { label: 'ZIP', icon: FileSpreadsheet },
+  pdf: { label: 'PDF', icon: FileText },
+}
+
+function ReportCard({ report }: { report: ReportDef }) {
   const download = useDownloadReport()
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
-  const [success, setSuccess] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle')
 
   async function handleDownload() {
-    await download.mutateAsync({
-      type: report.id,
-      dateFrom: dateFrom || undefined,
-      dateTo: dateTo || undefined,
-    })
-    setSuccess(true)
-    setTimeout(() => setSuccess(false), 3000)
+    setStatus('loading')
+    try {
+      if (report.id === 'pnl-pdf') {
+        await inventoryPnLApi.downloadPdf(dateFrom || undefined, dateTo || undefined)
+      } else if (report.id === 'pnl-csv') {
+        await inventoryPnLApi.downloadCsv(dateFrom || undefined, dateTo || undefined)
+      } else {
+        await download.mutateAsync({ type: report.id, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined })
+      }
+      setStatus('done')
+      setTimeout(() => setStatus('idle'), 2500)
+    } catch {
+      setStatus('idle')
+    }
   }
 
+  const Icon = report.icon
+  const fmt = FORMAT_LABELS[report.format]
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', report.bg)}>
-            <report.icon className={cn('h-5 w-5', report.color)} />
+    <div className="group relative bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
+      {/* Gradient accent top */}
+      <div className={cn('h-1 bg-gradient-to-r', report.gradient)} />
+
+      <div className="p-5">
+        <div className="flex items-start gap-4">
+          {/* Icon circle with gradient */}
+          <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg', report.gradient)}>
+            <Icon className="h-6 w-6 text-white" />
           </div>
-          <div>
-            <h3 className="font-semibold text-slate-800">{report.label}</h3>
-            <p className="text-xs text-slate-500 mt-0.5 max-w-sm">{report.description}</p>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-[15px] font-semibold text-gray-900 tracking-tight">{report.label}</h3>
+              <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 bg-gray-100 rounded-md px-1.5 py-0.5 uppercase">
+                <fmt.icon className="h-3 w-3" />
+                {fmt.label}
+              </span>
+            </div>
+            <p className="text-[13px] text-gray-500 mt-0.5 leading-relaxed">{report.desc}</p>
+
+            {/* Date filters */}
+            {report.hasDateFilter && (
+              <div className="flex items-center gap-2 mt-3">
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={e => setDateFrom(e.target.value)}
+                  className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none"
+                />
+                <span className="text-gray-300 text-xs">—</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={e => setDateTo(e.target.value)}
+                  className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none"
+                />
+              </div>
+            )}
           </div>
+
+          {/* Download button */}
+          <button
+            onClick={handleDownload}
+            disabled={status === 'loading'}
+            className={cn(
+              'flex items-center justify-center h-10 w-10 rounded-xl shrink-0 transition-all duration-200',
+              status === 'done'
+                ? 'bg-emerald-500 text-white scale-110'
+                : status === 'loading'
+                ? 'bg-gray-100 text-gray-400'
+                : 'bg-gray-100 text-gray-500 hover:bg-gray-900 hover:text-white hover:scale-105',
+            )}
+          >
+            {status === 'loading' ? (
+              <Loader2 className="h-4.5 w-4.5 animate-spin" />
+            ) : status === 'done' ? (
+              <Check className="h-4.5 w-4.5" />
+            ) : (
+              <Download className="h-4.5 w-4.5" />
+            )}
+          </button>
         </div>
-        <span className="text-xs text-slate-400 bg-slate-50 rounded-lg px-2 py-1">CSV</span>
       </div>
-
-      {report.hasDateFilter && (
-        <div className="flex items-center gap-3">
-          <div className="flex-1">
-            <label className="text-xs font-medium text-slate-500 mb-1 block">Desde</label>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={e => setDateFrom(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="text-xs font-medium text-slate-500 mb-1 block">Hasta</label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={e => setDateTo(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            />
-          </div>
-        </div>
-      )}
-
-      <button
-        onClick={handleDownload}
-        disabled={download.isPending}
-        className={cn(
-          'w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all',
-          success
-            ? 'bg-emerald-600 text-white'
-            : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50',
-        )}
-      >
-        {download.isPending ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Descargando...
-          </>
-        ) : success ? (
-          <>
-            <CheckCircle className="h-4 w-4" />
-            ¡Descargado!
-          </>
-        ) : (
-          <>
-            <FileDown className="h-4 w-4" />
-            Descargar CSV
-          </>
-        )}
-      </button>
-
-      {download.isError && (
-        <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-1.5">
-          Error al descargar. Verifica que hay datos disponibles.
-        </p>
-      )}
     </div>
   )
 }
 
 export function InventoryReportsPage() {
+  const { data: features } = useFeatureToggles()
+  const isActive = (r: ReportDef) => !r.feature || features?.[r.feature] !== false
+
+  const featured = REPORTS.slice(0, 2).filter(isActive)
+  const standard = REPORTS.slice(2).filter(isActive)
+
   return (
-    <div className="p-8 space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-8 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
-          <FileDown className="h-5 w-5 text-amber-600" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Reportes</h1>
-          <p className="text-sm text-slate-500">Descarga reportes de tu inventario en formato CSV</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Reportes</h1>
+        <p className="text-[15px] text-gray-500 mt-1">Descarga los datos de tu inventario en un click</p>
       </div>
 
-      {/* Info banner */}
-      <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-3 text-sm text-blue-700">
-        Los reportes se generan en tiempo real con los datos actuales de tu inventario.
-        Puedes abrirlos en Excel, Google Sheets o cualquier hoja de cálculo.
-      </div>
-
-      {/* Reports grid */}
-      <div className="grid grid-cols-1 gap-4">
-        {REPORTS.map(report => (
-          <ReportCardItem key={report.id} report={report} />
+      {/* Featured reports — larger cards */}
+      {featured.length > 0 && (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {featured.map(report => (
+          <ReportCard key={report.id} report={report} />
         ))}
       </div>
+      )}
+
+      {/* Standard reports grid */}
+      {standard.length > 0 && (
+      <div>
+        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Datos operativos</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {standard.map(report => (
+            <ReportCard key={report.id} report={report} />
+          ))}
+        </div>
+      </div>
+      )}
     </div>
   )
 }

@@ -140,20 +140,23 @@ class StockRepository:
             ),
         )
 
+        # Use available stock (on_hand - reserved) for threshold comparison
+        available_qty = StockLevel.qty_on_hand - fn.coalesce(StockLevel.qty_reserved, 0)
+
         result = await self.db.execute(
             select(StockLevel)
             .join(Product, StockLevel.product_id == Product.id)
             .options(joinedload(StockLevel.product), joinedload(StockLevel.warehouse))
             .where(
                 StockLevel.tenant_id == tenant_id,
-                StockLevel.qty_on_hand <= effective_threshold,
+                available_qty <= effective_threshold,
                 # At least one threshold must be configured
                 (StockLevel.reorder_point > 0) |
                 (Product.reorder_point > 0) |
                 (Product.min_stock_level > 0),
                 Product.is_active == True,  # noqa: E712
             )
-            .order_by(StockLevel.qty_on_hand)
+            .order_by(available_qty)
         )
         return list(result.scalars().unique().all())
 
@@ -251,6 +254,30 @@ class StockRepository:
             level.updated_at = datetime.now(timezone.utc)
             await self.db.flush()
         return level
+
+    async def get_available_stock(self, tenant_id: str, product_id: str, warehouse_id: str | None = None):
+        """Get stock availability summary: on_hand, reserved, available, in_transit."""
+        from sqlalchemy import func as sa_func
+        q = (
+            select(
+                sa_func.coalesce(sa_func.sum(StockLevel.qty_on_hand), 0).label("qty_on_hand"),
+                sa_func.coalesce(sa_func.sum(StockLevel.qty_reserved), 0).label("qty_reserved"),
+                sa_func.coalesce(sa_func.sum(StockLevel.qty_in_transit), 0).label("qty_in_transit"),
+            )
+            .where(StockLevel.tenant_id == tenant_id, StockLevel.product_id == product_id)
+        )
+        if warehouse_id:
+            q = q.where(StockLevel.warehouse_id == warehouse_id)
+        row = (await self.db.execute(q)).one()
+        on_hand = row.qty_on_hand
+        reserved = row.qty_reserved
+        in_transit = row.qty_in_transit
+        return {
+            "qty_on_hand": float(on_hand),
+            "qty_reserved": float(reserved),
+            "qty_available": float(on_hand - reserved),
+            "qty_in_transit": float(in_transit),
+        }
 
     async def set_qty(
         self,

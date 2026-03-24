@@ -18,7 +18,7 @@ export function ModuleGuard({ children }: { children: React.ReactNode }) {
         </p>
         <NavLink
           to="/marketplace"
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm transition-colors"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm transition-colors"
         >
           <Zap className="h-4 w-4" />
           Ir al Marketplace

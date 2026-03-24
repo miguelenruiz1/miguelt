@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   ArrowLeft, Package, RefreshCw, Truck, MapPin, BarChart2, ShieldOff,
   CheckCircle2, ExternalLink, Link2, XCircle, FlaskConical, FileDown,
+  ShieldCheck, Zap,
 } from 'lucide-react'
 import { useSettingsStore, explorerAddressUrl } from '@/store/settings'
 import type { BlockchainStatus } from '@/types/api'
@@ -10,13 +11,15 @@ import type { BlockchainStatus } from '@/types/api'
 const isSimulated = (s: string) => s.startsWith('sim') || s.startsWith('SIM_')
 import { useAsset, useAssetEvents } from '@/hooks/useAssets'
 import { Topbar } from '@/components/layout/Topbar'
-import { Button } from '@/components/ui/Button'
-import { StateBadge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/button'
+import { StateBadge } from '@/components/domain-badges'
 import { HashChip, Spinner, Card, EmptyState } from '@/components/ui/Misc'
 import { EventTimeline } from '@/components/events/EventTimeline'
 import { HandoffModal, ArrivedModal, LoadedModal, QCModal, ReleaseModal, BurnModal } from '@/components/events/EventModals'
 import { fmtDate, shortPubkey } from '@/lib/utils'
 import { generateTraceabilityCertificate } from '@/lib/certificate'
+import { useAssetCompliance } from '@/hooks/useCompliance'
+import { useIsModuleActive } from '@/hooks/useModules'
 
 type Modal = 'handoff' | 'arrived' | 'loaded' | 'qc' | 'release' | 'burn' | null
 
@@ -100,7 +103,7 @@ export function AssetDetailPage() {
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {/* Back */}
-        <Link to="/assets" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors group">
+        <Link to="/assets" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-primary transition-colors group">
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           Volver a Cargas
         </Link>
@@ -112,8 +115,8 @@ export function AssetDetailPage() {
             {/* Info card */}
             <Card>
               <div className="flex items-start gap-4 mb-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 border border-indigo-100/50 shadow-inner shrink-0">
-                  <Package className="h-6 w-6 text-indigo-600 drop-shadow-sm" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20/50 shadow-inner shrink-0">
+                  <Package className="h-6 w-6 text-primary drop-shadow-sm" />
                 </div>
                 <div className="min-w-0">
                   {cargoName && (
@@ -129,7 +132,7 @@ export function AssetDetailPage() {
                       href={explorerAddressUrl(asset.asset_mint, solanaCluster)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline transition-colors"
+                      className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-primary hover:text-primary hover:underline transition-colors"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
                       Ver en Solana Explorer
@@ -184,7 +187,7 @@ export function AssetDetailPage() {
                 <div className="flex flex-col gap-2">
                   {canDoAction('handoff', asset.state) && (
                     <Button variant="secondary" size="sm" className="justify-start h-10 shadow-sm" onClick={() => setModal('handoff')}>
-                      <Truck className="h-4 w-4 text-indigo-500 mr-1" /> Transferir Custodia
+                      <Truck className="h-4 w-4 text-primary mr-1" /> Transferir Custodia
                     </Button>
                   )}
                   {canDoAction('arrived', asset.state) && (
@@ -262,6 +265,9 @@ export function AssetDetailPage() {
                 <EventTimeline events={events} assetId={id} />
               )}
             </Card>
+
+            {/* Compliance section */}
+            <ComplianceSection assetId={id} />
           </div>
         </div>
       </div>
@@ -277,6 +283,96 @@ export function AssetDetailPage() {
         </>
       )}
     </div>
+  )
+}
+
+// ─── Compliance Section ──────────────────────────────────────────────────────
+
+const COMPLIANCE_STATUS_COLORS: Record<string, string> = {
+  incomplete: 'bg-amber-50 text-amber-700 border-amber-200',
+  ready: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  declared: 'bg-blue-50 text-blue-700 border-blue-200',
+  compliant: 'bg-green-50 text-green-700 border-green-200',
+  non_compliant: 'bg-red-50 text-red-700 border-red-200',
+  partial: 'bg-orange-50 text-orange-700 border-orange-200',
+}
+
+const COMPLIANCE_STATUS_LABELS: Record<string, string> = {
+  incomplete: 'Incompleto', ready: 'Listo', declared: 'Declarado',
+  compliant: 'Cumple', non_compliant: 'No cumple', partial: 'Parcial',
+}
+
+const FRAMEWORK_FLAGS: Record<string, string> = {
+  eudr: '🇪🇺', 'usda-organic': '🇺🇸', fssai: '🇮🇳', 'jfs-2200': '🇯🇵',
+}
+
+function ComplianceSection({ assetId }: { assetId: string }) {
+  const isComplianceModuleActive = useIsModuleActive('compliance')
+  const { data: records = [], isLoading } = useAssetCompliance(assetId)
+  const navigate = useNavigate()
+
+  if (!isComplianceModuleActive) {
+    return (
+      <Card>
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 shrink-0">
+            <ShieldCheck className="h-4.5 w-4.5 text-emerald-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-slate-700">Exportas a Europa?</p>
+            <p className="text-xs text-slate-500 mt-0.5">Activa Cumplimiento Normativo para certificar tus cargas bajo EUDR.</p>
+          </div>
+          <Link to="/marketplace"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors shrink-0">
+            <Zap className="h-3.5 w-3.5" /> Activar
+          </Link>
+        </div>
+      </Card>
+    )
+  }
+
+  if (isLoading) return null
+
+  if (records.length === 0) {
+    return (
+      <Card>
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 shrink-0">
+            <ShieldCheck className="h-4.5 w-4.5 text-emerald-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-slate-700">Cumplimiento Normativo</p>
+            <p className="text-xs text-slate-500 mt-0.5">Crea un registro EUDR para esta carga.</p>
+          </div>
+          <button onClick={() => navigate(`/cumplimiento/registros?create=${assetId}`)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 transition-colors shrink-0">
+            Crear registro EUDR
+          </button>
+        </div>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <h3 className="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
+        <ShieldCheck className="h-4 w-4 text-emerald-500" />
+        Cumplimiento Normativo
+        <span className="text-xs text-slate-400 font-normal">({records.length})</span>
+      </h3>
+      <div className="space-y-2">
+        {records.map(r => (
+          <Link key={r.id} to={`/cumplimiento/registros/${r.id}`}
+            className="flex items-center gap-3 rounded-xl border border-slate-100 px-4 py-3 hover:bg-slate-50/50 transition-colors">
+            <span className="text-sm">{FRAMEWORK_FLAGS[r.framework_slug] ?? ''}</span>
+            <span className="text-sm font-medium text-slate-900 flex-1">{r.framework_slug.toUpperCase()}</span>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${COMPLIANCE_STATUS_COLORS[r.compliance_status] ?? 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+              {COMPLIANCE_STATUS_LABELS[r.compliance_status] ?? r.compliance_status}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </Card>
   )
 }
 

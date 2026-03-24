@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { DollarSign, Users, AlertTriangle, Clock, Trash2, Plus, RefreshCw, X, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Eye, History } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useFormValidation } from '@/hooks/useFormValidation'
 import {
   useCustomerSpecialPrices, useCustomerPriceMetrics, useDeactivateCustomerPrice,
   useCreateCustomerPrice, useCustomers, useProducts, useCustomerPriceDetail,
@@ -45,6 +46,26 @@ export function CustomerPricesPage() {
   const startIdx = (safePage - 1) * PAGE_SIZE
   const endIdx = Math.min(startIdx + PAGE_SIZE, prices.length)
   const pagePrices = prices.slice(startIdx, endIdx)
+
+  async function doSubmitPrice() {
+    const form = createFormRef.current
+    if (!form) return
+    const fd = new FormData(form)
+    await createMut.mutateAsync({
+      customer_id: fd.get('customer_id') as string,
+      product_id: fd.get('product_id') as string,
+      price: Number(fd.get('price')),
+      min_quantity: Number(fd.get('min_quantity') || 1),
+      valid_from: (fd.get('valid_from') as string) || new Date().toISOString().slice(0, 10),
+      valid_to: (fd.get('valid_to') as string) || null,
+      reason: (fd.get('reason') as string) || null,
+    } as Partial<CustomerPrice>)
+    toast.success(renewFrom ? 'Precio renovado' : 'Precio especial creado')
+    setShowCreate(false)
+    setRenewFrom(null)
+  }
+
+  const { formRef: createFormRef, handleSubmit: validateAndSubmitPrice } = useFormValidation(doSubmitPrice)
 
   // Expiring soon (within 30 days)
   const expiringSoon = prices.filter(p => {
@@ -98,7 +119,7 @@ export function CustomerPricesPage() {
           </div>
           <div className="bg-white rounded-xl border border-slate-200/60 p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center"><Users className="h-5 w-5 text-indigo-600" /></div>
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center"><Users className="h-5 w-5 text-primary" /></div>
               <div>
                 <p className="text-xs text-slate-400">Clientes con precio especial</p>
                 <p className="text-2xl font-bold text-slate-900">{metrics.customers_with_prices}</p>
@@ -149,7 +170,7 @@ export function CustomerPricesPage() {
               <tbody className="divide-y divide-slate-100">
                 {pagePrices.map(sp => {
                   const prod = productsMap.get(sp.product_id)
-                  const basePrice = Number(prod?.sale_price ?? 0)
+                  const basePrice = Number(prod?.suggested_sale_price ?? 0)
                   const savingsPct = basePrice > 0 ? ((basePrice - sp.price) / basePrice * 100) : 0
                   const status = getStatus(sp)
                   return (
@@ -173,7 +194,7 @@ export function CustomerPricesPage() {
                       <td className="px-6 py-3"><span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold', status.color)}>{status.label}</span></td>
                       <td className="px-6 py-3 text-right">
                         <div className="flex gap-1 justify-end">
-                          <button onClick={() => setDetailId(sp.id)} className="p-1 text-slate-400 hover:text-indigo-600" title="Ver detalle">
+                          <button onClick={() => setDetailId(sp.id)} className="p-1 text-slate-400 hover:text-primary" title="Ver detalle">
                             <Eye className="h-3.5 w-3.5" />
                           </button>
                           {sp.is_active && (
@@ -275,22 +296,7 @@ export function CustomerPricesPage() {
               <h3 className="text-lg font-bold text-slate-900">{renewFrom ? 'Renovar Precio Especial' : 'Nuevo Precio Especial'}</h3>
               <button onClick={() => setShowCreate(false)} className="p-1 text-slate-400 hover:text-slate-600"><X className="h-5 w-5" /></button>
             </div>
-            <form onSubmit={async (e) => {
-              e.preventDefault()
-              const fd = new FormData(e.currentTarget)
-              await createMut.mutateAsync({
-                customer_id: fd.get('customer_id') as string,
-                product_id: fd.get('product_id') as string,
-                price: Number(fd.get('price')),
-                min_quantity: Number(fd.get('min_quantity') || 1),
-                valid_from: (fd.get('valid_from') as string) || new Date().toISOString().slice(0, 10),
-                valid_to: (fd.get('valid_to') as string) || null,
-                reason: (fd.get('reason') as string) || null,
-              } as Partial<CustomerPrice>)
-              toast.success(renewFrom ? 'Precio renovado' : 'Precio especial creado')
-              setShowCreate(false)
-              setRenewFrom(null)
-            }} className="space-y-3">
+            <form ref={createFormRef} onSubmit={validateAndSubmitPrice} noValidate className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Cliente *</label>
                 <select name="customer_id" required defaultValue={renewFrom?.customer_id ?? ''} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none">
@@ -302,7 +308,7 @@ export function CustomerPricesPage() {
                 <label className="block text-xs font-medium text-slate-600 mb-1">Producto *</label>
                 <select name="product_id" required defaultValue={renewFrom?.product_id ?? ''} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none">
                   <option value="">Seleccionar producto</option>
-                  {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name} (${Number(p.sale_price).toLocaleString()})</option>)}
+                  {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name} (${Number(p.suggested_sale_price ?? 0).toLocaleString()})</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -400,11 +406,11 @@ function PriceDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
                 </h3>
                 <div className="space-y-2">
                   {detail.history.map((h: any, idx: number) => (
-                    <div key={idx} className="flex items-center gap-3 text-sm border-l-2 border-indigo-200 pl-3 py-1">
+                    <div key={idx} className="flex items-center gap-3 text-sm border-l-2 border-primary/30 pl-3 py-1">
                       <div className="flex-1">
                         <span className="font-mono text-slate-500">${h.old_price?.toLocaleString()}</span>
                         <span className="mx-1.5 text-slate-300">&rarr;</span>
-                        <span className="font-mono font-semibold text-indigo-700">${h.new_price?.toLocaleString()}</span>
+                        <span className="font-mono font-semibold text-primary">${h.new_price?.toLocaleString()}</span>
                         {h.reason && <span className="ml-2 text-xs text-slate-400">({h.reason})</span>}
                       </div>
                       <span className="text-xs text-slate-400 whitespace-nowrap">

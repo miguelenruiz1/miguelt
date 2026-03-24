@@ -164,6 +164,42 @@ export interface OverviewMetrics {
   plan_breakdown: PlanBreakdownItem[]
 }
 
+// ─── Usage ───────────────────────────────────────────────────────────────────
+
+export interface UsageCounter {
+  current: number
+  limit: number
+  percentage: number
+  label?: string
+}
+
+export interface UsageSummary {
+  plan_name: string
+  plan_slug: string
+  subscription_status: string
+  users: UsageCounter
+  assets_this_month: UsageCounter
+  wallets: UsageCounter
+  // Optional fields — may be enriched by frontend
+  tenant_id?: string
+  price_monthly?: number
+  currency?: string
+  billing_cycle?: BillingCycle
+  current_period_end?: string
+}
+
+// ─── Checkout ────────────────────────────────────────────────────────────────
+
+export interface CheckoutRequest {
+  tenant_id: string
+  plan_slug: string
+}
+
+export interface CheckoutResponse {
+  checkout_url: string
+  invoice_id: string
+}
+
 // ─── Pagination ───────────────────────────────────────────────────────────────
 
 export interface PaginatedResponse<T> {

@@ -43,6 +43,26 @@ class UnauthorizedError(AppError):
     error_code = "UNAUTHORIZED"
 
 
+class PlanLimitError(AppError):
+    status_code = status.HTTP_402_PAYMENT_REQUIRED
+    error_code = "PLAN_LIMIT_REACHED"
+
+    def __init__(
+        self,
+        detail: str,
+        *,
+        resource: str,
+        current: int,
+        limit: int,
+        upgrade_message: str,
+    ) -> None:
+        self.resource = resource
+        self.current = current
+        self.limit = limit
+        self.upgrade_message = upgrade_message
+        super().__init__(detail, resource=resource, current=current, limit=limit)
+
+
 # ─── Error Response Builder ───────────────────────────────────────────────────
 
 def _error_response(
@@ -71,7 +91,15 @@ def _error_response(
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def app_error_handler(request: Request, exc: AppError) -> ORJSONResponse:
-        return _error_response(request, exc.status_code, exc.error_code, exc.detail)
+        extra = None
+        if isinstance(exc, PlanLimitError):
+            extra = {
+                "resource": exc.resource,
+                "current": exc.current,
+                "limit": exc.limit,
+                "upgrade_message": exc.upgrade_message,
+            }
+        return _error_response(request, exc.status_code, exc.error_code, exc.detail, extra)
 
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(

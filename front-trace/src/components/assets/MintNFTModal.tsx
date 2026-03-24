@@ -5,9 +5,9 @@ import { useMintAsset } from '@/hooks/useAssets'
 import { useOrganizations, useOrgWallets } from '@/hooks/useTaxonomy'
 import { useWalletList } from '@/hooks/useWallets'
 import { useToast } from '@/store/toast'
-import { Dialog } from '@/components/ui/Dialog'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 // ─── Product type catalog ──────────────────────────────────────────────────────
 
@@ -25,7 +25,7 @@ const PRODUCT_TYPES = [
 const UNITS = ['kg', 'ton', 'lb', 'quintal']
 
 const fieldCls =
-  'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors'
+  'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20 transition-colors'
 const labelCls = 'text-xs font-medium text-slate-700 block mb-1.5'
 
 interface Props {
@@ -145,8 +145,8 @@ export function MintNFTModal({ open, onClose, preSelectedOrgId }: Props) {
                 onClick={() => { setProductType(pt.value); setErrs((e) => ({ ...e, productType: '' })) }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold border transition-all ${
                   productType === pt.value
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'
+                    ? 'bg-primary text-white border-primary shadow'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-primary/50 hover:bg-primary/10'
                 }`}
               >
                 <span>{pt.emoji}</span>

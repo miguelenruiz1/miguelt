@@ -33,6 +33,10 @@ import {
   inventoryReorderApi,
   inventoryCustomerPricesApi,
   inventoryTaxApi,
+  inventoryUoMApi,
+  inventoryPricingApi,
+  inventoryPnLApi,
+  inventoryPartnersApi,
 } from '@/lib/inventory-api'
 import type {
   Category,
@@ -247,6 +251,14 @@ export function useStockByProduct(productId: string) {
   return useQuery({
     queryKey: ['inventory', 'stock', 'product', productId],
     queryFn: () => inventoryStockApi.list({ product_id: productId }),
+    enabled: !!productId,
+  })
+}
+
+export function useStockAvailability(productId: string) {
+  return useQuery({
+    queryKey: ['inventory', 'stock', 'availability', productId],
+    queryFn: () => inventoryStockApi.getAvailability(productId),
     enabled: !!productId,
   })
 }
@@ -506,8 +518,8 @@ export function useCancelPO() {
 export function useReceivePO() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, lines }: { id: string; lines: Parameters<typeof inventoryPOApi.receive>[1] }) =>
-      inventoryPOApi.receive(id, lines),
+    mutationFn: ({ id, ...data }: { id: string } & Parameters<typeof inventoryPOApi.receive>[1]) =>
+      inventoryPOApi.receive(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['inventory', 'pos'] })
       qc.invalidateQueries({ queryKey: ['inventory', 'stock'] })
@@ -556,12 +568,52 @@ export function useDeconsolidatePO() {
   })
 }
 
+export function useSubmitPOForApproval() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => inventoryPOApi.submitForApproval(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'pos'] }),
+  })
+}
+
+export function useApprovePO() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => inventoryPOApi.approve(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'pos'] }),
+  })
+}
+
+export function useRejectPO() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => inventoryPOApi.reject(id, reason),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'pos'] }),
+  })
+}
+
+export function usePOApprovalLog(poId: string) {
+  return useQuery({
+    queryKey: ['inventory', 'pos', poId, 'approval-log'],
+    queryFn: () => inventoryPOApi.getApprovalLog(poId),
+    enabled: !!poId,
+  })
+}
+
 // ─── Analytics ────────────────────────────────────────────────────────────────
 
 export function useInventoryAnalytics() {
   return useQuery({
     queryKey: ['inventory', 'analytics', 'overview'],
     queryFn: () => inventoryAnalyticsApi.overview(),
+    staleTime: 60_000,
+  })
+}
+
+export function useCommittedStock() {
+  return useQuery({
+    queryKey: ['inventory', 'analytics', 'committed-stock'],
+    queryFn: () => inventoryAnalyticsApi.committedStock(),
     staleTime: 60_000,
   })
 }
@@ -1526,7 +1578,15 @@ export function useCustomers(params?: Parameters<typeof inventoryCustomersApi.li
   return useQuery({ queryKey: ['inventory', 'customers', params], queryFn: () => inventoryCustomersApi.list(params) })
 }
 export function useCustomer(id: string) {
-  return useQuery({ queryKey: ['inventory', 'customers', id], queryFn: () => inventoryCustomersApi.get(id), enabled: !!id })
+  return useQuery({
+    queryKey: ['inventory', 'customers', id],
+    queryFn: async () => {
+      // Try partners first (unified model), fallback to legacy customers
+      try { return await inventoryPartnersApi.get(id) } catch { /* ignore */ }
+      return inventoryCustomersApi.get(id)
+    },
+    enabled: !!id,
+  })
 }
 export function useCustomerPrices(customerId: string | undefined) {
   return useQuery({
@@ -1951,5 +2011,200 @@ export function useInitializeTaxRates() {
   return useMutation({
     mutationFn: () => inventoryTaxApi.initialize(),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'tax-rates'] }),
+  })
+}
+
+// ─── UoM ─────────────────────────────────────────────────────────────────────
+
+export function useUoMs() {
+  return useQuery({
+    queryKey: ['inventory', 'uom'],
+    queryFn: () => inventoryUoMApi.list(),
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useUoMConversions() {
+  return useQuery({
+    queryKey: ['inventory', 'uom', 'conversions'],
+    queryFn: () => inventoryUoMApi.listConversions(),
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useInitializeUoMs() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => inventoryUoMApi.initialize(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'uom'] }),
+  })
+}
+
+export function useCreateUoM() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { name: string; symbol: string; category: string; is_base?: boolean }) =>
+      inventoryUoMApi.create(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'uom'] }),
+  })
+}
+
+export function useCreateUoMConversion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { from_uom_id: string; to_uom_id: string; factor: number }) =>
+      inventoryUoMApi.createConversion(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'uom', 'conversions'] }),
+  })
+}
+
+// ─── Pricing ─────────────────────────────────────────────────────────────────
+
+export function useProductCostHistory(productId: string, limit = 10) {
+  return useQuery({
+    queryKey: ['inventory', 'cost-history', productId, limit],
+    queryFn: () => inventoryPricingApi.getProductCostHistory(productId, limit),
+    enabled: !!productId,
+    staleTime: 30_000,
+  })
+}
+
+export function useProductPricing(productId: string) {
+  return useQuery({
+    queryKey: ['inventory', 'product-pricing', productId],
+    queryFn: () => inventoryPricingApi.getProductPricing(productId),
+    enabled: !!productId,
+    staleTime: 30_000,
+  })
+}
+
+export function useRecalculatePrices() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (productId: string) => inventoryPricingApi.recalculatePrices(productId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'products'] }),
+  })
+}
+
+export function useUpdateProductMargins() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ productId, data }: { productId: string; data: { margin_target?: number; margin_minimum?: number; margin_cost_method?: string } }) =>
+      inventoryPricingApi.updateMargins(productId, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'products'] }),
+  })
+}
+
+export function useGlobalMargins() {
+  return useQuery({
+    queryKey: ['inventory', 'config', 'margins'],
+    queryFn: () => inventoryPricingApi.getGlobalMargins(),
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useUpdateGlobalMargins() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { margin_target_global?: number; margin_minimum_global?: number; margin_cost_method_global?: string; below_minimum_requires_auth?: boolean }) =>
+      inventoryPricingApi.updateGlobalMargins(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'config', 'margins'] }),
+  })
+}
+
+// ─── Feature Toggles ──────────────────────────────────────────────────────────
+
+export function useFeatureToggles() {
+  return useQuery({
+    queryKey: ['inventory', 'config', 'features'],
+    queryFn: () => inventoryConfigApi.getFeatures(),
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useUpdateFeatureToggles() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Record<string, boolean>) => inventoryConfigApi.updateFeatures(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'config', 'features'] }),
+  })
+}
+
+// ─── P&L ─────────────────────────────────────────────────────────────────────
+
+export function usePnL(dateFrom?: string, dateTo?: string, productId?: string) {
+  return useQuery({
+    queryKey: ['inventory', 'pnl', dateFrom, dateTo, productId],
+    queryFn: () => inventoryPnLApi.getPnL(dateFrom, dateTo, productId),
+    staleTime: 60_000,
+  })
+}
+
+export function usePnLAnalysis(dateFrom?: string, dateTo?: string) {
+  return useQuery({
+    queryKey: ['inventory', 'pnl', 'analysis', dateFrom, dateTo],
+    queryFn: () => inventoryPnLApi.getAiAnalysis(dateFrom, dateTo),
+    staleTime: 300_000,
+    gcTime: 600_000,
+    retry: false,
+    enabled: !!dateFrom && !!dateTo,
+    throwOnError: false,
+  })
+}
+
+export function useDownloadPnLCsv() {
+  return useMutation({
+    mutationFn: ({ dateFrom, dateTo }: { dateFrom?: string; dateTo?: string }) =>
+      inventoryPnLApi.downloadCsv(dateFrom, dateTo),
+  })
+}
+
+// ─── Partners (unified) ──────────────────────────────────────────────────────
+
+export function usePartners(params?: { is_supplier?: boolean; is_customer?: boolean; is_active?: boolean; search?: string }) {
+  return useQuery({
+    queryKey: ['inventory', 'partners', params],
+    queryFn: () => inventoryPartnersApi.list(params),
+    staleTime: 30_000,
+  })
+}
+
+export function usePartner(id: string) {
+  return useQuery({
+    queryKey: ['inventory', 'partners', id],
+    queryFn: () => inventoryPartnersApi.get(id),
+    enabled: !!id,
+  })
+}
+
+export function useCreatePartner() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Partial<import('@/types/inventory').BusinessPartner>) => inventoryPartnersApi.create(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'partners'] }),
+  })
+}
+
+export function useUpdatePartner() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<import('@/types/inventory').BusinessPartner> }) =>
+      inventoryPartnersApi.update(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'partners'] }),
+  })
+}
+
+export function useDeletePartner() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => inventoryPartnersApi.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'partners'] }),
+  })
+}
+
+export function useDownloadPnLPdf() {
+  return useMutation({
+    mutationFn: ({ dateFrom, dateTo }: { dateFrom?: string; dateTo?: string }) =>
+      inventoryPnLApi.downloadPdf(dateFrom, dateTo),
   })
 }

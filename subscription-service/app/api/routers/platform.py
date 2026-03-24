@@ -276,3 +276,14 @@ async def platform_list_users(
 def _extract_token(user_dict: dict) -> str:
     """Best-effort extraction of the bearer token from the cached user dict."""
     return user_dict.get("_token", "")
+
+
+@router.post("/check-expirations", summary="Run subscription expiration check manually")
+async def check_expirations_endpoint(
+    _user: SuperUser,
+    db: AsyncSession = Depends(get_db_session),
+) -> dict:
+    """Manually trigger subscription expiration check. Normally runs hourly in background."""
+    from app.services.expiration_service import check_expirations
+    summary = await check_expirations(db)
+    return {"status": "ok", **summary}

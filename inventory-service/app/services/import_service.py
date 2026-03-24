@@ -14,10 +14,12 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.batch_repo import BatchRepository
+from app.repositories.category_repo import CategoryRepository
 from app.repositories.config_repo import OrderTypeRepository, ProductTypeRepository, SupplierTypeRepository
 from app.repositories.event_repo import (
     EventSeverityRepository, EventStatusRepository, EventTypeRepository, InventoryEventRepository,
 )
+from app.repositories.partner_repo import PartnerRepository
 from app.repositories.po_repo import PORepository
 from app.repositories.product_repo import ProductRepository
 from app.repositories.production_repo import ProductionRunRepository
@@ -36,6 +38,8 @@ class ImportService:
         self.warehouse_repo = WarehouseRepository(db)
         self.stock_repo = StockRepository(db)
         self.supplier_repo = SupplierRepository(db)
+        self.partner_repo = PartnerRepository(db)
+        self.category_repo = CategoryRepository(db)
         self.product_type_repo = ProductTypeRepository(db)
         self.supplier_type_repo = SupplierTypeRepository(db)
         self.order_type_repo = OrderTypeRepository(db)
@@ -107,8 +111,6 @@ class ImportService:
                 continue
 
             # Parse optional fields
-            cost_price = self._parse_decimal(row.get("cost_price"), Decimal("0"))
-            sale_price = self._parse_decimal(row.get("sale_price"), Decimal("0"))
             min_stock = self._parse_int(row.get("min_stock_level"), 0)
             reorder_point = self._parse_int(row.get("reorder_point"), 0)
 
@@ -119,9 +121,6 @@ class ImportService:
                 "barcode": (row.get("barcode") or "").strip() or None,
                 "description": (row.get("description") or "").strip() or None,
                 "unit_of_measure": (row.get("unit_of_measure") or "").strip() or "un",
-                "cost_price": cost_price,
-                "sale_price": sale_price,
-                "currency": (row.get("currency") or "").strip() or "USD",
                 "product_type_id": (row.get("product_type_id") or "").strip() or None,
                 "min_stock_level": min_stock,
                 "reorder_point": reorder_point,
@@ -166,7 +165,7 @@ class ImportService:
         """Return a CSV template string with example rows."""
         headers = [
             "sku", "name", "barcode", "description", "unit_of_measure",
-            "cost_price", "sale_price", "currency", "product_type_id",
+            "product_type_id",
             "warehouse_id", "initial_stock", "min_stock_level", "reorder_point",
         ]
 
@@ -174,26 +173,26 @@ class ImportService:
 
         if name == "pet_food":
             rows = [
-                ["MP-HPOLLO-001", "Harina de pollo", "", "Harina de subproducto avícola", "kg", "3.50", "0", "USD", "", "", "500", "100", "200"],
-                ["PT-CROQC1K", "Croquetas Cachorro 1kg", "7701234567890", "Alimento premium cachorro", "un", "5.20", "8.90", "USD", "", "", "300", "50", "100"],
-                ["EM-BOLSA1K", "Bolsas 1kg", "", "Empaque metalizado", "un", "0.15", "0", "USD", "", "", "2000", "500", "1000"],
+                ["MP-HPOLLO-001", "Harina de pollo", "", "Harina de subproducto avícola", "kg", "", "", "500", "100", "200"],
+                ["PT-CROQC1K", "Croquetas Cachorro 1kg", "7701234567890", "Alimento premium cachorro", "un", "", "", "300", "50", "100"],
+                ["EM-BOLSA1K", "Bolsas 1kg", "", "Empaque metalizado", "un", "", "", "2000", "500", "1000"],
             ]
         elif name == "technology":
             rows = [
-                ["COMP-I513400", "Procesador Intel i5-13400", "0735858531238", "13th Gen 10 cores", "un", "189.00", "249.00", "USD", "", "", "25", "5", "10"],
-                ["PERI-MON24", "Monitor 24\" FHD 75Hz", "0123456789012", "Panel IPS", "un", "120.00", "179.00", "USD", "", "", "10", "3", "5"],
-                ["ACC-HDMI2M", "Cable HDMI 2m", "", "HDMI 2.1 alta velocidad", "un", "3.50", "8.00", "USD", "", "", "100", "20", "50"],
+                ["COMP-I513400", "Procesador Intel i5-13400", "0735858531238", "13th Gen 10 cores", "un", "", "", "25", "5", "10"],
+                ["PERI-MON24", "Monitor 24\" FHD 75Hz", "0123456789012", "Panel IPS", "un", "", "", "10", "3", "5"],
+                ["ACC-HDMI2M", "Cable HDMI 2m", "", "HDMI 2.1 alta velocidad", "un", "", "", "100", "20", "50"],
             ]
         elif name == "cleaning":
             rows = [
-                ["LH-DETLIQ1L", "Detergente líquido 1L", "7709876543210", "Multiusos concentrado", "un", "1.80", "3.50", "USD", "", "", "200", "50", "100"],
-                ["CP-GELANTI250", "Gel antibacterial 250ml", "", "70% alcohol", "un", "1.80", "4.20", "USD", "", "", "80", "20", "40"],
-                ["IND-DESENG5L", "Desengrasante industrial 5L", "", "Para cocinas industriales", "un", "8.00", "15.00", "USD", "", "", "40", "10", "20"],
+                ["LH-DETLIQ1L", "Detergente líquido 1L", "7709876543210", "Multiusos concentrado", "un", "", "", "200", "50", "100"],
+                ["CP-GELANTI250", "Gel antibacterial 250ml", "", "70% alcohol", "un", "", "", "80", "20", "40"],
+                ["IND-DESENG5L", "Desengrasante industrial 5L", "", "Para cocinas industriales", "un", "", "", "40", "10", "20"],
             ]
         else:
             # basic template — empty example rows
             rows = [
-                ["SKU-001", "Producto ejemplo", "7700000000000", "Descripción", "un", "10.00", "25.00", "USD", "", "", "100", "10", "20"],
+                ["SKU-001", "Producto ejemplo", "7700000000000", "Descripción", "un", "", "", "100", "10", "20"],
             ]
 
         out = io.StringIO()
@@ -223,9 +222,11 @@ class ImportService:
             return {"industry": industry, "error": f"Industria desconocida: {industry}"}
 
         counts: dict[str, int] = {
+            "categories_created": 0,
             "types_created": 0, "types_restored": 0,
             "warehouses_created": 0, "warehouses_restored": 0,
             "suppliers_created": 0, "suppliers_restored": 0,
+            "partners_created": 0,
             "products_created": 0, "products_restored": 0,
             "supplier_types_created": 0, "supplier_types_restored": 0,
             "order_types_created": 0, "order_types_restored": 0,
@@ -237,6 +238,26 @@ class ImportService:
             "event_config_created": 0,
             "events_created": 0,
         }
+
+        # 0. Categories
+        cat_map: dict[str, str] = {}
+        for cat in data.get("categories", []):
+            existing = await self._find_category_by_name(tenant_id, cat["name"])
+            if existing:
+                cat_map[cat["name"]] = existing.id
+            else:
+                try:
+                    obj = await self.category_repo.create(tenant_id, {
+                        "name": cat["name"],
+                        "created_by": user_id,
+                    })
+                    cat_map[cat["name"]] = obj.id
+                    counts["categories_created"] += 1
+                except Exception:
+                    await self.db.rollback()
+                    existing = await self._find_category_by_name(tenant_id, cat["name"])
+                    if existing:
+                        cat_map[cat["name"]] = existing.id
 
         # 1. Product types
         type_map: dict[str, str] = {}
@@ -343,9 +364,9 @@ class ImportService:
                     if existing:
                         wh_map[wh["code"]] = existing.id
 
-        # 5. Suppliers (with supplier_type_id + extra fields)
+        # 5. Suppliers (legacy table for PO FK) + Business Partners (unified table)
         supplier_map: dict[str, str] = {}
-        for sup in data["suppliers"]:
+        for sup in data.get("suppliers", []):
             existing = await self.supplier_repo.get_by_code(sup["code"], tenant_id)
             if existing:
                 if not existing.is_active:
@@ -360,7 +381,6 @@ class ImportService:
                     "code": sup["code"],
                     "created_by": user_id,
                 }
-                # Optional fields from demo data
                 if sup.get("type"):
                     sup_data["supplier_type_id"] = sup_type_map.get(sup["type"])
                 if sup.get("contact"):
@@ -380,6 +400,33 @@ class ImportService:
                     existing = await self.supplier_repo.get_by_code(sup["code"], tenant_id)
                     if existing:
                         supplier_map[sup["code"]] = existing.id
+
+            # Also create in business_partners (unified table)
+            existing_bp = await self.partner_repo.get_by_code(sup["code"], tenant_id)
+            if not existing_bp:
+                bp_data: dict[str, Any] = {
+                    "tenant_id": tenant_id,
+                    "name": sup["name"],
+                    "code": sup["code"],
+                    "is_supplier": True,
+                    "is_customer": False,
+                    "created_by": user_id,
+                }
+                if sup.get("type"):
+                    bp_data["supplier_type_id"] = sup_type_map.get(sup["type"])
+                if sup.get("contact"):
+                    bp_data["contact_name"] = sup["contact"]
+                if sup.get("email"):
+                    bp_data["email"] = sup["email"]
+                if sup.get("phone"):
+                    bp_data["phone"] = sup["phone"]
+                if sup.get("lead_time"):
+                    bp_data["lead_time_days"] = sup["lead_time"]
+                try:
+                    await self.partner_repo.create(bp_data)
+                    counts["partners_created"] += 1
+                except Exception:
+                    await self.db.rollback()
 
         # 6. Products — build product_map (sku → id) for later use
         product_map: dict[str, str] = {}
@@ -406,15 +453,18 @@ class ImportService:
 
             # Create fresh
             product_type_id = type_map.get(p.get("type", ""))
+            category_id = cat_map.get(p.get("cat", ""))
+            reorder_point = p.get("reorder_point", int(stock_qty * 0.2))
+            min_stock = p.get("min_stock", int(stock_qty * 0.1))
             product_data: dict[str, Any] = {
                 "tenant_id": tenant_id,
                 "sku": sku,
                 "name": p["name"],
                 "unit_of_measure": p.get("unit", "un"),
-                "cost_price": Decimal(str(p.get("cost", 0))),
-                "sale_price": Decimal(str(p.get("sale", 0))),
                 "product_type_id": product_type_id,
-                "reorder_point": int(stock_qty * 0.2),
+                "category_id": category_id,
+                "reorder_point": reorder_point,
+                "min_stock_level": min_stock,
                 "created_by": user_id,
             }
             try:
@@ -426,15 +476,37 @@ class ImportService:
                 continue
 
             if wh_id and stock_qty > 0:
+                cost = Decimal(str(p.get("cost", 0)))
+                sale = Decimal(str(p.get("sale", 0)))
                 try:
-                    await self.stock_repo.upsert_level(
+                    # Use stock_service.receive() to create proper stock movements + cost layers
+                    from app.services.stock_service import StockService
+                    stock_svc = StockService(self.db)
+                    await stock_svc.receive(
                         tenant_id=tenant_id,
                         product_id=product.id,
                         warehouse_id=wh_id,
-                        delta=Decimal(str(stock_qty)),
+                        quantity=Decimal(str(stock_qty)),
+                        unit_cost=cost,
+                        reference=f"Demo: {sku}",
+                        performed_by=user_id,
                     )
+                    # Set product cost and price fields
+                    product.last_purchase_cost = cost if cost > 0 else None
+                    if sale > 0:
+                        product.suggested_sale_price = sale
+                    await self.db.flush()
                 except Exception:
-                    pass
+                    # Fallback to simple level upsert if receive fails
+                    try:
+                        await self.stock_repo.upsert_level(
+                            tenant_id=tenant_id,
+                            product_id=product.id,
+                            warehouse_id=wh_id,
+                            delta=Decimal(str(stock_qty)),
+                        )
+                    except Exception:
+                        pass
 
         # 7. Batches — idempotent by (entity_id, batch_number)
         for b in data.get("batches", []):
@@ -678,8 +750,9 @@ class ImportService:
         from app.db.models import (
             EntityRecipe, InventoryEvent,
             Product, ProductionRun, PurchaseOrder,
-            Supplier, Warehouse,
+            Supplier, Warehouse, Category,
         )
+        from app.db.models.partner import BusinessPartner
         from app.db.models.config import OrderType, ProductType, SupplierType
 
         data = DEMO_DATA.get(industry)
@@ -690,6 +763,8 @@ class ImportService:
             "products_deleted": 0,
             "warehouses_deleted": 0,
             "suppliers_deleted": 0,
+            "partners_deleted": 0,
+            "categories_deleted": 0,
             "types_deleted": 0,
             "supplier_types_deleted": 0,
             "order_types_deleted": 0,
@@ -705,6 +780,7 @@ class ImportService:
         product_skus = [p["sku"] for p in data.get("products", [])]
         warehouse_codes = [w["code"] for w in data.get("warehouses", [])]
         supplier_codes = [s["code"] for s in data.get("suppliers", [])]
+        category_names = [c["name"] for c in data.get("categories", [])]
         recipe_names = [r["name"] for r in data.get("recipes", [])]
         production_run_notes = [f"Demo: {pr['recipe_name']}" for pr in data.get("production_runs", [])]
         event_titles = [e["title"] for e in data.get("events", [])]
@@ -788,12 +864,17 @@ class ImportService:
                 "products_deleted",
             )
 
-        # 6. Suppliers by code
+        # 6. Suppliers by code + Business Partners by code
         if supplier_codes:
             await _bulk_delete(
                 Supplier,
                 [Supplier.tenant_id == tenant_id, Supplier.code.in_(supplier_codes)],
                 "suppliers_deleted",
+            )
+            await _bulk_delete(
+                BusinessPartner,
+                [BusinessPartner.tenant_id == tenant_id, BusinessPartner.code.in_(supplier_codes)],
+                "partners_deleted",
             )
 
         # 7. Warehouses by code (DB CASCADE: locations, remaining stock_levels)
@@ -822,6 +903,14 @@ class ImportService:
                 ProductType,
                 [ProductType.tenant_id == tenant_id, ProductType.name.in_(product_type_names)],
                 "types_deleted",
+            )
+
+        # 9. Categories by name
+        if category_names:
+            await _bulk_delete(
+                Category,
+                [Category.tenant_id == tenant_id, Category.name.in_(category_names)],
+                "categories_deleted",
             )
 
         return {
@@ -906,6 +995,16 @@ class ImportService:
                 warehouse_id=warehouse_id,
                 delta=target,
             )
+
+    async def _find_category_by_name(self, tenant_id: str, name: str):
+        """Find a category by name."""
+        from app.db.models import Category
+        stmt = select(Category).where(
+            Category.tenant_id == tenant_id,
+            Category.name == name,
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def _find_product_type_by_name(self, tenant_id: str, name: str):
         """Find a product type by name."""

@@ -398,13 +398,13 @@ function CountItemRow({
                 min="0"
                 value={localQty}
                 onChange={(e) => setLocalQty(e.target.value)}
-                className="w-24 rounded-lg border border-slate-200 px-2 py-1 text-sm text-right focus:ring-2 focus:ring-indigo-500"
+                className="w-24 rounded-lg border border-slate-200 px-2 py-1 text-sm text-right focus:ring-2 focus:ring-ring"
                 autoFocus
               />
               <button
                 onClick={handleSave}
                 disabled={recordMut.isPending || localQty === ''}
-                className="px-2 py-1 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                className="px-2 py-1 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50"
               >
                 {recordMut.isPending ? '...' : 'OK'}
               </button>
@@ -418,7 +418,7 @@ function CountItemRow({
           ) : editable ? (
             <button
               onClick={() => setEditing(true)}
-              className="font-mono text-indigo-600 hover:underline cursor-pointer"
+              className="font-mono text-primary hover:underline cursor-pointer"
             >
               {item.counted_qty !== null ? parseFloat(item.counted_qty).toFixed(2) : '---'}
             </button>
@@ -463,7 +463,7 @@ function CountItemRow({
               value={localNotes}
               onChange={(e) => setLocalNotes(e.target.value)}
               placeholder="Notas..."
-              className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:ring-2 focus:ring-ring"
             />
           ) : (
             item.notes || '-'

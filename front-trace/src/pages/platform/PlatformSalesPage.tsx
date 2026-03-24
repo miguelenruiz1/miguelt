@@ -29,7 +29,7 @@ export function PlatformSalesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     )
   }
@@ -38,7 +38,7 @@ export function PlatformSalesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/platform" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600 mb-2">
+        <Link to="/platform" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-primary mb-2">
           <ArrowLeft className="h-4 w-4" /> Panel
         </Link>
         <h1 className="text-2xl font-bold text-slate-900">Ventas & Cobros</h1>
@@ -99,7 +99,7 @@ export function PlatformSalesPage() {
                   <div className="flex-1 min-w-0">
                     <Link
                       to={`/platform/tenants/${encodeURIComponent(s.tenant_id)}`}
-                      className="text-sm font-semibold text-indigo-600 hover:underline"
+                      className="text-sm font-semibold text-primary hover:underline"
                     >
                       {s.tenant_id}
                     </Link>
@@ -116,7 +116,7 @@ export function PlatformSalesPage() {
                       {s.current_period_end ? new Date(s.current_period_end).toLocaleDateString('es') : '-'}
                     </p>
                   </div>
-                  <Link to={`/platform/tenants/${encodeURIComponent(s.tenant_id)}`} className="text-slate-400 hover:text-indigo-600">
+                  <Link to={`/platform/tenants/${encodeURIComponent(s.tenant_id)}`} className="text-slate-400 hover:text-primary">
                     <ChevronRight className="h-4 w-4" />
                   </Link>
                 </div>
@@ -189,7 +189,7 @@ export function PlatformSalesPage() {
                   <td className="px-5 py-2.5">
                     <Link
                       to={`/platform/tenants/${encodeURIComponent(inv.tenant_id)}`}
-                      className="text-indigo-600 hover:underline"
+                      className="text-primary hover:underline"
                     >
                       {inv.tenant_id}
                     </Link>
@@ -218,7 +218,7 @@ export function PlatformSalesPage() {
                 <div className="flex-1 min-w-0">
                   <Link
                     to={`/platform/tenants/${encodeURIComponent(s.tenant_id)}`}
-                    className="text-sm font-semibold text-slate-700 hover:text-indigo-600"
+                    className="text-sm font-semibold text-slate-700 hover:text-primary"
                   >
                     {s.tenant_id}
                   </Link>

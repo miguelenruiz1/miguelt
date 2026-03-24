@@ -18,9 +18,6 @@ class ProductCreate(BaseModel):
     product_type_id: str | None = None
     category_id: str | None = None
     unit_of_measure: str = Field("un", max_length=50)
-    cost_price: Decimal = Decimal("0")
-    sale_price: Decimal = Decimal("0")
-    currency: str = Field("USD", max_length=3)
     is_active: bool = True
     track_batches: bool = False
     min_stock_level: int = 0
@@ -33,6 +30,10 @@ class ProductCreate(BaseModel):
     retention_rate: Decimal | None = None
     images: list[Any] = []
     attributes: dict[str, Any] = {}
+    margin_target: Decimal | None = None
+    margin_minimum: Decimal | None = None
+    margin_cost_method: str = "last_purchase"
+    preferred_currency: str = "COP"
 
 
 class ProductUpdate(BaseModel):
@@ -43,9 +44,6 @@ class ProductUpdate(BaseModel):
     product_type_id: str | None = None
     category_id: str | None = None
     unit_of_measure: str | None = Field(default=None, max_length=50)
-    cost_price: Decimal | None = None
-    sale_price: Decimal | None = None
-    currency: str | None = Field(default=None, max_length=3)
     is_active: bool | None = None
     track_batches: bool | None = None
     min_stock_level: int | None = None
@@ -58,6 +56,10 @@ class ProductUpdate(BaseModel):
     retention_rate: Decimal | None = None
     images: list[Any] | None = None
     attributes: dict[str, Any] | None = None
+    margin_target: Decimal | None = None
+    margin_minimum: Decimal | None = None
+    margin_cost_method: str | None = None
+    preferred_currency: str | None = None
 
 
 class ProductOut(OrmBase):
@@ -70,9 +72,6 @@ class ProductOut(OrmBase):
     product_type_id: str | None
     category_id: str | None = None
     unit_of_measure: str
-    cost_price: Decimal
-    sale_price: Decimal
-    currency: str
     is_active: bool
     track_batches: bool
     min_stock_level: int
@@ -80,6 +79,16 @@ class ProductOut(OrmBase):
     reorder_quantity: int
     preferred_supplier_id: str | None = None
     auto_reorder: bool = False
+    valuation_method: str = "weighted_average"
+    margin_target: Decimal | None = None
+    margin_minimum: Decimal | None = None
+    margin_cost_method: str = "last_purchase"
+    last_purchase_cost: Decimal | None = None
+    last_purchase_date: datetime | None = None
+    last_purchase_supplier: str | None = None
+    suggested_sale_price: Decimal | None = None
+    minimum_sale_price: Decimal | None = None
+    preferred_currency: str = "COP"
     tax_rate_id: str | None = None
     is_tax_exempt: bool = False
     retention_rate: Decimal | None = None

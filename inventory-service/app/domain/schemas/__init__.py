@@ -17,7 +17,7 @@ from app.domain.schemas.stock import (
 from app.domain.schemas.supplier import SupplierCreate, SupplierUpdate, SupplierOut, PaginatedSuppliers
 from app.domain.schemas.purchase_order import (
     POLineCreate, POCreate, POUpdate, POLineOut, POOut, PaginatedPOs,
-    LineReceiptIn, ReceivePOIn,
+    LineReceiptIn, ReceivePOIn, PORejectIn, POApprovalLogOut, POKPIs,
     ConsolidateRequest, ConsolidationCandidate, ConsolidationResult, ConsolidationInfo,
 )
 from app.domain.schemas.config import (
@@ -58,7 +58,17 @@ from app.domain.schemas.cycle_count import (
     CycleCountItemOut, CycleCountOut, PaginatedCycleCounts,
     IRASnapshotOut, IRAComputeOut, FeasibilityOut, ProductDiscrepancyOut,
 )
+from app.domain.schemas.uom import (
+    UoMCreate, UoMOut, UoMConversionCreate, UoMConversionOut,
+    ConvertRequest, ConvertResponse,
+)
+from app.domain.schemas.cost_history import ProductCostHistoryOut, PaginatedCostHistory
+from app.domain.schemas.pricing import (
+    ProductPricingOut, MarginUpdateIn,
+    GlobalMarginOut, GlobalMarginUpdateIn,
+)
 from app.domain.schemas.audit import AuditLogOut, PaginatedAuditLogs
+from app.domain.schemas.partner import PartnerCreate, PartnerUpdate, PartnerOut, PaginatedPartners
 from app.domain.schemas.pagination import (
     PaginatedRecipes, PaginatedWarehouses,
     PaginatedCustomerTypes, PaginatedLocations,
@@ -137,4 +147,14 @@ __all__ = [
     "PaginatedSerialStatuses",
     "PaginatedCustomFields", "PaginatedCustomSupplierFields",
     "PaginatedCustomWarehouseFields", "PaginatedCustomMovementFields",
+    # UoM
+    "UoMCreate", "UoMOut", "UoMConversionCreate", "UoMConversionOut",
+    "ConvertRequest", "ConvertResponse",
+    # Cost History
+    "ProductCostHistoryOut", "PaginatedCostHistory",
+    # Pricing
+    "ProductPricingOut", "MarginUpdateIn",
+    "GlobalMarginOut", "GlobalMarginUpdateIn",
+    # Partner
+    "PartnerCreate", "PartnerUpdate", "PartnerOut", "PaginatedPartners",
 ]

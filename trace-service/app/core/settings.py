@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     IDEMPOTENCY_TTL: int = 86400  # 24h in seconds
 
     # ─── Solana ───────────────────────────────────────────────────────────────
+    # Switch: SOLANA_SIMULATION=true  → SimulationProvider (sin red, dev rápido)
+    #         SOLANA_SIMULATION=false → conexión real (Helius si hay API key, RPC directo si no)
+    SOLANA_NETWORK: Literal["devnet", "mainnet-beta"] = "devnet"
     SOLANA_RPC_URL: str = "https://api.devnet.solana.com"
     SOLANA_KEYPAIR: str = Field(default="", description="base58 keypair or file path")
     SOLANA_SIMULATION: bool = True
@@ -42,9 +45,33 @@ class Settings(BaseSettings):
     SOLANA_CIRCUIT_BREAKER_RECOVERY: int = 60  # seconds
 
     # ─── Helius ───────────────────────────────────────────────────────────────
-    HELIUS_API_KEY: str = ""           # empty = use SimulationProvider
-    HELIUS_RPC_URL: str = "https://devnet.helius-rpc.com"
-    HELIUS_NETWORK: str = "devnet"     # devnet | mainnet-beta
+    HELIUS_API_KEY: str = ""           # empty + SIMULATION=false → RPC directo
+    HELIUS_RPC_URL: str = ""           # auto-resolved from SOLANA_NETWORK if empty
+
+    @property
+    def effective_helius_rpc_url(self) -> str:
+        """Helius RPC URL resolved from network if not explicitly set."""
+        if self.HELIUS_RPC_URL:
+            return self.HELIUS_RPC_URL
+        if self.SOLANA_NETWORK == "mainnet-beta":
+            return "https://mainnet.helius-rpc.com"
+        return "https://devnet.helius-rpc.com"
+
+    @property
+    def effective_solana_rpc_url(self) -> str:
+        """Best RPC URL: Helius if available, else SOLANA_RPC_URL."""
+        if self.HELIUS_API_KEY:
+            return f"{self.effective_helius_rpc_url}/?api-key={self.HELIUS_API_KEY}"
+        return self.SOLANA_RPC_URL
+
+    @property
+    def blockchain_mode(self) -> str:
+        """Current mode: simulation | helius | rpc-direct."""
+        if self.SOLANA_SIMULATION:
+            return "simulation"
+        if self.HELIUS_API_KEY:
+            return "helius"
+        return "rpc-direct"
 
     # ─── Security ─────────────────────────────────────────────────────────────
     TRACE_ADMIN_KEY: str = "change-me-in-production"

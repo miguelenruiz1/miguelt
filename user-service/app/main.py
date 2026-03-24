@@ -92,6 +92,8 @@ def create_app() -> FastAPI:
     from app.api.routers.email_templates import router as email_templates_router
     from app.api.routers.email_config import router as email_config_router
     from app.api.routers.email_providers import router as email_providers_router
+    from app.api.routers.notifications import router as notifications_router
+    from app.api.routers.onboarding import router as onboarding_router
 
     # ─── Static files (uploads) ──────────────────────────────────────────────
     from pathlib import Path
@@ -110,6 +112,8 @@ def create_app() -> FastAPI:
     app.include_router(email_templates_router)
     app.include_router(email_config_router)
     app.include_router(email_providers_router)
+    app.include_router(notifications_router)
+    app.include_router(onboarding_router)
 
     return app
 

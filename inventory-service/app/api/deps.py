@@ -146,6 +146,55 @@ async def require_inventory_module(
 ModuleUser = Annotated[dict, Depends(require_inventory_module)]
 
 
+async def require_production_module(
+    current_user: CurrentUser,
+    redis: Annotated[aioredis.Redis, Depends(get_redis)],
+    http_client: Annotated[httpx.AsyncClient, Depends(get_http_client)],
+) -> dict:
+    """Gate that checks both 'inventory' AND 'production' modules are active."""
+    tenant_id = current_user.get("tenant_id")
+    if not tenant_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tenant context")
+
+    settings = get_settings()
+
+    for slug in ("inventory", "production"):
+        cache_key = f"module:{tenant_id}:{slug}"
+        cached = await redis.get(cache_key)
+        if cached == "1":
+            continue
+        if cached == "0":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Module '{slug}' is not active for this tenant",
+            )
+
+        # Fallback to subscription-service
+        try:
+            resp = await http_client.get(
+                f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/modules/{tenant_id}/{slug}"
+            )
+        except httpx.RequestError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"No se pudo verificar el módulo '{slug}'. Intente más tarde.",
+            )
+
+        active = resp.status_code == 200 and resp.json().get("is_active", False)
+        await redis.setex(cache_key, settings.MODULE_CACHE_TTL, "1" if active else "0")
+
+        if not active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Module '{slug}' is not active for this tenant",
+            )
+
+    return current_user
+
+
+ProductionModuleUser = Annotated[dict, Depends(require_production_module)]
+
+
 async def is_einvoicing_active(
     tenant_id: str,
     redis: aioredis.Redis | None = None,

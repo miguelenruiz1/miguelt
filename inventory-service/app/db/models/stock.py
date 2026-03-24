@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     DateTime, ForeignKey, Index, Numeric, String, Text, UniqueConstraint, func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -17,6 +18,7 @@ from sqlalchemy import Enum, Integer
 if TYPE_CHECKING:
     from app.db.models.config import DynamicMovementType
     from app.db.models.entity import Product
+    from app.db.models.events import InventoryEvent
     from app.db.models.variant import ProductVariant
     from app.db.models.warehouse import Warehouse, WarehouseLocation
     from app.db.models.tracking import EntityBatch
@@ -108,6 +110,11 @@ class StockMovement(Base):
     )
     batch_number:      Mapped[str | None]     = mapped_column(String(100), nullable=True)
     performed_by:      Mapped[str | None]     = mapped_column(String(255), nullable=True)
+    event_id:          Mapped[str | None]     = mapped_column(
+        String(36), ForeignKey("inventory_events.id", ondelete="SET NULL"), nullable=True
+    )
+    cost_total:        Mapped[Decimal | None] = mapped_column(Numeric(14, 4), nullable=True)
+    layer_consumed_ids: Mapped[list | None]   = mapped_column(JSONB, nullable=True)
     status:            Mapped[str]            = mapped_column(String(20), nullable=False, server_default="completed")
     completed_at:      Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at:        Mapped[DateTime]       = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -119,6 +126,7 @@ class StockMovement(Base):
     from_warehouse: Mapped[Warehouse | None] = relationship("Warehouse", foreign_keys=[from_warehouse_id])
     to_warehouse:   Mapped[Warehouse | None] = relationship("Warehouse", foreign_keys=[to_warehouse_id])
     batch:          Mapped[EntityBatch | None] = relationship("EntityBatch", lazy="noload")
+    event:          Mapped[InventoryEvent | None] = relationship("InventoryEvent", foreign_keys=[event_id])
 
     __table_args__ = (
         Index("ix_stock_movements_tenant_id", "tenant_id"),

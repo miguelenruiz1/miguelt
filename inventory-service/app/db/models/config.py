@@ -48,6 +48,7 @@ class ProductType(Base):
     default_category_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("categories.id", ondelete="SET NULL"), nullable=True
     )
+    sku_prefix:      Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     products: Mapped[list[Product]] = relationship("Product", back_populates="product_type")
     default_category: Mapped[Category | None] = relationship("Category", foreign_keys=[default_category_id])

@@ -14,6 +14,7 @@ from app.repositories.movement_repo import MovementRepository
 from app.repositories.product_repo import ProductRepository
 from app.repositories.stock_repo import StockRepository
 from app.repositories.warehouse_repo import WarehouseRepository
+from app.services.costing_engine import CostingEngine
 
 
 class StockService:
@@ -39,20 +40,14 @@ class StockService:
         return p
 
     def _to_primary_qty(self, qty: Decimal, uom: str, product: Product) -> Decimal:
-        """Convert quantity from the given UoM to the product's primary UoM."""
-        if uom == "primary" or not product.secondary_uom:
-            if uom != "primary" and not product.secondary_uom:
-                raise ValidationError(
-                    f"Product {product.sku} has no secondary UoM configured"
-                )
+        """Convert quantity from the given UoM to the product's primary UoM.
+
+        Secondary UoM / conversion factor fields have been removed from Product.
+        Only primary UoM is supported; any other value raises an error.
+        """
+        if uom == "primary":
             return qty
-        if uom == product.secondary_uom or uom == "secondary":
-            if not product.uom_conversion_factor:
-                raise ValidationError(
-                    f"Product {product.sku} has no conversion factor defined"
-                )
-            return (qty / product.uom_conversion_factor).quantize(Decimal("0.0001"))
-        raise ValidationError(f"Unknown UoM '{uom}' for product {product.sku}")
+        raise ValidationError(f"Unknown UoM '{uom}' for product {product.sku}. Only primary UoM is supported.")
 
     async def _get_product_type(self, product_id: str, tenant_id: str) -> ProductType | None:
         """Load the ProductType for a given product, if any."""
@@ -89,6 +84,8 @@ class StockService:
         await self._assert_warehouse(warehouse_id, tenant_id)
         if quantity <= 0:
             raise ValidationError("Quantity must be positive")
+        if unit_cost is None or unit_cost <= 0:
+            raise ValidationError("El costo unitario es obligatorio y debe ser mayor a cero para ingresar mercancía al inventario")
 
         qty_primary = self._to_primary_qty(quantity, uom, product)
 
@@ -105,7 +102,7 @@ class StockService:
                 level.location_id = pt.entry_rule_location_id
             await self.db.flush()
 
-        return await self.movement_repo.create({
+        movement = await self.movement_repo.create({
             "tenant_id": tenant_id,
             "movement_type": MovementType.purchase,
             "product_id": product_id,
@@ -120,6 +117,21 @@ class StockService:
             "performed_by": performed_by,
             "variant_id": variant_id,
         })
+
+        # Costing engine: create layer for incoming stock
+        if unit_cost is not None and unit_cost > 0:
+            engine = CostingEngine(self.db)
+            await engine.on_stock_in(
+                tenant_id=tenant_id,
+                product_id=product_id,
+                warehouse_id=warehouse_id,
+                quantity=qty_primary,
+                unit_cost=unit_cost,
+                movement_id=movement.id,
+                batch_id=batch_id,
+            )
+
+        return movement
 
     async def issue(
         self,
@@ -179,6 +191,18 @@ class StockService:
                 )
             await self.stock_repo.upsert_level(tenant_id, product_id, warehouse_id, -qty_primary, batch_id, variant_id=variant_id)
 
+            # Costing engine: calculate COGS
+            engine = CostingEngine(self.db)
+            valuation = product.valuation_method if product else "weighted_average"
+            cost_total_val, layer_ids = await engine.on_stock_out(
+                tenant_id=tenant_id,
+                product_id=product_id,
+                warehouse_id=warehouse_id,
+                quantity=qty_primary,
+                valuation_method=valuation or "weighted_average",
+            )
+            cost_unit = cost_total_val / qty_primary if qty_primary else Decimal("0")
+
             return await self.movement_repo.create({
                 "tenant_id": tenant_id,
                 "movement_type": MovementType.sale,
@@ -187,6 +211,9 @@ class StockService:
                 "quantity": qty_primary,
                 "original_qty": quantity if uom != "primary" else None,
                 "uom": uom,
+                "unit_cost": cost_unit,
+                "cost_total": cost_total_val,
+                "layer_consumed_ids": layer_ids,
                 "reference": reference,
                 "notes": notes,
                 "performed_by": performed_by,
@@ -712,13 +739,14 @@ class StockService:
         )
         out_of_stock_count = result2.scalar_one()
 
-        # Total inventory value (qty_on_hand * cost_price)
+        # Total inventory value (qty_on_hand * weighted_avg_cost)
         result3 = await self.db.execute(
-            select(func.coalesce(func.sum(StockLevel.qty_on_hand * Product.cost_price), 0))
-            .join(Product, StockLevel.product_id == Product.id)
+            select(func.coalesce(
+                func.sum(StockLevel.qty_on_hand * func.coalesce(StockLevel.weighted_avg_cost, 0)),
+                0
+            ))
             .where(
                 StockLevel.tenant_id == tenant_id,
-                Product.is_active == True,  # noqa: E712
             )
         )
         total_value = float(result3.scalar_one())

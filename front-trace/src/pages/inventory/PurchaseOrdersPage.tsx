@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useMemo, useEffect } from 'react'
+import { useFormValidation } from '@/hooks/useFormValidation'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { Plus, ShoppingCart, GitMerge, X, Check, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -12,14 +14,34 @@ import {
   useConsolidatePOs,
   useConsolidationCandidates,
 } from '@/hooks/useInventory'
+import { inventoryPricingApi } from '@/lib/inventory-api'
+
+function CostHistoryHint({ productId }: { productId: string }) {
+  const { data } = useQuery({
+    queryKey: ['inventory', 'product-pricing', productId],
+    queryFn: () => inventoryPricingApi.getProductPricing(productId),
+    enabled: !!productId,
+    staleTime: 30_000,
+  })
+  if (!data || !data.last_purchase_cost) return null
+  return (
+    <div className="text-xs text-gray-500 mt-1 p-2 bg-amber-50 rounded col-span-full">
+      Última compra: <span className="font-medium">${Number(data.last_purchase_cost).toLocaleString('es-CO')}{data.last_purchase_supplier ? ` — ${data.last_purchase_supplier}` : ''}</span>
+      {data.suggested_sale_price != null && <span className="ml-2">| Precio sugerido: <span className="font-medium text-green-700">${Number(data.suggested_sale_price).toLocaleString('es-CO')}</span></span>}
+    </div>
+  )
+}
+import { useAuthStore } from '@/store/auth'
 import { useUserLookup } from '@/hooks/useUserLookup'
 import { VariantPicker } from '@/components/inventory/VariantPicker'
 import type { PurchaseOrder, POStatus, ConsolidationCandidate, ConsolidationResult } from '@/types/inventory'
 
 const STATUS_CONFIG: Record<POStatus, { label: string; color: string; icon?: typeof GitMerge }> = {
   draft: { label: 'Borrador', color: 'bg-slate-100 text-slate-600' },
+  pending_approval: { label: 'Pend. Aprobación', color: 'bg-orange-50 text-orange-700' },
+  approved: { label: 'Aprobada', color: 'bg-indigo-50 text-indigo-700' },
   sent: { label: 'Enviada', color: 'bg-blue-50 text-blue-700' },
-  confirmed: { label: 'Confirmada', color: 'bg-indigo-50 text-indigo-700' },
+  confirmed: { label: 'Confirmada', color: 'bg-cyan-50 text-cyan-700' },
   partial: { label: 'Parcial', color: 'bg-amber-50 text-amber-700' },
   received: { label: 'Recibida', color: 'bg-emerald-50 text-emerald-700' },
   canceled: { label: 'Cancelada', color: 'bg-red-50 text-red-600' },
@@ -52,8 +74,9 @@ function CreatePOModal({ onClose }: { onClose: () => void }) {
     setLines((l) => l.map((line, idx) => idx === i ? { ...line, [key]: value } : line))
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
+
+  async function doSubmit() {
     await create.mutateAsync({
       ...form,
       lines: lines.map((l) => ({ product_id: l.product_id, variant_id: l.variant_id || null, qty_ordered: l.qty_ordered, unit_cost: l.unit_cost })),
@@ -65,57 +88,60 @@ function CreatePOModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-bold text-slate-900 mb-4">Nueva Orden de Compra</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form ref={formRef} onSubmit={validateAndSubmit} className="space-y-3" noValidate>
           <select required value={form.supplier_id} onChange={(e) => setForm((f) => ({ ...f, supplier_id: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="">Proveedor *</option>
             {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
-          <select value={form.warehouse_id} onChange={(e) => setForm((f) => ({ ...f, warehouse_id: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-            <option value="">Bodega destino</option>
+          <select required value={form.warehouse_id} onChange={(e) => setForm((f) => ({ ...f, warehouse_id: e.target.value }))}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="">Bodega destino *</option>
             {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
           <input type="date" value={form.expected_date} onChange={(e) => setForm((f) => ({ ...f, expected_date: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             placeholder="Notas" rows={2}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none" />
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
 
           {/* Lines */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Lineas</p>
-              <button type="button" onClick={addLine} className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">+ Linea</button>
+              <button type="button" onClick={addLine} className="text-xs text-primary hover:text-primary font-semibold">+ Linea</button>
             </div>
             {lines.map((line, i) => (
-              <div key={i} className="flex gap-2 items-center">
-                <select required value={line.product_id} onChange={(e) => setLines(l => l.map((ln, idx) => idx === i ? { ...ln, product_id: e.target.value, variant_id: '' } : ln))}
-                  className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                  <option value="">Producto</option>
-                  {productsData?.items?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-                <VariantPicker
-                  productId={line.product_id || undefined}
-                  value={line.variant_id}
-                  onChange={v => updateLine(i, 'variant_id', v)}
-                />
-                <input type="number" min="0.01" step="0.01" required value={line.qty_ordered}
-                  onChange={(e) => updateLine(i, 'qty_ordered', e.target.value)}
-                  placeholder="Qty" className="w-16 rounded-xl border border-slate-200 px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-                <input type="number" min="0" step="0.01" required value={line.unit_cost}
-                  onChange={(e) => updateLine(i, 'unit_cost', e.target.value)}
-                  placeholder="Costo" className="w-20 rounded-xl border border-slate-200 px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-                {lines.length > 1 && (
-                  <button type="button" onClick={() => removeLine(i)} className="text-slate-400 hover:text-red-500 font-bold text-lg leading-none">&times;</button>
-                )}
+              <div key={i}>
+                <div className="flex gap-2 items-center">
+                  <select required value={line.product_id} onChange={(e) => setLines(l => l.map((ln, idx) => idx === i ? { ...ln, product_id: e.target.value, variant_id: '' } : ln))}
+                    className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring">
+                    <option value="">Producto</option>
+                    {productsData?.items?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                  <VariantPicker
+                    productId={line.product_id || undefined}
+                    value={line.variant_id}
+                    onChange={v => updateLine(i, 'variant_id', v)}
+                  />
+                  <input type="number" min="0.01" step="0.01" required value={line.qty_ordered}
+                    onChange={(e) => updateLine(i, 'qty_ordered', e.target.value)}
+                    placeholder="Qty" className="w-16 rounded-xl border border-slate-200 px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring" />
+                  <input type="number" min="0.01" step="0.01" required value={line.unit_cost}
+                    onChange={(e) => updateLine(i, 'unit_cost', e.target.value)}
+                    placeholder="Costo *" className="w-20 rounded-xl border border-slate-200 px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring" />
+                  {lines.length > 1 && (
+                    <button type="button" onClick={() => removeLine(i)} className="text-slate-400 hover:text-red-500 font-bold text-lg leading-none">&times;</button>
+                  )}
+                </div>
+                {line.product_id && <CostHistoryHint productId={line.product_id} />}
               </div>
             ))}
           </div>
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
-            <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {create.isPending ? 'Creando...' : 'Crear OC'}
             </button>
           </div>
@@ -193,7 +219,7 @@ function ConsolidatePreviewModal({
           <div className="bg-slate-50 rounded-xl p-3 mb-4 space-y-1 text-sm">
             <p className="text-slate-700">
               <span className="font-semibold">Nueva OC:</span>{' '}
-              <span className="font-mono text-indigo-600">{result.consolidated_po.po_number}</span>
+              <span className="font-mono text-primary">{result.consolidated_po.po_number}</span>
             </p>
             <p className="text-slate-700">
               <span className="font-semibold">OC originales:</span> {result.original_pos.length}
@@ -211,7 +237,7 @@ function ConsolidatePreviewModal({
             </button>
             <button
               onClick={() => navigate(`/inventario/compras/${result.consolidated_po.id}`)}
-              className="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+              className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90"
             >
               Ver OC consolidada
             </button>
@@ -245,7 +271,7 @@ function ConsolidatePreviewModal({
                 const poTotal = (po.lines ?? []).reduce((s, l) => s + Number(l.line_total), 0)
                 return (
                   <tr key={po.id}>
-                    <td className="px-3 py-2 font-mono text-xs text-indigo-600 font-semibold">{po.po_number}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-primary font-semibold">{po.po_number}</td>
                     <td className="px-3 py-2 text-slate-700">{supplierMap[po.supplier_id] ?? po.supplier_id.slice(0, 8)}</td>
                     <td className="px-3 py-2 text-right text-slate-600">{po.lines?.length ?? 0}</td>
                     <td className="px-3 py-2 text-right font-mono text-slate-600">${poTotal.toLocaleString('es', { minimumFractionDigits: 2 })}</td>
@@ -352,7 +378,7 @@ function CandidatesModal({
             </button>
             <button
               onClick={() => navigate(`/inventario/compras/${successResult.consolidated_po.id}`)}
-              className="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+              className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90"
             >
               Ver OC consolidada
             </button>
@@ -408,7 +434,7 @@ function CandidatesModal({
                           onChange={() => togglePO(candidate.supplier_id, po.id)}
                           className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="font-mono text-xs text-indigo-600 font-semibold">{po.po_number}</span>
+                        <span className="font-mono text-xs text-primary font-semibold">{po.po_number}</span>
                         <span className="text-sm text-slate-600 flex-1">{po.lines?.length ?? 0} lineas</span>
                         <span className="text-sm font-mono text-slate-600">${poTotal.toLocaleString('es', { minimumFractionDigits: 2 })}</span>
                       </label>
@@ -434,6 +460,7 @@ function CandidatesModal({
 
 export function PurchaseOrdersPage() {
   const navigate = useNavigate()
+  const { hasPermission } = useAuthStore()
   const { data, isLoading } = usePurchaseOrders()
   const { data: suppliers = [] } = useSuppliers()
   const { data: productsData } = useProducts({ limit: 200 })
@@ -443,6 +470,8 @@ export function PurchaseOrdersPage() {
   const [showConsolidate, setShowConsolidate] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [error, setError] = useState('')
+  const location = useLocation()
+  useEffect(() => { setShowCreate(false) }, [location.key])
 
   const { resolve } = useUserLookup(data?.items.map(po => po.created_by) ?? [])
   const supplierMap = Object.fromEntries(suppliers.map((s) => [s.id, s.name]))
@@ -478,10 +507,12 @@ export function PurchaseOrdersPage() {
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">Ordenes de Compra</h1>
-        <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm">
-          <Plus className="h-4 w-4" /> Nueva OC
-        </button>
+        {hasPermission('purchase_orders.create') && (
+          <button onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm">
+            <Plus className="h-4 w-4" /> Nueva OC
+          </button>
+        )}
       </div>
 
       {/* Consolidation suggestions banner */}
@@ -548,7 +579,7 @@ export function PurchaseOrdersPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 cursor-pointer" onClick={() => navigate(`/inventario/compras/${po.id}`)}>
-                      <span className="font-mono text-xs font-semibold text-indigo-600">{po.po_number}</span>
+                      <span className="font-mono text-xs font-semibold text-primary">{po.po_number}</span>
                       {po.is_auto_generated && (
                         <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">Auto</span>
                       )}

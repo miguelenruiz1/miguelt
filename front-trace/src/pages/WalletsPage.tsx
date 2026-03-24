@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Plus, Search, RefreshCw, Wallet, KeyRound } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { Spinner, EmptyState, Card } from '@/components/ui/Misc'
 import { WalletTable } from '@/components/wallets/WalletTable'
 import { RegisterWalletModal } from '@/components/wallets/RegisterWalletModal'
@@ -10,7 +10,7 @@ import { useWalletList } from '@/hooks/useWallets'
 import { useOrganizations } from '@/hooks/useTaxonomy'
 import type { Wallet as WalletType } from '@/types/api'
 
-const fieldCls = 'rounded-xl border border-white/60 bg-white/50 backdrop-blur-md px-4 py-2.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 hover:bg-white/70 hover:border-indigo-300 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all shadow-sm'
+const fieldCls = 'rounded-xl border border-white/60 bg-white/50 backdrop-blur-md px-4 py-2.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 hover:bg-white/70 hover:border-primary/50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-ring/20 focus:outline-none transition-all shadow-sm'
 
 export function WalletsPage() {
   const [showRegister, setShowRegister] = useState(false)

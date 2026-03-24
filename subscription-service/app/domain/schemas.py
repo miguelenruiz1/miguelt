@@ -141,6 +141,8 @@ class InvoiceResponse(BaseModel):
     due_date: date | None
     paid_at: datetime | None
     line_items: list[Any]
+    gateway_tx_id: str | None = None
+    gateway_slug: str | None = None
     notes: str | None
     created_at: datetime
     updated_at: datetime

@@ -58,7 +58,7 @@ function TemplatesTab() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     )
   }
@@ -73,11 +73,11 @@ function TemplatesTab() {
         <button
           key={tpl.id}
           onClick={() => setSelectedId(tpl.id)}
-          className="text-left bg-white rounded-2xl border border-slate-200 p-5 hover:border-indigo-300 hover:shadow-md transition-all"
+          className="text-left bg-white rounded-2xl border border-slate-200 p-5 hover:border-primary/50 hover:shadow-md transition-all"
         >
           <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100">
-              <Mail className="h-5 w-5 text-indigo-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
+              <Mail className="h-5 w-5 text-primary" />
             </div>
             <div>
               <p className="font-semibold text-slate-800 text-sm">{tpl.slug.replace(/_/g, ' ')}</p>
@@ -171,7 +171,7 @@ function TemplateEditor({ template, onBack }: { template: EmailTemplate; onBack:
           <button
             onClick={handleSave}
             disabled={!isDirty || update.isPending}
-            className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             {update.isPending ? 'Guardando...' : 'Guardar'}
@@ -219,7 +219,7 @@ function TemplateEditor({ template, onBack }: { template: EmailTemplate; onBack:
               <button
                 onClick={() => setIsActive((p) => !p)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  isActive ? 'bg-indigo-600' : 'bg-slate-300'
+                  isActive ? 'bg-primary' : 'bg-slate-300'
                 }`}
               >
                 <span
@@ -234,7 +234,7 @@ function TemplateEditor({ template, onBack }: { template: EmailTemplate; onBack:
               <input
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <div className="p-4 flex items-center gap-4">
@@ -242,7 +242,7 @@ function TemplateEditor({ template, onBack }: { template: EmailTemplate; onBack:
               <input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <div className="p-4">
@@ -251,7 +251,7 @@ function TemplateEditor({ template, onBack }: { template: EmailTemplate; onBack:
                 value={htmlBody}
                 onChange={(e) => setHtmlBody(e.target.value)}
                 rows={20}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <p className="text-xs text-slate-400 mt-2">
                 Variables disponibles: $user_name, $user_email, $link, $app_name, $tenant_name
@@ -321,7 +321,7 @@ function SmtpConfigTab() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     )
   }
@@ -341,7 +341,7 @@ function SmtpConfigTab() {
               value={smtpHost}
               onChange={(e) => setSmtpHost(e.target.value)}
               placeholder="smtp.ejemplo.com"
-              className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div className="p-4 flex items-center gap-4">
@@ -350,7 +350,7 @@ function SmtpConfigTab() {
               type="number"
               value={smtpPort}
               onChange={(e) => setSmtpPort(Number(e.target.value))}
-              className="w-28 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-28 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div className="p-4 flex items-center gap-4">
@@ -359,7 +359,7 @@ function SmtpConfigTab() {
               value={smtpUser}
               onChange={(e) => setSmtpUser(e.target.value)}
               placeholder="usuario@ejemplo.com"
-              className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div className="p-4 flex items-center gap-4">
@@ -370,7 +370,7 @@ function SmtpConfigTab() {
                 value={smtpPassword}
                 onChange={(e) => setSmtpPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <button
                 type="button"
@@ -387,7 +387,7 @@ function SmtpConfigTab() {
               value={smtpFrom}
               onChange={(e) => setSmtpFrom(e.target.value)}
               placeholder="noreply@trace.app"
-              className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div className="p-4 flex items-center gap-4">
@@ -395,7 +395,7 @@ function SmtpConfigTab() {
             <button
               onClick={() => setSmtpUseTls((p) => !p)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                smtpUseTls ? 'bg-indigo-600' : 'bg-slate-300'
+                smtpUseTls ? 'bg-primary' : 'bg-slate-300'
               }`}
             >
               <span
@@ -422,7 +422,7 @@ function SmtpConfigTab() {
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
                 placeholder="admin@ejemplo.com"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <p className="text-xs text-slate-400 mt-1">Se agregará en CC en correos del sistema (invitaciones, resets)</p>
             </div>
@@ -434,7 +434,7 @@ function SmtpConfigTab() {
                 value={testEmail}
                 onChange={(e) => setTestEmail(e.target.value)}
                 placeholder="test@ejemplo.com"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <p className="text-xs text-slate-400 mt-1">Destinatario por defecto al enviar correos de prueba desde plantillas</p>
             </div>
@@ -459,7 +459,7 @@ function SmtpConfigTab() {
         <button
           onClick={handleSave}
           disabled={!isDirty || updateConfig.isPending}
-          className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
         >
           <Save className="h-4 w-4" />
           {updateConfig.isPending ? 'Guardando...' : 'Guardar configuración'}

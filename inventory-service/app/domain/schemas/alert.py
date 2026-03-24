@@ -22,6 +22,11 @@ class StockAlertOut(OrmBase):
     is_resolved: bool
     created_at: datetime | None = None
     resolved_at: datetime | None = None
+    # Enriched fields (populated by service, not stored in DB)
+    product_name: str | None = None
+    product_sku: str | None = None
+    warehouse_name: str | None = None
+    uom: str | None = None
 
 
 class PaginatedAlerts(BaseModel):

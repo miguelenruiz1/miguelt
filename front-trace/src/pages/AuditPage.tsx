@@ -40,14 +40,14 @@ export function AuditPage() {
             value={action}
             onChange={(e) => { setAction(e.target.value); setPage(0) }}
             placeholder="Filtrar por acción..."
-            className="rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 w-52"
+            className="rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-52"
           />
         </div>
         <input
           value={resourceType}
           onChange={(e) => { setResourceType(e.target.value); setPage(0) }}
           placeholder="Tipo de recurso..."
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 w-44"
+          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-44"
         />
         {(action || resourceType) && (
           <button

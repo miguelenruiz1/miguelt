@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import ModuleUser, require_permission
+from app.api.deps import ProductionModuleUser, require_permission
 from app.db.session import get_db_session
 from app.domain.schemas import PaginatedProductionRuns, ProductionRunCreate, ProductionRunOut, ProductionRunReject
 from app.services.production_service import ProductionService
@@ -26,7 +26,7 @@ def _svc(db: AsyncSession = Depends(get_db_session)) -> ProductionService:
 
 @router.get("", response_model=PaginatedProductionRuns)
 async def list_runs(
-    current_user: ModuleUser,
+    current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.view"))],
     status: str | None = None,
     offset: int = Query(0, ge=0),
@@ -41,7 +41,7 @@ async def list_runs(
 @router.post("", response_model=ProductionRunOut, status_code=201)
 async def create_run(
     body: ProductionRunCreate,
-    current_user: ModuleUser,
+    current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.manage"))],
     request: Request,
     svc: ProductionService = Depends(_svc),
@@ -62,7 +62,7 @@ async def create_run(
 @router.get("/{run_id}", response_model=ProductionRunOut)
 async def get_run(
     run_id: str,
-    current_user: ModuleUser,
+    current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.view"))],
     svc: ProductionService = Depends(_svc),
 ):
@@ -73,7 +73,7 @@ async def get_run(
 @router.post("/{run_id}/execute", response_model=ProductionRunOut)
 async def execute_run(
     run_id: str,
-    current_user: ModuleUser,
+    current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.manage"))],
     request: Request,
     svc: ProductionService = Depends(_svc),
@@ -94,7 +94,7 @@ async def execute_run(
 @router.post("/{run_id}/finish", response_model=ProductionRunOut)
 async def finish_run(
     run_id: str,
-    current_user: ModuleUser,
+    current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.manage"))],
     request: Request,
     svc: ProductionService = Depends(_svc),
@@ -114,7 +114,7 @@ async def finish_run(
 @router.post("/{run_id}/approve", response_model=ProductionRunOut)
 async def approve_run(
     run_id: str,
-    current_user: ModuleUser,
+    current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.manage"))],
     request: Request,
     svc: ProductionService = Depends(_svc),
@@ -137,7 +137,7 @@ async def approve_run(
 async def reject_run(
     run_id: str,
     body: ProductionRunReject,
-    current_user: ModuleUser,
+    current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.manage"))],
     request: Request,
     svc: ProductionService = Depends(_svc),
@@ -159,7 +159,7 @@ async def reject_run(
 @router.delete("/{run_id}", status_code=204)
 async def delete_run(
     run_id: str,
-    current_user: ModuleUser,
+    current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.manage"))],
     request: Request,
     svc: ProductionService = Depends(_svc),

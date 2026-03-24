@@ -7,7 +7,7 @@ const MODULE_META: Record<string, { name: string; description: string; icon: Rea
     name: 'Logistica',
     description: 'Cadena de custodia, tracking board, activos NFT, wallets y organizaciones.',
     icon: Truck,
-    color: 'from-indigo-500 to-blue-600',
+    color: 'from-primary to-blue-600',
   },
   inventory: {
     name: 'Inventario',
@@ -23,7 +23,7 @@ export function PlatformMarketplacePage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     )
   }
@@ -33,7 +33,7 @@ export function PlatformMarketplacePage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/platform" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600 mb-2">
+        <Link to="/platform" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-primary mb-2">
           <ArrowLeft className="h-4 w-4" /> Panel
         </Link>
         <h1 className="text-2xl font-bold text-slate-900">Gestion del Marketplace</h1>
@@ -86,9 +86,9 @@ export function PlatformMarketplacePage() {
       </div>
 
       {/* Info box */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-5">
-        <h4 className="text-sm font-semibold text-indigo-800 mb-1">Nota sobre modulos</h4>
-        <p className="text-sm text-indigo-700">
+      <div className="bg-primary/10 border border-primary/30 rounded-2xl p-5">
+        <h4 className="text-sm font-semibold text-primary mb-1">Nota sobre modulos</h4>
+        <p className="text-sm text-primary">
           Actualmente, los administradores de cada empresa pueden activar/desactivar modulos libremente desde el Marketplace de su tenant.
           Cuando se implemente la pasarela de pago, la activacion de modulos premium estara vinculada al plan de suscripcion contratado.
         </p>

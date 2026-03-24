@@ -1,14 +1,20 @@
 """Business logic for Purchase Orders."""
 from __future__ import annotations
 
+import uuid
+from datetime import datetime, timezone
 from decimal import Decimal
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import NotFoundError, ValidationError
-from app.db.models import POStatus, PurchaseOrder
+from app.db.models import POStatus, Product, PurchaseOrder
+from app.db.models.cost_history import ProductCostHistory
 from app.repositories.po_repo import PORepository
+from app.repositories.product_repo import ProductRepository
 from app.repositories.supplier_repo import SupplierRepository
+from app.services.pricing_engine import PricingEngine
 from app.services.stock_service import StockService
 
 
@@ -52,6 +58,19 @@ class POService:
         if not supplier:
             raise NotFoundError(f"Supplier {data['supplier_id']!r} not found")
 
+        lines = data.get("lines", [])
+        if not lines:
+            raise ValidationError("La orden de compra debe tener al menos una línea")
+
+        # Validate cost on every line
+        for i, line in enumerate(lines):
+            cost = line.get("unit_cost")
+            if cost is None or Decimal(str(cost)) <= 0:
+                raise ValidationError(f"Línea {i+1}: el costo unitario es obligatorio y debe ser mayor a cero")
+            qty = line.get("qty_ordered")
+            if qty is None or Decimal(str(qty)) <= 0:
+                raise ValidationError(f"Línea {i+1}: la cantidad es obligatoria y debe ser mayor a cero")
+
         po_number = await self.repo.next_po_number(tenant_id)
         return await self.repo.create({
             "tenant_id": tenant_id,
@@ -74,22 +93,43 @@ class POService:
             raise ValidationError(f"Cannot edit a PO with status {po.status}")
         return await self.repo.update(po, data)
 
-    async def send(self, po_id: str, tenant_id: str) -> PurchaseOrder:
+    async def send(self, po_id: str, tenant_id: str, user_id: str | None = None) -> PurchaseOrder:
+        """Send PO to supplier. Status must be draft or approved."""
         po = await self.get(po_id, tenant_id)
-        if po.status != POStatus.draft:
-            raise ValidationError("Only draft POs can be sent")
-        return await self.repo.update(po, {"status": POStatus.sent})
+        if po.status not in (POStatus.draft, POStatus.approved):
+            raise ValidationError(
+                f"Solo se pueden enviar OCs en borrador o aprobadas, actual: '{po.status.value}'"
+            )
+        if not po.lines:
+            raise ValidationError("La OC debe tener al menos una línea para enviar")
 
-    async def confirm(self, po_id: str, tenant_id: str) -> PurchaseOrder:
+        update_data = {
+            "status": POStatus.sent,
+            "sent_at": datetime.now(timezone.utc),
+            "sent_by": user_id,
+        }
+        return await self.repo.update(po, update_data)
+
+    async def confirm(self, po_id: str, tenant_id: str, user_id: str | None = None, expected_date=None) -> PurchaseOrder:
+        """Confirm PO (supplier accepted). Status must be sent."""
         po = await self.get(po_id, tenant_id)
-        if po.status not in (POStatus.draft, POStatus.sent):
-            raise ValidationError("PO must be draft or sent to confirm")
-        return await self.repo.update(po, {"status": POStatus.confirmed})
+        if po.status != POStatus.sent:
+            raise ValidationError("Solo se pueden confirmar OCs enviadas")
+
+        update_data = {
+            "status": POStatus.confirmed,
+            "confirmed_at": datetime.now(timezone.utc),
+            "confirmed_by": user_id,
+        }
+        if expected_date:
+            update_data["expected_date"] = expected_date
+        return await self.repo.update(po, update_data)
 
     async def cancel(self, po_id: str, tenant_id: str) -> PurchaseOrder:
         po = await self.get(po_id, tenant_id)
-        if po.status in (POStatus.received, POStatus.canceled, POStatus.consolidated):
-            raise ValidationError(f"Cannot cancel a PO with status {po.status}")
+        terminal = (POStatus.received, POStatus.canceled, POStatus.consolidated)
+        if po.status in terminal:
+            raise ValidationError(f"No se puede cancelar una OC con estado '{po.status.value}'")
         return await self.repo.update(po, {"status": POStatus.canceled})
 
     async def receive_items(
@@ -99,15 +139,19 @@ class POService:
         line_receipts: list[dict],
         performed_by: str | None = None,
     ) -> PurchaseOrder:
-        """Receive quantities per line and create stock movements."""
+        """Receive quantities per line, create stock movements, cost history, and recalculate prices."""
         po = await self.get(po_id, tenant_id)
-        if po.status not in (POStatus.confirmed, POStatus.partial):
-            raise ValidationError("PO must be confirmed or partial to receive items")
+        if po.status in (POStatus.received, POStatus.canceled, POStatus.consolidated):
+            raise ValidationError(f"No se puede recibir una OC con estado '{po.status.value}'")
         if not po.warehouse_id:
             raise ValidationError("PO has no destination warehouse set")
 
-        total_ordered = Decimal("0")
-        total_received = Decimal("0")
+        product_repo = ProductRepository(self.db)
+        pricing = PricingEngine(self.db)
+
+        # Resolve supplier name once
+        supplier = await self.supplier_repo.get_by_id(po.supplier_id, tenant_id)
+        supplier_name = supplier.name if supplier else "Desconocido"
 
         for receipt in line_receipts:
             line = await self.repo.get_line(receipt["line_id"], po_id)
@@ -118,6 +162,12 @@ class POService:
             if qty <= 0:
                 continue
 
+            if not line.unit_cost or line.unit_cost <= 0:
+                raise ValidationError(
+                    f"La línea {line.product_id[:8]} no tiene costo unitario. "
+                    "Edite la OC y asigne un costo antes de recibir."
+                )
+
             new_received = line.qty_received + qty
             if new_received > line.qty_ordered:
                 raise ValidationError(
@@ -127,6 +177,7 @@ class POService:
 
             await self.repo.update_line(line, {"qty_received": new_received})
 
+            # Receive stock (creates movement + updates qty_on_hand)
             await self.stock_service.receive(
                 tenant_id=tenant_id,
                 product_id=line.product_id,
@@ -139,6 +190,67 @@ class POService:
                 location_id=line.location_id,
                 uom=receipt.get("uom", "primary"),
             )
+
+            # ── Cost history & dynamic pricing ────────────────────────
+            # For now, qty_in_base_uom = qty (primary UoM assumed)
+            # UoM conversion will be enhanced when UoMs are initialized
+            qty_base = qty
+            cost_per_base = line.unit_cost
+
+            # Create cost history record
+            cost_record = ProductCostHistory(
+                id=str(uuid.uuid4()),
+                tenant_id=tenant_id,
+                product_id=line.product_id,
+                variant_id=line.variant_id,
+                purchase_order_id=po.id,
+                purchase_order_line_id=line.id,
+                supplier_id=po.supplier_id,
+                supplier_name=supplier_name,
+                uom_purchased=receipt.get("uom", "primary"),
+                qty_purchased=qty,
+                qty_in_base_uom=qty_base,
+                unit_cost_purchased=line.unit_cost,
+                unit_cost_base_uom=cost_per_base,
+                total_cost=qty * line.unit_cost,
+                received_at=datetime.now(timezone.utc),
+            )
+            self.db.add(cost_record)
+
+            # Update product denormalized pricing fields
+            product = await product_repo.get_by_id(line.product_id, tenant_id)
+            if product:
+                product.last_purchase_cost = cost_per_base
+                product.last_purchase_date = datetime.now(timezone.utc)
+                product.last_purchase_supplier = supplier_name
+
+                # Recalculate suggested & minimum sale prices
+                await pricing.recalculate_product_prices(product, tenant_id)
+
+                # ── Margin danger check ──────────────────────────────────
+                if product.margin_minimum is not None and product.suggested_sale_price:
+                    new_cost = cost_per_base
+                    sale_price = product.suggested_sale_price
+                    if sale_price > 0:
+                        actual_margin = ((sale_price - new_cost) / sale_price) * 100
+                        if actual_margin < float(product.margin_minimum):
+                            # Fire-and-forget notification
+                            try:
+                                from app.services.po_notification_service import PONotificationService
+                                notif = PONotificationService(self.db)
+                                await notif.notify_margin_danger(
+                                    tenant_id=tenant_id,
+                                    product_name=product.name,
+                                    product_sku=product.sku,
+                                    new_cost=float(new_cost),
+                                    actual_margin=round(float(actual_margin), 1),
+                                    minimum_margin=float(product.margin_minimum),
+                                    po_number=po.po_number,
+                                )
+                            except Exception:
+                                pass  # Best-effort notification
+
+        await self.db.flush()
 
         # Reload PO with lines
         po = await self.get(po_id, tenant_id)

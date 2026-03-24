@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   Settings2, Plus, Pencil, Trash2, X, Tag, ShoppingBag, Truck,
   ArrowLeftRight, Warehouse, AlertTriangle, Gauge, CheckCircle2, Hash,
-  ChevronRight, Users, ShieldCheck,
+  ChevronRight, Users, ShieldCheck, DollarSign, ToggleRight,
 } from 'lucide-react'
 import { useConfirm } from '@/store/confirm'
 import {
@@ -18,6 +18,8 @@ import {
   useSerialStatuses, useCreateSerialStatus, useUpdateSerialStatus, useDeleteSerialStatus,
   useApprovalThreshold, useUpdateApprovalThreshold,
   useCustomerTypes, useCreateCustomerType, useUpdateCustomerType, useDeleteCustomerType,
+  useGlobalMargins, useUpdateGlobalMargins,
+  useFeatureToggles, useUpdateFeatureToggles,
 } from '@/hooks/useInventory'
 import { cn } from '@/lib/utils'
 import type {
@@ -81,19 +83,19 @@ function ProductTypesTab() {
         <p className="text-sm text-slate-500">Tipos de producto para clasificar tu catálogo</p>
         <button
           onClick={openCreate}
-          className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700"
+          className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90"
         >
           <Plus className="h-3.5 w-3.5" /> Nuevo tipo
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={submit} className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 space-y-3">
+        <form onSubmit={submit} className="rounded-xl border border-primary/30 bg-primary/10 p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-slate-600 mb-1 block">Nombre *</label>
               <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
               <label className="text-xs font-medium text-slate-600 mb-1 block">Color</label>
@@ -104,14 +106,14 @@ function ProductTypesTab() {
           <div>
             <label className="text-xs font-medium text-slate-600 mb-1 block">Descripción</label>
             <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100">
               <X className="h-3.5 w-3.5" />
             </button>
             <button type="submit" disabled={create.isPending || update.isPending}
-              className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">
+              className="rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-50">
               {editing ? 'Guardar' : 'Crear'}
             </button>
           </div>
@@ -129,7 +131,7 @@ function ProductTypesTab() {
           {types.map(t => (
             <div key={t.id} className="flex items-center gap-2 rounded-xl bg-white border border-slate-100 px-3 py-2 shadow-sm">
               <TypeBadge color={t.color} name={t.name} />
-              <button onClick={() => openEdit(t)} className="text-slate-400 hover:text-indigo-600">
+              <button onClick={() => openEdit(t)} className="text-slate-400 hover:text-primary">
                 <Pencil className="h-3.5 w-3.5" />
               </button>
               <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-slate-400 hover:text-red-500">
@@ -394,7 +396,7 @@ function MovementTypesTab() {
     setShowForm(false)
   }
 
-  const DIR_COLORS: Record<string, string> = { in: 'bg-emerald-100 text-emerald-700', out: 'bg-red-100 text-red-700', internal: 'bg-indigo-100 text-indigo-700', neutral: 'bg-slate-100 text-slate-600' }
+  const DIR_COLORS: Record<string, string> = { in: 'bg-emerald-100 text-emerald-700', out: 'bg-red-100 text-red-700', internal: 'bg-primary/15 text-primary', neutral: 'bg-slate-100 text-slate-600' }
 
   return (
     <div className="space-y-4">
@@ -742,22 +744,22 @@ function EventStatusesTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-500">Estados para el flujo de eventos</p>
-        <button onClick={openCreate} className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">
+        <button onClick={openCreate} className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90">
           <Plus className="h-3.5 w-3.5" /> Nuevo estado
         </button>
       </div>
       {showForm && (
-        <form onSubmit={submit} className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 space-y-3">
+        <form onSubmit={submit} className="rounded-xl border border-primary/30 bg-primary/10 p-4 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-medium text-slate-600 mb-1 block">Nombre *</label>
               <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
               <label className="text-xs font-medium text-slate-600 mb-1 block">Orden</label>
               <input type="number" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: Number(e.target.value) }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
               <label className="text-xs font-medium text-slate-600 mb-1 block">Color</label>
@@ -771,7 +773,7 @@ function EventStatusesTab() {
           </label>
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100"><X className="h-3.5 w-3.5" /></button>
-            <button type="submit" disabled={create.isPending || update.isPending} className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">
+            <button type="submit" disabled={create.isPending || update.isPending} className="rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-50">
               {editing ? 'Guardar' : 'Crear'}
             </button>
           </div>
@@ -785,7 +787,7 @@ function EventStatusesTab() {
               <div key={t.id} className="flex items-center gap-2 rounded-xl bg-white border border-slate-100 px-3 py-2 shadow-sm">
                 <TypeBadge color={t.color} name={t.name} />
                 {t.is_final && <span className="rounded-full bg-slate-200 text-slate-500 px-2 py-0.5 text-[10px] font-medium">Final</span>}
-                <button onClick={() => openEdit(t)} className="text-slate-400 hover:text-indigo-600"><Pencil className="h-3.5 w-3.5" /></button>
+                <button onClick={() => openEdit(t)} className="text-slate-400 hover:text-primary"><Pencil className="h-3.5 w-3.5" /></button>
                 <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-slate-400 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
             ))}
@@ -991,7 +993,7 @@ function ApprovalThresholdTab() {
     }
   }, [data])
 
-  if (isLoading) return <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600" /></div>
+  if (isLoading) return <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" /></div>
 
   return (
     <div className="space-y-4">
@@ -1012,7 +1014,7 @@ function ApprovalThresholdTab() {
             <input type="number" step="0.01" min="0" value={value}
               onChange={e => setValue(e.target.value)}
               placeholder="Ej: 5000"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
         )}
         <button
@@ -1020,9 +1022,131 @@ function ApprovalThresholdTab() {
             await updateThreshold.mutateAsync(noThreshold ? null : Number(value))
           }}
           disabled={updateThreshold.isPending}
-          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+          className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
           {updateThreshold.isPending ? 'Guardando...' : 'Guardar'}
         </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Margins Config ──────────────────────────────────────────────────────────
+
+function MarginsTab() {
+  const { data, isLoading } = useGlobalMargins()
+  const updateMargins = useUpdateGlobalMargins()
+  const [target, setTarget] = useState('')
+  const [minimum, setMinimum] = useState('')
+  const [method, setMethod] = useState('last_purchase')
+  const [requireAuth, setRequireAuth] = useState(true)
+
+  useEffect(() => {
+    if (data) {
+      setTarget(String(data.margin_target_global))
+      setMinimum(String(data.margin_minimum_global))
+      setMethod(data.margin_cost_method_global)
+      setRequireAuth(data.below_minimum_requires_auth)
+    }
+  }, [data])
+
+  if (isLoading) return <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" /></div>
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="font-semibold text-slate-900">Precios y Márgenes</h3>
+        <p className="text-sm text-slate-500 mt-1">Configuración global de márgenes. Cada producto puede sobreescribir estos valores.</p>
+      </div>
+      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5 space-y-4 max-w-md">
+        <div>
+          <label className="text-xs text-slate-500 mb-1 block">Margen objetivo global (%)</label>
+          <input type="number" step="0.01" min="0" max="99" value={target}
+            onChange={e => setTarget(e.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+        </div>
+        <div>
+          <label className="text-xs text-slate-500 mb-1 block">Margen mínimo global (%)</label>
+          <input type="number" step="0.01" min="0" max="99" value={minimum}
+            onChange={e => setMinimum(e.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+        </div>
+        <div>
+          <label className="text-xs text-slate-500 mb-1 block">Método de costo base</label>
+          <select value={method} onChange={e => setMethod(e.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="last_purchase">Última compra</option>
+            <option value="weighted_avg">Promedio ponderado</option>
+            <option value="avg_last_3">Promedio últimas 3 compras</option>
+          </select>
+        </div>
+        <label className="flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={requireAuth} onChange={e => setRequireAuth(e.target.checked)}
+            className="rounded border-slate-300" />
+          Bloquear ventas por debajo del mínimo (requiere autorización)
+        </label>
+        <button
+          onClick={() => updateMargins.mutateAsync({
+            margin_target_global: Number(target),
+            margin_minimum_global: Number(minimum),
+            margin_cost_method_global: method,
+            below_minimum_requires_auth: requireAuth,
+          })}
+          disabled={updateMargins.isPending}
+          className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
+          {updateMargins.isPending ? 'Guardando...' : 'Guardar'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Features Tab ─────────────────────────────────────────────────────────────
+
+function FeaturesTab() {
+  const { data: features, isLoading } = useFeatureToggles()
+  const updateFeatures = useUpdateFeatureToggles()
+
+  if (isLoading) return <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" /></div>
+
+  const toggles = [
+    { key: 'lotes', label: 'Lotes', desc: 'Rastreo por lotes con fechas de vencimiento' },
+    { key: 'seriales', label: 'Seriales', desc: 'Rastreo por numero de serie individual' },
+    { key: 'variantes', label: 'Variantes', desc: 'Variantes de producto (talla, color, etc)' },
+    { key: 'conteo', label: 'Conteo Ciclico', desc: 'Conteos de inventario programados' },
+    { key: 'escaner', label: 'Escaner', desc: 'Escaneo de codigos de barras' },
+    { key: 'picking', label: 'Picking', desc: 'Preparacion de pedidos en bodega' },
+    { key: 'eventos', label: 'Eventos', desc: 'Registro de incidentes (danos, robos, etc)' },
+    { key: 'kardex', label: 'Kardex', desc: 'Libro contable de movimientos por producto' },
+    { key: 'precios', label: 'Precios Especiales', desc: 'Precios negociados por cliente' },
+    { key: 'aprobaciones', label: 'Aprobaciones', desc: 'Flujo de aprobacion para ordenes de venta' },
+  ]
+
+  const toggle = async (key: string) => {
+    await updateFeatures.mutateAsync({ [key]: !(features?.[key] ?? true) })
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="font-semibold text-slate-900">Funcionalidades</h3>
+        <p className="text-sm text-slate-500 mt-1">Activa o desactiva funcionalidades segun las necesidades de tu negocio. Las desactivadas no apareceran en el menu.</p>
+      </div>
+      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm divide-y divide-slate-100 overflow-hidden">
+        {toggles.map(t => (
+          <div key={t.key} className="flex items-center justify-between px-5 py-4">
+            <div>
+              <p className="text-sm font-medium text-slate-900">{t.label}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{t.desc}</p>
+            </div>
+            <button
+              onClick={() => toggle(t.key)}
+              disabled={updateFeatures.isPending}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${features?.[t.key] !== false ? 'bg-primary' : 'bg-slate-200'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${features?.[t.key] !== false ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -1033,6 +1157,7 @@ function ApprovalThresholdTab() {
 // ─── Config Tabs ─────────────────────────────────────────────────────────────
 
 export const CONFIG_SECTIONS = [
+  { id: 'funcionalidades', label: 'Funcionalidades', description: 'Activa o desactiva funciones del modulo', icon: ToggleRight },
   { id: 'tipos-producto', label: 'Tipos de producto', description: 'Clasifica tu catálogo de productos', icon: Tag },
   { id: 'tipos-orden', label: 'Tipos de orden', description: 'Tipos de orden de compra', icon: ShoppingBag },
   { id: 'tipos-proveedor', label: 'Tipos de proveedor', description: 'Clasificación de proveedores', icon: Truck },
@@ -1044,11 +1169,13 @@ export const CONFIG_SECTIONS = [
   { id: 'estados-serial', label: 'Estados de serial', description: 'Estados de números de serie', icon: Hash },
   { id: 'customer-types', label: 'Tipos de Cliente', description: 'Clasificación de clientes', icon: Users },
   { id: 'approval-threshold', label: 'Umbral de Aprobación', description: 'Configurar umbral para aprobación de OV', icon: ShieldCheck },
+  { id: 'margins', label: 'Precios y Márgenes', description: 'Configuración global de márgenes y método de costo', icon: DollarSign },
 ] as const
 
 export type ConfigSectionId = typeof CONFIG_SECTIONS[number]['id']
 
 export const CONFIG_SECTION_COMPONENTS: Record<ConfigSectionId, React.ReactNode> = {
+  'funcionalidades': <FeaturesTab />,
   'tipos-producto': <ProductTypesTab />,
   'tipos-orden': <OrderTypesTab />,
   'tipos-proveedor': <SupplierTypesTab />,
@@ -1060,6 +1187,7 @@ export const CONFIG_SECTION_COMPONENTS: Record<ConfigSectionId, React.ReactNode>
   'estados-serial': <SerialStatusesTab />,
   'customer-types': <CustomerTypesTab />,
   'approval-threshold': <ApprovalThresholdTab />,
+  'margins': <MarginsTab />,
 }
 
 export function InventoryConfigPage() {
@@ -1094,7 +1222,7 @@ export function InventoryConfigPage() {
                 <span className="text-sm font-semibold text-slate-900">{item.label}</span>
                 <p className="text-xs text-slate-400 mt-0.5">{item.description}</p>
               </div>
-              <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-indigo-400 transition-colors" />
+              <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-primary/70 transition-colors" />
             </Link>
           ))}
         </div>

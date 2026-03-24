@@ -51,7 +51,7 @@ export function ActivityTimeline({ resourceType, resourceId }: ActivityTimelineP
       <div className="relative pl-4 border-l-2 border-slate-200 space-y-4">
         {items.map((entry) => (
           <div key={entry.id} className="relative">
-            <div className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-indigo-400 border-2 border-white" />
+            <div className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary/70 border-2 border-white" />
             <div className="text-xs text-slate-500 mb-0.5">
               {format(new Date(entry.created_at), 'dd/MM/yyyy HH:mm')}
             </div>
@@ -69,7 +69,7 @@ export function ActivityTimeline({ resourceType, resourceId }: ActivityTimelineP
       {data && data.total > limit && (
         <button
           onClick={() => setLimit((l) => l + 10)}
-          className="text-xs text-indigo-500 hover:text-indigo-700 flex items-center gap-1"
+          className="text-xs text-primary hover:text-primary flex items-center gap-1"
         >
           <ChevronDown className="h-3 w-3" />
           Mostrar más ({data.total - limit} restantes)

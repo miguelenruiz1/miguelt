@@ -3,13 +3,17 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Settings, KeyRound, Globe, Server, Eye, EyeOff,
   Copy, Check, ChevronDown, ChevronRight, AlertTriangle,
+  Cpu, GitBranch,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Topbar } from '@/components/layout/Topbar'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { useAdminStore } from '@/store/admin'
 import { useSettingsStore, type SolanaCluster } from '@/store/settings'
+import { useAuthStore } from '@/store/auth'
 import { api } from '@/lib/api'
-import { copyToClipboard } from '@/lib/utils'
+import { copyToClipboard, shortPubkey } from '@/lib/utils'
 import { useToast } from '@/store/toast'
 
 // ─── Generated service keypair (generated 2026-02-22 via trace-api docker container) ──
@@ -36,7 +40,7 @@ function CopyButton({ text, label = 'Copiar' }: { text: string; label?: string }
   return (
     <button
       onClick={handle}
-      className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+      className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary transition-colors"
     >
       {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
       {copied ? 'Copiado!' : label}
@@ -48,7 +52,7 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
   return (
     <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
       <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-        <div className="h-8 w-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-500 shrink-0">
+        <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
           {icon}
         </div>
         <h2 className="text-sm font-bold text-slate-800">{title}</h2>
@@ -99,7 +103,7 @@ function AdminKeySection() {
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               placeholder="Ingresa la clave admin..."
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 pr-10 text-sm font-mono text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 pr-10 text-sm font-mono text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20 transition-colors"
             />
             <button
               type="button"
@@ -138,7 +142,7 @@ function EnvironmentSection() {
       value: 'devnet',
       label: 'Devnet',
       desc: 'Red de pruebas. SOL gratis, NFTs no tienen valor real.',
-      color: 'border-indigo-300 bg-indigo-50 ring-2 ring-indigo-300',
+      color: 'border-primary/50 bg-primary/10 ring-2 ring-ring/50',
     },
     {
       value: 'mainnet-beta',
@@ -165,7 +169,7 @@ function EnvironmentSection() {
             }`}
           >
             <div className="flex items-center gap-2 mb-1">
-              <span className={`h-2 w-2 rounded-full ${opt.value === 'devnet' ? 'bg-indigo-500' : 'bg-emerald-500'}`} />
+              <span className={`h-2 w-2 rounded-full ${opt.value === 'devnet' ? 'bg-primary' : 'bg-emerald-500'}`} />
               <span className="text-sm font-bold text-slate-800">{opt.label}</span>
               {solanaCluster === opt.value && (
                 <span className="ml-auto">
@@ -212,7 +216,7 @@ function KeypairSection() {
               href={`https://explorer.solana.com/address/${GENERATED_KEYPAIR.pubkey}?cluster=devnet`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-indigo-500 hover:underline"
+              className="text-primary hover:underline"
             >
               Ver en devnet Explorer ↗
             </a>
@@ -248,7 +252,7 @@ function KeypairSection() {
       <div>
         <button
           onClick={() => setExpanded((e) => !e)}
-          className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors mb-2"
+          className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-primary transition-colors mb-2"
         >
           {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           Ver snippet para el .env
@@ -348,6 +352,131 @@ function BackendStatusSection() {
   )
 }
 
+// ─── Solana Status Widget ─────────────────────────────────────────────────────
+
+function SolanaStatusWidget() {
+  const { data: ready, isLoading } = useQuery({
+    queryKey: ['system', 'ready'],
+    queryFn: () => api.health.readiness(),
+    staleTime: 15_000,
+  })
+
+  const simMode = ready?.checks?.solana_simulation === 'true' || ready?.checks?.solana_simulation === true
+  const network = ready?.checks?.solana_cluster ?? ready?.checks?.solana_network ?? 'unknown'
+
+  return (
+    <Section icon={<Cpu className="h-4 w-4" />} title="Estado de Solana">
+      {isLoading ? (
+        <p className="text-sm text-slate-400">Consultando...</p>
+      ) : !ready ? (
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          No se pudo obtener el estado del backend.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Modo</p>
+              <Badge variant={simMode ? 'warning' : 'success'} dot>
+                {simMode ? 'Simulacion' : 'Produccion'}
+              </Badge>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Red</p>
+              <p className="text-sm font-semibold text-slate-700">{String(network)}</p>
+            </div>
+          </div>
+          {ready.checks?.solana_balance != null && (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Balance</p>
+              <p className="text-sm font-semibold text-slate-700">{String(ready.checks.solana_balance)} SOL</p>
+            </div>
+          )}
+          {ready.checks?.circuit_breaker != null && (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Circuit Breaker</p>
+              <Badge variant={String(ready.checks.circuit_breaker) === 'closed' ? 'success' : 'danger'} dot>
+                {String(ready.checks.circuit_breaker)}
+              </Badge>
+            </div>
+          )}
+        </div>
+      )}
+    </Section>
+  )
+}
+
+// ─── Merkle Tree Widget ──────────────────────────────────────────────────────
+
+function MerkleTreeWidget() {
+  const tenantId = useAuthStore.getState().user?.tenant_id ?? 'default'
+  const { data: tree, isLoading } = useQuery({
+    queryKey: ['merkle-tree', tenantId],
+    queryFn: () => api.tenants.getTree(tenantId),
+    staleTime: 30_000,
+    retry: false,
+  })
+
+  return (
+    <Section icon={<GitBranch className="h-4 w-4" />} title="Merkle Tree">
+      {isLoading ? (
+        <p className="text-sm text-slate-400">Consultando...</p>
+      ) : !tree ? (
+        <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+          No hay Merkle Tree provisionado para este tenant.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Direccion</p>
+            <p className="text-sm font-mono text-slate-700 break-all">
+              {(tree as any).address ? shortPubkey((tree as any).address) : 'N/A'}
+            </p>
+          </div>
+          {(tree as any).max_depth != null && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Capacidad</p>
+                <p className="text-sm font-semibold text-slate-700">
+                  {((tree as any).total ?? Math.pow(2, (tree as any).max_depth ?? 0)).toLocaleString('es')} hojas
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Usadas</p>
+                <p className="text-sm font-semibold text-slate-700">
+                  {((tree as any).used ?? (tree as any).num_minted ?? 0).toLocaleString('es')}
+                </p>
+              </div>
+            </div>
+          )}
+          {(() => {
+            const total = (tree as any).total ?? Math.pow(2, (tree as any).max_depth ?? 0)
+            const used = (tree as any).used ?? (tree as any).num_minted ?? 0
+            const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0
+            return (
+              <div>
+                <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                  <span>Progreso</span>
+                  <span className="font-semibold">{pct.toFixed(1)}%</span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-all',
+                      pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-emerald-500',
+                    )}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            )
+          })()}
+        </div>
+      )}
+    </Section>
+  )
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export function SettingsPage() {
@@ -359,6 +488,8 @@ export function SettingsPage() {
       />
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl mx-auto space-y-5">
+          <SolanaStatusWidget />
+          <MerkleTreeWidget />
           <AdminKeySection />
           <EnvironmentSection />
           <KeypairSection />

@@ -30,9 +30,6 @@ class Product(Base):
     name:             Mapped[str]        = mapped_column(String(255), nullable=False)
     description:      Mapped[str | None] = mapped_column(Text, nullable=True)
     unit_of_measure:  Mapped[str]        = mapped_column(String(50), nullable=False, server_default="un")
-    cost_price:       Mapped[Decimal]    = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
-    sale_price:       Mapped[Decimal]    = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
-    currency:         Mapped[str]        = mapped_column(String(3), nullable=False, server_default="USD")
     is_active:        Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="true")
     track_batches:    Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="false")
     min_stock_level:  Mapped[int]        = mapped_column(Integer, nullable=False, server_default="0")
@@ -43,8 +40,18 @@ class Product(Base):
     )
     auto_reorder:     Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="false")
     valuation_method: Mapped[str]        = mapped_column(String(20), nullable=False, server_default="weighted_average")
-    secondary_uom:    Mapped[str | None] = mapped_column(String(50), nullable=True)
-    uom_conversion_factor: Mapped[Decimal | None] = mapped_column(Numeric(12, 6), nullable=True)
+
+    # ── Dynamic pricing ──────────────────────────────────────────────────
+    margin_target:          Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+    margin_minimum:         Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+    margin_cost_method:     Mapped[str]            = mapped_column(String(20), nullable=False, server_default="last_purchase")
+    last_purchase_cost:     Mapped[Decimal | None] = mapped_column(Numeric(14, 6), nullable=True)
+    last_purchase_date:     Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_purchase_supplier: Mapped[str | None]     = mapped_column(String(255), nullable=True)
+    suggested_sale_price:   Mapped[Decimal | None] = mapped_column(Numeric(14, 6), nullable=True)
+    minimum_sale_price:     Mapped[Decimal | None] = mapped_column(Numeric(14, 6), nullable=True)
+    preferred_currency:     Mapped[str]            = mapped_column(String(3), nullable=False, server_default="COP")
+
     product_type_id:  Mapped[str | None] = mapped_column(
         String(36), ForeignKey("product_types.id", ondelete="SET NULL"), nullable=True
     )

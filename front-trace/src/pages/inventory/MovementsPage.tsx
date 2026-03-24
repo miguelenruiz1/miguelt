@@ -1,6 +1,8 @@
-import { useState, useDeferredValue } from 'react'
+import { useState, useDeferredValue, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, RotateCcw, Trash2, Plus, Minus, AlertTriangle, Factory, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useFormValidation } from '@/hooks/useFormValidation'
 import {
   useMovements, useWarehouses, useProducts, useStockLevels,
   useReceiveStock, useIssueStock, useTransferStock,
@@ -15,7 +17,7 @@ import type { MovementType } from '@/types/inventory'
 const TYPE_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   purchase: { label: 'Entrada', icon: ArrowDownCircle, color: 'text-emerald-600 bg-emerald-50' },
   sale: { label: 'Salida manual', icon: ArrowUpCircle, color: 'text-red-600 bg-red-50' },
-  transfer: { label: 'Traslado', icon: ArrowLeftRight, color: 'text-indigo-600 bg-indigo-50' },
+  transfer: { label: 'Traslado', icon: ArrowLeftRight, color: 'text-primary bg-primary/10' },
   adjustment_in: { label: 'Ajuste +', icon: Plus, color: 'text-blue-600 bg-blue-50' },
   adjustment_out: { label: 'Ajuste -', icon: Minus, color: 'text-orange-600 bg-orange-50' },
   return: { label: 'Devolución', icon: RotateCcw, color: 'text-purple-600 bg-purple-50' },
@@ -29,7 +31,7 @@ type ModalType = 'purchase' | 'sale' | 'transfer' | 'adjust_in' | 'adjust_out' |
 const MODAL_TABS: { key: ModalType; label: string; color: string }[] = [
   { key: 'purchase', label: 'Entrada', color: 'bg-emerald-600' },
   { key: 'sale', label: 'Salida manual', color: 'bg-red-600' },
-  { key: 'transfer', label: 'Traslado', color: 'bg-indigo-600' },
+  { key: 'transfer', label: 'Traslado', color: 'bg-primary' },
   { key: 'adjust_in', label: 'Ajuste +', color: 'bg-blue-600' },
   { key: 'adjust_out', label: 'Ajuste -', color: 'bg-orange-600' },
   { key: 'return', label: 'Devolución', color: 'bg-purple-600' },
@@ -68,8 +70,7 @@ function RegisterMovementModal({ onClose }: { onClose: () => void }) {
   // Load locations for the selected warehouse (for receive)
   const { data: warehouseLocations = [] } = useLocations(form.warehouse_id || undefined)
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function doSubmit() {
     setError('')
     try {
       const vid = form.variant_id || undefined
@@ -140,6 +141,8 @@ function RegisterMovementModal({ onClose }: { onClose: () => void }) {
     }
   }
 
+  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
+
   const isPending = receive.isPending || issue.isPending || transfer.isPending || initiateTransfer.isPending
     || adjustIn.isPending || adjustOut.isPending || returnStock.isPending || waste.isPending
 
@@ -154,7 +157,7 @@ function RegisterMovementModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6">
         <h2 className="text-lg font-bold text-slate-900 mb-4">Registrar Movimiento</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
           {/* Type selector */}
           <div className="flex gap-1.5 flex-wrap">
             {MODAL_TABS.map(t => (
@@ -182,7 +185,7 @@ function RegisterMovementModal({ onClose }: { onClose: () => void }) {
 
           {/* Product — outbound movements only show products with stock > 0 */}
           <select required value={form.product_id} onChange={e => setForm(f => ({ ...f, product_id: e.target.value, variant_id: '' }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="">Seleccionar producto *</option>
             {(() => {
               const isOutbound = OUTBOUND_TYPES.includes(type)
@@ -207,13 +210,13 @@ function RegisterMovementModal({ onClose }: { onClose: () => void }) {
             productId={form.product_id || undefined}
             value={form.variant_id}
             onChange={v => setForm(f => ({ ...f, variant_id: v }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
 
           {/* Single warehouse */}
           {needsWarehouse && (
             <select required value={form.warehouse_id} onChange={e => setForm(f => ({ ...f, warehouse_id: e.target.value, location_id: '' }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Bodega *</option>
               {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
@@ -234,12 +237,12 @@ function RegisterMovementModal({ onClose }: { onClose: () => void }) {
           {needsTransferWarehouses && (
             <>
               <select required value={form.from_warehouse_id} onChange={e => setForm(f => ({ ...f, from_warehouse_id: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Origen *</option>
                 {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
               </select>
               <select required value={form.to_warehouse_id} onChange={e => setForm(f => ({ ...f, to_warehouse_id: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Destino *</option>
                 {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
               </select>
@@ -250,35 +253,35 @@ function RegisterMovementModal({ onClose }: { onClose: () => void }) {
           <input required type="number" step="0.01" min="0.01" value={form.quantity}
             onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
             placeholder={type === 'adjust_in' ? 'Cantidad a agregar *' : type === 'adjust_out' ? 'Cantidad a retirar *' : 'Cantidad *'}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
 
           {/* Unit cost (purchase only) */}
           {needsUnitCost && (
             <input type="number" step="0.01" value={form.unit_cost}
               onChange={e => setForm(f => ({ ...f, unit_cost: e.target.value }))}
               placeholder="Costo unitario"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           )}
 
           {/* Reference */}
           {needsReference && (
             <input value={form.reference} onChange={e => setForm(f => ({ ...f, reference: e.target.value }))}
               placeholder="Referencia (opcional)"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           )}
 
           {/* Reason (adjust/waste) */}
           {needsReason && (
             <input value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
               placeholder={type === 'waste' ? 'Motivo de merma (opcional)' : type === 'adjust_in' ? 'Razón del ingreso (opcional)' : 'Razón del retiro (opcional)'}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           )}
 
           {/* Notes (return) */}
           {needsNotes && (
             <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
               placeholder="Notas (opcional)"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           )}
 
           {/* Error */}
@@ -291,7 +294,7 @@ function RegisterMovementModal({ onClose }: { onClose: () => void }) {
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
-            <button type="submit" disabled={isPending} className="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {isPending ? 'Registrando…' : 'Registrar'}
             </button>
           </div>
@@ -384,6 +387,8 @@ export function MovementsPage() {
   const [typeFilter, setTypeFilter] = useState('')
   const [searchText, setSearchText] = useState('')
   const deferredSearch = useDeferredValue(searchText)
+  const location = useLocation()
+  useEffect(() => { setShowCreate(false) }, [location.key])
   const { data, isLoading } = useMovements({ movement_type: typeFilter || undefined, search: deferredSearch || undefined })
   const { data: productsData } = useProducts()
   const { data: warehouses = [] } = useWarehouses()
@@ -398,7 +403,7 @@ export function MovementsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">Movimientos</h1>
         <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm">
+          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm">
           <Plus className="h-4 w-4" /> Nuevo movimiento
         </button>
       </div>
@@ -411,7 +416,7 @@ export function MovementsPage() {
           value={searchText}
           onChange={e => setSearchText(e.target.value)}
           placeholder="Buscar por producto, referencia, notas, lote…"
-          className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 
@@ -423,7 +428,7 @@ export function MovementsPage() {
             onClick={() => setTypeFilter(t)}
             className={cn(
               'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
-              typeFilter === t ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+              typeFilter === t ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
             )}
           >
             {t ? TYPE_CONFIG[t]?.label : 'Todos'}

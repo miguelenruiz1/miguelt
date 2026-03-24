@@ -31,6 +31,7 @@ class StockLevelOut(OrmBase):
     variant_id: str | None = None
     qty_on_hand: Decimal
     qty_reserved: Decimal
+    qty_available: float | None = None  # Computed: qty_on_hand - qty_reserved
     qty_in_transit: Decimal = Decimal("0")
     qc_status: str | None = None
     reorder_point: int
@@ -149,6 +150,7 @@ class StockMovementOut(OrmBase):
     notes: str | None
     batch_number: str | None
     performed_by: str | None
+    event_id: str | None = None
     status: str = "completed"
     completed_at: datetime | None = None
     created_at: datetime

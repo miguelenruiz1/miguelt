@@ -48,8 +48,8 @@ export function ForgotPasswordPage() {
             <div>
               {sent ? (
                 <div className="text-center">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 mx-auto mb-5">
-                    <Mail className="h-7 w-7 text-indigo-500" />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 mx-auto mb-5">
+                    <Mail className="h-7 w-7 text-primary" />
                   </div>
                   <h1 className="mb-2 text-2xl font-semibold text-gray-800 sm:text-3xl">
                     Revisa tu correo
@@ -59,7 +59,7 @@ export function ForgotPasswordPage() {
                   </p>
                   <Link
                     to="/login"
-                    className="inline-flex items-center justify-center rounded-lg bg-indigo-500 px-6 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-600"
+                    className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-primary"
                   >
                     Volver al login
                   </Link>
@@ -86,7 +86,7 @@ export function ForgotPasswordPage() {
                           type="email"
                           autoComplete="email"
                           placeholder="tu@email.com"
-                          className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-indigo-300 focus:outline-none focus:ring-3 focus:ring-indigo-500/20"
+                          className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20"
                         />
                         {errors.email && <p className="mt-1.5 text-xs text-red-500">{errors.email.message}</p>}
                       </div>
@@ -101,7 +101,7 @@ export function ForgotPasswordPage() {
                         <button
                           type="submit"
                           disabled={mutation.isPending}
-                          className="flex w-full items-center justify-center rounded-lg bg-indigo-500 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {mutation.isPending ? 'Enviando...' : 'Enviar enlace'}
                         </button>
@@ -146,7 +146,7 @@ export function ForgotPasswordPage() {
                 <path d="M20 17h2.5v5.5H27V25H20V17Z" fill="white" opacity="0.7" />
               </svg>
               <h2 className="text-2xl font-bold text-white mb-3">
-                Trace<span className="font-medium text-indigo-300">Log</span>
+                Trace<span className="font-medium text-primary/50">Log</span>
               </h2>
               <p className="text-center text-gray-400">
                 Recupera el acceso a tu cuenta de forma segura.

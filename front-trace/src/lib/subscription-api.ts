@@ -1,5 +1,8 @@
 import { authFetch } from '@/lib/auth-fetch'
+import { usePlanLimitStore } from '@/store/planLimit'
 import type {
+  CheckoutRequest,
+  CheckoutResponse,
   Invoice,
   OverviewMetrics,
   PaginatedResponse,
@@ -9,6 +12,7 @@ import type {
   Subscription,
   SubscriptionCreate,
   SubscriptionEvent,
+  UsageSummary,
 } from '@/types/subscription'
 
 // ─── API Error ────────────────────────────────────────────────────────────────
@@ -45,6 +49,16 @@ async function request<T>(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: { code: 'UNKNOWN', message: res.statusText } }))
+
+    if (res.status === 402) {
+      usePlanLimitStore.getState().open({
+        resource: err.resource ?? 'recurso',
+        current: err.current ?? 0,
+        limit: err.limit ?? 0,
+        message: err.error?.message ?? 'Has alcanzado el limite de tu plan actual.',
+      })
+    }
+
     throw new SubApiError(res.status, err.error?.code ?? 'UNKNOWN', err.error?.message ?? res.statusText)
   }
 
@@ -102,6 +116,18 @@ export const subscriptionApi = {
       patch<Invoice>(`/api/v1/subscriptions/${tenantId}/invoices/${invId}/mark-paid`, { notes }),
     listEvents: (tenantId: string) =>
       get<SubscriptionEvent[]>(`/api/v1/subscriptions/${tenantId}/events`),
+  },
+
+  usage: {
+    get: (tenantId: string) =>
+      get<UsageSummary>(`/api/v1/usage/${tenantId}`),
+  },
+
+  checkout: {
+    create: (data: CheckoutRequest) =>
+      post<CheckoutResponse>('/api/v1/payments/checkout', data),
+    getInvoices: (tenantId: string) =>
+      get<Invoice[]>(`/api/v1/subscriptions/${tenantId}/invoices`),
   },
 
   admin: {

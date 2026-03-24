@@ -43,10 +43,10 @@ function TemplateCard({
   const Icon = ICON_MAP[template.icon] ?? Shield
 
   return (
-    <div className="group relative flex flex-col items-start gap-2 rounded-xl border border-slate-200 bg-white p-4 transition-all hover:border-indigo-300 hover:shadow-md">
+    <div className="group relative flex flex-col items-start gap-2 rounded-xl border border-slate-200 bg-white p-4 transition-all hover:border-primary/30 hover:shadow-md">
       <div className="flex items-center gap-3 w-full">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50">
-          <Icon className="h-4 w-4 text-indigo-600" />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+          <Icon className="h-4 w-4 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="font-semibold text-sm text-slate-900 truncate">{template.name}</div>
@@ -66,7 +66,7 @@ function TemplateCard({
         <p className="text-xs text-slate-500 leading-relaxed">{template.description}</p>
       )}
       <div className="flex items-center gap-2 w-full">
-        <span className="text-[10px] font-medium text-indigo-500 bg-indigo-50 rounded-full px-2 py-0.5">
+        <span className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-2 py-0.5">
           {template.permissions.length} permisos
         </span>
         {template.is_default && (
@@ -78,7 +78,7 @@ function TemplateCard({
         <button
           onClick={onSelect}
           disabled={disabled}
-          className="rounded-lg bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          className="rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-50 transition-colors"
         >
           Usar
         </button>

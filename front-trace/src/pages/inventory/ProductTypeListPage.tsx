@@ -71,8 +71,8 @@ export function ProductTypeListPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50">
-            <Tag className="h-5 w-5 text-indigo-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+            <Tag className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-900">Tipos de producto</h1>
@@ -80,7 +80,7 @@ export function ProductTypeListPage() {
           </div>
         </div>
         <button onClick={openCreate}
-          className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 shadow-sm transition-colors">
+          className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90 shadow-sm transition-colors">
           <Plus className="h-3.5 w-3.5" /> Nuevo tipo
         </button>
       </div>
@@ -94,7 +94,7 @@ export function ProductTypeListPage() {
           <h3 className="text-sm font-semibold text-slate-700 mb-1">Sin tipos de producto</h3>
           <p className="text-xs text-slate-400 mb-4">Crea tu primer tipo para clasificar tus productos.</p>
           <button onClick={openCreate}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700">
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90">
             <Plus className="h-3.5 w-3.5" /> Crear tipo de producto
           </button>
         </div>
@@ -118,14 +118,14 @@ export function ProductTypeListPage() {
               </div>
               <code className="text-[10px] font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded hidden sm:block">{t.slug}</code>
               <button onClick={(e) => openEdit(t, e)}
-                className="rounded-lg p-1.5 text-slate-300 hover:text-indigo-600 hover:bg-slate-100 transition-colors opacity-0 group-hover:opacity-100">
+                className="rounded-lg p-1.5 text-slate-300 hover:text-primary hover:bg-slate-100 transition-colors opacity-0 group-hover:opacity-100">
                 <Pencil className="h-3.5 w-3.5" />
               </button>
               <button onClick={(e) => handleDelete(t, e)} disabled={del.isPending}
                 className="rounded-lg p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
-              <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-indigo-400 transition-colors" />
+              <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-primary/70 transition-colors" />
             </Link>
           ))}
         </div>
@@ -150,7 +150,7 @@ export function ProductTypeListPage() {
                   <input required value={form.name}
                     onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                     placeholder="Ej: Electrónico, Perecedero"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Color</label>
@@ -164,14 +164,14 @@ export function ProductTypeListPage() {
                 <textarea value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   rows={2} placeholder="Descripcion del tipo de producto"
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none" />
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Regla de despacho</label>
                 <select
                   value={form.dispatch_rule}
                   onChange={e => setForm(f => ({ ...f, dispatch_rule: e.target.value as 'fifo' | 'fefo' | 'lifo' }))}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="fifo">FIFO (primero en entrar, primero en salir)</option>
                   <option value="fefo">FEFO (por vencimiento)</option>
@@ -189,7 +189,7 @@ export function ProductTypeListPage() {
                 <select
                   value={form.entry_rule_location_id}
                   onChange={e => setForm(f => ({ ...f, entry_rule_location_id: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="">Sin ubicacion predeterminada</option>
                   {locations.map(loc => (
@@ -204,7 +204,7 @@ export function ProductTypeListPage() {
                   min={1}
                   max={36}
                   placeholder="Ej: 3"
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-ring/30 focus:border-ring"
                   value={form.rotation_target_months ?? ''}
                   onChange={e => setForm(f => ({ ...f, rotation_target_months: e.target.value ? Number(e.target.value) : null }))}
                 />
@@ -214,7 +214,7 @@ export function ProductTypeListPage() {
                 <button type="button" onClick={() => setModal({ open: false, editing: null })}
                   className="rounded-lg border border-slate-200 px-4 py-2 text-xs text-slate-600 hover:bg-slate-50">Cancelar</button>
                 <button type="submit" disabled={create.isPending || update.isPending}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">
+                  className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-50">
                   {create.isPending || update.isPending ? 'Guardando...' : modal.editing ? 'Guardar' : 'Crear'}
                 </button>
               </div>

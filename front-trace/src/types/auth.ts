@@ -24,6 +24,8 @@ export interface AuthUser {
   invitation_sent_at: string | null
   invitation_accepted_at: string | null
   must_change_password: boolean
+  onboarding_completed: boolean
+  onboarding_step: string
   created_at: string
   updated_at: string
   roles: AuthRole[]

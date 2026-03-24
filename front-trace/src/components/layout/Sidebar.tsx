@@ -1,413 +1,591 @@
-import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, Wallet, Package, Activity, Building2, Kanban, FileText, FolderTree,
-  Settings, ChevronDown, HelpCircle, BookOpen, Users, Shield, ClipboardList, ClipboardCheck,
-  LogOut, CreditCard, Layers, Boxes, Warehouse, ArrowLeftRight, Truck, ShoppingCart,
-  Settings2, FileDown, Banknote, AlertTriangle, Hash, FlaskConical, Factory, Mail, Send,
-  Crown, BarChart3, Store, TrendingUp, UserCog, UserPlus, Receipt,
-  UserCheck, ShoppingBag, DollarSign, Bell, BookOpen as BookOpenIcon, Palette,
-  Building, Globe, ScanBarcode, PackageCheck, RefreshCw,
+  LayoutGrid, Wallet, Box, Activity, Building2, Kanban, FileText, FolderTree,
+  Settings, ChevronRight, CircleHelp, BookOpen, Users, ShieldCheck, Eye, ListChecks,
+  LogOut, CreditCard, Grid3x3, Warehouse, ArrowLeftRight, ShoppingCart,
+  Percent, BarChart3, Banknote, Zap, Fingerprint, ScrollText, Factory, Mail, Send,
+  Crown, Store, TrendingUp, UserCog, UserPlus, FlaskConical,
+  ShoppingBag, Tag, BellRing, BookText, Shapes,
+  Users2, Globe, ScanLine, PackageCheck, RefreshCw, Scale, Search,
+  CheckCircle, MapPin, Award, ChevronsUpDown, Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLiveness } from '@/hooks/useHealth'
 import { useAuthStore } from '@/store/auth'
 import { useLogout } from '@/hooks/useAuth'
 import { useIsModuleActive } from '@/hooks/useModules'
+import { useFeatureToggles } from '@/hooks/useInventory'
+
+/* ── Data ─────────────────────────────────────────────────────────────────── */
 
 const topItems = [
-  { to: '/marketplace', icon: Layers, label: 'Marketplace' },
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/marketplace', icon: Store, label: 'Marketplace' },
+  { to: '/', icon: LayoutGrid, label: 'Dashboard' },
 ]
 
-const inventarioItems = [
-  { to: '/inventario', icon: Boxes, label: 'Dashboard', permission: 'inventory.view' },
-  { to: '/inventario/productos', icon: Package, label: 'Productos', permission: 'inventory.view' },
-  { to: '/inventario/bodegas', icon: Warehouse, label: 'Bodegas', permission: 'inventory.view' },
-  { to: '/inventario/movimientos', icon: ArrowLeftRight, label: 'Movimientos', permission: 'inventory.view' },
-  { to: '/inventario/eventos', icon: AlertTriangle, label: 'Eventos', permission: 'inventory.view' },
-  { to: '/inventario/seriales', icon: Hash, label: 'Seriales', permission: 'inventory.view' },
-  { to: '/inventario/lotes', icon: Layers, label: 'Lotes', permission: 'inventory.view' },
-  { to: '/inventario/recetas', icon: FlaskConical, label: 'Recetas', permission: 'inventory.view' },
-  { to: '/inventario/produccion', icon: Factory, label: 'Producción', permission: 'inventory.view' },
-  { to: '/inventario/clientes', icon: UserCheck, label: 'Clientes', permission: 'inventory.view' },
-  { to: '/inventario/escaner', icon: ScanBarcode, label: 'Escáner', permission: 'inventory.view' },
-  { to: '/inventario/picking', icon: PackageCheck, label: 'Picking', permission: 'inventory.view' },
-  { to: '/inventario/ventas', icon: ShoppingBag, label: 'Ventas', permission: 'inventory.view' },
-  { to: '/inventario/aprobaciones', icon: Shield, label: 'Aprobaciones', permission: 'inventory.view' },
-  { to: '/inventario/proveedores', icon: Truck, label: 'Proveedores', permission: 'inventory.view' },
-  { to: '/inventario/compras', icon: ShoppingCart, label: 'Compras', permission: 'inventory.view' },
-  { to: '/inventario/precios-clientes', icon: DollarSign, label: 'Precios Especiales', permission: 'inventory.view' },
-  { to: '/inventario/variantes', icon: Palette, label: 'Variantes', permission: 'inventory.view' },
-  { to: '/inventario/reorden', icon: RefreshCw, label: 'Reorden Auto', permission: 'inventory.manage' },
-  { to: '/inventario/alertas', icon: Bell, label: 'Alertas', permission: 'inventory.view' },
-  { to: '/inventario/kardex', icon: BookOpenIcon, label: 'Kardex', permission: 'inventory.view' },
-  { to: '/inventario/conteos', icon: ClipboardCheck, label: 'Conteo Cíclico', permission: 'inventory.view' },
-  { to: '/inventario/categorias', icon: FolderTree, label: 'Categorías', permission: 'inventory.view' },
-  { to: '/inventario/reportes', icon: FileDown, label: 'Reportes', permission: 'reports.view' },
-  { to: '/inventario/auditoria', icon: ClipboardList, label: 'Auditoría', permission: 'admin.audit' },
-  { to: '/inventario/configuracion/impuestos', icon: Receipt, label: 'Impuestos', permission: 'inventory.manage' },
-  { to: '/inventario/configuracion', icon: Settings2, label: 'Configuración', permission: 'inventory.config' },
-  { to: '/inventario/ayuda', icon: HelpCircle, label: 'Ayuda', permission: 'inventory.view' },
+const invTop = [
+  { to: '/inventario', icon: LayoutGrid, label: 'Inicio', permission: 'inventory.view' },
+  { to: '/inventario/rentabilidad', icon: TrendingUp, label: 'Rentabilidad', permission: 'inventory.view' },
+  { to: '/inventario/alertas', icon: BellRing, label: 'Alertas', permission: 'inventory.view' },
+]
+
+const invGroups = [
+  {
+    key: 'productos', icon: Box, label: 'Mis Productos',
+    items: [
+      { to: '/inventario/productos', icon: Box, label: 'Productos', permission: 'inventory.view' },
+      { to: '/inventario/categorias', icon: FolderTree, label: 'Categorias', permission: 'inventory.view' },
+    ],
+  },
+  {
+    key: 'bodega', icon: Warehouse, label: 'Bodega y Despacho',
+    items: [
+      { to: '/inventario/bodegas', icon: Warehouse, label: 'Bodegas', permission: 'inventory.view' },
+      { to: '/inventario/movimientos', icon: ArrowLeftRight, label: 'Movimientos', permission: 'inventory.view' },
+      { to: '/inventario/lotes', icon: Grid3x3, label: 'Lotes', permission: 'inventory.view', feature: 'lotes' },
+      { to: '/inventario/seriales', icon: Fingerprint, label: 'Seriales', permission: 'inventory.view', feature: 'seriales' },
+      { to: '/inventario/conteos', icon: ListChecks, label: 'Conteo', permission: 'inventory.view', feature: 'conteo' },
+      { to: '/inventario/escaner', icon: ScanLine, label: 'Escaner', permission: 'inventory.view', feature: 'escaner' },
+      { to: '/inventario/picking', icon: PackageCheck, label: 'Picking', permission: 'inventory.view', feature: 'picking' },
+      { to: '/inventario/reorden', icon: RefreshCw, label: 'Reorden', permission: 'inventory.manage' },
+    ],
+  },
+  {
+    key: 'comercial', icon: Users2, label: 'Compras y Ventas',
+    items: [
+      { to: '/inventario/socios', icon: Users2, label: 'Socios', permission: 'inventory.view' },
+      { to: '/inventario/compras', icon: ShoppingCart, label: 'Compras', permission: 'inventory.view' },
+      { to: '/inventario/ventas', icon: ShoppingBag, label: 'Ventas', permission: 'inventory.view' },
+      { to: '/inventario/precios-clientes', icon: Tag, label: 'Precios', permission: 'inventory.view', feature: 'precios' },
+      { to: '/inventario/aprobaciones', icon: ShieldCheck, label: 'Aprobaciones', permission: 'inventory.view', feature: 'aprobaciones' },
+    ],
+  },
+  {
+    key: 'informes', icon: BarChart3, label: 'Informes',
+    items: [
+      { to: '/inventario/reportes', icon: BarChart3, label: 'Reportes', permission: 'reports.view' },
+      { to: '/inventario/kardex', icon: BookText, label: 'Kardex', permission: 'inventory.view', feature: 'kardex' },
+      { to: '/inventario/eventos', icon: Zap, label: 'Eventos', permission: 'inventory.view', feature: 'eventos' },
+      { to: '/inventario/auditoria', icon: Eye, label: 'Auditoria', permission: 'admin.audit' },
+    ],
+  },
+  {
+    key: 'ajustes', icon: Settings, label: 'Ajustes',
+    items: [
+      { to: '/inventario/configuracion', icon: Settings, label: 'Configuracion', permission: 'inventory.config' },
+      { to: '/inventario/configuracion/impuestos', icon: Percent, label: 'Impuestos', permission: 'inventory.manage' },
+      { to: '/inventario/unidades-medida', icon: Scale, label: 'Medidas', permission: 'inventory.manage' },
+      { to: '/inventario/ayuda', icon: CircleHelp, label: 'Ayuda', permission: 'inventory.view' },
+    ],
+  },
+]
+
+const produccionItems = [
+  { to: '/inventario/recetas', icon: ScrollText, label: 'Recetas', permission: 'production.view' },
+  { to: '/inventario/produccion', icon: Factory, label: 'Corridas', permission: 'production.view' },
+]
+
+const cumplimientoItems = [
+  { to: '/cumplimiento/frameworks', icon: Globe, label: 'Marcos Normativos' },
+  { to: '/cumplimiento/activaciones', icon: CheckCircle, label: 'Mis Normas' },
+  { to: '/cumplimiento/parcelas', icon: MapPin, label: 'Parcelas' },
+  { to: '/cumplimiento/registros', icon: FileText, label: 'Registros' },
+  { to: '/cumplimiento/certificados', icon: Award, label: 'Certificados' },
 ]
 
 const logisticaItems = [
-  { to: '/tracking', icon: Kanban, label: 'Panel de Seguimiento' },
-  { to: '/assets', icon: Package, label: 'Cargas' },
+  { to: '/tracking', icon: Kanban, label: 'Seguimiento' },
+  { to: '/assets', icon: Box, label: 'Cargas' },
   { to: '/wallets', icon: Wallet, label: 'Custodios' },
   { to: '/organizations', icon: Building2, label: 'Organizaciones' },
 ]
 
 const ayudaItems = [
   { to: '/help', icon: BookOpen, label: 'Inicio' },
-  { to: '/help/assets', icon: Package, label: 'Cargas' },
+  { to: '/help/assets', icon: Box, label: 'Cargas' },
   { to: '/help/wallets', icon: Wallet, label: 'Custodios' },
   { to: '/help/organizations', icon: Building2, label: 'Organizaciones' },
-  { to: '/help/tracking', icon: Kanban, label: 'Panel de Seguimiento' },
+  { to: '/help/tracking', icon: Kanban, label: 'Seguimiento' },
 ]
 
-// Tenant self-service: subscription (always), email config (only when a module is active)
 const empresaAlwaysItems = [
-  { to: '/empresa/suscripcion', icon: CreditCard, label: 'Mi Suscripción', permission: 'subscription.view' },
+  { to: '/empresa/suscripcion', icon: CreditCard, label: 'Suscripcion', permission: 'subscription.view' },
+  { to: '/settings/billing',    icon: Banknote,    label: 'Facturacion', permission: 'subscription.view' },
 ]
 const empresaModuleItems = [
-  { to: '/empresa/plantillas',  icon: Mail,       label: 'Plantillas de Correo', permission: 'email.view' },
-  { to: '/empresa/correo',      icon: Send,       label: 'Proveedor de Correo',  permission: 'email.manage' },
+  { to: '/empresa/plantillas',  icon: Mail, label: 'Plantillas', permission: 'email.view' },
+  { to: '/empresa/correo',      icon: Send, label: 'Correo',     permission: 'email.manage' },
 ]
 
-// Team admin: users, roles, audit
 const equipoItems = [
   { to: '/equipo/usuarios',  icon: Users,         label: 'Usuarios',  permission: 'admin.users' },
-  { to: '/equipo/roles',     icon: Shield,        label: 'Roles',     permission: 'admin.roles' },
-  { to: '/equipo/auditoria', icon: ClipboardList, label: 'Auditoría', permission: 'admin.audit' },
+  { to: '/equipo/roles',     icon: ShieldCheck,   label: 'Roles',     permission: 'admin.roles' },
+  { to: '/equipo/auditoria', icon: Eye,           label: 'Auditoria', permission: 'admin.audit' },
 ]
 
-function NavItem({ to, icon: Icon, label, onClick }: { to: string; icon: React.ElementType; label: string; onClick?: () => void }) {
+/* ── Force-reset navigation when clicking the same route ───────────────── */
+
+function useResetNav(to: string, onClick?: () => void) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  return (e: React.MouseEvent) => {
+    if (location.pathname === to) {
+      e.preventDefault()
+      navigate(to, { replace: true })
+    }
+    onClick?.()
+  }
+}
+
+/* ── Sub-nav link (used in expanded groups) ────────────────────────────── */
+
+function SubNavLink({ to, label, onClick }: { to: string; label: string; onClick?: () => void }) {
+  const handleClick = useResetNav(to, onClick)
+  return (
+    <NavLink key={to} to={to} onClick={handleClick}
+      className={({ isActive }) => cn(
+        'flex items-center rounded-md py-1.5 pl-9 pr-3 text-[13px] transition-colors duration-150',
+        isActive ? 'text-white' : 'text-[color:var(--sidebar-foreground)] opacity-60 hover:opacity-90',
+      )}>
+      {label}
+    </NavLink>
+  )
+}
+
+/* ── Nav item — premium style ─────────────────────────────────────────────── */
+
+function NavItem({ to, icon: Icon, label, onClick, collapsed }: {
+  to: string; icon: React.ElementType; label: string; onClick?: () => void; collapsed?: boolean
+}) {
+  const handleClick = useResetNav(to, onClick)
+  if (collapsed) {
+    return (
+      <div className="relative group">
+        <NavLink
+          to={to}
+          end={to === '/' || to === '/inventario'}
+          onClick={handleClick}
+          className={({ isActive }) =>
+            cn(
+              'flex items-center justify-center rounded-md py-2 mx-auto w-10 transition-colors duration-150',
+              isActive
+                ? 'bg-white/[0.08] text-white'
+                : 'text-[color:var(--sidebar-foreground)] hover:bg-white/[0.05]',
+            )
+          }
+        >
+          {({ isActive }) => (
+            <Icon className={cn('h-4 w-4 shrink-0', isActive && 'text-emerald-400')} />
+          )}
+        </NavLink>
+        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 bg-gray-950 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-[60]">
+          {label}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <NavLink
       to={to}
-      end={to === '/'}
-      onClick={onClick}
+      end={to === '/' || to === '/inventario'}
+      onClick={handleClick}
       className={({ isActive }) =>
         cn(
-          'group relative flex items-center gap-2.5 rounded-sm px-4 py-2 text-sm font-medium duration-300 ease-in-out',
+          'flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors duration-150',
           isActive
-            ? 'bg-indigo-50 text-indigo-600'
-            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700',
+            ? 'bg-white/[0.08] text-white font-medium'
+            : 'text-[color:var(--sidebar-foreground)] hover:bg-white/[0.05] hover:text-white/90 font-normal',
         )
       }
     >
       {({ isActive }) => (
         <>
-          <Icon className={cn(
-            'h-[18px] w-[18px] shrink-0',
-            isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600',
-          )} />
-          <span>{label}</span>
+          <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-emerald-400' : 'opacity-50')} />
+          <span className="truncate">{label}</span>
         </>
       )}
     </NavLink>
   )
 }
 
+/* ── Section label ─────────────────────────────────────────────────────────── */
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="px-3 pt-5 pb-1 text-[11px] font-medium uppercase tracking-widest select-none text-[color:var(--sidebar-foreground)] opacity-40">
+      {children}
+    </p>
+  )
+}
+
+/* ── Collapsible section ──────────────────────────────────────────────────── */
+
+function Section({ label, isOpen, onToggle, children, collapsed }: {
+  label: string; isOpen: boolean; onToggle: () => void; children: React.ReactNode; accent?: string; collapsed?: boolean
+}) {
+  if (collapsed) {
+    return <div className="pt-2 space-y-0.5">{children}</div>
+  }
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-3 pt-5 pb-1 text-[11px] font-medium uppercase tracking-widest select-none text-[color:var(--sidebar-foreground)] opacity-40 hover:opacity-60 transition-opacity"
+      >
+        <span>{label}</span>
+        <ChevronRight className={cn('h-3 w-3 transition-transform duration-200', isOpen && 'rotate-90')} />
+      </button>
+      <div className={cn(
+        'overflow-hidden transition-all duration-200',
+        isOpen ? 'max-h-[2000px] opacity-100 mt-0.5' : 'max-h-0 opacity-0',
+      )}>
+        <div className="space-y-0.5">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Main sidebar ─────────────────────────────────────────────────────────── */
+
+const MIN_W = 56
+const MAX_W = 280
+const DEFAULT_W = 240
+const COLLAPSE_W = 80
+
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: health } = useLiveness()
   const alive = health?.status === 'ok'
+
+  // ── Resizable width
+  const [width, setWidth] = useState(() => {
+    const saved = localStorage.getItem('sidebar-w')
+    return saved ? Math.min(MAX_W, Math.max(MIN_W, Number(saved))) : DEFAULT_W
+  })
+  const [isDragging, setIsDragging] = useState(false)
+  const startX = useRef(0)
+  const startW = useRef(DEFAULT_W)
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    startX.current = e.clientX
+    startW.current = width
+    setIsDragging(true)
+  }, [width])
+
+  useEffect(() => {
+    if (!isDragging) return
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    const onMove = (e: MouseEvent) => {
+      const newW = Math.min(MAX_W, Math.max(MIN_W, startW.current + (e.clientX - startX.current)))
+      setWidth(newW)
+    }
+    const onUp = () => {
+      setIsDragging(false)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      localStorage.setItem('sidebar-w', String(width))
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+  }, [isDragging, width])
+
   const [logisticaOpen, setLogisticaOpen] = useState(true)
   const [inventarioOpen, setInventarioOpen] = useState(true)
   const [ayudaOpen, setAyudaOpen] = useState(false)
   const [equipoOpen, setEquipoOpen] = useState(true)
   const [empresaOpen, setEmpresaOpen] = useState(false)
   const [plataformaOpen, setPlataformaOpen] = useState(false)
+  const [produccionOpen, setProduccionOpen] = useState(true)
+  const [cumplimientoOpen, setCumplimientoOpen] = useState(true)
+  const [openInvGroup, setOpenInvGroup] = useState<string | null>(null)
+  const collapsed = width < COLLAPSE_W
+
+  const expandSidebar = useCallback(() => {
+    setWidth(DEFAULT_W)
+    localStorage.setItem('sidebar-w', String(DEFAULT_W))
+  }, [])
 
   const user = useAuthStore((s) => s.user)
   const hasPermission = useAuthStore((s) => s.hasPermission)
   const isSuperuser = user?.is_superuser ?? false
   const logout = useLogout()
 
+  const { data: features } = useFeatureToggles()
+  const feat = (key: string) => features?.[key] !== false
+
   const isLogisticsActive = useIsModuleActive('logistics')
   const isInventoryActive = useIsModuleActive('inventory')
   const isEInvoicingActive = useIsModuleActive('electronic-invoicing')
   const isEInvoicingSandboxActive = useIsModuleActive('electronic-invoicing-sandbox')
+  const isProductionActive = useIsModuleActive('production')
+  const isComplianceActive = useIsModuleActive('compliance')
 
   const visibleEquipoItems = equipoItems.filter((item) => hasPermission(item.permission))
-  const anyModuleActive = isLogisticsActive || isInventoryActive || isEInvoicingActive || isEInvoicingSandboxActive
+  const anyModuleActive = isLogisticsActive || isInventoryActive || isEInvoicingActive || isEInvoicingSandboxActive || isProductionActive || isComplianceActive
   const visibleEmpresaItems = [
     ...empresaAlwaysItems.filter((item) => hasPermission(item.permission)),
     ...(anyModuleActive ? empresaModuleItems.filter((item) => hasPermission(item.permission)) : []),
   ]
-  const visibleInventarioItems = inventarioItems.filter((item) => hasPermission(item.permission))
+  const filterPerm = (items: typeof invTop) => items.filter(i =>
+    hasPermission(i.permission) && (!('feature' in i) || feat((i as any).feature))
+  )
+  const hasAnyInvItem = invGroups.some(g => filterPerm(g.items).length > 0) || filterPerm(invTop).length > 0
+
+  const initials = user?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() ?? '?'
 
   return (
-    <aside className={cn(
-      'fixed inset-y-0 left-0 z-40 flex flex-col h-full w-72 overflow-y-hidden bg-white border-r border-gray-200 shrink-0 transition-transform duration-300 ease-in-out',
-      'md:static md:translate-x-0 md:z-20',
-      open ? 'translate-x-0' : '-translate-x-full',
-    )}>
-
-      {/* Logo */}
-      <div className="flex items-center gap-2.5 px-6 py-5 shrink-0">
-        {/* Mark — stylized "TL" monogram */}
-        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" className="shrink-0">
-          <rect width="34" height="34" rx="8" fill="#4F46E5" />
-          <path d="M8 11h18v2.5H18.5V25H15V13.5H8V11Z" fill="white" />
-          <path d="M20 17h2.5v5.5H27V25H20V17Z" fill="white" opacity="0.7" />
-        </svg>
-        {/* Wordmark */}
-        <div className="flex flex-col">
-          <p className="text-[19px] leading-none tracking-tight">
-            <span className="font-bold text-gray-900">Trace</span>
-            <span className="font-medium text-indigo-600">Log</span>
-          </p>
-          <p className="text-[10px] font-medium text-gray-400 mt-0.5 uppercase tracking-widest">Cadena de Custodia</p>
-        </div>
+    <aside
+      className={cn(
+        'fixed inset-y-0 left-0 z-40 flex flex-col h-full shrink-0',
+        'md:static md:translate-x-0 md:z-20',
+        open ? 'translate-x-0' : '-translate-x-full',
+        !isDragging && 'transition-transform duration-300 ease-out',
+      )}
+      style={{ width, background: 'var(--sidebar)' }}
+    >
+      {/* Resize handle */}
+      <div
+        onMouseDown={onMouseDown}
+        className="absolute top-0 -right-[3px] w-[6px] h-full cursor-col-resize z-50 group hidden md:flex items-center justify-center"
+      >
+        <div className={cn(
+          'w-px h-full transition-colors',
+          isDragging ? 'bg-emerald-500/40' : 'bg-white/[0.06] group-hover:bg-white/[0.12]',
+        )} />
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto no-scrollbar">
-        <h3 className="mb-4 ml-4 text-sm font-semibold text-gray-400 uppercase">Menú</h3>
-        {topItems.map(({ to, icon, label }) => (
-          <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} />
-        ))}
+      {/* ── Header ──────────────────────────────────────────────────── */}
+      {collapsed ? (
+        <button
+          onClick={expandSidebar}
+          className="flex items-center justify-center h-14 shrink-0 group relative"
+        >
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500 shrink-0">
+            <svg width="14" height="14" viewBox="0 0 34 34" fill="none">
+              <path d="M8 11h18v2.5H18.5V25H15V13.5H8V11Z" fill="white" />
+              <path d="M20 17h2.5v5.5H27V25H20V17Z" fill="white" opacity="0.7" />
+            </svg>
+          </div>
+          <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 bg-gray-950 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-[60]">
+            Expandir menu
+          </div>
+        </button>
+      ) : (
+        <NavLink to="/" onClick={onClose} className="flex items-center gap-2.5 px-4 pt-5 pb-4 shrink-0 group">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500 shrink-0">
+            <svg width="14" height="14" viewBox="0 0 34 34" fill="none">
+              <path d="M8 11h18v2.5H18.5V25H15V13.5H8V11Z" fill="white" />
+              <path d="M20 17h2.5v5.5H27V25H20V17Z" fill="white" opacity="0.7" />
+            </svg>
+          </div>
+          <span className="text-[15px] font-semibold text-white tracking-tight leading-none">
+            TraceLog
+          </span>
+        </NavLink>
+      )}
 
-        {/* Logística section — only when module is active */}
+      {/* Separator */}
+      {!collapsed && <div className="mx-3 h-px bg-white/[0.06]" />}
+
+      {/* ── Navigation ──────────────────────────────────────────────── */}
+      <nav className="flex-1 px-2 py-2 overflow-y-auto sidebar-scroll">
+        <div className="space-y-0.5">
+          {topItems.map(({ to, icon, label }) => (
+            <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
+          ))}
+        </div>
+
+        {/* Logistica */}
         {isLogisticsActive && (
-        <div className="pt-4">
-          <button
-            onClick={() => setLogisticaOpen(o => !o)}
-            className="w-full flex items-center justify-between ml-4 mb-2 text-sm font-semibold text-gray-400 uppercase hover:text-gray-600 transition-colors"
-          >
-            <span>Logística</span>
-            <ChevronDown className={cn(
-              'h-4 w-4 mr-4 transition-transform duration-200',
-              logisticaOpen ? 'rotate-0' : '-rotate-90',
-            )} />
-          </button>
+          <Section label="Logistica" isOpen={logisticaOpen} onToggle={() => setLogisticaOpen(o => !o)} collapsed={collapsed}>
+            {logisticaItems.map(({ to, icon, label }) => (
+              <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
+            ))}
+            {!collapsed && (<>
+              <button
+                onClick={() => setAyudaOpen(o => !o)}
+                className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-[color:var(--sidebar-foreground)] opacity-60 hover:opacity-90 rounded-md hover:bg-white/[0.05] transition-all"
+              >
+                <CircleHelp className="h-4 w-4 opacity-50" />
+                <span>Ayuda</span>
+                <ChevronRight className={cn('h-3 w-3 ml-auto transition-transform duration-150', ayudaOpen && 'rotate-90')} />
+              </button>
+              {ayudaOpen && (
+                <div className="space-y-0.5 mt-0.5">
+                  {ayudaItems.map(({ to, label }) => (
+                    <SubNavLink key={to} to={to} label={label} onClick={onClose} />
+                  ))}
+                </div>
+              )}
+            </>)}
+          </Section>
+        )}
 
-          {logisticaOpen && (
-            <div className="space-y-1">
-              {logisticaItems.map(({ to, icon, label }) => (
-                <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} />
-              ))}
-
-              {/* Ayuda — sub-sección */}
-              <div className="pt-1">
-                <button
-                  onClick={() => setAyudaOpen(o => !o)}
-                  className="w-full flex items-center justify-between pl-4 pr-4 py-1.5 text-xs font-semibold text-gray-400 uppercase hover:text-gray-600 transition-colors rounded hover:bg-gray-50"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <HelpCircle className="h-3 w-3" /> Ayuda
-                  </span>
-                  <ChevronDown className={cn(
-                    'h-3 w-3 transition-transform duration-200',
-                    ayudaOpen ? 'rotate-0' : '-rotate-90',
-                  )} />
-                </button>
-
-                {ayudaOpen && (
-                  <div className="mt-1 ml-3 pl-3 border-l border-gray-200 space-y-0.5">
-                    {ayudaItems.map(({ to, icon: Icon, label }) => (
-                      <NavLink
-                        key={to}
-                        to={to}
-                        end={to === '/help'}
-                        onClick={onClose}
-                        className={({ isActive }) =>
-                          cn(
-                            'flex items-center gap-2 rounded-sm px-3 py-1.5 text-xs font-medium duration-300 ease-in-out hover:text-gray-700',
-                            isActive
-                              ? 'text-indigo-600'
-                              : 'text-gray-400',
-                          )
-                        }
+        {/* Inventario */}
+        {isInventoryActive && hasAnyInvItem && (
+          <Section label="Inventario" isOpen={inventarioOpen} onToggle={() => setInventarioOpen(o => !o)} collapsed={collapsed}>
+            {filterPerm(invTop).map(({ to, icon, label }) => (
+              <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
+            ))}
+            {collapsed
+              ? invGroups.map(group => {
+                  const visible = filterPerm(group.items)
+                  if (visible.length === 0) return null
+                  return <NavItem key={group.key} to={visible[0].to} icon={group.icon} label={group.label} onClick={onClose} collapsed={collapsed} />
+                })
+              : invGroups.map(group => {
+                  const visible = filterPerm(group.items)
+                  if (visible.length === 0) return null
+                  const isGroupOpen = openInvGroup === group.key
+                  const GroupIcon = group.icon
+                  return (
+                    <div key={group.key}>
+                      <button
+                        onClick={() => setOpenInvGroup(isGroupOpen ? null : group.key)}
+                        className={cn(
+                          'w-full flex items-center gap-2.5 px-3 py-1.5 text-sm rounded-md transition-colors duration-150',
+                          isGroupOpen
+                            ? 'bg-white/[0.08] text-white font-medium'
+                            : 'text-[color:var(--sidebar-foreground)] hover:bg-white/[0.05] hover:text-white/90',
+                        )}
                       >
-                        <Icon className="h-3.5 w-3.5 shrink-0" />
-                        {label}
-                      </NavLink>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+                        <GroupIcon className={cn('h-4 w-4 shrink-0', isGroupOpen ? 'text-emerald-400' : 'opacity-50')} />
+                        <span className="flex-1 text-left truncate">{group.label}</span>
+                        <ChevronRight className={cn('h-3 w-3 opacity-30 transition-transform duration-200', isGroupOpen && 'rotate-90')} />
+                      </button>
+                      {isGroupOpen && (
+                        <div className="space-y-0.5 mt-0.5">
+                          {visible.map(({ to, label }) => (
+                            <SubNavLink key={to} to={to} label={label} onClick={onClose} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+            }
+          </Section>
         )}
 
-        {/* Inventario section — only when module is active and user has at least one permission */}
-        {isInventoryActive && visibleInventarioItems.length > 0 && (
-        <div className="pt-4">
-          <button
-            onClick={() => setInventarioOpen(o => !o)}
-            className="w-full flex items-center justify-between ml-4 mb-2 text-sm font-semibold text-gray-400 uppercase hover:text-gray-600 transition-colors"
-          >
-            <span>Inventario</span>
-            <ChevronDown className={cn(
-              'h-4 w-4 mr-4 transition-transform duration-200',
-              inventarioOpen ? 'rotate-0' : '-rotate-90',
-            )} />
-          </button>
-          {inventarioOpen && (
-            <div className="space-y-1">
-              {visibleInventarioItems.map(({ to, icon, label }) => (
-                <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} />
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Produccion */}
+        {isInventoryActive && isProductionActive && (
+          <Section label="Produccion" isOpen={produccionOpen} onToggle={() => setProduccionOpen(o => !o)} collapsed={collapsed}>
+            {produccionItems.filter(i => hasPermission(i.permission)).map(({ to, icon, label }) => (
+              <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
+            ))}
+          </Section>
         )}
 
-
-        {/* Facturación Electrónica — only when both inventory + e-invoicing modules are active */}
+        {/* E-Invoicing */}
         {isInventoryActive && isEInvoicingActive && (
-          <div className="pt-4">
-            <NavItem to="/facturacion-electronica" icon={FileText} label="Facturación Electrónica" onClick={onClose} />
+          <div className="pt-1 space-y-0.5">
+            <NavItem to="/facturacion-electronica" icon={FileText} label="Facturacion Electronica" onClick={onClose} collapsed={collapsed} />
           </div>
         )}
-
-        {/* Facturación Electrónica Sandbox — only when both inventory + sandbox modules are active */}
         {isInventoryActive && isEInvoicingSandboxActive && (
-          <div className="pt-4">
-            <NavItem to="/facturacion-electronica-sandbox" icon={FlaskConical} label="Sandbox Facturación" onClick={onClose} />
+          <div className="space-y-0.5">
+            <NavItem to="/facturacion-electronica-sandbox" icon={FlaskConical} label="Sandbox" onClick={onClose} collapsed={collapsed} />
           </div>
         )}
 
-        {/* Mi Equipo — team admin (users, roles, audit) */}
+        {/* Cumplimiento */}
+        {isComplianceActive && (
+          <Section label="Cumplimiento" isOpen={cumplimientoOpen} onToggle={() => setCumplimientoOpen(o => !o)} collapsed={collapsed}>
+            {cumplimientoItems.map(({ to, icon, label }) => (
+              <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
+            ))}
+          </Section>
+        )}
+
+        {/* Separador */}
+        {!collapsed && <div className="mx-3 my-2 h-px bg-white/[0.06]" />}
+
+        {/* Mi Equipo */}
         {visibleEquipoItems.length > 0 && (
-          <div className="pt-4">
-            <button
-              onClick={() => setEquipoOpen(o => !o)}
-              className="w-full flex items-center justify-between ml-4 mb-2 text-sm font-semibold text-gray-400 uppercase hover:text-gray-600 transition-colors"
-            >
-              <span>Mi Equipo</span>
-              <ChevronDown className={cn(
-                'h-4 w-4 mr-4 transition-transform duration-200',
-                equipoOpen ? 'rotate-0' : '-rotate-90',
-              )} />
-            </button>
-            {equipoOpen && (
-              <div className="space-y-1">
-                {visibleEquipoItems.map(({ to, icon, label }) => (
-                  <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} />
-                ))}
-              </div>
-            )}
-          </div>
+          <Section label="Equipo" isOpen={equipoOpen} onToggle={() => setEquipoOpen(o => !o)} collapsed={collapsed}>
+            {visibleEquipoItems.map(({ to, icon, label }) => (
+              <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
+            ))}
+          </Section>
         )}
 
-        {/* Mi Empresa — tenant self-service (subscription, email) */}
+        {/* Mi Empresa */}
         {visibleEmpresaItems.length > 0 && (
-          <div className="pt-4">
-            <button
-              onClick={() => setEmpresaOpen(o => !o)}
-              className="w-full flex items-center justify-between ml-4 mb-2 text-sm font-semibold text-emerald-600 uppercase hover:text-emerald-700 transition-colors"
-            >
-              <span className="flex items-center gap-1.5"><Building className="h-3.5 w-3.5" /> Mi Empresa</span>
-              <ChevronDown className={cn(
-                'h-4 w-4 mr-4 transition-transform duration-200',
-                empresaOpen ? 'rotate-0' : '-rotate-90',
-              )} />
-            </button>
-            {empresaOpen && (
-              <div className="space-y-1">
-                {visibleEmpresaItems.map(({ to, icon, label }) => (
-                  <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} />
-                ))}
-              </div>
-            )}
-          </div>
+          <Section label="Empresa" isOpen={empresaOpen} onToggle={() => setEmpresaOpen(o => !o)} collapsed={collapsed}>
+            {visibleEmpresaItems.map(({ to, icon, label }) => (
+              <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
+            ))}
+          </Section>
         )}
 
-        {/* Plataforma — solo superusuarios de TraceLog */}
+        {/* Plataforma */}
         {isSuperuser && (
-          <div className="pt-4">
-            <button
-              onClick={() => setPlataformaOpen(o => !o)}
-              className="w-full flex items-center justify-between ml-4 mb-2 text-sm font-semibold text-indigo-600 uppercase hover:text-indigo-700 transition-colors"
-            >
-              <span className="flex items-center gap-1.5"><Crown className="h-3.5 w-3.5" /> Plataforma</span>
-              <ChevronDown className={cn(
-                'h-4 w-4 mr-4 transition-transform duration-200',
-                plataformaOpen ? 'rotate-0' : '-rotate-90',
-              )} />
-            </button>
-            {plataformaOpen && (
-              <div className="space-y-1">
-                <NavItem to="/platform" icon={BarChart3} label="Panel Ejecutivo" onClick={onClose} />
-                <NavItem to="/system" icon={Activity} label="Sistema" onClick={onClose} />
-                <NavItem to="/platform/tenants" icon={Building2} label="Empresas" onClick={onClose} />
-                <NavItem to="/platform/analytics" icon={Activity} label="Analítica" onClick={onClose} />
-                <NavItem to="/platform/sales" icon={TrendingUp} label="Ventas" onClick={onClose} />
-                <NavItem to="/platform/plans" icon={Package} label="Planes" onClick={onClose} />
-                <NavItem to="/platform/subscriptions" icon={CreditCard} label="Suscripciones" onClick={onClose} />
-                <NavItem to="/platform/users" icon={Globe} label="Usuarios Global" onClick={onClose} />
-                <NavItem to="/platform/marketplace" icon={Store} label="Marketplace" onClick={onClose} />
-                <NavItem to="/platform/team" icon={UserCog} label="Equipo Interno" onClick={onClose} />
-                <NavItem to="/platform/onboard" icon={UserPlus} label="Onboarding" onClick={onClose} />
-                <NavItem to="/platform/payments" icon={Banknote} label="Pasarela de Cobro" onClick={onClose} />
-                <NavItem to="/platform/blockchain" icon={Settings} label="Blockchain" onClick={onClose} />
-              </div>
-            )}
-          </div>
+          <Section label="Plataforma" isOpen={plataformaOpen} onToggle={() => setPlataformaOpen(o => !o)} collapsed={collapsed}>
+            <NavItem to="/platform" icon={BarChart3} label="Panel" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/system" icon={Activity} label="Sistema" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/tenants" icon={Building2} label="Empresas" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/analytics" icon={TrendingUp} label="Analitica" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/sales" icon={TrendingUp} label="Ventas" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/plans" icon={Box} label="Planes" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/subscriptions" icon={CreditCard} label="Suscripciones" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/users" icon={Globe} label="Usuarios" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/marketplace" icon={Store} label="Marketplace" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/team" icon={UserCog} label="Equipo" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/onboard" icon={UserPlus} label="Onboarding" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/payments" icon={Banknote} label="Pagos" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/blockchain" icon={Activity} label="Blockchain" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/ai" icon={Sparkles} label="Inteligencia Artificial" onClick={onClose} collapsed={collapsed} />
+          </Section>
         )}
       </nav>
 
-      {/* Footer: user profile + logout */}
-      <div className="px-4 py-4 border-t border-gray-200 shrink-0 space-y-2">
+      {/* ── Footer ──────────────────────────────────────────────────── */}
+      <div className="px-3 pb-4 pt-2 shrink-0">
+        <div className="h-px bg-white/[0.06] mb-3" />
         {user && (
           <NavLink
             to="/profile"
-            onClick={onClose}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-sm px-3 py-2.5 transition-all',
-                isActive ? 'bg-indigo-50' : 'hover:bg-gray-50',
-              )
-            }
+            onClick={collapsed ? expandSidebar : onClose}
+            className="flex items-center gap-3 rounded-md px-2 py-2 transition-colors duration-150 group hover:bg-white/[0.05]"
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white font-semibold text-sm overflow-hidden">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-500/20 text-[10px] font-semibold text-emerald-400">
               {user.avatar_url ? (
                 <img
                   src={user.avatar_url.startsWith('http') ? user.avatar_url : `${import.meta.env.VITE_USER_API_URL ?? 'http://localhost:9001'}${user.avatar_url}`}
                   alt={user.full_name}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover rounded-md"
                 />
-              ) : (
-                user.full_name?.[0]?.toUpperCase() ?? '?'
-              )}
+              ) : initials}
             </div>
-            <div className="min-w-0">
-              <div className="text-xs font-semibold text-gray-700 truncate">{user.full_name}</div>
-              <div className="text-[10px] text-gray-400 truncate">{user.email}</div>
-            </div>
+            {!collapsed && (
+              <>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-medium text-white truncate leading-none">{user.full_name}</p>
+                  <p className="text-[11px] truncate mt-0.5 text-[color:var(--sidebar-foreground)] opacity-50">{user.email}</p>
+                </div>
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); logout.mutate() }}
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-white/[0.08] text-[color:var(--sidebar-foreground)] hover:text-red-400 transition-all"
+                  title="Cerrar sesion"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              </>
+            )}
+            {collapsed && (
+              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 bg-gray-950 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-[60]">
+                {user.full_name}
+              </div>
+            )}
           </NavLink>
         )}
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="relative shrink-0">
-              <span className={cn(
-                'block h-2 w-2 rounded-full',
-                alive ? 'bg-emerald-500' : 'bg-red-500',
-              )} />
-              {alive && (
-                <span className="absolute inset-0 h-2 w-2 rounded-full bg-emerald-500 animate-ping opacity-60" />
-              )}
-            </div>
-            <span className="text-xs text-gray-400">
-              {alive ? 'API connected' : 'API unreachable'}
-            </span>
-          </div>
-          {user && (
-            <button
-              onClick={() => logout.mutate()}
-              className="flex items-center gap-1 rounded-sm px-2 py-1.5 text-xs text-gray-400 hover:text-red-500 hover:bg-gray-50 transition-colors"
-              title="Cerrar sesión"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
       </div>
     </aside>
   )

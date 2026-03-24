@@ -5,9 +5,9 @@ import { useNavigate } from 'react-router-dom'
 import { useCreateAsset } from '@/hooks/useAssets'
 import { useToast } from '@/store/toast'
 import { tryParseJson } from '@/lib/utils'
-import { Dialog } from '@/components/ui/Dialog'
-import { Button } from '@/components/ui/Button'
-import { Input, Textarea } from '@/components/ui/Input'
+import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
+import { Button } from '@/components/ui/button'
+import { Input, Textarea } from '@/components/ui/input'
 
 const schema = z.object({
   asset_mint:               z.string().min(1, 'Requerido').max(64),

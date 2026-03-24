@@ -5,7 +5,7 @@ export function CopyableId({ id }: { id: string }) {
 
   return (
     <span
-      className="font-mono text-[10px] text-slate-400 cursor-pointer hover:text-indigo-600 transition-colors"
+      className="font-mono text-[10px] text-slate-400 cursor-pointer hover:text-primary transition-colors"
       title={copied ? '¡Copiado!' : id}
       onClick={(e) => {
         e.stopPropagation()

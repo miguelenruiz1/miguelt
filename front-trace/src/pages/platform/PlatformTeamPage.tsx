@@ -49,7 +49,7 @@ export function PlatformTeamPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/platform" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600 mb-2">
+        <Link to="/platform" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-primary mb-2">
           <ArrowLeft className="h-4 w-4" /> Panel
         </Link>
         <h1 className="text-2xl font-bold text-slate-900">Equipo de Plataforma</h1>
@@ -67,7 +67,7 @@ export function PlatformTeamPage() {
             placeholder="Buscar por nombre o email..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none"
+            className="w-full pl-9 pr-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none"
           />
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-500">
@@ -81,7 +81,7 @@ export function PlatformTeamPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center h-40">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600" />
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
         </div>
       ) : (
         <>
@@ -135,9 +135,9 @@ export function PlatformTeamPage() {
       )}
 
       {/* Info */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-5">
-        <h4 className="text-sm font-semibold text-indigo-800 mb-1">Permisos de Plataforma</h4>
-        <ul className="text-sm text-indigo-700 space-y-1 list-disc list-inside">
+      <div className="bg-primary/10 border border-primary/30 rounded-2xl p-5">
+        <h4 className="text-sm font-semibold text-primary mb-1">Permisos de Plataforma</h4>
+        <ul className="text-sm text-primary space-y-1 list-disc list-inside">
           <li><strong>Superusuario</strong>: acceso total a todos los tenants, panel de plataforma, pasarela de cobro</li>
           <li><strong>Usuario regular</strong>: solo tiene acceso al tenant al que pertenece, con los permisos de su rol</li>
           <li>Para agregar miembros al equipo de soporte, activa el toggle de superusuario</li>
@@ -167,7 +167,7 @@ function UserRow({ user, isCurrent, onToggleSuperuser, onToggleActive }: {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-slate-900 truncate">{user.full_name}</span>
-          {isCurrent && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-md font-medium">Tu</span>}
+          {isCurrent && <span className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-md font-medium">Tu</span>}
           {user.is_superuser && <Crown className="h-3.5 w-3.5 text-amber-500" />}
         </div>
         <div className="flex items-center gap-3 text-xs text-slate-400">
@@ -204,7 +204,7 @@ function UserRow({ user, isCurrent, onToggleSuperuser, onToggleActive }: {
             'text-xs px-3 py-1.5 rounded-lg font-medium transition',
             user.is_superuser
               ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-              : 'bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-700',
+              : 'bg-slate-100 text-slate-600 hover:bg-primary/15 hover:text-primary',
             isCurrent && 'opacity-50 cursor-not-allowed',
           )}
           title={isCurrent ? 'No puedes cambiar tu propio estado' : ''}

@@ -7,8 +7,8 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Topbar } from '@/components/layout/Topbar'
-import { Button } from '@/components/ui/Button'
-import { Dialog } from '@/components/ui/Dialog'
+import { Button } from '@/components/ui/button'
+import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
 import { Spinner, EmptyState } from '@/components/ui/Misc'
 import { useToast } from '@/store/toast'
 import { useConfirm } from '@/store/confirm'
@@ -23,7 +23,7 @@ import {
 import type { CustodianType } from '@/types/api'
 
 const fieldCls =
-  'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors'
+  'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20 transition-colors'
 const labelCls = 'text-xs font-medium text-slate-700 block mb-1.5'
 
 // ─── Icon picker ──────────────────────────────────────────────────────────────
@@ -73,8 +73,8 @@ function IconPicker({ value, onChange }: { value: string; onChange: (name: strin
             onClick={() => onChange(name)}
             className={`flex items-center justify-center h-8 w-8 rounded-lg transition-all ${
               value === name
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:bg-indigo-50 hover:text-indigo-600'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-slate-400 hover:bg-primary/10 hover:text-primary'
             }`}
           >
             <Icon className="h-4 w-4" />
@@ -346,7 +346,7 @@ export function TaxonomyPage() {
                 <button
                   key={org.id}
                   onClick={() => navigate(`/organizations/${org.id}`)}
-                  className="text-left rounded-2xl border border-slate-200 bg-white hover:border-indigo-300 hover:shadow-lg transition-all duration-200 p-5 group"
+                  className="text-left rounded-2xl border border-slate-200 bg-white hover:border-primary/50 hover:shadow-lg transition-all duration-200 p-5 group"
                 >
                   {/* Type badge row */}
                   <div className="flex items-center gap-2 mb-3">
@@ -364,7 +364,7 @@ export function TaxonomyPage() {
                     }`}>{org.status}</span>
                   </div>
 
-                  <p className="font-bold text-slate-800 text-base group-hover:text-indigo-700 transition-colors truncate">
+                  <p className="font-bold text-slate-800 text-base group-hover:text-primary transition-colors truncate">
                     {org.name}
                   </p>
                   {org.description && (

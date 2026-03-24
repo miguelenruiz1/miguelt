@@ -14,10 +14,12 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from decimal import Decimal
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import NotFoundError, ValidationError
 from app.db.models import SalesOrderStatus, MovementType
+from app.db.models.sales_order import SalesOrder
 from app.repositories.batch_repo import BatchRepository
 from app.repositories.customer_repo import CustomerRepository
 from app.repositories.movement_repo import MovementRepository
@@ -137,6 +139,39 @@ class SalesOrderService:
         if not customer:
             raise NotFoundError("Customer not found")
 
+        # If customer comes from business_partners, ensure a legacy customer record exists for FK
+        from app.db.models.partner import BusinessPartner
+        from app.db.models import Customer
+        if isinstance(customer, BusinessPartner):
+            existing_legacy = (await self.db.execute(
+                select(Customer).where(Customer.id == customer.id, Customer.tenant_id == tenant_id)
+            )).scalar_one_or_none()
+            if not existing_legacy:
+                legacy = Customer(
+                    id=customer.id,
+                    tenant_id=tenant_id,
+                    name=customer.name,
+                    code=customer.code,
+                    contact_name=customer.contact_name,
+                    email=customer.email,
+                    phone=customer.phone,
+                    tax_id=customer.tax_id,
+                    is_active=True,
+                )
+                self.db.add(legacy)
+                await self.db.flush()
+
+        # Validate all lines have required financial fields
+        if not lines:
+            raise ValidationError("La orden de venta debe tener al menos una línea")
+        for i, line in enumerate(lines):
+            qty = line.get("qty_ordered")
+            if qty is None or Decimal(str(qty)) <= 0:
+                raise ValidationError(f"Línea {i+1}: la cantidad es obligatoria y debe ser mayor a cero")
+            price = line.get("unit_price")
+            if price is not None and Decimal(str(price)) < 0:
+                raise ValidationError(f"Línea {i+1}: el precio unitario no puede ser negativo")
+
         order_number = await self.repo.next_number(tenant_id)
 
         from app.services.customer_price_service import CustomerPriceService
@@ -157,7 +192,7 @@ class SalesOrderService:
             original_unit_price: Decimal | None = None
 
             # Resolve the base price first (always needed for reference)
-            base_price = Decimal(str(product.sale_price))
+            base_price = Decimal(str(product.suggested_sale_price or 0))
             if line_variant_id:
                 from app.repositories.variant_repo import ProductVariantRepository
                 variant_repo = ProductVariantRepository(self.db)
@@ -165,7 +200,7 @@ class SalesOrderService:
                 if variant and variant.sale_price and Decimal(str(variant.sale_price)) > 0:
                     base_price = Decimal(str(variant.sale_price))
 
-            # Price resolution: explicit > customer special > variant.sale_price > product.sale_price
+            # Price resolution: explicit > customer special > variant.sale_price > product.suggested_sale_price
             if line.get("unit_price") and Decimal(str(line["unit_price"])) > 0:
                 unit_price = Decimal(str(line["unit_price"]))
                 price_source = "manual"
@@ -342,6 +377,19 @@ class SalesOrderService:
     async def start_picking(self, order_id: str, tenant_id: str, user_id: str | None = None):
         order = await self.get(order_id, tenant_id)
         self._assert_transition(order, SalesOrderStatus.picking)
+
+        # Server-side stock validation before allowing picking
+        check = await self.stock_check(order_id, tenant_id)
+        if not check["ready_to_ship"]:
+            insufficient = [ln for ln in check["lines"] if not ln["sufficient"]]
+            msgs = [
+                f"'{ln['product_name']}': disponible {ln['available']}, requerido {ln['required']}"
+                for ln in insufficient[:5]
+            ]
+            raise ValidationError(
+                "Stock insuficiente para iniciar picking. " + "; ".join(msgs)
+            )
+
         order.updated_by = user_id
         return await self.repo.set_status(order, SalesOrderStatus.picking)
 
@@ -392,13 +440,20 @@ class SalesOrderService:
             # Convert to primary UoM if needed
             qty_primary = qty
             if ship_uom != "primary":
+                raise ValidationError(f"Only primary UoM is supported for shipping. Received: {ship_uom}")
+
+            # Validate stock availability before allowing shipment
+            level = await self.stock_repo.get_level(
+                line.product_id, eff_wh, variant_id=line.variant_id,
+            )
+            available = Decimal(str(level.qty_on_hand)) if level else Decimal("0")
+            if available < qty_primary:
                 product = await self.product_repo.get_by_id(line.product_id, tenant_id)
-                if product and product.secondary_uom and (ship_uom == product.secondary_uom or ship_uom == "secondary"):
-                    if not product.uom_conversion_factor:
-                        raise ValidationError(f"Product {product.sku} has no conversion factor defined")
-                    qty_primary = (qty / product.uom_conversion_factor).quantize(Decimal("0.0001"))
-                elif product and not product.secondary_uom:
-                    raise ValidationError(f"Product {product.sku} has no secondary UoM configured")
+                pname = product.name if product else line.product_id[:8]
+                raise ValidationError(
+                    f"Stock insuficiente para '{pname}': "
+                    f"disponible {available}, a despachar {qty_primary}"
+                )
 
             line.qty_shipped = qty_primary
 
@@ -422,7 +477,7 @@ class SalesOrderService:
         has_reservations = await reservation_svc.consume_for_so(order, tenant_id)
 
         if has_reservations:
-            # New flow: deduct stock + create movements at delivery time
+            # Deduct stock + create movements with COGS via stock_service.issue()
             for line in order.lines:
                 eff_wh = self._effective_warehouse(line, order)
                 if not eff_wh:
@@ -433,32 +488,38 @@ class SalesOrderService:
 
                 line_variant_id = line.variant_id
 
-                # FEFO batch dispatch if product tracks batches
-                has_batches = await self.batch_repo.product_has_active_batches(tenant_id, line.product_id)
-                if has_batches:
-                    allocations = await self.stock_service._dispatch_multi_batch(
-                        tenant_id, line.product_id, eff_wh, qty_shipped,
-                        dispatch_rule="fefo", variant_id=line_variant_id,
+                # Pre-validate: ensure sufficient physical stock before deducting
+                level = await self.stock_repo.get_level(
+                    line.product_id, eff_wh, variant_id=line_variant_id,
+                )
+                available = Decimal(str(level.qty_on_hand)) if level else Decimal("0")
+                if available < qty_shipped:
+                    product = await self.product_repo.get_by_id(line.product_id, tenant_id)
+                    pname = product.name if product else line.product_id[:8]
+                    raise ValidationError(
+                        f"Stock insuficiente para '{pname}': "
+                        f"disponible {available}, requerido {qty_shipped}. "
+                        f"No se puede completar la entrega."
                     )
-                    first_batch_id = None
-                    for alloc_batch_id, alloc_qty in allocations:
-                        if first_batch_id is None:
-                            first_batch_id = alloc_batch_id
-                        await self.movement_repo.create({
-                            "tenant_id": tenant_id,
-                            "movement_type": MovementType.sale,
-                            "product_id": line.product_id,
-                            "from_warehouse_id": eff_wh,
-                            "quantity": alloc_qty,
-                            "reference": f"SO:{order.order_number}",
-                            "performed_by": user_id,
-                            "variant_id": line_variant_id,
-                            "batch_id": alloc_batch_id,
-                        })
-                    if first_batch_id:
-                        line.batch_id = first_batch_id
-                else:
-                    # Deduct physical stock (non-batch)
+
+                # Use stock_service.issue() which handles:
+                # - QC check, FEFO/LIFO dispatch, CostingEngine COGS, batch allocation
+                try:
+                    movement = await self.stock_service.issue(
+                        tenant_id=tenant_id,
+                        product_id=line.product_id,
+                        warehouse_id=eff_wh,
+                        quantity=qty_shipped,
+                        reference=f"SO:{order.order_number}",
+                        performed_by=user_id,
+                        variant_id=line_variant_id,
+                    )
+                    if movement and movement.batch_id:
+                        line.batch_id = movement.batch_id
+                except ValidationError:
+                    raise  # Re-raise stock validation errors — never swallow these
+                except Exception:
+                    # Fallback: simple deduction without costing (only for costing/batch errors)
                     await self.stock_repo.upsert_level(
                         tenant_id, line.product_id, eff_wh, -qty_shipped,
                         variant_id=line_variant_id,
@@ -696,6 +757,11 @@ class SalesOrderService:
         order = await self.get(order_id, tenant_id)
         self._assert_transition(order, SalesOrderStatus.returned)
 
+        # Release any remaining active reservations (safety net)
+        from app.services.reservation_service import ReservationService
+        reservation_svc = ReservationService(self.db)
+        await reservation_svc.release_for_so(order.id, tenant_id, "returned")
+
         for line in order.lines:
             eff_wh = self._effective_warehouse(line, order)
             if not eff_wh:
@@ -832,8 +898,32 @@ class SalesOrderService:
         )
 
     async def stock_check(self, order_id: str, tenant_id: str) -> dict:
-        """Verify stock availability per line in its effective warehouse."""
+        """Verify stock availability per line in its effective warehouse.
+
+        For confirmed orders: adds back this SO's own reservations to available,
+        since the stock IS reserved for this order.
+        """
         order = await self.get(order_id, tenant_id)
+
+        # Get this SO's own reservations to exclude from "unavailable"
+        from app.db.models.stock import StockReservation
+        own_reservations: dict[tuple[str, str], Decimal] = {}
+        if order.status in _RESERVED_STATES:
+            result = await self.db.execute(
+                select(
+                    StockReservation.product_id,
+                    StockReservation.warehouse_id,
+                    func.sum(StockReservation.quantity),
+                )
+                .where(
+                    StockReservation.sales_order_id == order.id,
+                    StockReservation.status == "active",
+                )
+                .group_by(StockReservation.product_id, StockReservation.warehouse_id)
+            )
+            for row in result:
+                own_reservations[(row[0], row[1])] = row[2]
+
         lines_result: list[dict] = []
         all_sufficient = True
         for line in order.lines:
@@ -855,7 +945,10 @@ class SalesOrderService:
 
             wh_name = await self._resolve_wh_name(eff_wh, tenant_id)
             level = await self.stock_repo.get_level(line.product_id, eff_wh, variant_id=line.variant_id)
-            available = float(level.qty_on_hand - level.qty_reserved) if level else 0.0
+            raw_available = float(level.qty_on_hand - level.qty_reserved) if level else 0.0
+            # Add back this SO's own reserved qty (it's already allocated for us)
+            own_qty = float(own_reservations.get((line.product_id, eff_wh), Decimal("0")))
+            available = raw_available + own_qty
             required = float(line.qty_ordered)
             sufficient = available >= required
             if not sufficient:
@@ -904,8 +997,14 @@ class SalesOrderService:
 
     async def list_backorders(self, order_id: str, tenant_id: str) -> list:
         """Return all backorder children for a given parent SO."""
-        order = await self.get(order_id, tenant_id)
-        return list(order.backorders) if order.backorders else []
+        from sqlalchemy.orm import selectinload
+        result = await self.db.execute(
+            select(SalesOrder)
+            .where(SalesOrder.parent_so_id == order_id, SalesOrder.tenant_id == tenant_id)
+            .options(selectinload(SalesOrder.lines))
+            .order_by(SalesOrder.created_at)
+        )
+        return list(result.scalars().unique().all())
 
     async def confirm_backorder(self, order_id: str, tenant_id: str, user_id: str | None = None):
         """Confirm a backorder SO — same logic as confirm() but validates it IS a backorder."""

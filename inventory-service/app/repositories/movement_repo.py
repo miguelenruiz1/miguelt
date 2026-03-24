@@ -17,9 +17,78 @@ class MovementRepository:
         self.db = db
 
     async def create(self, data: dict) -> StockMovement:
-        movement = StockMovement(id=str(uuid.uuid4()), **data)
+        from datetime import datetime, timezone
+
+        from app.db.models.events import (
+            EventImpact,
+            EventSeverity,
+            EventStatus,
+            EventType,
+            InventoryEvent,
+        )
+
+        movement_id = str(uuid.uuid4())
+        movement = StockMovement(id=movement_id, **data)
         self.db.add(movement)
         await self.db.flush()
+
+        # --- Auto-create linked inventory event ---
+        tenant_id = data.get("tenant_id")
+        mt = data.get("movement_type")
+        if tenant_id and mt:
+            slug = f"sys_{mt.value if hasattr(mt, 'value') else mt}"
+            et_result = await self.db.execute(
+                select(EventType).where(
+                    EventType.tenant_id == tenant_id,
+                    EventType.slug == slug,
+                )
+            )
+            event_type = et_result.scalar_one_or_none()
+
+            if event_type:
+                sev = (await self.db.execute(
+                    select(EventSeverity).where(
+                        EventSeverity.tenant_id == tenant_id,
+                        EventSeverity.is_active == True,  # noqa: E712
+                    ).limit(1)
+                )).scalar_one_or_none()
+                stat = (await self.db.execute(
+                    select(EventStatus).where(
+                        EventStatus.tenant_id == tenant_id,
+                        EventStatus.is_active == True,  # noqa: E712
+                    ).limit(1)
+                )).scalar_one_or_none()
+
+                if sev and stat:
+                    event = InventoryEvent(
+                        id=str(uuid.uuid4()),
+                        tenant_id=tenant_id,
+                        event_type_id=event_type.id,
+                        severity_id=sev.id,
+                        status_id=stat.id,
+                        warehouse_id=data.get("to_warehouse_id") or data.get("from_warehouse_id"),
+                        title=f"{event_type.name} — {data.get('quantity', 0)} uds",
+                        description=data.get("notes") or data.get("reference") or "",
+                        occurred_at=datetime.now(timezone.utc),
+                        reported_by=data.get("performed_by"),
+                    )
+                    self.db.add(event)
+                    await self.db.flush()
+
+                    movement.event_id = event.id
+
+                    impact = EventImpact(
+                        id=str(uuid.uuid4()),
+                        event_id=event.id,
+                        entity_id=data.get("product_id"),
+                        quantity_impact=data.get("quantity", 0),
+                        movement_id=movement_id,
+                        batch_id=data.get("batch_id"),
+                        notes=data.get("notes"),
+                    )
+                    self.db.add(impact)
+                    await self.db.flush()
+
         await self.db.refresh(movement)
         return movement
 

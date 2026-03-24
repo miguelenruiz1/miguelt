@@ -10,9 +10,6 @@ export interface Product {
   product_type_id: string | null
   category_id: string | null
   unit_of_measure: string
-  cost_price: string
-  sale_price: string
-  currency: string
   is_active: boolean
   track_batches: boolean
   min_stock_level: number
@@ -21,8 +18,15 @@ export interface Product {
   preferred_supplier_id: string | null
   auto_reorder: boolean
   valuation_method: 'weighted_average' | 'fifo' | 'lifo'
-  secondary_uom: string | null
-  uom_conversion_factor: number | null
+  margin_target: number | null
+  margin_minimum: number | null
+  margin_cost_method: 'last_purchase' | 'weighted_avg' | 'avg_last_3'
+  last_purchase_cost: number | null
+  last_purchase_date: string | null
+  last_purchase_supplier: string | null
+  suggested_sale_price: number | null
+  minimum_sale_price: number | null
+  preferred_currency: string
   tax_rate_id: string | null
   is_tax_exempt: boolean
   retention_rate: string | null
@@ -138,7 +142,7 @@ export interface PurchaseOrderLine {
   notes?: string | null
 }
 
-export type POStatus = 'draft' | 'sent' | 'confirmed' | 'partial' | 'received' | 'canceled' | 'consolidated'
+export type POStatus = 'draft' | 'pending_approval' | 'approved' | 'sent' | 'confirmed' | 'partial' | 'received' | 'canceled' | 'consolidated'
 
 export interface PurchaseOrder {
   id: string
@@ -162,6 +166,23 @@ export interface PurchaseOrder {
   consolidated_at: string | null
   consolidated_by: string | null
   parent_consolidated_id: string | null
+  attachments?: Array<{ url: string; name: string; type: string; classification?: string }> | null
+  approval_required?: boolean
+  approved_by?: string | null
+  approved_at?: string | null
+  rejected_reason?: string | null
+  rejected_by?: string | null
+  rejected_at?: string | null
+  sent_at?: string | null
+  sent_by?: string | null
+  confirmed_at?: string | null
+  confirmed_by?: string | null
+  supplier_invoice_number?: string | null
+  supplier_invoice_date?: string | null
+  supplier_invoice_total?: number | null
+  payment_terms?: string | null
+  payment_due_date?: string | null
+  related_sales_order_id?: string | null
   lines?: PurchaseOrderLine[]
 }
 
@@ -215,6 +236,8 @@ export interface AnalyticsOverview {
     warehouse_id: string
     warehouse_name: string | null
     qty_on_hand: number
+    qty_reserved: number
+    qty_available: number
     reorder_point: number
   }>
   movement_trend: Array<{ date: string; count: number }>
@@ -327,6 +350,7 @@ export interface ProductType {
   entry_rule_location_id?: string | null
   rotation_target_months?: number | null
   default_category_id?: string | null
+  sku_prefix?: string | null
 }
 
 export interface OrderType {
@@ -1180,6 +1204,10 @@ export interface StockAlert {
   is_resolved: boolean
   created_at?: string
   resolved_at?: string | null
+  product_name?: string | null
+  product_sku?: string | null
+  warehouse_name?: string | null
+  uom?: string | null
 }
 
 // ─── Kardex ─────────────────────────────────────────────────────────────
@@ -1348,4 +1376,220 @@ export interface CustomerPriceMetrics {
   active_count: number
   expiring_soon: number
   customers_with_prices: number
+}
+
+// ── Dynamic Pricing & UoM Types ──────────────────────────────────────
+
+export interface ProductCostHistory {
+  id: string
+  tenant_id: string
+  product_id: string
+  variant_id: string | null
+  purchase_order_id: string
+  purchase_order_line_id: string
+  supplier_id: string
+  supplier_name: string
+  uom_purchased: string
+  qty_purchased: number
+  qty_in_base_uom: number
+  unit_cost_purchased: number
+  unit_cost_base_uom: number
+  total_cost: number
+  market_note: string | null
+  received_at: string
+}
+
+export interface UnitOfMeasure {
+  id: string
+  tenant_id: string
+  name: string
+  symbol: string
+  category: 'weight' | 'volume' | 'length' | 'unit' | 'custom'
+  is_base: boolean
+  is_active: boolean
+  created_at: string
+}
+
+export interface UoMConversion {
+  id: string
+  tenant_id: string
+  from_uom_id: string
+  to_uom_id: string
+  factor: number
+  is_active: boolean
+}
+
+export interface ProductPricing {
+  last_purchase_cost: number | null
+  last_purchase_date: string | null
+  last_purchase_supplier: string | null
+  suggested_sale_price: number | null
+  minimum_sale_price: number | null
+  margin_target: number | null
+  margin_minimum: number | null
+  margin_cost_method: string | null
+  current_avg_cost: number | null
+  cost_history: ProductCostHistory[]
+}
+
+export interface PnLProduct {
+  product_id: string
+  product_name: string
+  product_sku: string
+  unit_of_measure: string
+  purchases: PurchaseRecord[]
+  sales: SaleRecord[]
+  stock_by_warehouse: StockByWarehouse[]
+  summary: PnLSummary
+  market_analysis: MarketAnalysis
+}
+
+export interface PurchaseRecord {
+  received_at: string
+  supplier_name: string
+  uom_purchased: string
+  qty_purchased: number
+  qty_in_base_uom: number
+  unit_cost_purchased: number
+  unit_cost_base_uom: number
+  total_cost: number
+  purchase_order_id: string
+  market_note: string | null
+}
+
+export interface SaleRecord {
+  order_number: string
+  sale_date: string
+  qty_ordered: number
+  qty_shipped: number
+  unit_price: number
+  line_total: number
+  margin_pct: number | null
+}
+
+export interface StockByWarehouse {
+  warehouse_name: string
+  qty_on_hand: number
+  qty_reserved: number
+  qty_available: number
+  avg_cost: number
+  total_value: number
+}
+
+export interface PnLSummary {
+  total_purchased_qty: number
+  total_purchased_cost: number
+  total_sold_qty: number
+  total_revenue: number
+  total_cogs: number
+  gross_profit: number
+  gross_margin_pct: number
+  margin_target: number
+  margin_vs_target: number
+  stock_current_qty: number
+  stock_current_value: number
+  potential_revenue: number
+  potential_profit: number
+}
+
+export interface MarketAnalysis {
+  lowest_purchase_cost: number
+  highest_purchase_cost: number
+  price_variation_pct: number
+  best_supplier: string
+  suggested_price_today: number
+  minimum_price_today: number
+}
+
+export interface PnLReport {
+  products: PnLProduct[]
+  totals: {
+    total_purchased_cost: number
+    total_revenue: number
+    total_cogs: number
+    gross_profit: number
+    gross_margin_pct: number
+    stock_current_value: number
+    product_count: number
+  }
+}
+
+// ─── AI P&L Analysis ─────────────────────────────────────────────────────────
+
+export interface PnLAlert {
+  titulo: string
+  detalle: string
+  severidad: 'alta' | 'media' | 'baja'
+  producto_sku: string | null
+}
+
+export interface PnLOportunidad {
+  titulo: string
+  detalle: string
+  impacto_estimado: string
+  producto_sku: string | null
+}
+
+export interface PnLProductoEstrella {
+  sku: string
+  nombre: string
+  razon: string
+}
+
+export interface PnLRecomendacion {
+  accion: string
+  prioridad: 'alta' | 'media' | 'baja'
+  producto_sku: string | null
+  plazo?: 'inmediato' | 'esta_semana' | 'este_mes' | null
+}
+
+export interface PnLAnalysis {
+  resumen: string
+  alertas: PnLAlert[]
+  oportunidades: PnLOportunidad[]
+  productos_estrella: PnLProductoEstrella[]
+  recomendaciones: PnLRecomendacion[]
+}
+
+export interface GlobalMarginConfig {
+  margin_target_global: number
+  margin_minimum_global: number
+  margin_cost_method_global: string
+  below_minimum_requires_auth: boolean
+}
+
+export interface ConvertResponse {
+  quantity: number
+  from_uom: string
+  to_uom: string
+  result: number
+  factor: number
+}
+
+export interface BusinessPartner {
+  id: string
+  tenant_id: string
+  name: string
+  code: string
+  is_supplier: boolean
+  is_customer: boolean
+  supplier_type_id: string | null
+  customer_type_id: string | null
+  tax_id: string | null
+  contact_name: string | null
+  email: string | null
+  phone: string | null
+  address: Record<string, unknown> | null
+  shipping_address: Record<string, unknown> | null
+  credit_limit: number
+  discount_percent: number
+  lead_time_days: number
+  payment_terms_days: number
+  is_active: boolean
+  notes: string | null
+  custom_attributes: Record<string, unknown>
+  created_by?: string | null
+  updated_by?: string | null
+  created_at?: string
+  updated_at?: string
 }

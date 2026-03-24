@@ -172,7 +172,7 @@ class POConsolidationService:
             .options(joinedload(PurchaseOrder.lines))
         )
         result = await self.db.execute(stmt)
-        consolidated = result.scalar_one_or_none()
+        consolidated = result.unique().scalar_one_or_none()
 
         if not consolidated:
             raise ValidationError("Orden de compra no encontrada")
@@ -263,7 +263,7 @@ class POConsolidationService:
             .options(joinedload(PurchaseOrder.lines))
         )
         result = await self.db.execute(stmt)
-        po = result.scalar_one_or_none()
+        po = result.unique().scalar_one_or_none()
 
         if not po:
             raise ValidationError("Orden de compra no encontrada")
@@ -291,7 +291,7 @@ class POConsolidationService:
                 .options(joinedload(PurchaseOrder.lines), joinedload(PurchaseOrder.supplier))
             )
             parent_result = await self.db.execute(parent_stmt)
-            parent = parent_result.scalar_one_or_none()
+            parent = parent_result.unique().scalar_one_or_none()
             return {
                 "type": "original",
                 "consolidated_po": parent,

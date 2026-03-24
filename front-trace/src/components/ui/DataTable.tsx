@@ -97,9 +97,9 @@ export function DataTable<T>({
   /* ---- Loading / Empty ---- */
   if (isLoading) {
     return (
-      <div className={cn('rounded-2xl border border-slate-200/60 bg-white shadow-sm', className)}>
+      <div className={cn('rounded-md bg-card shadow-sm border border-border', className)}>
         <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       </div>
     )
@@ -107,8 +107,8 @@ export function DataTable<T>({
 
   if (!data.length) {
     return (
-      <div className={cn('rounded-2xl border border-slate-200/60 bg-white shadow-sm', className)}>
-        <div className="py-16 text-center text-sm text-slate-400">{emptyMessage}</div>
+      <div className={cn('rounded-md bg-card shadow-sm border border-border', className)}>
+        <div className="py-16 text-center text-sm text-muted-foreground">{emptyMessage}</div>
       </div>
     )
   }
@@ -121,14 +121,14 @@ export function DataTable<T>({
           key={getKey(row, i)}
           onClick={onRowClick ? () => onRowClick(row) : undefined}
           className={cn(
-            'rounded-xl border border-slate-200/60 bg-white p-4 shadow-sm space-y-2',
-            onRowClick && 'cursor-pointer hover:border-indigo-200 hover:shadow-md transition-all active:scale-[0.99]',
+            'rounded-md border border-border bg-card p-4 shadow-sm space-y-2',
+            onRowClick && 'cursor-pointer hover:border-primary/30 hover:shadow-md transition-all active:scale-[0.99]',
           )}
         >
           {columns.map((col) => (
             <div key={col.key} className="flex items-start justify-between gap-3">
-              <span className="text-xs font-medium text-slate-400 shrink-0">{col.header}</span>
-              <span className="text-sm text-slate-700 text-right min-w-0">{getCellContent(col, row)}</span>
+              <span className="text-xs font-medium text-muted-foreground shrink-0">{col.header}</span>
+              <span className="text-sm text-foreground text-right min-w-0">{getCellContent(col, row)}</span>
             </div>
           ))}
         </div>
@@ -138,16 +138,16 @@ export function DataTable<T>({
 
   /* ---- Desktop Table ---- */
   const desktopTable = (
-    <div className={cn('overflow-x-auto rounded-2xl border border-slate-200/60 bg-white shadow-sm', !forceTable && 'hidden md:block')}>
+    <div className={cn('overflow-x-auto rounded-md bg-card shadow-sm border border-border', !forceTable && 'hidden md:block')}>
       <table className="w-full text-sm min-w-[600px]">
         <thead>
-          <tr className="border-b border-slate-100">
+          <tr className="border-b border-border">
             {columns.map((col) => (
               <th
                 key={col.key}
                 className={cn(
-                  'px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500',
-                  col.sortable && 'cursor-pointer select-none hover:text-slate-700',
+                  'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground',
+                  col.sortable && 'cursor-pointer select-none hover:text-foreground',
                   col.headerClassName,
                 )}
                 onClick={col.sortable ? () => handleSort(col.key) : undefined}
@@ -155,12 +155,12 @@ export function DataTable<T>({
                 <span className="inline-flex items-center gap-1">
                   {col.header}
                   {col.sortable && (
-                    <span className="text-slate-300">
+                    <span className="text-muted-foreground/40">
                       {sortKey === col.key ? (
                         sortDir === 'asc' ? (
-                          <ChevronUp className="h-3.5 w-3.5 text-indigo-500" />
+                          <ChevronUp className="h-3.5 w-3.5 text-primary" />
                         ) : (
-                          <ChevronDown className="h-3.5 w-3.5 text-indigo-500" />
+                          <ChevronDown className="h-3.5 w-3.5 text-primary" />
                         )
                       ) : (
                         <ChevronsUpDown className="h-3.5 w-3.5" />
@@ -172,18 +172,18 @@ export function DataTable<T>({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-50">
+        <tbody className="divide-y divide-border/50">
           {sorted.map((row, i) => (
             <tr
               key={getKey(row, i)}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
               className={cn(
                 'transition-colors',
-                onRowClick && 'cursor-pointer hover:bg-slate-50/80',
+                onRowClick && 'cursor-pointer hover:bg-muted/50',
               )}
             >
               {columns.map((col) => (
-                <td key={col.key} className={cn('px-4 py-3 text-slate-700', col.className)}>
+                <td key={col.key} className={cn('px-4 py-3 text-foreground', col.className)}>
                   {getCellContent(col, row)}
                 </td>
               ))}
@@ -197,24 +197,24 @@ export function DataTable<T>({
   /* ---- Pagination ---- */
   const paginationBar = pagination && totalPages > 1 && (
     <div className="flex items-center justify-between px-1 pt-4">
-      <span className="text-xs text-slate-400">
+      <span className="text-xs text-muted-foreground">
         {pagination.total} resultado{pagination.total !== 1 ? 's' : ''}
       </span>
       <div className="flex items-center gap-2">
         <button
           disabled={pagination.page <= 0}
           onClick={() => pagination.onPageChange(pagination.page - 1)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <span className="text-xs font-medium text-slate-600 tabular-nums min-w-[4rem] text-center">
+        <span className="text-xs font-medium text-muted-foreground tabular-nums min-w-[4rem] text-center">
           {pagination.page + 1} / {totalPages}
         </span>
         <button
           disabled={pagination.page >= totalPages - 1}
           onClick={() => pagination.onPageChange(pagination.page + 1)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronRight className="h-4 w-4" />
         </button>

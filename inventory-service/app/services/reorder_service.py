@@ -214,8 +214,8 @@ class ReorderService:
                 {
                     "product_id": product.id,
                     "qty_ordered": Decimal(str(product.reorder_quantity)),
-                    "unit_cost": product.cost_price,
-                    "line_total": product.cost_price * Decimal(str(product.reorder_quantity)),
+                    "unit_cost": product.last_purchase_cost or Decimal("0"),
+                    "line_total": (product.last_purchase_cost or Decimal("0")) * Decimal(str(product.reorder_quantity)),
                 },
             ],
         }

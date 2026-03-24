@@ -70,7 +70,7 @@ export function EInvoicingPage() {
         <ol className="flex items-center gap-2 text-sm">
           <li className="text-gray-500">Inicio</li>
           <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
-          <li className="text-indigo-500">Facturación Electrónica</li>
+          <li className="text-primary">Facturación Electrónica</li>
         </ol>
       </nav>
 
@@ -99,12 +99,12 @@ export function EInvoicingPage() {
       {hasMatiasRes && (
         <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
           <div className="flex items-center gap-3 text-sm">
-            <Hash className="h-4 w-4 text-indigo-500" />
+            <Hash className="h-4 w-4 text-primary" />
             <span className="text-gray-600">Resolución: <span className="font-semibold text-gray-800">{matiasRes.prefix}{matiasRes.current_number + 1}</span> (próxima)</span>
             <span className="text-gray-400">|</span>
             <span className="text-gray-500">{matiasRes.remaining.toLocaleString()} restantes</span>
           </div>
-          <Link to="/facturacion-electronica/resolucion" className="text-xs font-medium text-indigo-600 hover:text-indigo-700">
+          <Link to="/facturacion-electronica/resolucion" className="text-xs font-medium text-primary hover:text-primary">
             Configurar resolución DIAN
           </Link>
         </div>
@@ -171,7 +171,7 @@ export function EInvoicingPage() {
             {!isConnected && (
               <button
                 onClick={() => setShowSetup(true)}
-                className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-600"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-primary"
               >
                 Configurar
               </button>
@@ -221,7 +221,7 @@ export function EInvoicingPage() {
                   {invoicedOrders.map(order => (
                     <tr key={order.id} className="hover:bg-gray-50/60">
                       <td className="px-5 py-3">
-                        <Link to={`/inventario/ventas/${order.id}`} className="font-medium text-indigo-600 hover:text-indigo-700">
+                        <Link to={`/inventario/ventas/${order.id}`} className="font-medium text-primary hover:text-primary">
                           {order.order_number}
                         </Link>
                       </td>
@@ -242,7 +242,7 @@ export function EInvoicingPage() {
                       <td className="px-5 py-3">
                         {order.invoice_pdf_url ? (
                           <a href={order.invoice_pdf_url} target="_blank" rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-medium">
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary font-medium">
                             <ExternalLink className="h-3.5 w-3.5" /> Ver PDF
                           </a>
                         ) : '—'}
@@ -278,7 +278,7 @@ export function EInvoicingPage() {
                   onChange={e => setApiKey(e.target.value)}
                   type="password"
                   required
-                  className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-indigo-300 focus:outline-none focus:ring-3 focus:ring-indigo-500/20"
+                  className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20"
                   placeholder="Ingresa tu API Key de MATIAS"
                 />
               </div>
@@ -309,7 +309,7 @@ export function EInvoicingPage() {
               <button type="button" onClick={() => setShowSetup(false)} className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
                 Cancelar
               </button>
-              <button type="submit" disabled={createMut.isPending} className="rounded-lg bg-indigo-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-600 disabled:opacity-50">
+              <button type="submit" disabled={createMut.isPending} className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary disabled:opacity-50">
                 {createMut.isPending ? 'Conectando...' : 'Conectar'}
               </button>
             </div>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Compliance Certificate — {{ certificate.number }}</title>
+    <style>
+        {% include "certificate_base.css" %}
+    </style>
+</head>
+<body>
+
+    <!-- ── Header ──────────────────────────────────────────────────────────── -->
+    <div class="certificate-header">
+        {% if logo_url %}
+        <img src="{{ logo_url }}" alt="TraceLog" class="logo">
+        {% endif %}
+        <h1>TraceLog</h1>
+        <h2>{{ framework.name | default("Compliance Certificate", true) }}</h2>
+        <div class="cert-number">{{ certificate.number }}</div>
+    </div>
+
+    <!-- ── Section 1: Validity ─────────────────────────────────────────────── -->
+    <div class="section">
+        <div class="section-title">1. Certificate Validity</div>
+        <div class="section-body">
+            <div class="kv-grid">
+                <div class="kv-row">
+                    <span class="kv-label">Valid From</span>
+                    <span class="kv-value">{{ certificate.valid_from.strftime('%d %B %Y') if certificate.valid_from else 'N/A' }}</span>
+                </div>
+                <div class="kv-row">
+                    <span class="kv-label">Valid Until</span>
+                    <span class="kv-value">{{ certificate.valid_until.strftime('%d %B %Y') if certificate.valid_until else 'N/A' }}</span>
+                </div>
+                <div class="kv-row">
+                    <span class="kv-label">Status</span>
+                    <span class="kv-value">
+                        {% if certificate.status == 'active' %}
+                        <span class="badge badge-green">Active</span>
+                        {% elif certificate.status == 'revoked' %}
+                        <span class="badge badge-red">Revoked</span>
+                        {% elif certificate.status == 'superseded' %}
+                        <span class="badge badge-amber">Superseded</span>
+                        {% else %}
+                        <span class="badge badge-gray">{{ certificate.status | default('Unknown', true) }}</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="kv-row">
+                    <span class="kv-label">Framework</span>
+                    <span class="kv-value">{{ framework.name | default('N/A', true) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Section 2: Product Information ──────────────────────────────────── -->
+    <div class="section">
+        <div class="section-title">2. Product Information</div>
+        <div class="section-body">
+            <div class="kv-grid">
+                <div class="kv-row">
+                    <span class="kv-label">Commodity Type</span>
+                    <span class="kv-value">{{ record.commodity_type | default('Not specified', true) }}</span>
+                </div>
+                <div class="kv-row">
+                    <span class="kv-label">Product Description</span>
+                    <span class="kv-value">{{ record.product_description | default('N/A', true) }}</span>
+                </div>
+                <div class="kv-row">
+                    <span class="kv-label">Quantity</span>
+                    <span class="kv-value">
+                        {% if record.quantity_kg %}
+                        {{ "%.2f" | format(record.quantity_kg) }} {{ record.quantity_unit | default('kg', true) }}
+                        {% else %}
+                        N/A
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="kv-row">
+                    <span class="kv-label">Country of Production</span>
+                    <span class="kv-value">{{ record.country_of_production | default('N/A', true) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Section 3: Origin & Plots ───────────────────────────────────────── -->
+    {% if plots and plots | length > 0 %}
+    <div class="section">
+        <div class="section-title">3. Origin &amp; Plots of Production</div>
+        <div class="section-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Plot Code</th>
+                        <th>Country</th>
+                        <th>Region</th>
+                        <th>Lat</th>
+                        <th>Lng</th>
+                        <th>Area (ha)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plot in plots %}
+                    <tr>
+                        <td>{{ plot.plot_code | default('—', true) }}</td>
+                        <td>{{ plot.country_code | default('—', true) }}</td>
+                        <td>{{ plot.region | default('—', true) }}</td>
+                        <td>{{ "%.6f" | format(plot.lat) if plot.lat else '—' }}</td>
+                        <td>{{ "%.6f" | format(plot.lng) if plot.lng else '—' }}</td>
+                        <td>{{ "%.2f" | format(plot.plot_area_ha) if plot.plot_area_ha else '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Section 4: Supply Chain ─────────────────────────────────────────── -->
+    <div class="section">
+        <div class="section-title">{{ '4' if plots and plots | length > 0 else '3' }}. Supply Chain</div>
+        <div class="section-body">
+            <div class="kv-grid">
+                <div class="kv-row">
+                    <span class="kv-label">Supplier</span>
+                    <span class="kv-value">{{ record.supplier_name | default('N/A', true) }}</span>
+                </div>
+                <div class="kv-row">
+                    <span class="kv-label">Buyer</span>
+                    <span class="kv-value">{{ record.buyer_name | default('N/A', true) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── QR & Public Verification ────────────────────────────────────────── -->
+    <div class="section">
+        <div class="section-title">Public Verification</div>
+        <div class="qr-section">
+            {% if qr_base64 %}
+            <img src="{{ qr_base64 }}" alt="QR Code — Verify Certificate">
+            {% endif %}
+            <div class="verify-label">Scan to verify this certificate</div>
+            <div class="verify-url">{{ certificate.verify_url }}</div>
+        </div>
+    </div>
+
+    <!-- ── Footer ──────────────────────────────────────────────────────────── -->
+    <div class="certificate-footer">
+        <p>This certificate was generated by <strong>TraceLog</strong> — Regulatory Compliance Platform</p>
+        <p class="timestamp">
+            Generated: {{ generated_at.strftime('%Y-%m-%d %H:%M:%S UTC') if generated_at else 'N/A' }}
+            &nbsp;&bull;&nbsp;
+            Certificate: {{ certificate.number }}
+        </p>
+        <p style="margin-top: 4px;">
+            This document is machine-generated. Verify authenticity at the URL above.
+        </p>
+    </div>
+
+</body>
+</html>

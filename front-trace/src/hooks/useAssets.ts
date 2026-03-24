@@ -112,6 +112,15 @@ export function useBurn(assetId: string) {
   })
 }
 
+export function useRecordEvent(assetId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: import('@/types/api').GenericEventRequest) =>
+      api.assets.recordEvent(assetId, data, newUUID()),
+    onSuccess: () => invalidateAsset(qc, assetId),
+  })
+}
+
 export function useAnchorEvent(assetId: string) {
   const qc = useQueryClient()
   return useMutation({

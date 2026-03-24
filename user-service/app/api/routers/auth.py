@@ -68,6 +68,8 @@ async def _build_user_response(user, db: AsyncSession) -> UserResponse:
         invitation_sent_at=user.invitation_sent_at,
         invitation_accepted_at=user.invitation_accepted_at,
         must_change_password=user.must_change_password,
+        onboarding_completed=user.onboarding_completed,
+        onboarding_step=user.onboarding_step,
         created_at=user.created_at,
         updated_at=user.updated_at,
         roles=[RoleSlim(id=r.id, name=r.name, slug=r.slug) for r in roles],

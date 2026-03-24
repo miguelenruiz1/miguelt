@@ -7,9 +7,9 @@ import { useGenerateWallet } from '@/hooks/useWallets'
 import { useCustodianTypes, useOrganizations } from '@/hooks/useTaxonomy'
 import { useToast } from '@/store/toast'
 import { parseTags } from '@/lib/utils'
-import { Dialog } from '@/components/ui/Dialog'
-import { Button } from '@/components/ui/Button'
-import { Input, Select } from '@/components/ui/Input'
+import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
+import { Button } from '@/components/ui/button'
+import { Input, Select } from '@/components/ui/input'
 import type { WalletStatus } from '@/types/api'
 
 const schema = z.object({
@@ -94,9 +94,9 @@ export function GenerateWalletModal({ open, onClose, preSelectedOrgId }: Props) 
         </>
       }
     >
-      <div className="mb-4 flex gap-3 rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3">
-        <KeyRound className="h-4 w-4 text-indigo-500 shrink-0 mt-0.5" />
-        <p className="text-xs text-indigo-700">
+      <div className="mb-4 flex gap-3 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
+        <KeyRound className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+        <p className="text-xs text-primary">
           El sistema genera un nuevo par de llaves Solana. La llave pública se registra
           en la lista de permitidos y la wallet puede recibir activos inmediatamente.
         </p>

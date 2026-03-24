@@ -100,7 +100,7 @@ export function EInvoicingSandboxPage() {
         <ol className="flex items-center gap-2 text-sm">
           <li className="text-gray-500">Inicio</li>
           <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
-          <li className="text-indigo-500">Facturación Electrónica — Sandbox</li>
+          <li className="text-primary">Facturación Electrónica — Sandbox</li>
         </ol>
       </nav>
 
@@ -169,7 +169,7 @@ export function EInvoicingSandboxPage() {
                   {sandboxOrders.map(order => (
                     <tr key={order.id} className="hover:bg-gray-50/60">
                       <td className="px-5 py-3">
-                        <Link to={`/inventario/ventas/${order.id}`} className="font-medium text-indigo-600 hover:text-indigo-700">
+                        <Link to={`/inventario/ventas/${order.id}`} className="font-medium text-primary hover:text-primary">
                           {order.order_number}
                         </Link>
                       </td>
@@ -184,7 +184,7 @@ export function EInvoicingSandboxPage() {
                             </span>
                             <button
                               onClick={() => copyCufe(order.cufe!)}
-                              className="text-gray-400 hover:text-indigo-600 transition"
+                              className="text-gray-400 hover:text-primary transition"
                               title="Copiar CUFE completo"
                             >
                               {copiedCufe === order.cufe ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
@@ -213,7 +213,7 @@ export function EInvoicingSandboxPage() {
                         {order.cufe && (
                           <button
                             onClick={() => downloadPDF(order)}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 transition"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary transition"
                           >
                             <FileDown className="h-3.5 w-3.5" /> Ver PDF
                           </button>
@@ -253,7 +253,7 @@ export function EInvoicingSandboxPage() {
                 <p className="text-xs text-gray-400 italic">{String(simResult.message ?? '')}</p>
                 <button
                   onClick={() => setShowSimModal(false)}
-                  className="w-full rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-600"
+                  className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary"
                 >
                   Cerrar
                 </button>
@@ -271,7 +271,7 @@ export function EInvoicingSandboxPage() {
                         className={cn(
                           'w-full text-left rounded-lg border px-4 py-3 text-sm transition',
                           selectedSO?.id === o.id
-                            ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
+                            ? 'border-primary/70 bg-primary/10 text-primary'
                             : 'border-gray-200 hover:bg-gray-50 text-gray-700',
                         )}
                       >

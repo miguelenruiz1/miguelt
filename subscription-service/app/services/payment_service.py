@@ -13,78 +13,15 @@ from app.repositories.payment_repo import PaymentGatewayRepository
 
 GATEWAY_CATALOG: list[dict[str, Any]] = [
     {
-        "slug": "epayco",
-        "name": "ePayco",
-        "description": "Pasarela de pagos colombiana líder, acepta tarjetas, PSE y efectivo.",
-        "color": "#00C896",
-        "fields": [
-            {"key": "p_cust_id_cliente", "label": "Customer ID",   "type": "text",     "required": True},
-            {"key": "p_key",             "label": "P Key",          "type": "password", "required": True},
-            {"key": "public_key",        "label": "Public Key",     "type": "text",     "required": True},
-            {"key": "private_key",       "label": "Private Key",    "type": "password", "required": True},
-        ],
-    },
-    {
-        "slug": "payu",
-        "name": "PayU",
-        "description": "Plataforma global presente en Colombia con múltiples métodos de pago.",
-        "color": "#FF6900",
-        "fields": [
-            {"key": "api_login",     "label": "API Login",      "type": "text",     "required": True},
-            {"key": "api_key",       "label": "API Key",        "type": "password", "required": True},
-            {"key": "merchant_id",   "label": "Merchant ID",    "type": "text",     "required": True},
-            {"key": "account_id",    "label": "Account ID",     "type": "text",     "required": True},
-        ],
-    },
-    {
         "slug": "wompi",
         "name": "Wompi",
-        "description": "Solución de pagos de Bancolombia, rápida y sin complicaciones.",
+        "description": "Pasarela de pagos de Bancolombia. Acepta tarjetas, PSE, Nequi y Bancolombia.",
         "color": "#5C2D91",
         "fields": [
-            {"key": "public_key",     "label": "Public Key",      "type": "text",     "required": True},
-            {"key": "private_key",    "label": "Private Key",     "type": "password", "required": True},
-            {"key": "events_secret",  "label": "Events Secret",   "type": "password", "required": False},
-        ],
-    },
-    {
-        "slug": "mercadopago",
-        "name": "MercadoPago",
-        "description": "La plataforma de pagos más popular de Latinoamérica.",
-        "color": "#009EE3",
-        "fields": [
-            {"key": "access_token", "label": "Access Token", "type": "password", "required": True},
-            {"key": "public_key",   "label": "Public Key",   "type": "text",     "required": True},
-        ],
-    },
-    {
-        "slug": "bold",
-        "name": "Bold",
-        "description": "Datáfono virtual colombiano, fácil de integrar.",
-        "color": "#FF3E6C",
-        "fields": [
-            {"key": "api_key", "label": "API Key", "type": "password", "required": True},
-        ],
-    },
-    {
-        "slug": "kushki",
-        "name": "Kushki",
-        "description": "Infraestructura de pagos para Latinoamérica, con soporte Colombia.",
-        "color": "#00B2A9",
-        "fields": [
-            {"key": "public_key",  "label": "Public Key",  "type": "text",     "required": True},
-            {"key": "private_key", "label": "Private Key", "type": "password", "required": True},
-        ],
-    },
-    {
-        "slug": "openpay",
-        "name": "Openpay",
-        "description": "Pasarela de BBVA con soporte para tarjetas, PSE y efectivo.",
-        "color": "#007DC3",
-        "fields": [
-            {"key": "merchant_id", "label": "Merchant ID", "type": "text",     "required": True},
-            {"key": "public_key",  "label": "Public Key",  "type": "text",     "required": True},
-            {"key": "private_key", "label": "Private Key", "type": "password", "required": True},
+            {"key": "public_key",     "label": "Llave pública (pub_...)",  "type": "text",     "required": True},
+            {"key": "private_key",    "label": "Llave privada (prv_...)",  "type": "password", "required": True},
+            {"key": "events_secret",  "label": "Secreto de eventos",       "type": "password", "required": False},
+            {"key": "integrity_key",  "label": "Llave de integridad",      "type": "password", "required": True},
         ],
     },
 ]

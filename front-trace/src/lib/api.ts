@@ -2,12 +2,13 @@ import type {
   ApiErrorBody, Asset, AssetCreate, AssetMintRequest, AssetState, CustodyEvent,
   CustodianType, CustodianTypeCreate, CustodianTypeUpdate,
   Organization, OrganizationCreate, OrganizationUpdate,
-  EventActionResponse, HandoffRequest, ArrivedRequest, LoadedRequest,
+  EventActionResponse, GenericEventRequest, HandoffRequest, ArrivedRequest, LoadedRequest,
   QCRequest, ReleaseRequest, BurnRequest, HealthResponse, PaginatedResponse, ReadyResponse,
   SolanaAccountResponse, SolanaTxResponse, Tenant, TenantCreate, MerkleTree,
   Wallet, WalletCreate, WalletGenerateRequest, WalletUpdate,
 } from '@/types/api'
 import { useAuthStore } from '@/store/auth'
+import { usePlanLimitStore } from '@/store/planLimit'
 
 // ─── API Error class ──────────────────────────────────────────────────────────
 
@@ -68,7 +69,17 @@ async function request<T>(
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({
       error: { code: 'UNKNOWN', message: res.statusText },
-    })) as ApiErrorBody
+    })) as ApiErrorBody & { resource?: string; current?: number; limit?: number }
+
+    if (res.status === 402) {
+      usePlanLimitStore.getState().open({
+        resource: errBody.resource ?? 'recurso',
+        current: errBody.current ?? 0,
+        limit: errBody.limit ?? 0,
+        message: errBody.error?.message ?? errBody.detail ?? 'Has alcanzado el limite de tu plan actual.',
+      })
+    }
+
     throw new ApiError(res.status, errBody)
   }
 
@@ -127,6 +138,8 @@ export const api = {
       post<EventActionResponse>(`/api/v1/assets/${id}/events/release`, data, { adminKey, idempotencyKey }),
     burn: (id: string, data: BurnRequest, idempotencyKey?: string) =>
       post<EventActionResponse>(`/api/v1/assets/${id}/events/burn`, data, { idempotencyKey }),
+    recordEvent: (id: string, data: GenericEventRequest, idempotencyKey?: string) =>
+      post<EventActionResponse>(`/api/v1/assets/${id}/events`, data, { idempotencyKey }),
     anchor: (assetId: string, eventId: string) =>
       post<CustodyEvent>(`/api/v1/assets/${assetId}/events/${eventId}/anchor`, {}),
   },

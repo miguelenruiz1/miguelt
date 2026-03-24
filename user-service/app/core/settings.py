@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "/app/uploads"
     MAX_AVATAR_SIZE: int = 2 * 1024 * 1024  # 2 MB
 
+    # ─── Inter-service ─────────────────────────────────────────────────────────
+    SUBSCRIPTION_SERVICE_URL: str = "http://subscription-api:8002"
+
     # ─── Frontend ─────────────────────────────────────────────────────────────
     FRONTEND_URL: str = "http://localhost:5173"
 

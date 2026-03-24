@@ -57,7 +57,7 @@ const LANGUAGES = [
 
 const USER_API_BASE = import.meta.env.VITE_USER_API_URL ?? 'http://localhost:9001'
 
-const inputCls = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all hover:border-slate-300'
+const inputCls = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all hover:border-slate-300'
 const labelCls = 'block text-sm font-medium text-slate-700 mb-1.5'
 
 export function ProfilePage() {
@@ -135,7 +135,7 @@ export function ProfilePage() {
         <div className="relative group">
           <div className={cn(
             'flex h-20 w-20 items-center justify-center rounded-2xl shadow-md overflow-hidden',
-            !avatarSrc && 'bg-gradient-to-br from-indigo-500 to-purple-600',
+            !avatarSrc && 'bg-gradient-to-br from-primary to-purple-600',
           )}>
             {isUploadingAvatar ? (
               <Loader2 className="h-6 w-6 text-white animate-spin" />
@@ -164,7 +164,7 @@ export function ProfilePage() {
                   onClick={() => { fileInputRef.current?.click(); setAvatarMenuOpen(false) }}
                   className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                 >
-                  <Camera className="h-4 w-4 text-indigo-500" />
+                  <Camera className="h-4 w-4 text-primary" />
                   Subir foto
                 </button>
                 {avatarSrc && (
@@ -200,7 +200,7 @@ export function ProfilePage() {
           <p className="text-sm text-slate-500 truncate">{user.email}</p>
           <div className="flex gap-2 mt-1.5">
             {user.roles.map((r) => (
-              <span key={r.id} className="text-xs bg-indigo-100 text-indigo-700 rounded-full px-2.5 py-0.5 font-medium">
+              <span key={r.id} className="text-xs bg-primary/15 text-primary rounded-full px-2.5 py-0.5 font-medium">
                 {r.name}
               </span>
             ))}
@@ -211,7 +211,7 @@ export function ProfilePage() {
       {/* Personal info form */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <h2 className="text-base font-semibold text-slate-800 mb-5 flex items-center gap-2">
-          <Pencil className="h-4 w-4 text-indigo-500" /> Información personal
+          <Pencil className="h-4 w-4 text-primary" /> Información personal
         </h2>
         <form
           onSubmit={profileForm.handleSubmit(handleProfileSubmit)}
@@ -333,7 +333,7 @@ export function ProfilePage() {
               className={cn(
                 'rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all shadow-sm',
                 profileForm.formState.isDirty
-                  ? 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-md'
+                  ? 'bg-primary hover:bg-primary/90 hover:shadow-md'
                   : 'bg-slate-300 cursor-not-allowed',
               )}
             >
@@ -403,7 +403,7 @@ export function ProfilePage() {
             <button
               type="submit"
               disabled={changePassword.isPending}
-              className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60 transition-all shadow-sm hover:shadow-md"
+              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60 transition-all shadow-sm hover:shadow-md"
             >
               {changePassword.isPending ? 'Cambiando...' : 'Cambiar contraseña'}
             </button>

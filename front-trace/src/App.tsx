@@ -1,3 +1,4 @@
+import React from 'react'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { Layout } from '@/components/layout/Layout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
@@ -24,6 +25,7 @@ import { PlansPage } from '@/pages/PlansPage'
 import { MarketplacePage } from '@/pages/MarketplacePage'
 import { PaymentsPage } from '@/pages/PaymentsPage'
 import { CheckoutPage } from '@/pages/CheckoutPage'
+import { CheckoutResultPage } from '@/pages/CheckoutResultPage'
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage'
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
@@ -34,7 +36,6 @@ import { ProductsPage } from '@/pages/inventory/ProductsPage'
 import { WarehousesPage } from '@/pages/inventory/WarehousesPage'
 import { WarehouseDetailPage } from '@/pages/inventory/WarehouseDetailPage'
 import { MovementsPage } from '@/pages/inventory/MovementsPage'
-import { SuppliersPage } from '@/pages/inventory/SuppliersPage'
 import { PurchaseOrdersPage } from '@/pages/inventory/PurchaseOrdersPage'
 import { InventoryConfigPage } from '@/pages/inventory/InventoryConfigPage'
 import { ConfigSectionPage } from '@/pages/inventory/ConfigSectionPage'
@@ -57,7 +58,6 @@ import { CycleCountsPage } from '@/pages/inventory/CycleCountsPage'
 import { CycleCountDetailPage } from '@/pages/inventory/CycleCountDetailPage'
 import { InventoryHelpPage } from '@/pages/inventory/InventoryHelpPage'
 import { InventoryAuditPage } from '@/pages/inventory/InventoryAuditPage'
-import { CustomersPage } from '@/pages/inventory/CustomersPage'
 import { SalesOrdersPage } from '@/pages/inventory/SalesOrdersPage'
 import { PendingApprovalsPage } from '@/pages/inventory/PendingApprovalsPage'
 import { SalesOrderDetailPage } from '@/pages/inventory/SalesOrderDetailPage'
@@ -76,7 +76,22 @@ import { CategoriesPage } from '@/pages/inventory/CategoriesPage'
 import { TaxRatesPage } from '@/pages/inventory/TaxRatesPage'
 import { ReorderConfigPage } from '@/pages/inventory/ReorderConfigPage'
 import { CustomerPricesPage } from '@/pages/inventory/CustomerPricesPage'
+import { PnLPage } from '@/pages/inventory/PnLPage'
+import { UoMPage } from '@/pages/inventory/UoMPage'
+import { PartnersPage } from '@/pages/inventory/PartnersPage'
+import { OnboardingPage } from '@/pages/OnboardingPage'
 import { ModuleGuard } from '@/components/inventory/ModuleGuard'
+import { ComplianceGuard } from '@/components/compliance/ComplianceGuard'
+
+// ── Compliance pages (lazy-loaded) ──────────────────────────────────────────
+const FrameworksPage = React.lazy(() => import('@/pages/compliance/FrameworksPage'))
+const ActivationsPage = React.lazy(() => import('@/pages/compliance/ActivationsPage'))
+const PlotsPage = React.lazy(() => import('@/pages/compliance/PlotsPage'))
+const RecordsPage = React.lazy(() => import('@/pages/compliance/RecordsPage'))
+const RecordDetailPage = React.lazy(() => import('@/pages/compliance/RecordDetailPage'))
+const CertificatesPage = React.lazy(() => import('@/pages/compliance/CertificatesPage'))
+const VerifyCertificatePage = React.lazy(() => import('@/pages/compliance/VerifyCertificatePage'))
+import { FeatureGuard } from '@/components/inventory/FeatureGuard'
 import { PlatformDashboardPage } from '@/pages/platform/PlatformDashboardPage'
 import { PlatformTenantsPage } from '@/pages/platform/PlatformTenantsPage'
 import { PlatformTenantDetailPage } from '@/pages/platform/PlatformTenantDetailPage'
@@ -86,6 +101,9 @@ import { PlatformSalesPage } from '@/pages/platform/PlatformSalesPage'
 import { PlatformTeamPage } from '@/pages/platform/PlatformTeamPage'
 import { PlatformOnboardPage } from '@/pages/platform/PlatformOnboardPage'
 import { PlatformUsersPage } from '@/pages/platform/PlatformUsersPage'
+import { PlatformAiSettingsPage } from '@/pages/platform/PlatformAiSettingsPage'
+import { BillingPage } from '@/pages/settings/BillingPage'
+import { PlanLimitModal } from '@/components/PlanLimitModal'
 
 const router = createBrowserRouter([
   // ─── Public routes (no layout) ──────────────────────────────────────────────
@@ -94,6 +112,10 @@ const router = createBrowserRouter([
   { path: '/accept-invitation',  element: <AcceptInvitationPage /> },
   { path: '/forgot-password',    element: <ForgotPasswordPage /> },
   { path: '/reset-password',     element: <ResetPasswordPage /> },
+  { path: '/verify/:certificateNumber', element: <React.Suspense fallback={null}><VerifyCertificatePage /></React.Suspense> },
+
+  // ─── Onboarding (protected, no layout) ──────────────────────────────────────
+  { path: '/onboarding', element: <ProtectedRoute><OnboardingPage /></ProtectedRoute> },
 
   // ─── Protected routes (with layout) ─────────────────────────────────────────
   {
@@ -173,6 +195,16 @@ const router = createBrowserRouter([
         ),
       },
 
+      // ── Settings ───────────────────────────────────────────────────────────
+      {
+        path: 'settings/billing',
+        element: (
+          <ProtectedRoute permission="subscription.view">
+            <BillingPage />
+          </ProtectedRoute>
+        ),
+      },
+
       // ── Backward-compat redirects ──────────────────────────────────────────
       { path: 'admin/users',            element: <Navigate to="/equipo/usuarios" replace /> },
       { path: 'admin/roles',            element: <Navigate to="/equipo/roles" replace /> },
@@ -186,7 +218,8 @@ const router = createBrowserRouter([
 
       // ── Marketplace & checkout ─────────────────────────────────────────────
       { path: 'marketplace', element: <MarketplacePage /> },
-      { path: 'checkout',    element: <CheckoutPage /> },
+      { path: 'checkout',        element: <CheckoutPage /> },
+      { path: 'checkout/result', element: <CheckoutResultPage /> },
 
       // ── Facturación Electrónica (requires inventory + electronic-invoicing) ─
       {
@@ -328,6 +361,15 @@ const router = createBrowserRouter([
         ),
       },
 
+      {
+        path: 'platform/ai',
+        element: (
+          <ProtectedRoute superuserOnly>
+            <PlatformAiSettingsPage />
+          </ProtectedRoute>
+        ),
+      },
+
       // ── Inventario (module-gated) ──────────────────────────────────────────
       {
         path: 'inventario',
@@ -382,14 +424,6 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute permission="inventory.view">
             <ModuleGuard><MovementsPage /></ModuleGuard>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'inventario/proveedores',
-        element: (
-          <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><SuppliersPage /></ModuleGuard>
           </ProtectedRoute>
         ),
       },
@@ -509,7 +543,7 @@ const router = createBrowserRouter([
         path: 'inventario/eventos',
         element: (
           <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><EventsPage /></ModuleGuard>
+            <ModuleGuard><FeatureGuard feature="eventos"><EventsPage /></FeatureGuard></ModuleGuard>
           </ProtectedRoute>
         ),
       },
@@ -517,7 +551,7 @@ const router = createBrowserRouter([
         path: 'inventario/seriales',
         element: (
           <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><SerialsPage /></ModuleGuard>
+            <ModuleGuard><FeatureGuard feature="seriales"><SerialsPage /></FeatureGuard></ModuleGuard>
           </ProtectedRoute>
         ),
       },
@@ -525,14 +559,14 @@ const router = createBrowserRouter([
         path: 'inventario/lotes',
         element: (
           <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><BatchesPage /></ModuleGuard>
+            <ModuleGuard><FeatureGuard feature="lotes"><BatchesPage /></FeatureGuard></ModuleGuard>
           </ProtectedRoute>
         ),
       },
       {
         path: 'inventario/recetas',
         element: (
-          <ProtectedRoute permission="inventory.view">
+          <ProtectedRoute permission="production.view">
             <ModuleGuard><RecipesPage /></ModuleGuard>
           </ProtectedRoute>
         ),
@@ -540,7 +574,7 @@ const router = createBrowserRouter([
       {
         path: 'inventario/produccion',
         element: (
-          <ProtectedRoute permission="inventory.view">
+          <ProtectedRoute permission="production.view">
             <ModuleGuard><ProductionPage /></ModuleGuard>
           </ProtectedRoute>
         ),
@@ -549,7 +583,7 @@ const router = createBrowserRouter([
         path: 'inventario/conteos',
         element: (
           <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><CycleCountsPage /></ModuleGuard>
+            <ModuleGuard><FeatureGuard feature="conteo"><CycleCountsPage /></FeatureGuard></ModuleGuard>
           </ProtectedRoute>
         ),
       },
@@ -557,15 +591,15 @@ const router = createBrowserRouter([
         path: 'inventario/conteos/:id',
         element: (
           <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><CycleCountDetailPage /></ModuleGuard>
+            <ModuleGuard><FeatureGuard feature="conteo"><CycleCountDetailPage /></FeatureGuard></ModuleGuard>
           </ProtectedRoute>
         ),
       },
       {
-        path: 'inventario/clientes',
+        path: 'inventario/socios',
         element: (
           <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><CustomersPage /></ModuleGuard>
+            <ModuleGuard><PartnersPage /></ModuleGuard>
           </ProtectedRoute>
         ),
       },
@@ -589,7 +623,7 @@ const router = createBrowserRouter([
         path: 'inventario/escaner',
         element: (
           <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><ScannerPage /></ModuleGuard>
+            <ModuleGuard><FeatureGuard feature="escaner"><ScannerPage /></FeatureGuard></ModuleGuard>
           </ProtectedRoute>
         ),
       },
@@ -597,7 +631,7 @@ const router = createBrowserRouter([
         path: 'inventario/picking',
         element: (
           <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><PickingPage /></ModuleGuard>
+            <ModuleGuard><FeatureGuard feature="picking"><PickingPage /></FeatureGuard></ModuleGuard>
           </ProtectedRoute>
         ),
       },
@@ -605,7 +639,7 @@ const router = createBrowserRouter([
         path: 'inventario/aprobaciones',
         element: (
           <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><PendingApprovalsPage /></ModuleGuard>
+            <ModuleGuard><FeatureGuard feature="aprobaciones"><PendingApprovalsPage /></FeatureGuard></ModuleGuard>
           </ProtectedRoute>
         ),
       },
@@ -629,7 +663,7 @@ const router = createBrowserRouter([
         path: 'inventario/precios-clientes',
         element: (
           <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><CustomerPricesPage /></ModuleGuard>
+            <ModuleGuard><FeatureGuard feature="precios"><CustomerPricesPage /></FeatureGuard></ModuleGuard>
           </ProtectedRoute>
         ),
       },
@@ -645,7 +679,7 @@ const router = createBrowserRouter([
         path: 'inventario/kardex',
         element: (
           <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><KardexPage /></ModuleGuard>
+            <ModuleGuard><FeatureGuard feature="kardex"><KardexPage /></FeatureGuard></ModuleGuard>
           </ProtectedRoute>
         ),
       },
@@ -653,7 +687,7 @@ const router = createBrowserRouter([
         path: 'inventario/variantes',
         element: (
           <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><VariantsPage /></ModuleGuard>
+            <ModuleGuard><FeatureGuard feature="variantes"><VariantsPage /></FeatureGuard></ModuleGuard>
           </ProtectedRoute>
         ),
       },
@@ -662,6 +696,22 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute permission="inventory.manage">
             <ModuleGuard><ReorderConfigPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inventario/rentabilidad',
+        element: (
+          <ProtectedRoute permission="inventory.view">
+            <ModuleGuard><PnLPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inventario/unidades-medida',
+        element: (
+          <ProtectedRoute permission="inventory.manage">
+            <ModuleGuard><UoMPage /></ModuleGuard>
           </ProtectedRoute>
         ),
       },
@@ -681,6 +731,56 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      // ── Cumplimiento (compliance module-gated) ──────────────────────────────
+      {
+        path: 'cumplimiento/frameworks',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><FrameworksPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+      {
+        path: 'cumplimiento/activaciones',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><ActivationsPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+      {
+        path: 'cumplimiento/parcelas',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><PlotsPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+      {
+        path: 'cumplimiento/registros',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><RecordsPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+      {
+        path: 'cumplimiento/registros/:id',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><RecordDetailPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+      {
+        path: 'cumplimiento/certificados',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><CertificatesPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+
       { path: '*', element: <NotFoundPage /> },
     ],
   },
@@ -690,5 +790,10 @@ const router = createBrowserRouter([
 ])
 
 export default function App() {
-  return <RouterProvider router={router} />
+  return (
+    <>
+      <RouterProvider router={router} />
+      <PlanLimitModal />
+    </>
+  )
 }
