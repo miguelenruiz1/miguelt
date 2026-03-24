@@ -41,6 +41,18 @@ _PERMISSIONS = [
     ("integrations",  "integrations.manage",      "Manage integrations"),
     # Reports
     ("reports",       "reports.view",             "View reports"),
+    # Purchase Orders (granular)
+    ("inventory",     "purchase_orders.view",      "Ver órdenes de compra"),
+    ("inventory",     "purchase_orders.create",    "Crear órdenes de compra"),
+    ("inventory",     "purchase_orders.edit",      "Editar órdenes de compra"),
+    ("inventory",     "purchase_orders.delete",    "Eliminar órdenes de compra"),
+    ("inventory",     "purchase_orders.send",      "Enviar OC al proveedor"),
+    ("inventory",     "purchase_orders.confirm",   "Confirmar OC"),
+    ("inventory",     "purchase_orders.cancel",    "Cancelar OC"),
+    ("inventory",     "purchase_orders.receive",   "Recibir mercancía"),
+    ("inventory",     "purchase_orders.approve",   "Aprobar órdenes de compra"),
+    ("inventory",     "purchase_orders.view_cost", "Ver costos en OC"),
+    ("inventory",     "purchase_orders.manage",    "Gestionar órdenes de compra"),
 ]
 
 

@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import ModuleUser, require_permission
+from app.api.deps import ProductionModuleUser, require_permission
 from app.db.session import get_db_session
 from app.domain.schemas import RecipeCreate, RecipeOut, RecipeUpdate
 from app.domain.schemas.pagination import PaginatedRecipes
@@ -27,7 +27,7 @@ def _svc(db: AsyncSession = Depends(get_db_session)) -> ProductionService:
 
 @router.get("", response_model=PaginatedRecipes)
 async def list_recipes(
-    current_user: ModuleUser,
+    current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.view"))],
     svc: ProductionService = Depends(_svc),
     offset: int = Query(0, ge=0),
@@ -41,7 +41,7 @@ async def list_recipes(
 @router.post("", response_model=RecipeOut, status_code=201)
 async def create_recipe(
     body: RecipeCreate,
-    current_user: ModuleUser,
+    current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.manage"))],
     request: Request,
     svc: ProductionService = Depends(_svc),
@@ -64,7 +64,7 @@ async def create_recipe(
 @router.get("/{recipe_id}", response_model=RecipeOut)
 async def get_recipe(
     recipe_id: str,
-    current_user: ModuleUser,
+    current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.view"))],
     svc: ProductionService = Depends(_svc),
 ):
@@ -76,7 +76,7 @@ async def get_recipe(
 async def update_recipe(
     recipe_id: str,
     body: RecipeUpdate,
-    current_user: ModuleUser,
+    current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.manage"))],
     request: Request,
     svc: ProductionService = Depends(_svc),
@@ -99,7 +99,7 @@ async def update_recipe(
 @router.delete("/{recipe_id}", status_code=204)
 async def delete_recipe(
     recipe_id: str,
-    current_user: ModuleUser,
+    current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.manage"))],
     request: Request,
     svc: ProductionService = Depends(_svc),

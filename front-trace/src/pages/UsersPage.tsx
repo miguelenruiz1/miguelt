@@ -19,7 +19,7 @@ function RoleDropdown({ user, onAssign, onRemove }: {
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+        className="flex items-center gap-1 text-xs text-primary hover:text-primary font-medium"
       >
         Roles <ChevronDown className="h-3 w-3" />
       </button>
@@ -111,7 +111,7 @@ function InviteUserModal({ onClose }: { onClose: () => void }) {
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="María García"
             />
           </div>
@@ -122,7 +122,7 @@ function InviteUserModal({ onClose }: { onClose: () => void }) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="maria@empresa.com"
             />
           </div>
@@ -138,8 +138,8 @@ function InviteUserModal({ onClose }: { onClose: () => void }) {
                     onClick={() => toggleRole(role.id)}
                     className={`text-xs rounded-full px-3 py-1.5 border transition-colors ${
                       selected
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'
+                        ? 'bg-primary text-white border-primary'
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-primary/50'
                     }`}
                   >
                     {role.name}
@@ -166,7 +166,7 @@ function InviteUserModal({ onClose }: { onClose: () => void }) {
             <button
               type="submit"
               disabled={invite.isPending}
-              className="px-5 py-2 text-sm font-medium rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="px-5 py-2 text-sm font-medium rounded-xl bg-primary text-white hover:bg-primary/90 disabled:opacity-50"
             >
               {invite.isPending ? 'Enviando...' : 'Enviar invitación'}
             </button>
@@ -215,8 +215,8 @@ export function UsersPage() {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100">
-            <Users className="h-5 w-5 text-indigo-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
+            <Users className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Mi Equipo</h1>
@@ -229,7 +229,7 @@ export function UsersPage() {
             onClick={() => setShowInvite(true)}
             disabled={atLimit}
             title={atLimit ? `Límite del plan alcanzado (${maxUsers} usuarios)` : 'Invitar nuevo usuario'}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <UserPlus className="h-4 w-4" />
             Invitar usuario
@@ -255,7 +255,7 @@ export function UsersPage() {
               return (
                 <div key={user.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 font-semibold text-sm shrink-0">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary font-semibold text-sm shrink-0">
                       {user.full_name[0]?.toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -266,7 +266,7 @@ export function UsersPage() {
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {user.roles.map((r) => (
-                      <span key={r.id} className="text-xs bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5">
+                      <span key={r.id} className="text-xs bg-primary/15 text-primary rounded-full px-2 py-0.5">
                         {r.name}
                       </span>
                     ))}
@@ -284,7 +284,7 @@ export function UsersPage() {
                       <button
                         onClick={() => resend.mutate(user.id)}
                         disabled={resend.isPending}
-                        className="text-xs text-indigo-500 hover:text-indigo-700 flex items-center gap-1"
+                        className="text-xs text-primary hover:text-primary flex items-center gap-1"
                         title="Reenviar invitación"
                       >
                         <RefreshCw className="h-3.5 w-3.5" /> Reenviar
@@ -330,7 +330,7 @@ export function UsersPage() {
                   <tr key={user.id} className="hover:bg-slate-50/50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 font-semibold text-sm shrink-0">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary font-semibold text-sm shrink-0">
                           {user.full_name[0]?.toUpperCase()}
                         </div>
                         <div>
@@ -342,7 +342,7 @@ export function UsersPage() {
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {user.roles.map((r) => (
-                          <span key={r.id} className="text-xs bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5">
+                          <span key={r.id} className="text-xs bg-primary/15 text-primary rounded-full px-2 py-0.5">
                             {r.name}
                           </span>
                         ))}
@@ -366,7 +366,7 @@ export function UsersPage() {
                           <button
                             onClick={() => resend.mutate(user.id)}
                             disabled={resend.isPending}
-                            className="text-xs text-indigo-500 hover:text-indigo-700 flex items-center gap-1"
+                            className="text-xs text-primary hover:text-primary flex items-center gap-1"
                             title="Reenviar invitación"
                           >
                             <RefreshCw className="h-3.5 w-3.5" /> Reenviar

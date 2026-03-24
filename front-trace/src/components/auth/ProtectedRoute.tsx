@@ -1,5 +1,5 @@
 import { useLayoutEffect } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
 import { useConfirmStore } from '@/store/confirm'
 
@@ -11,6 +11,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, permission, superuserOnly }: ProtectedRouteProps) {
   const { accessToken, user, hasPermission } = useAuthStore()
+  const location = useLocation()
 
   // Clear any stuck overlay/dialog state before painting
   useLayoutEffect(() => {
@@ -21,6 +22,15 @@ export function ProtectedRoute({ children, permission, superuserOnly }: Protecte
 
   if (!accessToken) {
     return <Navigate to="/login" replace />
+  }
+
+  // Redirect to onboarding if not completed (skip for /onboarding itself)
+  if (
+    user &&
+    user.onboarding_completed === false &&
+    location.pathname !== '/onboarding'
+  ) {
+    return <Navigate to="/onboarding" replace />
   }
 
   if (superuserOnly && !user?.is_superuser) {

@@ -53,7 +53,7 @@ export function PlatformOnboardPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <Link to="/platform/tenants" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600 mb-2">
+        <Link to="/platform/tenants" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-primary mb-2">
           <ArrowLeft className="h-4 w-4" /> Empresas
         </Link>
         <h1 className="text-2xl font-bold text-slate-900">Onboarding de Empresa</h1>
@@ -66,7 +66,7 @@ export function PlatformOnboardPage() {
         {/* Tenant ID */}
         <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm space-y-4">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-indigo-500" /> Datos de la Empresa
+            <Building2 className="h-4 w-4 text-primary" /> Datos de la Empresa
           </h3>
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">Tenant ID / Slug</label>
@@ -76,7 +76,7 @@ export function PlatformOnboardPage() {
               onChange={e => setTenantId(e.target.value)}
               placeholder="ej: empresa-abc"
               required
-              className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none"
+              className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none"
             />
             <p className="text-xs text-slate-400 mt-1">Identificador unico de la empresa en el sistema</p>
           </div>
@@ -87,7 +87,7 @@ export function PlatformOnboardPage() {
               onChange={e => setNotes(e.target.value)}
               placeholder="Sector, contacto, observaciones..."
               rows={2}
-              className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none resize-none"
+              className="w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none resize-none"
             />
           </div>
         </div>
@@ -95,7 +95,7 @@ export function PlatformOnboardPage() {
         {/* Plan selection */}
         <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm space-y-4">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-            <CreditCard className="h-4 w-4 text-indigo-500" /> Plan de Suscripcion
+            <CreditCard className="h-4 w-4 text-primary" /> Plan de Suscripcion
           </h3>
           <div className="grid grid-cols-2 gap-3">
             {activePlans.map(p => (
@@ -106,19 +106,19 @@ export function PlatformOnboardPage() {
                 className={cn(
                   'text-left rounded-xl border-2 p-4 transition',
                   planSlug === p.slug
-                    ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-200'
+                    ? 'border-primary bg-primary/5 ring-1 ring-ring/30'
                     : 'border-slate-200 hover:border-slate-300',
                 )}
               >
                 <div className="text-sm font-semibold text-slate-900">{p.name}</div>
-                <div className="text-lg font-bold text-indigo-600 mt-1">
+                <div className="text-lg font-bold text-primary mt-1">
                   {p.price_monthly > 0 ? `$${p.price_monthly}/mes` : 'Gratis'}
                 </div>
                 <div className="text-xs text-slate-400 mt-1">
                   {p.max_users} usuarios, {p.max_assets} assets
                 </div>
                 {planSlug === p.slug && (
-                  <CheckCircle2 className="h-5 w-5 text-indigo-500 mt-2" />
+                  <CheckCircle2 className="h-5 w-5 text-primary mt-2" />
                 )}
               </button>
             ))}
@@ -135,7 +135,7 @@ export function PlatformOnboardPage() {
                   className={cn(
                     'px-4 py-2 text-sm rounded-xl border-2 font-medium transition',
                     billingCycle === c
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      ? 'border-primary bg-primary/10 text-primary'
                       : 'border-slate-200 text-slate-600 hover:border-slate-300',
                   )}
                 >
@@ -149,7 +149,7 @@ export function PlatformOnboardPage() {
         {/* Module selection */}
         <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm space-y-4">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-            <Layers className="h-4 w-4 text-indigo-500" /> Modulos a Activar
+            <Layers className="h-4 w-4 text-primary" /> Modulos a Activar
           </h3>
           <div className="flex gap-3">
             {AVAILABLE_MODULES.map(m => (
@@ -160,12 +160,12 @@ export function PlatformOnboardPage() {
                 className={cn(
                   'flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition',
                   modules.includes(m)
-                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                    ? 'border-primary bg-primary/10 text-primary'
                     : 'border-slate-200 text-slate-600 hover:border-slate-300',
                 )}
               >
                 {modules.includes(m) ? (
-                  <CheckCircle2 className="h-4 w-4 text-indigo-500" />
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
                 ) : (
                   <Plus className="h-4 w-4 text-slate-400" />
                 )}
@@ -180,7 +180,7 @@ export function PlatformOnboardPage() {
           <button
             type="submit"
             disabled={!tenantId.trim() || onboard.isPending}
-            className="flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl disabled:opacity-50 transition"
+            className="flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-50 transition"
           >
             {onboard.isPending ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />

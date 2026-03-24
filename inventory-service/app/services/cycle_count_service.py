@@ -309,8 +309,8 @@ class CycleCountService:
             counted_items += 1
 
             cost = Decimal("0")
-            if item.product and hasattr(item.product, "cost_price") and item.product.cost_price:
-                cost = item.product.cost_price
+            if item.product and hasattr(item.product, "last_purchase_cost") and item.product.last_purchase_cost:
+                cost = item.product.last_purchase_cost
 
             total_system_value += item.system_qty * cost
             total_counted_value += item.counted_qty * cost

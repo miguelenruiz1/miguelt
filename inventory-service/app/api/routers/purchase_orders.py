@@ -3,7 +3,10 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request, Response
+import uuid
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, Query, Request, Response, UploadFile
 from fastapi.responses import ORJSONResponse
 
 from app.api.deps import ModuleUser, require_permission
@@ -12,9 +15,11 @@ from app.db.session import get_db_session
 from app.domain.schemas import PaginatedPOs, POCreate, POOut, POUpdate, ReceivePOIn
 from app.domain.schemas.purchase_order import (
     ConsolidateRequest, ConsolidationCandidate, ConsolidationResult, ConsolidationInfo,
+    PORejectIn, POApprovalLogOut,
 )
 from app.services.po_service import POService
 from app.services.po_consolidation_service import POConsolidationService
+from app.services.po_approval_service import POApprovalService
 from app.services.audit_service import InventoryAuditService
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,7 +34,7 @@ def _ip(request: Request) -> str | None:
 @router.get("", response_model=PaginatedPOs)
 async def list_pos(
     current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.view"))],
+    _: Annotated[dict, Depends(require_permission("purchase_orders.view"))],
     db: AsyncSession = Depends(get_db_session),
     status: POStatus | None = None,
     supplier_id: str | None = None,
@@ -56,7 +61,7 @@ async def list_pos(
 async def create_po(
     body: POCreate,
     current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    _: Annotated[dict, Depends(require_permission("purchase_orders.create"))],
     request: Request,
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
@@ -102,7 +107,7 @@ async def create_po(
 async def consolidate_purchase_orders(
     body: ConsolidateRequest,
     current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    _: Annotated[dict, Depends(require_permission("purchase_orders.edit"))],
     request: Request,
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
@@ -130,7 +135,7 @@ async def consolidate_purchase_orders(
 @router.get("/consolidation-candidates", response_model=list[ConsolidationCandidate])
 async def consolidation_candidates(
     current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.view"))],
+    _: Annotated[dict, Depends(require_permission("purchase_orders.view"))],
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     svc = POConsolidationService(db)
@@ -151,7 +156,7 @@ async def consolidation_candidates(
 async def delete_po(
     po_id: str,
     current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    _: Annotated[dict, Depends(require_permission("purchase_orders.delete"))],
     request: Request,
     db: AsyncSession = Depends(get_db_session),
 ) -> Response:
@@ -174,7 +179,7 @@ async def delete_po(
 async def get_po(
     po_id: str,
     current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.view"))],
+    _: Annotated[dict, Depends(require_permission("purchase_orders.view"))],
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     svc = POService(db)
@@ -187,7 +192,7 @@ async def update_po(
     po_id: str,
     body: POUpdate,
     current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    _: Annotated[dict, Depends(require_permission("purchase_orders.edit"))],
     request: Request,
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
@@ -213,7 +218,7 @@ async def update_po(
 async def send_po(
     po_id: str,
     current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    _: Annotated[dict, Depends(require_permission("purchase_orders.send"))],
     request: Request,
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
@@ -221,7 +226,7 @@ async def send_po(
     audit = InventoryAuditService(db)
     old_po = await svc.get(po_id, current_user["tenant_id"])
     old_status = old_po.status.value if hasattr(old_po.status, "value") else str(old_po.status)
-    po = await svc.send(po_id, current_user["tenant_id"])
+    po = await svc.send(po_id, current_user["tenant_id"], current_user.get("id"))
     po = await svc.get(po.id, current_user["tenant_id"])
     await audit.log(
         tenant_id=current_user["tenant_id"], user=current_user,
@@ -238,7 +243,7 @@ async def send_po(
 async def confirm_po(
     po_id: str,
     current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    _: Annotated[dict, Depends(require_permission("purchase_orders.confirm"))],
     request: Request,
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
@@ -246,7 +251,7 @@ async def confirm_po(
     audit = InventoryAuditService(db)
     old_po = await svc.get(po_id, current_user["tenant_id"])
     old_status = old_po.status.value if hasattr(old_po.status, "value") else str(old_po.status)
-    po = await svc.confirm(po_id, current_user["tenant_id"])
+    po = await svc.confirm(po_id, current_user["tenant_id"], current_user.get("id"))
     po = await svc.get(po.id, current_user["tenant_id"])
     await audit.log(
         tenant_id=current_user["tenant_id"], user=current_user,
@@ -263,7 +268,7 @@ async def confirm_po(
 async def cancel_po(
     po_id: str,
     current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    _: Annotated[dict, Depends(require_permission("purchase_orders.cancel"))],
     request: Request,
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
@@ -289,7 +294,7 @@ async def receive_po(
     po_id: str,
     body: ReceivePOIn,
     current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    _: Annotated[dict, Depends(require_permission("purchase_orders.receive"))],
     request: Request,
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
@@ -301,6 +306,20 @@ async def receive_po(
         line_receipts=[lr.model_dump() for lr in body.lines],
         performed_by=current_user.get("id"),
     )
+    # Save attachments + invoice data directly on PO (bypass status check)
+    if body.attachments:
+        po.attachments = (po.attachments or []) + body.attachments
+    if body.supplier_invoice_number:
+        po.supplier_invoice_number = body.supplier_invoice_number
+    if body.supplier_invoice_date:
+        po.supplier_invoice_date = body.supplier_invoice_date
+    if body.supplier_invoice_total is not None:
+        po.supplier_invoice_total = body.supplier_invoice_total
+    if body.payment_terms:
+        po.payment_terms = body.payment_terms
+    if body.payment_due_date:
+        po.payment_due_date = body.payment_due_date
+    await db.flush()
     po = await svc.get(po.id, current_user["tenant_id"])
     await audit.log(
         tenant_id=current_user["tenant_id"], user=current_user,
@@ -312,6 +331,151 @@ async def receive_po(
     return ORJSONResponse(POOut.model_validate(po).model_dump(mode="json"))
 
 
+# ── Approval workflow ──────────────────────────────────────────────────
+
+
+@router.post("/{po_id}/submit-approval", response_model=POOut)
+async def submit_po_for_approval(
+    po_id: str,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("purchase_orders.send"))],
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    svc = POService(db)
+    approval_svc = POApprovalService(db)
+    audit = InventoryAuditService(db)
+    po = await svc.get(po_id, current_user["tenant_id"])
+    po = await approval_svc.submit_for_approval(
+        po, current_user.get("id", ""), current_user.get("full_name"),
+    )
+    await audit.log(
+        tenant_id=current_user["tenant_id"], user=current_user,
+        action="inventory.po.submit_approval", resource_type="purchase_order",
+        resource_id=po.id,
+        new_data={"order_number": po.po_number, "status": "pending_approval"},
+        ip_address=_ip(request),
+    )
+    po = await svc.get(po.id, current_user["tenant_id"])
+    return ORJSONResponse(POOut.model_validate(po).model_dump(mode="json"))
+
+
+@router.post("/{po_id}/approve", response_model=POOut)
+async def approve_po(
+    po_id: str,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("purchase_orders.approve"))],
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    svc = POService(db)
+    approval_svc = POApprovalService(db)
+    audit = InventoryAuditService(db)
+    po = await svc.get(po_id, current_user["tenant_id"])
+    po = await approval_svc.approve(
+        po, current_user.get("id", ""), current_user.get("full_name"),
+    )
+    await audit.log(
+        tenant_id=current_user["tenant_id"], user=current_user,
+        action="inventory.po.approve", resource_type="purchase_order",
+        resource_id=po.id,
+        new_data={"order_number": po.po_number, "status": "approved"},
+        ip_address=_ip(request),
+    )
+    po = await svc.get(po.id, current_user["tenant_id"])
+    return ORJSONResponse(POOut.model_validate(po).model_dump(mode="json"))
+
+
+@router.post("/{po_id}/reject", response_model=POOut)
+async def reject_po(
+    po_id: str,
+    body: PORejectIn,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("purchase_orders.approve"))],
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    svc = POService(db)
+    approval_svc = POApprovalService(db)
+    audit = InventoryAuditService(db)
+    po = await svc.get(po_id, current_user["tenant_id"])
+    po = await approval_svc.reject(
+        po, current_user.get("id", ""), body.reason, current_user.get("full_name"),
+    )
+    await audit.log(
+        tenant_id=current_user["tenant_id"], user=current_user,
+        action="inventory.po.reject", resource_type="purchase_order",
+        resource_id=po.id,
+        new_data={"order_number": po.po_number, "status": "draft", "reason": body.reason},
+        ip_address=_ip(request),
+    )
+    po = await svc.get(po.id, current_user["tenant_id"])
+    return ORJSONResponse(POOut.model_validate(po).model_dump(mode="json"))
+
+
+@router.get("/{po_id}/approval-log", response_model=list[POApprovalLogOut])
+async def get_po_approval_log(
+    po_id: str,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("purchase_orders.view"))],
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    approval_svc = POApprovalService(db)
+    logs = await approval_svc.get_approval_log(po_id, current_user["tenant_id"])
+    return ORJSONResponse([POApprovalLogOut.model_validate(l).model_dump(mode="json") for l in logs])
+
+
+# ── File upload for PO attachments ────────────────────────────────────
+
+
+@router.post("/{po_id}/upload-attachment")
+async def upload_po_attachment(
+    po_id: str,
+    file: UploadFile,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("purchase_orders.receive"))],
+    db: AsyncSession = Depends(get_db_session),
+    classification: str = Query("other"),
+) -> ORJSONResponse:
+    """Upload a file attachment to a PO (invoice, remission, photo, etc.)."""
+    from app.core.settings import get_settings
+    settings = get_settings()
+
+    allowed_types = {"application/pdf", "image/jpeg", "image/png", "image/webp"}
+    if file.content_type not in allowed_types:
+        from fastapi import HTTPException, status as http_status
+        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail="Tipo de archivo no permitido. Use PDF, JPG, PNG o WEBP.")
+
+    content = await file.read()
+    max_size = 10 * 1024 * 1024  # 10MB
+    if len(content) > max_size:
+        from fastapi import HTTPException, status as http_status
+        raise HTTPException(status_code=http_status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="El archivo excede el límite de 10 MB.")
+
+    ext = file.content_type.split("/")[-1].replace("jpeg", "jpg")
+    filename = f"{po_id}_{uuid.uuid4().hex[:8]}.{ext}"
+    docs_dir = Path(settings.UPLOAD_DIR) / "po-documents"
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    (docs_dir / filename).write_bytes(content)
+
+    file_url = f"/uploads/po-documents/{filename}"
+
+    attachment = {
+        "url": file_url,
+        "name": file.filename or filename,
+        "type": file.content_type,
+        "classification": classification,
+    }
+
+    svc = POService(db)
+    po = await svc.get(po_id, current_user["tenant_id"])
+    existing = po.attachments or []
+    po.attachments = existing + [attachment]
+    await db.flush()
+
+    return ORJSONResponse(attachment)
+
+
 # ── Consolidation info / deconsolidate (parameterised paths) ──────────
 
 
@@ -319,7 +483,7 @@ async def receive_po(
 async def get_consolidation_info(
     po_id: str,
     current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.view"))],
+    _: Annotated[dict, Depends(require_permission("purchase_orders.view"))],
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     svc = POConsolidationService(db)
@@ -339,7 +503,7 @@ async def get_consolidation_info(
 async def deconsolidate_purchase_order(
     po_id: str,
     current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    _: Annotated[dict, Depends(require_permission("purchase_orders.edit"))],
     request: Request,
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:

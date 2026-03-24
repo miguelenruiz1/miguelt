@@ -20,7 +20,7 @@ const schema = z
 type FormData = z.infer<typeof schema>
 
 const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-indigo-300 focus:outline-none focus:ring-3 focus:ring-indigo-500/20'
+  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20'
 
 function BrandPanel() {
   return (
@@ -55,7 +55,7 @@ function BrandPanel() {
             <path d="M20 17h2.5v5.5H27V25H20V17Z" fill="white" opacity="0.7" />
           </svg>
           <h2 className="text-2xl font-bold text-white mb-3">
-            Trace<span className="font-medium text-indigo-300">Log</span>
+            Trace<span className="font-medium text-primary/50">Log</span>
           </h2>
           <p className="text-center text-gray-400">
             Has sido invitado a unirte. Establece tu contraseña para activar tu cuenta.
@@ -97,7 +97,7 @@ export function AcceptInvitationPage() {
           <div className="flex flex-col flex-1">
             <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto text-center">
               <p className="text-red-600 font-medium mb-4">Token de invitación no encontrado.</p>
-              <Link to="/login" className="text-indigo-500 hover:text-indigo-600 text-sm font-medium">
+              <Link to="/login" className="text-primary hover:text-primary text-sm font-medium">
                 Ir al login
               </Link>
             </div>
@@ -121,7 +121,7 @@ export function AcceptInvitationPage() {
               <p className="text-sm text-gray-500 mb-8">Tu contraseña ha sido establecida. Ya puedes iniciar sesión.</p>
               <button
                 onClick={() => navigate('/login')}
-                className="flex w-full items-center justify-center rounded-lg bg-indigo-500 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-600"
+                className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-primary"
               >
                 Ir al login
               </button>
@@ -223,7 +223,7 @@ export function AcceptInvitationPage() {
                     <button
                       type="submit"
                       disabled={mutation.isPending}
-                      className="flex w-full items-center justify-center rounded-lg bg-indigo-500 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {mutation.isPending ? 'Activando...' : 'Activar cuenta'}
                     </button>

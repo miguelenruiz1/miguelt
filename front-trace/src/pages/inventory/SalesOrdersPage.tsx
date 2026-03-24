@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { useFormValidation } from '@/hooks/useFormValidation'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Plus, Search, ShoppingBag, Pencil, Trash2, Check, PackageCheck, Truck as TruckIcon,
   CheckCircle2, RotateCcw, XCircle,
@@ -9,19 +10,51 @@ import {
   useSalesOrders, useSalesOrderSummary, useCreateSalesOrder, useDeleteSalesOrder,
   useConfirmSalesOrder, usePickSalesOrder, useShipSalesOrder,
   useDeliverSalesOrder, useReturnSalesOrder, useCancelSalesOrder,
-  useCustomers, useCustomerPrices, useProducts, useWarehouses,
+  usePartners, useProducts, useWarehouses, useStockLevels,
   useApproveSalesOrder, useRejectSalesOrder, useResubmitSalesOrder,
   usePriceLookup, useTaxRates,
 } from '@/hooks/useInventory'
+import { useQuery } from '@tanstack/react-query'
 import { useToast } from '@/store/toast'
 import { VariantPicker } from '@/components/inventory/VariantPicker'
+import { inventoryPricingApi } from '@/lib/inventory-api'
 import type { SalesOrder, SalesOrderStatus, ConfirmWithBackorderOut, PriceLookupResponse } from '@/types/inventory'
+
+function PriceSemaphore({ productId, unitPrice }: { productId: string; unitPrice: number }) {
+  const { data } = useQuery({
+    queryKey: ['inventory', 'product-pricing', productId],
+    queryFn: () => inventoryPricingApi.getProductPricing(productId),
+    enabled: !!productId,
+    staleTime: 30_000,
+  })
+  if (!data || !data.last_purchase_cost) return null
+  const cost = data.last_purchase_cost
+  const margin = cost > 0 ? ((unitPrice - cost) / unitPrice) * 100 : 0
+  const suggested = data.suggested_sale_price || 0
+  const minimum = data.minimum_sale_price || 0
+  let color = 'bg-green-50 text-green-700 border-green-200'
+  let icon = '🟢'
+  let msg = `Margen ${margin.toFixed(1)}% — Por encima del objetivo`
+  if (unitPrice < minimum && minimum > 0) {
+    color = 'bg-red-50 text-red-700 border-red-200'; icon = '🔴'
+    msg = `Margen ${margin.toFixed(1)}% — Por debajo del mínimo. Requiere autorización.`
+  } else if (unitPrice < suggested && suggested > 0) {
+    color = 'bg-orange-50 text-orange-700 border-orange-200'; icon = '🟡'
+    msg = `Margen ${margin.toFixed(1)}% — Por debajo del objetivo (mín: $${minimum.toLocaleString('es-CO')})`
+  }
+  return (
+    <div className={`text-xs mt-1 p-2 rounded border ${color} col-span-full`}>
+      {icon} {msg}
+      <div className="mt-1 text-gray-500">Costo: ${cost.toLocaleString('es-CO')} | Sugerido: ${suggested.toLocaleString('es-CO')} | Mínimo: ${minimum.toLocaleString('es-CO')}</div>
+    </div>
+  )
+}
 
 const STATUS_CONFIG: Record<SalesOrderStatus, { label: string; color: string }> = {
   draft: { label: 'Borrador', color: 'bg-slate-100 text-slate-600' },
   confirmed: { label: 'Confirmada', color: 'bg-blue-50 text-blue-700' },
   picking: { label: 'En Picking', color: 'bg-amber-50 text-amber-700' },
-  shipped: { label: 'Enviada', color: 'bg-indigo-50 text-indigo-700' },
+  shipped: { label: 'Enviada', color: 'bg-primary/10 text-primary' },
   delivered: { label: 'Entregada', color: 'bg-emerald-50 text-emerald-700' },
   returned: { label: 'Devuelta', color: 'bg-orange-50 text-orange-600' },
   canceled: { label: 'Cancelada', color: 'bg-red-50 text-red-600' },
@@ -45,22 +78,26 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
 interface SOLine { product_id: string; variant_id: string; warehouse_id: string; qty_ordered: string; unit_price: string; discount_pct: string; tax_rate: string }
 
 function CreateSOModal({ onClose }: { onClose: () => void }) {
-  const { data: customersData } = useCustomers({ limit: 200 })
+  const { data: partnersData } = usePartners({ limit: 200 })
   const { data: productsData } = useProducts()
   const { data: warehouses = [] } = useWarehouses()
   const create = useCreateSalesOrder()
   const priceLookupMut = usePriceLookup()
   const { data: taxRates = [] } = useTaxRates({ is_active: true })
   const ivaRates = taxRates.filter(r => r.tax_type === 'iva')
-  const customers = customersData?.items ?? []
-  const products = productsData?.items ?? []
+  const { data: stockLevels = [] } = useStockLevels({ limit: 500 })
+  const partners = partnersData?.items ?? []
+  const allProducts = productsData?.items ?? []
+  // Build set of product IDs that have stock > 0
+  const productsWithStock = new Set(
+    stockLevels.filter(sl => Number(sl.qty_on_hand) - Number(sl.qty_reserved ?? 0) > 0).map(sl => sl.product_id)
+  )
+  // Only show active products with available stock
+  const products = allProducts.filter(p => p.is_active && productsWithStock.has(p.id))
 
   const [form, setForm] = useState({ customer_id: '', warehouse_id: '', expected_date: '', notes: '', discount_pct: '0', discount_reason: '' })
   const [lines, setLines] = useState<SOLine[]>([{ product_id: '', variant_id: '', warehouse_id: '', qty_ordered: '1', unit_price: '0', discount_pct: '0', tax_rate: '19' }])
   const [linePriceSources, setLinePriceSources] = useState<Record<number, PriceLookupResponse>>({})
-
-  // Load customer special prices when customer is selected
-  const { data: customerPrices } = useCustomerPrices(form.customer_id || undefined)
 
   // Lookup price via API (checks customer special prices first, then base)
   const doLookup = useCallback(async (lineIdx: number, customerId: string, productId: string, qty: number, variantId?: string) => {
@@ -83,30 +120,10 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.customer_id])
 
-  function resolvePriceLocal(productId: string, qty: number, variantId?: string): { price: string; fromList: boolean } {
-    if (customerPrices && customerPrices[productId]) {
-      const allTiers = [...customerPrices[productId]].sort((a, b) => b.min_quantity - a.min_quantity)
-
-      // Try variant-specific price first
-      if (variantId) {
-        const variantMatch = allTiers.find(t => t.variant_id === variantId && qty >= t.min_quantity)
-        if (variantMatch) {
-          let price = variantMatch.unit_price
-          if (variantMatch.discount_pct > 0) price = price * (1 - variantMatch.discount_pct / 100)
-          return { price: price.toFixed(2), fromList: true }
-        }
-      }
-
-      // Fall back to product-level price (no variant)
-      const productMatch = allTiers.find(t => !t.variant_id && qty >= t.min_quantity)
-      if (productMatch) {
-        let price = productMatch.unit_price
-        if (productMatch.discount_pct > 0) price = price * (1 - productMatch.discount_pct / 100)
-        return { price: price.toFixed(2), fromList: true }
-      }
-    }
+  function resolvePriceLocal(productId: string, _qty: number, _variantId?: string): { price: string; fromList: boolean } {
+    // Use product's suggested sale price as base
     const p = products.find(x => x.id === productId)
-    return { price: p?.sale_price ?? '0', fromList: false }
+    return { price: p?.suggested_sale_price ? String(p.suggested_sale_price) : '0', fromList: false }
   }
 
   function addLine() {
@@ -148,7 +165,6 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
     }
   }
 
-  // Re-apply prices when customer changes (customerPrices updates)
   function onCustomerChange(customerId: string) {
     setForm(f => ({ ...f, customer_id: customerId }))
     // Re-lookup all line prices with the new customer
@@ -160,24 +176,9 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
     })
   }
 
-  // Re-resolve all line prices when customerPrices changes (customer selected/changed)
-  const prevPricesRef = useRef(customerPrices)
-  useEffect(() => {
-    if (customerPrices === prevPricesRef.current) return
-    prevPricesRef.current = customerPrices
-    // If customer prices changed but no lookup results yet, resolve locally
-    lines.forEach((ln, i) => {
-      if (!ln.product_id) return
-      if (!linePriceSources[i] && !form.customer_id) {
-        const { price } = resolvePriceLocal(ln.product_id, Number(ln.qty_ordered), ln.variant_id || undefined)
-        setLines(l => l.map((cur, idx) => idx === i ? { ...cur, unit_price: price } : cur))
-      }
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customerPrices])
+  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function doSubmit() {
     await create.mutateAsync({
       customer_id: form.customer_id,
       warehouse_id: form.warehouse_id || null,
@@ -200,33 +201,45 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2"><ShoppingBag className="h-5 w-5 text-indigo-500" /> Nueva Orden de Venta</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <select required value={form.customer_id} onChange={e => onCustomerChange(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-              <option value="">Cliente *</option>
-              {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
-            </select>
-            <select value={form.warehouse_id} onChange={e => setForm(f => ({ ...f, warehouse_id: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-              <option value="">Bodega</option>
-              {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-            </select>
-          </div>
-          <input type="date" value={form.expected_date} onChange={e => setForm(f => ({ ...f, expected_date: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-          <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notas" rows={2} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none" />
+      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2"><ShoppingBag className="h-5 w-5 text-primary" /> Nueva Orden de Venta</h2>
+        <form ref={formRef} onSubmit={validateAndSubmit} className="space-y-3" noValidate>
+          {/* Alerts */}
+          {partners.length === 0 && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              No hay socios comerciales registrados. Crea uno primero en <span className="font-semibold">Socios Comerciales</span>.
+            </div>
+          )}
+          {products.length === 0 && allProducts.length > 0 && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              Ningún producto tiene stock disponible. Recibe mercancía en una Orden de Compra primero.
+            </div>
+          )}
+          {allProducts.length === 0 && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              No hay productos registrados. Crea productos primero.
+            </div>
+          )}
+
+          <select required value={form.customer_id} onChange={e => onCustomerChange(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="">Cliente *</option>
+            {partners.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
+          </select>
+          <input type="date" value={form.expected_date} onChange={e => setForm(f => ({ ...f, expected_date: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+          <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notas" rows={2} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Lineas</p>
-              <button type="button" onClick={addLine} className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">+ Linea</button>
+              <button type="button" onClick={addLine} className="text-xs text-primary hover:text-primary font-semibold">+ Linea</button>
             </div>
             {lines.map((line, i) => {
               const priceSource = linePriceSources[i]
               const isSpecial = priceSource?.source === 'customer_special'
               return (
-                <div key={i} className="flex gap-2 items-center">
-                  <select required value={line.product_id} onChange={e => onProductSelect(i, e.target.value)} className="flex-1 rounded-xl border border-slate-200 px-2 py-1.5 text-xs focus:ring-2 focus:ring-indigo-400">
+                <div key={i}>
+                <div className="flex gap-2 items-center">
+                  <select required value={line.product_id} onChange={e => onProductSelect(i, e.target.value)} className="flex-1 rounded-xl border border-slate-200 px-2 py-1.5 text-xs focus:ring-2 focus:ring-ring">
                     <option value="">Producto *</option>
                     {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name}</option>)}
                   </select>
@@ -254,15 +267,15 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
                     }}
                   />
                   <select
+                    required
                     value={line.warehouse_id}
                     onChange={e => updateLine(i, 'warehouse_id', e.target.value)}
-                    className="w-28 rounded-xl border border-slate-200 px-2 py-1.5 text-xs focus:ring-2 focus:ring-indigo-400"
-                    title="Bodega para esta linea (vacio = hereda del SO)"
+                    className="w-32 rounded-xl border border-slate-200 px-2 py-1.5 text-xs focus:ring-2 focus:ring-ring"
                   >
-                    <option value="">Bodega SO</option>
+                    <option value="">Bodega *</option>
                     {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                   </select>
-                  <input type="number" min={1} value={line.qty_ordered} onChange={e => updateLine(i, 'qty_ordered', e.target.value)} className="w-16 rounded-xl border border-slate-200 px-2 py-1.5 text-xs" placeholder="Qty" />
+                  <input required type="number" min={1} value={line.qty_ordered} onChange={e => updateLine(i, 'qty_ordered', e.target.value)} className="w-16 rounded-xl border border-slate-200 px-2 py-1.5 text-xs" placeholder="Qty" />
                   <div className="relative">
                     <input type="number" step="0.01" value={line.unit_price} onChange={e => updateLine(i, 'unit_price', e.target.value)}
                       className={cn('w-24 rounded-xl border px-2 py-1.5 text-xs',
@@ -282,7 +295,7 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
                     )}
                   </div>
                   <input type="number" step="0.01" min={0} max={100} value={line.discount_pct} onChange={e => updateLine(i, 'discount_pct', e.target.value)} className="w-16 rounded-xl border border-slate-200 px-2 py-1.5 text-xs" placeholder="Desc%" title="Descuento linea %" />
-                  <select value={line.tax_rate} onChange={e => updateLine(i, 'tax_rate', e.target.value)} className="w-20 rounded-xl border border-slate-200 px-1 py-1.5 text-xs focus:ring-2 focus:ring-indigo-400" title="IVA %">
+                  <select value={line.tax_rate} onChange={e => updateLine(i, 'tax_rate', e.target.value)} className="w-20 rounded-xl border border-slate-200 px-1 py-1.5 text-xs focus:ring-2 focus:ring-ring" title="IVA %">
                     <option value="0">0%</option>
                     <option value="5">5%</option>
                     <option value="19">19%</option>
@@ -292,6 +305,8 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
                   </select>
                   {lines.length > 1 && <button type="button" onClick={() => removeLine(i)} className="text-red-400 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>}
                 </div>
+                {line.product_id && Number(line.unit_price) > 0 && <PriceSemaphore productId={line.product_id} unitPrice={Number(line.unit_price)} />}
+                </div>
               )
             })}
           </div>
@@ -300,11 +315,11 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Descuento global %</label>
-              <input type="number" step="0.01" min={0} max={100} value={form.discount_pct} onChange={e => setForm(f => ({ ...f, discount_pct: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="0" />
+              <input type="number" step="0.01" min={0} max={100} value={form.discount_pct} onChange={e => setForm(f => ({ ...f, discount_pct: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="0" />
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Razon descuento</label>
-              <input value={form.discount_reason} onChange={e => setForm(f => ({ ...f, discount_reason: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Ej: Descuento mayorista" />
+              <input value={form.discount_reason} onChange={e => setForm(f => ({ ...f, discount_reason: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Ej: Descuento mayorista" />
             </div>
           </div>
 
@@ -351,7 +366,7 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
 
           <div className="flex justify-end gap-3 pt-3">
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">Cancelar</button>
-            <button type="submit" disabled={create.isPending} className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl disabled:opacity-50">Crear</button>
+            <button type="submit" disabled={create.isPending} className="px-5 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-50">Crear</button>
           </div>
         </form>
       </div>
@@ -363,10 +378,12 @@ export function SalesOrdersPage() {
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState('')
   const [showCreate, setShowCreate] = useState(false)
+  const location = useLocation()
+  useEffect(() => { setShowCreate(false) }, [location.key])
 
   const { data, isLoading } = useSalesOrders({ status: statusFilter || undefined, limit: 100 })
   const { data: summary } = useSalesOrderSummary()
-  const { data: customersData } = useCustomers({ limit: 200 })
+  const { data: partnersListData } = usePartners({ limit: 200 })
   const toast = useToast()
   const deleteMut = useDeleteSalesOrder()
   const confirmMut = useConfirmSalesOrder()
@@ -380,7 +397,7 @@ export function SalesOrdersPage() {
   const resubmitMut = useResubmitSalesOrder()
 
   const orders = data?.items ?? []
-  const customersMap = new Map((customersData?.items ?? []).map(c => [c.id, c.name]))
+  const customersMap = new Map((partnersListData?.items ?? []).map(c => [c.id, c.name]))
   const onError = (err: unknown) => {
     const msg = (err as { message?: string })?.message ?? 'Error desconocido'
     toast.error(msg)
@@ -403,7 +420,7 @@ export function SalesOrdersPage() {
       btns.push(<button key="del" onClick={() => { if (confirm('Eliminar?')) deleteMut.mutate(order.id) }} title="Eliminar" className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 className="h-4 w-4" /></button>)
     }
     if (order.status === 'confirmed') btns.push(<button key="pick" onClick={() => pickMut.mutate(order.id, { onError })} title="Picking" className="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg"><PackageCheck className="h-4 w-4" /></button>)
-    if (order.status === 'picking') btns.push(<button key="ship" onClick={() => navigate(`/inventario/ventas/${order.id}`)} title="Enviar (completar datos)" className="p-1.5 text-indigo-500 hover:bg-indigo-50 rounded-lg"><TruckIcon className="h-4 w-4" /></button>)
+    if (order.status === 'picking') btns.push(<button key="ship" onClick={() => navigate(`/inventario/ventas/${order.id}`)} title="Enviar (completar datos)" className="p-1.5 text-primary hover:bg-primary/10 rounded-lg"><TruckIcon className="h-4 w-4" /></button>)
     if (order.status === 'shipped') btns.push(<button key="deliver" onClick={() => deliverMut.mutate(order.id, { onError })} title="Entregar" className="p-1.5 text-emerald-500 hover:bg-emerald-50 rounded-lg"><CheckCircle2 className="h-4 w-4" /></button>)
     if (order.status === 'delivered') btns.push(<button key="return" onClick={() => returnMut.mutate(order.id, { onError })} title="Devolver" className="p-1.5 text-orange-500 hover:bg-orange-50 rounded-lg"><RotateCcw className="h-4 w-4" /></button>)
     if (order.status === 'pending_approval') {
@@ -424,7 +441,7 @@ export function SalesOrdersPage() {
           <h1 className="text-2xl font-bold text-slate-900">Ordenes de Venta</h1>
           <p className="text-sm text-slate-500 mt-1">Gestiona el ciclo de vida de tus ventas</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition">
+        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl transition">
           <Plus className="h-4 w-4" /> Nueva Orden
         </button>
       </div>
@@ -444,12 +461,12 @@ export function SalesOrdersPage() {
       {/* Filter */}
       <div className="flex gap-2 flex-wrap">
         {STATUS_FILTERS.map(f => (
-          <button key={f.value} onClick={() => setStatusFilter(f.value)} className={cn('px-3 py-1.5 text-xs font-medium rounded-lg transition', statusFilter === f.value ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')}>{f.label}</button>
+          <button key={f.value} onClick={() => setStatusFilter(f.value)} className={cn('px-3 py-1.5 text-xs font-medium rounded-lg transition', statusFilter === f.value ? 'bg-primary/15 text-primary' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')}>{f.label}</button>
         ))}
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600" /></div>
+        <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
           <table className="w-full text-sm">

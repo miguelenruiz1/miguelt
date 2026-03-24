@@ -3,17 +3,41 @@ from __future__ import annotations
 
 from typing import Annotated
 
+import httpx
 import redis.asyncio as aioredis
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser, get_redis, get_tenant_id, require_permission
+from app.core.settings import get_settings
 from app.db.session import get_db_session
 from app.domain.schemas import AdminUpdateUser, InviteUserRequest, PaginatedResponse, RoleSlim, UserResponse
 from app.services.auth_service import AuthService
 from app.services.user_service import UserService
 
 router = APIRouter(prefix="/api/v1/users", tags=["users"])
+_log = structlog.get_logger(__name__)
+
+
+async def _enforce_user_limit(tenant_id: str) -> None:
+    """Check subscription plan user limit via subscription-service. Raises 402 if exceeded."""
+    settings = get_settings()
+    url = f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/enforcement/check/{tenant_id}/users"
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(url)
+        if resp.status_code == 402:
+            body = resp.json()
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=body.get("detail", "Límite de usuarios del plan alcanzado"),
+            )
+        if resp.status_code != 200:
+            _log.warning("enforcement_check_unexpected", status=resp.status_code, tenant=tenant_id)
+    except httpx.RequestError as exc:
+        # If subscription-service is down, allow creation (fail-open)
+        _log.warning("enforcement_check_unreachable", tenant=tenant_id, error=str(exc))
 
 
 def _require_superuser(current_user: CurrentUser):
@@ -77,6 +101,9 @@ async def invite_user(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     tenant_id: Annotated[str, Depends(get_tenant_id)],
 ) -> UserResponse:
+    # Enforce plan user limit before creating
+    await _enforce_user_limit(tenant_id)
+
     svc = AuthService(db)
     user = await svc.invite_user(
         tenant_id=tenant_id,

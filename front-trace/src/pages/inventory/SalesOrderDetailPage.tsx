@@ -24,7 +24,7 @@ const STATUS_CONFIG: Record<SalesOrderStatus, { label: string; color: string }> 
   pending_approval: { label: 'Pend. Aprobación', color: 'bg-yellow-50 text-yellow-700' },
   confirmed: { label: 'Confirmada', color: 'bg-blue-50 text-blue-700' },
   picking: { label: 'En Picking', color: 'bg-amber-50 text-amber-700' },
-  shipped: { label: 'Enviada', color: 'bg-indigo-50 text-indigo-700' },
+  shipped: { label: 'Enviada', color: 'bg-primary/10 text-primary' },
   delivered: { label: 'Entregada', color: 'bg-emerald-50 text-emerald-700' },
   returned: { label: 'Devuelta', color: 'bg-orange-50 text-orange-600' },
   canceled: { label: 'Cancelada', color: 'bg-red-50 text-red-600' },
@@ -84,7 +84,7 @@ function ShipModal({ onClose, onSubmit, isPending }: {
     onSubmit(form)
   }
 
-  const inp = 'w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400'
+  const inp = 'w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
@@ -138,7 +138,7 @@ function ShipModal({ onClose, onSubmit, isPending }: {
                     className={cn(
                       'rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors border',
                       form.shipping_method === m.value
-                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        ? 'bg-primary text-white border-primary'
                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     )}>
                     {m.label}
@@ -168,7 +168,7 @@ function ShipModal({ onClose, onSubmit, isPending }: {
               </div>
             ) : (
               <button type="button" onClick={() => fileRef.current?.click()}
-                className="w-full rounded-xl border-2 border-dashed border-slate-200 py-6 text-sm text-slate-400 hover:border-indigo-300 hover:text-indigo-500 transition-colors">
+                className="w-full rounded-xl border-2 border-dashed border-slate-200 py-6 text-sm text-slate-400 hover:border-primary/50 hover:text-primary transition-colors">
                 Click para subir foto (max 5 MB)
               </button>
             )}
@@ -181,7 +181,7 @@ function ShipModal({ onClose, onSubmit, isPending }: {
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
             <button type="submit" disabled={isPending}
-              className="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60 flex items-center justify-center gap-2">
+              className="flex-1 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60 flex items-center justify-center gap-2">
               <TruckIcon className="h-4 w-4" />
               {isPending ? 'Enviando...' : 'Confirmar envio'}
             </button>
@@ -197,8 +197,8 @@ function ShippingInfoCard({ info }: { info: ShippingInfo }) {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-      <div className="px-6 py-3 bg-indigo-50 border-b border-indigo-100">
-        <h3 className="text-sm font-bold text-indigo-800 flex items-center gap-2"><TruckIcon className="h-4 w-4" /> Informacion de Envio</h3>
+      <div className="px-6 py-3 bg-primary/10 border-b border-primary/20">
+        <h3 className="text-sm font-bold text-primary flex items-center gap-2"><TruckIcon className="h-4 w-4" /> Informacion de Envio</h3>
       </div>
       <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Buyer data */}
@@ -234,13 +234,13 @@ function ShippingInfoCard({ info }: { info: ShippingInfo }) {
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1"><Package className="h-3 w-3" /> Transporte</p>
             <div className="space-y-1.5">
               {info.shipping_method && (
-                <span className="inline-flex rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700">
+                <span className="inline-flex rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
                   {methodLabel}
                 </span>
               )}
               {info.carrier && <p className="text-sm text-slate-700">Empresa: <span className="font-medium">{info.carrier}</span></p>}
               {info.tracking_number && (
-                <p className="text-sm text-slate-700">Guia: <span className="font-mono font-bold text-indigo-600">{info.tracking_number}</span></p>
+                <p className="text-sm text-slate-700">Guia: <span className="font-mono font-bold text-primary">{info.tracking_number}</span></p>
               )}
             </div>
           </div>
@@ -291,7 +291,7 @@ function BatchTraceabilitySection({ orderId, status }: { orderId: string; status
   return (
     <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
       <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
-        <Package className="h-4 w-4 text-indigo-600" />
+        <Package className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-bold text-slate-800">Trazabilidad de lotes</h3>
       </div>
       <div className="p-6">
@@ -361,19 +361,19 @@ function DiscountModal({ orderId, currentDiscount, onClose }: {
             <input required type="number" step="0.01" min="0" max="100" value={pct}
               onChange={e => setPct(e.target.value)}
               placeholder="Ej: 10"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div>
             <label className="text-xs text-slate-500 mb-1 block">Motivo (requerido)</label>
             <input required value={reason} onChange={e => setReason(e.target.value)}
               placeholder="Ej: Cliente VIP, Promoción..."
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose}
               className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
             <button type="submit" disabled={applyDiscount.isPending}
-              className="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+              className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {applyDiscount.isPending ? 'Aplicando...' : 'Aplicar'}
             </button>
           </div>
@@ -425,7 +425,7 @@ export function SalesOrderDetailPage() {
   const [showDiscount, setShowDiscount] = useState(false)
   const applyDiscount = useApplyDiscount()
 
-  if (isLoading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600" /></div>
+  if (isLoading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>
   if (!order) return <p className="text-center text-slate-400 py-20">Orden no encontrada</p>
 
   const steps: SalesOrderStatus[] = order.approval_required
@@ -485,10 +485,10 @@ export function SalesOrderDetailPage() {
               <div key={s} className="flex items-center flex-1 last:flex-none">
                 <div className={cn('h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold border-2',
                   isRejectedStep ? 'bg-red-500 text-white border-red-500' :
-                  active ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-400 border-slate-200')}>
+                  active ? 'bg-primary text-white border-primary' : 'bg-white text-slate-400 border-slate-200')}>
                   {i + 1}
                 </div>
-                {i < steps.length - 1 && <div className={cn('flex-1 h-0.5', i < currentStepIdx ? 'bg-indigo-600' : 'bg-slate-200')} />}
+                {i < steps.length - 1 && <div className={cn('flex-1 h-0.5', i < currentStepIdx ? 'bg-primary' : 'bg-slate-200')} />}
               </div>
             )
           })}
@@ -633,7 +633,7 @@ export function SalesOrderDetailPage() {
           })
         }} disabled={confirmMut.isPending} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl disabled:opacity-50"><Check className="h-4 w-4" /> {confirmMut.isPending ? 'Confirmando...' : 'Confirmar'}</button>}
         {order.status === 'confirmed' && <button onClick={() => { onMutate(); pickMut.mutate(order.id, { onError }) }} disabled={pickMut.isPending || (stockCheckAuto != null && !stockCheckAuto.ready_to_ship)} title={stockCheckAuto && !stockCheckAuto.ready_to_ship ? 'Resuelve el stock insuficiente antes de iniciar picking' : undefined} className={cn("flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl disabled:opacity-50", stockCheckAuto && !stockCheckAuto.ready_to_ship ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "text-white bg-amber-600 hover:bg-amber-700")}><PackageCheck className="h-4 w-4" /> {pickMut.isPending ? 'Iniciando...' : 'Picking'}</button>}
-        {order.status === 'picking' && <button onClick={() => { if (stockCheckAuto && !stockCheckAuto.ready_to_ship) { setActionError('No se puede enviar: hay productos sin stock suficiente. Verifica la sección de stock.'); return; } setShowShipModal(true) }} className={cn("flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl", stockCheckAuto && !stockCheckAuto.ready_to_ship ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "text-white bg-indigo-600 hover:bg-indigo-700")}><TruckIcon className="h-4 w-4" /> Enviar</button>}
+        {order.status === 'picking' && <button onClick={() => { if (stockCheckAuto && !stockCheckAuto.ready_to_ship) { setActionError('No se puede enviar: hay productos sin stock suficiente. Verifica la sección de stock.'); return; } setShowShipModal(true) }} className={cn("flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl", stockCheckAuto && !stockCheckAuto.ready_to_ship ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "text-white bg-primary hover:bg-primary/90")}><TruckIcon className="h-4 w-4" /> Enviar</button>}
         {order.status === 'shipped' && <button onClick={() => { onMutate(); deliverMut.mutate(order.id, { onError }) }} disabled={deliverMut.isPending} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl disabled:opacity-50"><CheckCircle2 className="h-4 w-4" /> {deliverMut.isPending ? 'Entregando...' : 'Entregar'}</button>}
         {order.status === 'delivered' && <button onClick={() => { onMutate(); returnMut.mutate(order.id, { onError }) }} disabled={returnMut.isPending} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-xl disabled:opacity-50"><RotateCcw className="h-4 w-4" /> {returnMut.isPending ? 'Procesando...' : 'Devolver'}</button>}
         {!isFinal && <button onClick={() => { onMutate(); cancelMut.mutate(order.id, { onError }) }} disabled={cancelMut.isPending} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl disabled:opacity-50"><XCircle className="h-4 w-4" /> {cancelMut.isPending ? 'Cancelando...' : 'Cancelar'}</button>}
@@ -748,7 +748,7 @@ export function SalesOrderDetailPage() {
                   <span className="text-xs font-mono text-slate-600" title={order.cufe}>{order.cufe.slice(0, 20)}...</span>
                   <button
                     onClick={() => navigator.clipboard.writeText(order.cufe!)}
-                    className="text-slate-400 hover:text-indigo-600 transition"
+                    className="text-slate-400 hover:text-primary transition"
                     title="Copiar CUFE completo"
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -761,7 +761,7 @@ export function SalesOrderDetailPage() {
                 href={order.invoice_pdf_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/15 transition"
               >
                 <ExternalLink className="h-4 w-4" /> Descargar PDF
               </a>
@@ -862,7 +862,7 @@ export function SalesOrderDetailPage() {
                   <span className="text-xs font-mono text-slate-600" title={order.credit_note_cufe}>{order.credit_note_cufe.slice(0, 20)}...</span>
                   <button
                     onClick={() => navigator.clipboard.writeText(order.credit_note_cufe!)}
-                    className="text-slate-400 hover:text-indigo-600 transition"
+                    className="text-slate-400 hover:text-primary transition"
                     title="Copiar CUFE completo"
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -928,7 +928,7 @@ export function SalesOrderDetailPage() {
             <div className="flex justify-between text-orange-600"><span>Retención en la fuente</span><span className="font-mono font-semibold">-${(order.total_retention ?? 0).toLocaleString('es-CO', { minimumFractionDigits: 2 })}</span></div>
           )}
           <div className="flex justify-between text-slate-500 border-t border-slate-100 pt-1"><span>Subtotal + IVA</span><span className="font-mono">${(order.total_with_tax ?? order.total).toLocaleString('es-CO', { minimumFractionDigits: 2 })}</span></div>
-          <div className="flex justify-between font-bold text-lg text-indigo-600 border-t border-slate-200 pt-2"><span>Total a pagar</span><span className="font-mono">${(order.total_payable ?? order.total).toLocaleString('es-CO', { minimumFractionDigits: 2 })} {order.currency}</span></div>
+          <div className="flex justify-between font-bold text-lg text-primary border-t border-slate-200 pt-2"><span>Total a pagar</span><span className="font-mono">${(order.total_payable ?? order.total).toLocaleString('es-CO', { minimumFractionDigits: 2 })} {order.currency}</span></div>
         </div>
       </div>
 
@@ -940,7 +940,7 @@ export function SalesOrderDetailPage() {
             <button
               onClick={runStockCheck}
               disabled={stockCheckLoading}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 rounded-lg transition disabled:opacity-50"
             >
               {stockCheckLoading ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <ClipboardCheck className="h-3.5 w-3.5" />}
               {stockCheckLoading ? 'Verificando...' : 'Verificar disponibilidad'}
@@ -1164,7 +1164,7 @@ export function SalesOrderDetailPage() {
                           updateLineWhMut.mutate({ orderId: order.id, lineId: l.id, warehouseId: e.target.value }, { onError })
                         }
                       }}
-                      className="rounded-lg border border-slate-200 px-2 py-1 text-xs focus:ring-2 focus:ring-indigo-400"
+                      className="rounded-lg border border-slate-200 px-2 py-1 text-xs focus:ring-2 focus:ring-ring"
                     >
                       <option value="">{order.warehouse_name ? `Bodega SO (${order.warehouse_name})` : 'Sin bodega'}</option>
                       {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}

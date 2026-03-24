@@ -40,8 +40,21 @@ async def lifespan(app: FastAPI):
     get_http_client()
     log.info("http_client_ready")
 
+    # Start background expiration checker (every hour)
+    import asyncio
+    from app.services.expiration_service import run_expiration_loop
+    expiration_task = asyncio.create_task(run_expiration_loop(interval_seconds=3600))
+    log.info("expiration_loop_scheduled", interval=3600)
+
     log.info("subscription_service_ready")
     yield
+
+    # Cancel background tasks
+    expiration_task.cancel()
+    try:
+        await expiration_task
+    except asyncio.CancelledError:
+        pass
 
     log.info("subscription_service_shutting_down")
     from app.db.session import close_engine
@@ -103,6 +116,10 @@ def create_app() -> FastAPI:
     from app.api.routers.modules import router as modules_router
     from app.api.routers.payments import router as payments_router
     from app.api.routers.platform import router as platform_router
+    from app.api.routers.usage import router as usage_router
+    from app.api.routers.webhooks import router as webhooks_router
+    from app.api.routers.checkout import router as checkout_router
+    from app.api.routers.ai_settings import router as ai_settings_router
 
     app.include_router(health_router)
     app.include_router(plans_router)
@@ -112,6 +129,10 @@ def create_app() -> FastAPI:
     app.include_router(modules_router)
     app.include_router(payments_router)
     app.include_router(platform_router)
+    app.include_router(usage_router)
+    app.include_router(webhooks_router)
+    app.include_router(checkout_router)
+    app.include_router(ai_settings_router)
 
     return app
 

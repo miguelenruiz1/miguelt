@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useLocation } from 'react-router-dom'
 import { FlaskConical, Plus, Trash2, Eye, Pencil, AlertTriangle, CheckCircle2, Warehouse } from 'lucide-react'
+import { useFormValidation } from '@/hooks/useFormValidation'
 import {
   useRecipes, useRecipe, useCreateRecipe, useUpdateRecipe, useDeleteRecipe, useProducts,
   useStockLevels, useWarehouses,
@@ -79,7 +81,7 @@ function RecipeDrawer({ recipeId, onClose, onEdit, stockMap, warehouseMap }: {
             {recipe.description && <p className="text-xs text-slate-400 mt-1">{recipe.description}</p>}
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => { onClose(); onEdit(recipeId) }} className="text-slate-400 hover:text-indigo-600" title="Editar">
+            <button onClick={() => { onClose(); onEdit(recipeId) }} className="text-slate-400 hover:text-primary" title="Editar">
               <Pencil className="h-4 w-4" />
             </button>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl font-bold">x</button>
@@ -116,10 +118,10 @@ function RecipeDrawer({ recipeId, onClose, onEdit, stockMap, warehouseMap }: {
             </div>
           )}
 
-          <div className="bg-indigo-50 rounded-xl p-4">
-            <p className="text-xs font-bold text-indigo-400 uppercase tracking-wide mb-1">Producto de salida</p>
-            <p className="font-semibold text-indigo-900">{outputProduct?.name ?? recipe.output_entity_id.slice(0, 8)}</p>
-            <p className="text-sm text-indigo-600">Cantidad: {recipe.output_quantity}</p>
+          <div className="bg-primary/10 rounded-xl p-4">
+            <p className="text-xs font-bold text-primary/70 uppercase tracking-wide mb-1">Producto de salida</p>
+            <p className="font-semibold text-foreground">{outputProduct?.name ?? recipe.output_entity_id.slice(0, 8)}</p>
+            <p className="text-sm text-primary">Cantidad: {recipe.output_quantity}</p>
           </div>
 
           <div>
@@ -213,11 +215,12 @@ function EditRecipeModal({ recipeId, onClose }: { recipeId: string; onClose: () 
     setComponents(c => c.map((comp, i) => i === idx ? { ...comp, [key]: val } : comp))
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function doSubmitEdit() {
     await update.mutateAsync({ id: recipeId, data: { ...form, components } })
     onClose()
   }
+
+  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmitEdit)
 
   if (!recipe) return null
 
@@ -225,27 +228,27 @@ function EditRecipeModal({ recipeId, onClose }: { recipeId: string; onClose: () 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-bold text-slate-900 mb-4">Editar Receta</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
           <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder="Nombre *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            placeholder="Nombre *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <div className="grid grid-cols-2 gap-3">
             <select required value={form.output_entity_id} onChange={e => setForm(f => ({ ...f, output_entity_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Producto de salida *</option>
               {productsData?.items?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <input required type="number" step="0.01" min="0.01" value={form.output_quantity}
               onChange={e => setForm(f => ({ ...f, output_quantity: e.target.value }))}
-              placeholder="Cantidad salida *" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              placeholder="Cantidad salida *" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             placeholder="Descripcion" rows={2}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
 
           <div className="border-t border-slate-100 pt-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Componentes</p>
-              <button type="button" onClick={addComponent} className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">
+              <button type="button" onClick={addComponent} className="text-xs text-primary hover:text-primary font-semibold">
                 + Agregar
               </button>
             </div>
@@ -271,7 +274,7 @@ function EditRecipeModal({ recipeId, onClose }: { recipeId: string; onClose: () 
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
-            <button type="submit" disabled={update.isPending} className="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={update.isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {update.isPending ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>
@@ -302,37 +305,38 @@ function CreateRecipeModal({ onClose }: { onClose: () => void }) {
     setComponents(c => c.map((comp, i) => i === idx ? { ...comp, [key]: val } : comp))
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function doSubmitCreate() {
     await create.mutateAsync({ ...form, components })
     onClose()
   }
+
+  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmitCreate)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-bold text-slate-900 mb-4">Nueva Receta</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
           <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder="Nombre *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            placeholder="Nombre *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <div className="grid grid-cols-2 gap-3">
             <select required value={form.output_entity_id} onChange={e => setForm(f => ({ ...f, output_entity_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Producto de salida *</option>
               {productsData?.items?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <input required type="number" step="0.01" min="0.01" value={form.output_quantity}
               onChange={e => setForm(f => ({ ...f, output_quantity: e.target.value }))}
-              placeholder="Cantidad salida *" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              placeholder="Cantidad salida *" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             placeholder="Descripcion" rows={2}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
 
           <div className="border-t border-slate-100 pt-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Componentes</p>
-              <button type="button" onClick={addComponent} className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">
+              <button type="button" onClick={addComponent} className="text-xs text-primary hover:text-primary font-semibold">
                 + Agregar
               </button>
             </div>
@@ -355,7 +359,7 @@ function CreateRecipeModal({ onClose }: { onClose: () => void }) {
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
-            <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {create.isPending ? 'Guardando...' : 'Crear receta'}
             </button>
           </div>
@@ -370,6 +374,8 @@ export function RecipesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const location = useLocation()
+  useEffect(() => { setShowCreate(false) }, [location.key])
   const { data: recipes = [], isLoading } = useRecipes()
   const { data: productsData } = useProducts()
   const { data: stockLevels } = useStockLevels()
@@ -384,7 +390,7 @@ export function RecipesPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">Recetas</h1>
         <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm">
+          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm">
           <Plus className="h-4 w-4" /> Nueva receta
         </button>
       </div>
@@ -457,7 +463,7 @@ export function RecipesPage() {
                         </div>
                       ) : (
                         <div className="flex gap-2 justify-end">
-                          <button onClick={() => setSelectedId(r.id)} className="text-slate-400 hover:text-indigo-600" title="Ver">
+                          <button onClick={() => setSelectedId(r.id)} className="text-slate-400 hover:text-primary" title="Ver">
                             <Eye className="h-4 w-4" />
                           </button>
                           <button onClick={() => setEditId(r.id)} className="text-slate-400 hover:text-amber-600" title="Editar">

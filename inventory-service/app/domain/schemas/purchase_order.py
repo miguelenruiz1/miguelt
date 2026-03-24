@@ -48,6 +48,8 @@ class POLineOut(OrmBase):
     qty_received: Decimal
     unit_cost: Decimal
     line_total: Decimal
+    uom: str | None = None
+    qty_in_base_uom: Decimal | None = None
     location_id: str | None = None
     notes: str | None
 
@@ -64,6 +66,23 @@ class POOut(OrmBase):
     is_auto_generated: bool = False
     reorder_trigger_stock: float | None = None
     notes: str | None
+    attachments: list[dict] | None = []
+    approval_required: bool = False
+    approved_by: str | None = None
+    approved_at: datetime | None = None
+    rejected_reason: str | None = None
+    rejected_by: str | None = None
+    rejected_at: datetime | None = None
+    sent_at: datetime | None = None
+    sent_by: str | None = None
+    confirmed_at: datetime | None = None
+    confirmed_by: str | None = None
+    supplier_invoice_number: str | None = None
+    supplier_invoice_date: date | None = None
+    supplier_invoice_total: float | None = None
+    payment_terms: str | None = None
+    payment_due_date: date | None = None
+    related_sales_order_id: str | None = None
     is_consolidated: bool = False
     consolidated_from_ids: list[str] | None = None
     consolidated_at: datetime | None = None
@@ -91,6 +110,35 @@ class LineReceiptIn(BaseModel):
 
 class ReceivePOIn(BaseModel):
     lines: list[LineReceiptIn]
+    attachments: list[dict] | None = None  # [{url, name, type}]
+    supplier_invoice_number: str | None = None
+    supplier_invoice_date: date | None = None
+    supplier_invoice_total: Decimal | None = None
+    payment_terms: str | None = None
+    payment_due_date: date | None = None
+
+
+class PORejectIn(BaseModel):
+    reason: str = Field(..., min_length=1, max_length=2000)
+
+
+class POApprovalLogOut(OrmBase):
+    id: str
+    tenant_id: str
+    purchase_order_id: str
+    action: str
+    performed_by: str
+    performed_by_name: str | None = None
+    reason: str | None = None
+    po_total: float | None = None
+    created_at: datetime
+
+
+class POKPIs(BaseModel):
+    in_process: int = 0
+    pending_receive: int = 0
+    month_total: float = 0
+    pending_payment: int = 0
 
 
 class ConsolidateRequest(BaseModel):

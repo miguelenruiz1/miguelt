@@ -6,8 +6,10 @@ from datetime import datetime, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
-from app.db.models import StockAlert
+from app.db.models import StockAlert, Product
+from app.db.models.warehouse import Warehouse
 
 
 class AlertRepository:
@@ -21,7 +23,7 @@ class AlertRepository:
         alert_type: str | None = None,
         offset: int = 0,
         limit: int = 50,
-    ) -> tuple[list[StockAlert], int]:
+    ) -> tuple[list[dict], int]:
         q = select(StockAlert).where(StockAlert.tenant_id == tenant_id)
         if is_resolved is not None:
             q = q.where(StockAlert.is_resolved == is_resolved)
@@ -29,7 +31,46 @@ class AlertRepository:
             q = q.where(StockAlert.alert_type == alert_type)
         total = (await self.db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
         q = q.order_by(StockAlert.created_at.desc()).offset(offset).limit(limit)
-        return list((await self.db.execute(q)).scalars().all()), total
+        alerts = list((await self.db.execute(q)).scalars().all())
+
+        # Batch-load product and warehouse names
+        product_ids = {a.product_id for a in alerts if a.product_id}
+        warehouse_ids = {a.warehouse_id for a in alerts if a.warehouse_id}
+
+        products_map: dict[str, Product] = {}
+        if product_ids:
+            res = await self.db.execute(select(Product).where(Product.id.in_(product_ids)))
+            products_map = {p.id: p for p in res.scalars().all()}
+
+        warehouses_map: dict[str, Warehouse] = {}
+        if warehouse_ids:
+            res = await self.db.execute(select(Warehouse).where(Warehouse.id.in_(warehouse_ids)))
+            warehouses_map = {w.id: w for w in res.scalars().all()}
+
+        enriched = []
+        for a in alerts:
+            product = products_map.get(a.product_id)
+            warehouse = warehouses_map.get(a.warehouse_id) if a.warehouse_id else None
+            enriched.append({
+                "id": a.id,
+                "tenant_id": a.tenant_id,
+                "product_id": a.product_id,
+                "warehouse_id": a.warehouse_id,
+                "batch_id": a.batch_id,
+                "alert_type": a.alert_type,
+                "message": a.message,
+                "current_qty": a.current_qty,
+                "threshold_qty": a.threshold_qty,
+                "is_read": a.is_read,
+                "is_resolved": a.is_resolved,
+                "created_at": a.created_at,
+                "resolved_at": a.resolved_at,
+                "product_name": product.name if product else None,
+                "product_sku": product.sku if product else None,
+                "warehouse_name": warehouse.name if warehouse else None,
+                "uom": product.unit_of_measure if product else None,
+            })
+        return enriched, total
 
     async def create(self, data: dict) -> StockAlert:
         obj = StockAlert(id=str(uuid.uuid4()), **data)

@@ -4,8 +4,8 @@ import { useUpdateWallet } from '@/hooks/useWallets'
 import { useToast } from '@/store/toast'
 import { copyToClipboard, fmtDateShort, shortPubkey } from '@/lib/utils'
 import { Link } from 'react-router-dom'
-import { WalletStatusBadge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
+import { WalletStatusBadge } from '@/components/domain-badges'
+import { Button } from '@/components/ui/button'
 import type { Organization, Wallet, WalletStatus } from '@/types/api'
 
 export function WalletTable({ wallets, orgs = [] }: { wallets: Wallet[]; orgs?: Organization[] }) {
@@ -83,7 +83,7 @@ function WalletRow({
     <tr className="hover:bg-white transition-all duration-300 group hover:shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
       {/* Name */}
       <td className="px-4 py-3">
-        <Link to={`/wallets/${w.id}`} className="text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline truncate max-w-[120px] block">
+        <Link to={`/wallets/${w.id}`} className="text-sm font-medium text-primary hover:text-primary hover:underline truncate max-w-[120px] block">
           {w.name ?? shortPubkey(w.wallet_pubkey)}
         </Link>
       </td>
@@ -91,7 +91,7 @@ function WalletRow({
       {/* Pubkey */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          <Link to={`/assets?q=${w.wallet_pubkey}`} className="font-mono text-xs text-indigo-600 hover:text-indigo-800 font-medium hover:underline" title={w.wallet_pubkey}>
+          <Link to={`/assets?q=${w.wallet_pubkey}`} className="font-mono text-xs text-primary hover:text-primary font-medium hover:underline" title={w.wallet_pubkey}>
             {shortPubkey(w.wallet_pubkey)}
           </Link>
           <button
@@ -181,14 +181,14 @@ function WalletCard({
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
       <div className="flex items-center justify-between">
-        <Link to={`/wallets/${w.id}`} className="text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline truncate">
+        <Link to={`/wallets/${w.id}`} className="text-sm font-medium text-primary hover:text-primary hover:underline truncate">
           {w.name ?? shortPubkey(w.wallet_pubkey)}
         </Link>
         <WalletStatusBadge status={w.status} />
       </div>
       <div className="flex items-center justify-between text-xs">
         <span className="text-slate-500">Llave Pública</span>
-        <Link to={`/assets?q=${w.wallet_pubkey}`} className="font-mono text-indigo-600 hover:text-indigo-800 hover:underline" title={w.wallet_pubkey}>
+        <Link to={`/assets?q=${w.wallet_pubkey}`} className="font-mono text-primary hover:text-primary hover:underline" title={w.wallet_pubkey}>
           {shortPubkey(w.wallet_pubkey)}
         </Link>
       </div>

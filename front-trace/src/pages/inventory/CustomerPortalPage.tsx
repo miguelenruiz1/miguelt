@@ -21,7 +21,7 @@ const STATUS_CONFIG: Record<SalesOrderStatus, { label: string; color: string }> 
   draft: { label: 'Borrador', color: 'bg-slate-100 text-slate-600' },
   confirmed: { label: 'Confirmada', color: 'bg-blue-50 text-blue-700' },
   picking: { label: 'Picking', color: 'bg-amber-50 text-amber-700' },
-  shipped: { label: 'Enviada', color: 'bg-indigo-50 text-indigo-700' },
+  shipped: { label: 'Enviada', color: 'bg-primary/10 text-primary' },
   delivered: { label: 'Entregada', color: 'bg-emerald-50 text-emerald-700' },
   returned: { label: 'Devuelta', color: 'bg-orange-50 text-orange-600' },
   canceled: { label: 'Cancelada', color: 'bg-red-50 text-red-600' },
@@ -212,7 +212,7 @@ export function CustomerPortalPage() {
   if (customerLoading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600" />
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
       </div>
     )
   }
@@ -225,7 +225,7 @@ export function CustomerPortalPage() {
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       {/* Back */}
       <button
-        onClick={() => navigate(`/inventario/clientes`)}
+        onClick={() => navigate(`/inventario/socios`)}
         className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"
       >
         <ArrowLeft className="h-4 w-4" /> Volver a clientes
@@ -234,8 +234,8 @@ export function CustomerPortalPage() {
       {/* Header */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
         <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-indigo-100 flex items-center justify-center">
-            <Package className="h-6 w-6 text-indigo-600" />
+          <div className="h-12 w-12 rounded-2xl bg-primary/15 flex items-center justify-center">
+            <Package className="h-6 w-6 text-primary" />
           </div>
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-slate-900">Portal de Autogestion</h1>
@@ -280,7 +280,7 @@ export function CustomerPortalPage() {
           <ShoppingBag className="h-4 w-4" />
           Mis Pedidos
           {activeOrders > 0 && (
-            <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-1.5 py-0.5 rounded-full">
+            <span className="bg-primary/15 text-primary text-xs font-bold px-1.5 py-0.5 rounded-full">
               {activeOrders}
             </span>
           )}
@@ -292,7 +292,7 @@ export function CustomerPortalPage() {
         <>
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <KpiCard icon={Package} label="Productos" value={totalSkus} color="bg-indigo-100 text-indigo-600" />
+            <KpiCard icon={Package} label="Productos" value={totalSkus} color="bg-primary/15 text-primary" />
             <KpiCard icon={CheckCircle2} label="Disponible" value={totalQty.toLocaleString()} color="bg-emerald-100 text-emerald-600" />
             <KpiCard icon={Clock} label="Reservado" value={totalReserved.toLocaleString()} color="bg-amber-100 text-amber-600" />
             <KpiCard icon={Warehouse} label="Bodegas" value={warehouseCount} color="bg-blue-100 text-blue-600" />
@@ -305,7 +305,7 @@ export function CustomerPortalPage() {
               placeholder="Buscar por producto, SKU o bodega..."
               value={stockSearch}
               onChange={e => setStockSearch(e.target.value)}
-              className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+              className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring"
             />
           </div>
 
@@ -371,7 +371,7 @@ export function CustomerPortalPage() {
         <>
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <KpiCard icon={ShoppingBag} label="Total Pedidos" value={totalOrders} color="bg-indigo-100 text-indigo-600" />
+            <KpiCard icon={ShoppingBag} label="Total Pedidos" value={totalOrders} color="bg-primary/15 text-primary" />
             <KpiCard icon={Clock} label="En Proceso" value={activeOrders} color="bg-amber-100 text-amber-600" />
             <KpiCard icon={Truck} label="Entregados" value={deliveredCount} color="bg-emerald-100 text-emerald-600" />
             <KpiCard icon={DollarSign} label="Valor Total" value={`$${totalValue.toLocaleString()}`} color="bg-blue-100 text-blue-600" />
@@ -387,7 +387,7 @@ export function CustomerPortalPage() {
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                   statusFilter === f.value
-                    ? 'bg-indigo-100 text-indigo-700'
+                    ? 'bg-primary/15 text-primary'
                     : 'bg-slate-100 text-slate-500 hover:bg-slate-200',
                 )}
               >

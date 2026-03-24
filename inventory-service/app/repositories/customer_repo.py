@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import Customer, CustomerType
+from app.db.models.partner import BusinessPartner
 
 
 class CustomerTypeRepository:
@@ -67,10 +68,16 @@ class CustomerRepository:
         q = q.order_by(Customer.name).offset(offset).limit(limit)
         return list((await self.db.execute(q)).scalars().all()), total
 
-    async def get_by_id(self, cid: str, tenant_id: str) -> Customer | None:
+    async def get_by_id(self, cid: str, tenant_id: str) -> Customer | BusinessPartner | None:
+        # Try legacy customers table first
+        result = (await self.db.execute(
+            select(Customer).where(Customer.id == cid, Customer.tenant_id == tenant_id)
+        )).scalar_one_or_none()
+        if result:
+            return result
+        # Fallback to unified business_partners table
         return (await self.db.execute(
-            select(Customer)
-            .where(Customer.id == cid, Customer.tenant_id == tenant_id)
+            select(BusinessPartner).where(BusinessPartner.id == cid, BusinessPartner.tenant_id == tenant_id)
         )).scalar_one_or_none()
 
     async def get_by_code(self, code: str, tenant_id: str) -> Customer | None:

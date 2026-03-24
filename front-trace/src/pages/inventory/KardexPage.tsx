@@ -15,16 +15,16 @@ export function KardexPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2"><BookOpen className="h-6 w-6 text-indigo-500" /> Kardex</h1>
+        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2"><BookOpen className="h-6 w-6 text-primary" /> Kardex</h1>
         <p className="text-sm text-slate-500 mt-1">Historial valorizado de movimientos por producto</p>
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <select value={productId} onChange={e => setProductId(e.target.value)} className="min-w-[240px] rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-400 outline-none">
+        <select value={productId} onChange={e => setProductId(e.target.value)} className="min-w-[240px] rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-ring outline-none">
           <option value="">Seleccionar producto...</option>
           {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name}</option>)}
         </select>
-        <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-400 outline-none">
+        <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-ring outline-none">
           <option value="">Todas las bodegas</option>
           {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
         </select>
@@ -36,7 +36,7 @@ export function KardexPage() {
           <p>Selecciona un producto para ver su kardex</p>
         </div>
       ) : isLoading ? (
-        <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600" /></div>
+        <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
           {/* Mobile cards */}
@@ -60,7 +60,7 @@ export function KardexPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Costo Prom.</span>
-                    <span className="font-mono text-indigo-600">${(e.avg_cost ?? 0).toLocaleString()}</span>
+                    <span className="font-mono text-primary">${(e.avg_cost ?? 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Saldo</span>
@@ -95,7 +95,7 @@ export function KardexPage() {
                   <td className="px-6 py-3 text-xs text-slate-400">{e.reference ?? '—'}</td>
                   <td className="px-6 py-3 text-right font-mono">{e.quantity > 0 ? '+' : ''}{e.quantity}</td>
                   <td className="px-6 py-3 text-right font-mono">${(e.unit_cost ?? 0).toLocaleString()}</td>
-                  <td className="px-6 py-3 text-right font-mono text-indigo-600">${(e.avg_cost ?? 0).toLocaleString()}</td>
+                  <td className="px-6 py-3 text-right font-mono text-primary">${(e.avg_cost ?? 0).toLocaleString()}</td>
                   <td className="px-6 py-3 text-right font-bold">{e.balance ?? 0}</td>
                   <td className="px-6 py-3 text-right font-mono text-slate-500">{e.value != null ? `$${e.value.toLocaleString()}` : '—'}</td>
                 </tr>

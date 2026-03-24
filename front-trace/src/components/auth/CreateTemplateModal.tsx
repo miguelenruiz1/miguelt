@@ -110,7 +110,7 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
                   setSlug(e.target.value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''))
                 }}
                 placeholder="Ej: Jefe de bodega"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <div>
@@ -119,7 +119,7 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
                 placeholder="jefe_bodega"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
@@ -130,7 +130,7 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Breve descripción del perfil..."
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
@@ -146,7 +146,7 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
                     onClick={() => setIcon(key)}
                     className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-all ${
                       icon === key
-                        ? 'border-indigo-400 bg-indigo-50 text-indigo-600'
+                        ? 'border-primary bg-primary/10 text-primary'
                         : 'border-slate-200 text-slate-400 hover:border-slate-300'
                     }`}
                     title={key}
@@ -178,7 +178,7 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
                         checked={allChecked}
                         ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked }}
                         onChange={() => toggleModule(perms)}
-                        className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600"
+                        className="h-3.5 w-3.5 rounded border-slate-300 text-primary"
                       />
                       <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{module}</span>
                     </div>
@@ -191,7 +191,7 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
                           type="checkbox"
                           checked={selected.has(p.slug)}
                           onChange={() => toggle(p.slug)}
-                          className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600"
+                          className="h-3.5 w-3.5 rounded border-slate-300 text-primary"
                         />
                         <span className="text-xs text-slate-700">{p.name}</span>
                         <span className="text-[10px] text-slate-400 font-mono ml-auto">{p.slug}</span>
@@ -215,7 +215,7 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
           <button
             onClick={handleSave}
             disabled={saving || !name || !slug || selected.size === 0}
-            className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Crear plantilla

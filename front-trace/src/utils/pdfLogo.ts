@@ -12,7 +12,7 @@ import { jsPDF } from 'jspdf'
 export function drawLogo(doc: jsPDF, x: number, y: number, size = 14): void {
   const s = size / 34 // scale factor from 34×34 viewBox
 
-  // Background: indigo rounded rect (#4F46E5)
+  // Background: indigo rounded rect (#16a34a)
   doc.setFillColor(79, 70, 229)
   doc.roundedRect(x, y, size, size, 8 * s, 8 * s, 'F')
 

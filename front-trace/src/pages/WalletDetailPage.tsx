@@ -7,8 +7,8 @@ import { useOrganizations } from '@/hooks/useTaxonomy'
 import { useAssetList } from '@/hooks/useAssets'
 import { api } from '@/lib/api'
 import { Topbar } from '@/components/layout/Topbar'
-import { Button } from '@/components/ui/Button'
-import { WalletStatusBadge, StateBadge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/button'
+import { WalletStatusBadge, StateBadge } from '@/components/domain-badges'
 import { Spinner, EmptyState } from '@/components/ui/Misc'
 import { useToast } from '@/store/toast'
 import { copyToClipboard, fmtDateShort, shortPubkey } from '@/lib/utils'
@@ -100,7 +100,7 @@ export function WalletDetailPage() {
         {/* Back */}
         <Link
           to="/wallets"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors group"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-primary transition-colors group"
         >
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           Volver a Wallets
@@ -119,7 +119,7 @@ export function WalletDetailPage() {
 
               {/* Pubkey row */}
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-sm text-indigo-600 break-all">{wallet.wallet_pubkey}</span>
+                <span className="font-mono text-sm text-primary break-all">{wallet.wallet_pubkey}</span>
                 <button
                   onClick={handleCopy}
                   className="shrink-0 text-slate-400 hover:text-slate-700 transition-colors"
@@ -136,7 +136,7 @@ export function WalletDetailPage() {
               {org ? (
                 <button
                   onClick={() => navigate(`/organizations/${org.id}`)}
-                  className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-indigo-600 transition-colors"
+                  className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-primary transition-colors"
                 >
                   <Building2 className="h-3.5 w-3.5" />
                   {org.name}
@@ -176,8 +176,8 @@ export function WalletDetailPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-xl bg-indigo-50 flex items-center justify-center">
-                <Coins className="h-4 w-4 text-indigo-500" />
+              <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Coins className="h-4 w-4 text-primary" />
               </div>
               <p className="text-sm font-semibold text-slate-700">Balance Solana</p>
             </div>
@@ -238,7 +238,7 @@ export function WalletDetailPage() {
                 <button
                   key={a.id}
                   onClick={() => navigate(`/assets/${a.id}`)}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm transition-all text-left group"
+                  className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-white hover:border-primary/50 hover:shadow-sm transition-all text-left group"
                 >
                   <div className="text-2xl shrink-0">
                     {a.product_type === 'cafe' || a.product_type === 'café' ? '☕' :
@@ -247,7 +247,7 @@ export function WalletDetailPage() {
                      a.product_type === 'cacao' ? '🍫' : '📦'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 group-hover:text-indigo-700 transition-colors truncate">
+                    <p className="text-sm font-semibold text-slate-800 group-hover:text-primary transition-colors truncate">
                       {typeof a.metadata?.name === 'string' ? a.metadata.name : a.product_type}
                     </p>
                     <p className="text-xs text-slate-400 font-mono">{shortPubkey(a.asset_mint)}</p>

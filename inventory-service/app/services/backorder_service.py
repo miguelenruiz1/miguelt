@@ -165,7 +165,8 @@ class BackorderService:
             bo_lines.append(bo_line)
         await self.db.flush()
 
-        backorder.lines = bo_lines
+        # Refresh to load the lines relationship (avoid lazy load in async)
+        await self.db.refresh(backorder, ["lines"])
         recalculate_so_totals(backorder)
 
         # Adjust parent order lines quantities

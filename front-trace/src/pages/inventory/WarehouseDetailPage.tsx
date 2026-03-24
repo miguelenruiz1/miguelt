@@ -17,7 +17,7 @@ import type { WarehouseLocation } from '@/types/inventory'
 /* ------------------------------------------------------------------ */
 
 const COLOR_POOL = [
-  { badge: 'bg-indigo-50 text-indigo-700 border-indigo-200', border: 'border-l-indigo-500' },
+  { badge: 'bg-primary/10 text-primary border-primary/30', border: 'border-l-primary' },
   { badge: 'bg-sky-50 text-sky-700 border-sky-200', border: 'border-l-sky-500' },
   { badge: 'bg-amber-50 text-amber-700 border-amber-200', border: 'border-l-amber-500' },
   { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', border: 'border-l-emerald-500' },
@@ -123,7 +123,7 @@ function LocationForm({ initial, locations, existingTypes, onSubmit, onCancel, s
             value={form.name}
             onChange={e => set('name', e.target.value)}
             placeholder="Zona A"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <div>
@@ -132,7 +132,7 @@ function LocationForm({ initial, locations, existingTypes, onSubmit, onCancel, s
             value={form.code}
             onChange={e => set('code', e.target.value)}
             placeholder="ZA-001"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
       </div>
@@ -145,7 +145,7 @@ function LocationForm({ initial, locations, existingTypes, onSubmit, onCancel, s
             value={form.location_type}
             onChange={e => set('location_type', e.target.value)}
             placeholder="Ej: zona, pasillo, estante, bin..."
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <datalist id="location-types">
             {existingTypes.map(t => (
@@ -159,7 +159,7 @@ function LocationForm({ initial, locations, existingTypes, onSubmit, onCancel, s
           <select
             value={form.parent_location_id ?? ''}
             onChange={e => set('parent_location_id', e.target.value || null)}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">— Ninguna (raiz) —</option>
             {parentOptions.map(l => (
@@ -176,7 +176,7 @@ function LocationForm({ initial, locations, existingTypes, onSubmit, onCancel, s
             value={form.description}
             onChange={e => set('description', e.target.value)}
             placeholder="Opcional"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <div>
@@ -185,7 +185,7 @@ function LocationForm({ initial, locations, existingTypes, onSubmit, onCancel, s
             type="number"
             value={form.sort_order}
             onChange={e => set('sort_order', Number(e.target.value))}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
       </div>
@@ -194,7 +194,7 @@ function LocationForm({ initial, locations, existingTypes, onSubmit, onCancel, s
         <button
           onClick={() => onSubmit(form)}
           disabled={!form.name.trim() || !form.code.trim() || !form.location_type.trim()}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <Check className="h-3.5 w-3.5" />
           {submitLabel}
@@ -406,14 +406,14 @@ function LocationsTab({ warehouseId, stockLocationCounts }: LocationsTabProps) {
             <>
               <button
                 onClick={expandAll}
-                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                className="text-xs text-primary hover:text-primary font-medium"
               >
                 Expandir todo
               </button>
               <span className="text-slate-300">|</span>
               <button
                 onClick={collapseAll}
-                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                className="text-xs text-primary hover:text-primary font-medium"
               >
                 Colapsar todo
               </button>
@@ -423,7 +423,7 @@ function LocationsTab({ warehouseId, stockLocationCounts }: LocationsTabProps) {
         {!showCreateForm && (
           <button
             onClick={() => setShowCreateForm(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
             Nueva ubicacion
@@ -450,7 +450,7 @@ function LocationsTab({ warehouseId, stockLocationCounts }: LocationsTabProps) {
           <p className="text-sm text-slate-400">No hay ubicaciones definidas para esta bodega</p>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
             Crear primera ubicacion
@@ -581,7 +581,7 @@ export function WarehouseDetailPage() {
   if (!warehouse) {
     return (
       <div className="max-w-5xl mx-auto p-6">
-        <Link to="/inventario/bodegas" className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800 mb-4">
+        <Link to="/inventario/bodegas" className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary mb-4">
           <ArrowLeft className="h-4 w-4" /> Bodegas
         </Link>
         <div className="py-16 text-center">
@@ -597,7 +597,7 @@ export function WarehouseDetailPage() {
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       {/* Back link */}
-      <Link to="/inventario/bodegas" className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800">
+      <Link to="/inventario/bodegas" className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary">
         <ArrowLeft className="h-4 w-4" /> Bodegas
       </Link>
 
@@ -626,7 +626,7 @@ export function WarehouseDetailPage() {
               {warehouse.is_active ? 'Activa' : 'Inactiva'}
             </span>
             {warehouse.is_default && (
-              <span className="rounded-full px-2.5 py-1 text-xs font-semibold bg-indigo-50 text-indigo-700">
+              <span className="rounded-full px-2.5 py-1 text-xs font-semibold bg-primary/10 text-primary">
                 Predeterminada
               </span>
             )}
@@ -675,7 +675,7 @@ export function WarehouseDetailPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar por nombre, SKU o codigo de barras..."
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
@@ -686,7 +686,7 @@ export function WarehouseDetailPage() {
                 onClick={() => setTypeFilter('')}
                 className={cn(
                   'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
-                  !typeFilter ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                  !typeFilter ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
                 )}
               >
                 Todos
@@ -819,24 +819,30 @@ export function WarehouseDetailPage() {
                               )}
                             </td>
                             <td className="px-4 py-3">
-                              <span className={cn(
-                                'font-bold',
-                                qty <= 0 ? 'text-red-500' : qty <= (p?.reorder_point ?? 0) ? 'text-amber-600' : 'text-slate-900',
-                              )}>
+                              <span className="text-muted-foreground text-sm tabular-nums">
                                 {qty.toFixed(2)}
                               </span>
                               {p?.unit_of_measure && (
                                 <span className="text-xs text-slate-400 ml-1">{p.unit_of_measure}</span>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-slate-500">{reserved.toFixed(2)}</td>
+                            <td className="px-4 py-3">
+                              {reserved > 0 ? (
+                                <span className="inline-flex items-center rounded-md bg-amber-500/15 text-amber-700 px-2 py-0.5 text-xs font-medium tabular-nums">
+                                  {reserved.toFixed(2)}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground/40 text-sm tabular-nums">0</span>
+                              )}
+                            </td>
                             <td className="px-4 py-3">
                               {(() => {
                                 const avail = qty - reserved
+                                const rp = p?.reorder_point ?? 0
                                 return (
                                   <span className={cn(
-                                    'font-semibold',
-                                    avail <= 0 ? 'text-red-500' : avail <= (p?.reorder_point ?? 0) ? 'text-amber-600' : 'text-emerald-600',
+                                    'font-bold text-sm tabular-nums',
+                                    avail < rp ? 'text-destructive' : 'text-foreground',
                                   )}>
                                     {avail.toFixed(2)}
                                   </span>

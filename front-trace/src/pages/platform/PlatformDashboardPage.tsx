@@ -55,7 +55,7 @@ export function PlatformDashboardPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     )
   }
@@ -81,7 +81,7 @@ export function PlatformDashboardPage() {
         <ol className="flex items-center gap-2 text-sm">
           <li className="text-gray-500">Plataforma</li>
           <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
-          <li className="text-indigo-500">Panel Ejecutivo</li>
+          <li className="text-primary">Panel Ejecutivo</li>
         </ol>
       </nav>
 
@@ -94,7 +94,7 @@ export function PlatformDashboardPage() {
         <div className="flex gap-2">
           <Link
             to="/platform/tenants"
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg transition"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary/10 hover:bg-primary/15 text-primary rounded-lg transition"
           >
             <Building2 className="h-4 w-4" /> Empresas <ArrowRight className="h-3.5 w-3.5" />
           </Link>
@@ -113,7 +113,7 @@ export function PlatformDashboardPage() {
           label="Empresas"
           value={data.total_tenants}
           icon={Building2}
-          color="bg-indigo-500"
+          color="bg-primary"
           subtext={`${data.new_this_month} nuevas este mes`}
         />
         <KpiCard
@@ -206,7 +206,7 @@ export function PlatformDashboardPage() {
             {data.module_adoption.map(m => (
               <div key={m.slug} className="bg-gray-50 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Layers className="h-4 w-4 text-indigo-500" />
+                  <Layers className="h-4 w-4 text-primary" />
                   <span className="text-sm font-semibold text-gray-700 capitalize">{m.slug}</span>
                 </div>
                 <div className="text-xl font-bold text-gray-800">{m.active_tenants}</div>

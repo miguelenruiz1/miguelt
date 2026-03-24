@@ -1,6 +1,7 @@
 import { useState, useDeferredValue } from 'react'
 import { FolderTree, Plus, Pencil, Trash2, Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useFormValidation } from '@/hooks/useFormValidation'
 import {
   useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory,
 } from '@/hooks/useInventory'
@@ -27,8 +28,7 @@ function CategoryModal({
 
   const isPending = create.isPending || update.isPending
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function doSubmit() {
     setError('')
     try {
       const payload = {
@@ -48,6 +48,8 @@ function CategoryModal({
     }
   }
 
+  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
+
   // Filter out self and descendants to prevent circular parent references
   const parentOptions = categories.filter(c => !category || c.id !== category.id)
 
@@ -62,14 +64,14 @@ function CategoryModal({
             <X className="h-4 w-4 text-slate-400" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1">Nombre *</label>
             <input
               required
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Ej: Materias primas"
             />
           </div>
@@ -79,7 +81,7 @@ function CategoryModal({
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               rows={2}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Descripción opcional"
             />
           </div>
@@ -88,7 +90,7 @@ function CategoryModal({
             <select
               value={form.parent_id}
               onChange={e => setForm(f => ({ ...f, parent_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Sin padre (raíz)</option>
               {parentOptions.map(c => (
@@ -115,7 +117,7 @@ function CategoryModal({
             <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
               Cancelar
             </button>
-            <button type="submit" disabled={isPending} className="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {isPending ? 'Guardando...' : category ? 'Guardar' : 'Crear'}
             </button>
           </div>
@@ -159,12 +161,12 @@ export function CategoriesPage() {
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <FolderTree className="h-6 w-6 text-indigo-600" />
+          <FolderTree className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold text-slate-900">Categorías de producto</h1>
         </div>
         <button
           onClick={() => { setEditing(null); setShowModal(true) }}
-          className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm"
+          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm"
         >
           <Plus className="h-4 w-4" /> Nueva categoría
         </button>
@@ -179,7 +181,7 @@ export function CategoriesPage() {
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
             placeholder="Buscar categorías..."
-            className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <button

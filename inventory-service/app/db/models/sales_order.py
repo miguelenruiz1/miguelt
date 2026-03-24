@@ -158,6 +158,9 @@ class SalesOrderLine(Base):
     line_total_with_tax: Mapped[Decimal]      = mapped_column(Numeric(14, 4), nullable=False, server_default="0")
     line_total:        Mapped[Decimal]        = mapped_column(Numeric(14, 2), nullable=False, server_default="0")
     notes:             Mapped[str | None]     = mapped_column(Text, nullable=True)
+    uom:               Mapped[str | None]     = mapped_column(String(20), nullable=True)
+    qty_in_base_uom:   Mapped[Decimal | None] = mapped_column(Numeric(15, 6), nullable=True)
+    margin_pct:        Mapped[Decimal | None] = mapped_column(Numeric(7, 4), nullable=True)
     backorder_line_id: Mapped[str | None]     = mapped_column(
         String(36), ForeignKey("sales_order_lines.id", ondelete="SET NULL"), nullable=True
     )
@@ -203,6 +206,23 @@ class TenantInventoryConfig(Base):
     id:                     Mapped[str]              = mapped_column(String(36), primary_key=True)
     tenant_id:              Mapped[str]              = mapped_column(String(255), nullable=False, unique=True)
     so_approval_threshold:  Mapped[Decimal | None]   = mapped_column(Numeric(14, 2), nullable=True)
+    margin_target_global:         Mapped[Decimal]    = mapped_column(Numeric(5, 2), nullable=False, server_default="35.00")
+    margin_minimum_global:        Mapped[Decimal]    = mapped_column(Numeric(5, 2), nullable=False, server_default="20.00")
+    margin_cost_method_global:    Mapped[str]        = mapped_column(String(20), nullable=False, server_default="last_purchase")
+    below_minimum_requires_auth:  Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="true")
+
+    # ── Feature toggles ──────────────────────────────────────────────────
+    feature_lotes:           Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    feature_seriales:        Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    feature_variantes:       Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    feature_conteo:          Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    feature_escaner:         Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+    feature_picking:         Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    feature_eventos:         Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    feature_kardex:          Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    feature_precios:         Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    feature_aprobaciones:    Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+
     created_at:             Mapped[DateTime]         = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at:             Mapped[DateTime]         = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

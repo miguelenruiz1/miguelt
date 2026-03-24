@@ -92,6 +92,7 @@ class ProductTypeCreate(BaseModel):
     dispatch_rule: str = "fifo"
     rotation_target_months: int | None = None
     default_category_id: str | None = None
+    sku_prefix: str | None = Field(None, max_length=20)
 
 
 class ProductTypeUpdate(BaseModel):
@@ -106,6 +107,7 @@ class ProductTypeUpdate(BaseModel):
     dispatch_rule: str | None = None
     rotation_target_months: int | None = None
     default_category_id: str | None = None
+    sku_prefix: str | None = Field(None, max_length=20)
 
 
 class ProductTypeOut(OrmBase):
@@ -123,6 +125,7 @@ class ProductTypeOut(OrmBase):
     dispatch_rule: str = "fifo"
     rotation_target_months: int | None = None
     default_category_id: str | None = None
+    sku_prefix: str | None = None
 
 
 # ─── OrderType ───────────────────────────────────────────────────────────────

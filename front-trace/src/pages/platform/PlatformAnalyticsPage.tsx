@@ -32,7 +32,7 @@ export function PlatformAnalyticsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     )
   }
@@ -49,7 +49,7 @@ export function PlatformAnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <Link to="/platform" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600 mb-2">
+          <Link to="/platform" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-primary mb-2">
             <ArrowLeft className="h-4 w-4" /> Panel
           </Link>
           <h1 className="text-2xl font-bold text-slate-900">Analitica de Plataforma</h1>
@@ -69,7 +69,7 @@ export function PlatformAnalyticsPage() {
       {/* Subscription Growth */}
       <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
         <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-indigo-500" /> Crecimiento de Suscripciones
+          <TrendingUp className="h-4 w-4 text-primary" /> Crecimiento de Suscripciones
         </h3>
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={data.subscription_growth}>
@@ -110,7 +110,7 @@ export function PlatformAnalyticsPage() {
         {/* Status pie */}
         <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
           <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-indigo-500" /> Distribucion por Estado
+            <Building2 className="h-4 w-4 text-primary" /> Distribucion por Estado
           </h3>
           {pieData.length > 0 ? (
             <div className="flex items-center gap-6">
@@ -158,7 +158,7 @@ export function PlatformAnalyticsPage() {
                     </div>
                     <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-indigo-500 rounded-full transition-all"
+                        className="h-full bg-primary rounded-full transition-all"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -191,7 +191,7 @@ export function PlatformAnalyticsPage() {
                     <span className="text-sm font-medium text-slate-700">{ev.event_type.replace(/_/g, ' ')}</span>
                     <Link
                       to={`/platform/tenants/${encodeURIComponent(ev.tenant_id)}`}
-                      className="text-xs text-indigo-600 hover:underline"
+                      className="text-xs text-primary hover:underline"
                     >
                       {ev.tenant_id}
                     </Link>

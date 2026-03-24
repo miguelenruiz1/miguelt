@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Topbar } from '@/components/layout/Topbar'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Card, Spinner } from '@/components/ui/Misc'
 import { useLiveness, useReadiness, useSolanaAccount, useSolanaTx } from '@/hooks/useHealth'
 import { CheckCircle2, AlertCircle, Search, RefreshCw, Link2 } from 'lucide-react'
@@ -47,7 +47,7 @@ export function SystemPage() {
         {/* Solana account */}
         <Card>
           <h2 className="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
-            <Link2 className="h-4 w-4 text-indigo-500" />
+            <Link2 className="h-4 w-4 text-primary" />
             Consulta de Cuenta Solana
           </h2>
           <div className="flex gap-2 mb-4">
@@ -63,7 +63,7 @@ export function SystemPage() {
         {/* Solana TX */}
         <Card>
           <h2 className="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
-            <Link2 className="h-4 w-4 text-indigo-500" />
+            <Link2 className="h-4 w-4 text-primary" />
             Estado de Transacción
           </h2>
           <div className="flex gap-2 mb-4">

@@ -3,9 +3,9 @@ import { RefreshCw, ChevronDown, ChevronUp, MapPin, ExternalLink, ShieldCheck } 
 import { useSettingsStore, explorerTxUrl } from '@/store/settings'
 
 const isSimSig = (s: string) => s.startsWith('SIM_') || s.startsWith('sim')
-import { EventTypeBadge, AnchorBadge } from '@/components/ui/Badge'
+import { EventTypeBadge, AnchorBadge } from '@/components/domain-badges'
 import { HashChip } from '@/components/ui/Misc'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { useAnchorEvent } from '@/hooks/useAssets'
 import { useToast } from '@/store/toast'
 import { fmtDate, shortPubkey } from '@/lib/utils'
@@ -57,11 +57,11 @@ function EventRow({ event, assetId, isFirst }: { event: CustodyEvent; assetId: s
       <div className="relative z-10 mt-1 shrink-0">
         <div className={[
           'flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 bg-white',
-          isFirst ? 'border-indigo-500' : 'border-slate-300',
+          isFirst ? 'border-primary' : 'border-slate-300',
         ].join(' ')}>
           <span className={[
             'h-2 w-2 rounded-full',
-            isFirst ? 'bg-indigo-500' : 'bg-slate-300',
+            isFirst ? 'bg-primary' : 'bg-slate-300',
           ].join(' ')} />
         </div>
       </div>

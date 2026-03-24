@@ -23,10 +23,10 @@ const variantConfig: Record<ConfirmVariant, {
     buttonClass: 'bg-amber-600 hover:bg-amber-700 text-white',
   },
   info: {
-    icon: <Info className="h-5 w-5 text-indigo-600" />,
-    iconBg: 'bg-indigo-50',
-    accentColor: 'from-indigo-500 to-violet-500',
-    buttonClass: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+    icon: <Info className="h-5 w-5 text-primary" />,
+    iconBg: 'bg-primary/10',
+    accentColor: 'from-primary to-emerald-600',
+    buttonClass: 'bg-primary hover:bg-primary/90 text-primary-foreground',
   },
 }
 

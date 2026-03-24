@@ -29,12 +29,36 @@ MODULE_CATALOG: list[dict] = [
         "requires": "inventory",
     },
     {
+        "slug": "production",
+        "name": "Produccion",
+        "description": "Gestion de recetas (BOM), corridas de produccion y costeo por transformacion",
+        "icon": "factory",
+        "category": "operations",
+        "dependencies": ["inventory"],
+    },
+    {
         "slug": "electronic-invoicing-sandbox",
         "name": "Facturación Electrónica — Sandbox",
         "description": "Simula el flujo completo de facturación electrónica sin conexión a la DIAN. Ideal para demos y onboarding.",
         "category": "compliance",
         "dependencies": ["inventory"],
         "icon": "FlaskConical",
+    },
+    {
+        "slug": "compliance",
+        "name": "Cumplimiento Normativo",
+        "description": "Gestión de normas regulatorias internacionales (EUDR, USDA, FSSAI). Parcelas, records, validación automática y certificados PDF.",
+        "category": "compliance",
+        "dependencies": ["logistics"],
+        "icon": "ShieldCheck",
+    },
+    {
+        "slug": "ai-analysis",
+        "name": "Inteligencia Artificial",
+        "description": "Análisis de rentabilidad con IA. Insights automáticos, alertas de margen, oportunidades y recomendaciones accionables.",
+        "category": "analytics",
+        "dependencies": ["inventory"],
+        "icon": "Sparkles",
     },
 ]
 

@@ -5,9 +5,9 @@ import { useRegisterWallet } from '@/hooks/useWallets'
 import { useCustodianTypes, useOrganizations } from '@/hooks/useTaxonomy'
 import { useToast } from '@/store/toast'
 import { parseTags } from '@/lib/utils'
-import { Dialog } from '@/components/ui/Dialog'
-import { Button } from '@/components/ui/Button'
-import { Input, Select } from '@/components/ui/Input'
+import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
+import { Button } from '@/components/ui/button'
+import { Input, Select } from '@/components/ui/input'
 import type { WalletStatus } from '@/types/api'
 
 const schema = z.object({

@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     MODULE_CACHE_TTL: int = 300
     MODULE_SLUG: str = "inventory"
 
+    # ─── AI Analysis ───────────────────────────────────────────────────────
+    ANTHROPIC_API_KEY: str = ""
+    AI_ANALYSIS_CACHE_TTL: int = 3600  # 1 hour
+    AI_ANALYSIS_DAILY_LIMIT: int = 10  # per tenant per day
+
     @field_validator("LOG_LEVEL")
     @classmethod
     def validate_log_level(cls, v: str) -> str:

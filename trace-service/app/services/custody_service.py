@@ -32,7 +32,14 @@ from app.domain.schemas import (
     ReleaseRequest,
     BurnRequest,
 )
-from app.domain.types import AssetState, EventType, VALID_FROM_STATES
+from app.domain.types import (
+    AssetState,
+    EventType,
+    EVENT_STATE_TRANSITIONS,
+    INFORMATIONAL_EVENTS,
+    TERMINAL_STATES,
+    VALID_FROM_STATES,
+)
 from app.repositories.custody_repo import AssetRepository, CustodyEventRepository
 from app.repositories.registry_repo import RegistryRepository
 from app.services.anchor_service import enqueue_anchor
@@ -92,7 +99,7 @@ class CustodyService:
     async def _create_event(
         self,
         asset: Asset,
-        event_type: EventType,
+        event_type: EventType | str,
         from_wallet: str | None,
         to_wallet: str | None,
         location: dict[str, Any] | None,
@@ -428,6 +435,114 @@ class CustodyService:
         log.info(
             "asset_burned",
             asset_id=str(asset_id),
+            event_hash=event.event_hash,
+        )
+        return updated_asset, event  # type: ignore
+
+    # ─── Generic event (DB-driven config) ─────────────────────────────────────
+
+    async def record_event(
+        self,
+        asset_id: uuid.UUID,
+        event_type_slug: str,
+        to_wallet: str | None = None,
+        location: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
+        notes: str | None = None,
+        result: str | None = None,
+        reason: str | None = None,
+    ) -> tuple[Asset, CustodyEvent]:
+        """
+        Generic event recorder driven by EventTypeConfig from DB.
+        Validates state transitions using the config's from_states/to_state.
+        Informational events don't change state. Custom types fully supported.
+        Falls back to hardcoded types.py for system events without DB config.
+        """
+        from app.repositories.event_type_repo import EventTypeConfigRepository
+
+        event_data = dict(data or {})
+
+        # ── Load event type config from DB ────────────────────────────────────
+        etc_repo = EventTypeConfigRepository(self._db)
+        config = await etc_repo.get_by_slug(self._tenant_id, event_type_slug)
+
+        # ── Determine behavior from config or fallback to hardcoded ───────────
+        if config:
+            if not config.is_active:
+                raise AssetStateError(f"Event type '{event_type_slug}' is disabled")
+            is_informational = config.is_informational
+            allowed_from = set(config.from_states) if config.from_states else None
+            to_state_str = config.to_state
+            needs_wallet = config.requires_wallet
+            needs_lock = config.requires_admin or event_type_slug in {"HANDOFF", "RELEASED", "BURN", "DELIVERED", "DAMAGED"}
+        else:
+            # Fallback to hardcoded types.py for backward compatibility
+            is_informational = event_type_slug in {e.value for e in INFORMATIONAL_EVENTS}
+            et = EventType(event_type_slug)
+            from_set = VALID_FROM_STATES.get(et)
+            allowed_from = {s.value for s in from_set} if from_set else None
+            to_state_str = EVENT_STATE_TRANSITIONS.get(et, AssetState(event_type_slug)).value if not is_informational else None
+            needs_wallet = event_type_slug in {"HANDOFF", "PICKUP", "DELIVERED"}
+            needs_lock = event_type_slug in {"HANDOFF", "RELEASED", "BURN", "DELIVERED", "DAMAGED"}
+
+        # ── Wallet validation ─────────────────────────────────────────────────
+        if needs_wallet and to_wallet:
+            await self._assert_active_wallet(to_wallet)
+
+        # ── Load asset (with lock if needed) ──────────────────────────────────
+        if needs_lock:
+            asset = await self._get_asset_locked(asset_id)
+        else:
+            asset = await self._get_asset_or_404(asset_id)
+
+        # ── Validate state transition ─────────────────────────────────────────
+        current_state = asset.state
+        if allowed_from and current_state not in allowed_from:
+            raise AssetStateError(
+                f"Cannot apply '{event_type_slug}' to asset in state '{current_state}'. "
+                f"Allowed: [{', '.join(sorted(allowed_from))}]"
+            )
+
+        # ── Determine new state ───────────────────────────────────────────────
+        if is_informational or not to_state_str:
+            new_state = AssetState(current_state)
+        elif event_type_slug == "QC":
+            qc_result = (result or "fail").lower()
+            new_state = AssetState.QC_PASSED if qc_result == "pass" else AssetState.QC_FAILED
+            event_data["qc_result"] = qc_result
+        else:
+            new_state = AssetState(to_state_str)
+
+        # ── Enrich event data ─────────────────────────────────────────────────
+        if notes:
+            event_data["notes"] = notes
+        if reason:
+            event_data["reason"] = reason
+        if result and event_type_slug != "QC":
+            event_data["result"] = result
+
+        # ── Determine wallets ─────────────────────────────────────────────────
+        from_wallet = asset.current_custodian_wallet
+        new_custodian = to_wallet if to_wallet else None
+
+        # Use the slug as event_type string (works for both system and custom)
+        event = await self._create_event(
+            asset=asset,
+            event_type=event_type_slug,
+            from_wallet=from_wallet,
+            to_wallet=to_wallet,
+            location=location,
+            data=event_data,
+            new_state=new_state,
+            new_custodian=new_custodian,
+        )
+
+        updated_asset = await self._asset_repo.get_by_id(asset_id)
+        log.info(
+            "event_recorded",
+            asset_id=str(asset_id),
+            event_type=event_type_slug,
+            new_state=new_state.value,
             event_hash=event.event_hash,
         )
         return updated_asset, event  # type: ignore

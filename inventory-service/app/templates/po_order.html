@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Orden de Compra — {{ po.po_number }}</title>
+<style>
+/* ── A4 Page Setup ───────────────────────────────────────────────────── */
+@page {
+    size: A4;
+    margin: 2cm;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.5;
+    color: #1a1a1a;
+    background: #ffffff;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+    border-bottom: 3px solid #10b981;
+}
+
+.header-left {
+    max-width: 55%;
+}
+
+.header-left .tenant-name {
+    font-size: 18pt;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+}
+
+.header-left .tenant-info {
+    font-size: 9pt;
+    color: #555;
+    line-height: 1.6;
+}
+
+.header-right {
+    text-align: right;
+}
+
+.header-right .doc-title {
+    font-size: 14pt;
+    font-weight: 700;
+    color: #10b981;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+.header-right .po-number {
+    font-size: 16pt;
+    font-weight: 700;
+    color: #1a1a1a;
+    font-family: "Courier New", monospace;
+    margin-bottom: 8px;
+}
+
+.header-right .meta-row {
+    font-size: 9pt;
+    color: #555;
+    margin-bottom: 2px;
+}
+
+.header-right .meta-label {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* ── Status Badge ────────────────────────────────────────────────────── */
+.badge {
+    display: inline-block;
+    padding: 2px 12px;
+    border-radius: 12px;
+    font-size: 8pt;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-draft { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+.badge-sent { background: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+.badge-confirmed { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.badge-partial { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+.badge-received { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.badge-canceled { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+/* ── Supplier Box ────────────────────────────────────────────────────── */
+.supplier-box {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+}
+
+.supplier-box .box-title {
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #10b981;
+    margin-bottom: 8px;
+}
+
+.supplier-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 24px;
+}
+
+.supplier-grid .field {
+    font-size: 9pt;
+}
+
+.supplier-grid .field-label {
+    font-weight: 600;
+    color: #555;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.supplier-grid .field-value {
+    color: #1a1a1a;
+}
+
+/* ── Lines Table ─────────────────────────────────────────────────────── */
+.lines-section {
+    margin-bottom: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+}
+
+table thead th {
+    background: #10b981;
+    color: #ffffff;
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+table thead th.text-right {
+    text-align: right;
+}
+
+table thead th.text-center {
+    text-align: center;
+}
+
+table tbody td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #e8e8e8;
+    vertical-align: middle;
+}
+
+table tbody tr:nth-child(even) {
+    background: #f9fafb;
+}
+
+table tbody tr:last-child td {
+    border-bottom: 2px solid #e0e0e0;
+}
+
+td.text-right {
+    text-align: right;
+}
+
+td.text-center {
+    text-align: center;
+}
+
+td.mono {
+    font-family: "Courier New", monospace;
+    font-size: 8pt;
+    color: #555;
+}
+
+/* ── Totals ──────────────────────────────────────────────────────────── */
+.totals-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 24px;
+}
+
+.totals-box {
+    width: 260px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.totals-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 14px;
+    font-size: 10pt;
+}
+
+.totals-row.subtotal {
+    border-bottom: 1px solid #e0e0e0;
+    color: #555;
+}
+
+.totals-row.total {
+    background: #10b981;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 12pt;
+}
+
+.totals-label {
+    font-weight: 600;
+}
+
+/* ── Notes ────────────────────────────────────────────────────────────── */
+.notes-box {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+}
+
+.notes-box .notes-title {
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #10b981;
+    margin-bottom: 6px;
+}
+
+.notes-box .notes-content {
+    font-size: 9pt;
+    color: #444;
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+.footer {
+    margin-top: 32px;
+    padding-top: 12px;
+    border-top: 2px solid #10b981;
+    text-align: center;
+}
+
+.footer .legal {
+    font-size: 8pt;
+    color: #888;
+    font-style: italic;
+    margin-bottom: 4px;
+}
+
+.footer .generator {
+    font-size: 7pt;
+    color: #aaa;
+    font-family: "Courier New", monospace;
+}
+
+/* ── Print ────────────────────────────────────────────────────────────── */
+@media print {
+    body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .lines-section, .supplier-box, .notes-box {
+        break-inside: avoid;
+    }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- HEADER                                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="header">
+    <div class="header-left">
+        <div class="tenant-name">{{ tenant.name }}</div>
+        <div class="tenant-info">
+            {% if tenant.tax_id %}NIT: {{ tenant.tax_id }}<br>{% endif %}
+            {% if tenant.address %}{{ tenant.address }}<br>{% endif %}
+            {% if tenant.phone %}Tel: {{ tenant.phone }}<br>{% endif %}
+            {% if tenant.email %}{{ tenant.email }}{% endif %}
+        </div>
+    </div>
+    <div class="header-right">
+        <div class="doc-title">Orden de Compra</div>
+        <div class="po-number">{{ po.po_number }}</div>
+        <div class="meta-row">
+            <span class="meta-label">Fecha:</span> {{ po.date }}
+        </div>
+        {% if po.expected_delivery %}
+        <div class="meta-row">
+            <span class="meta-label">Entrega Esperada:</span> {{ po.expected_delivery }}
+        </div>
+        {% endif %}
+        <div style="margin-top: 6px;">
+            {% if po.status == 'draft' %}
+                <span class="badge badge-draft">Borrador</span>
+            {% elif po.status == 'sent' %}
+                <span class="badge badge-sent">Enviada</span>
+            {% elif po.status == 'confirmed' %}
+                <span class="badge badge-confirmed">Confirmada</span>
+            {% elif po.status == 'partial' %}
+                <span class="badge badge-partial">Parcial</span>
+            {% elif po.status == 'received' %}
+                <span class="badge badge-received">Recibida</span>
+            {% elif po.status == 'canceled' %}
+                <span class="badge badge-canceled">Cancelada</span>
+            {% else %}
+                <span class="badge badge-draft">{{ po.status }}</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- SUPPLIER                                                               -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="supplier-box">
+    <div class="box-title">Proveedor</div>
+    <div class="supplier-grid">
+        <div class="field">
+            <span class="field-label">Nombre: </span>
+            <span class="field-value">{{ supplier.name }}</span>
+        </div>
+        {% if supplier.contact_name %}
+        <div class="field">
+            <span class="field-label">Contacto: </span>
+            <span class="field-value">{{ supplier.contact_name }}</span>
+        </div>
+        {% endif %}
+        {% if supplier.email %}
+        <div class="field">
+            <span class="field-label">Email: </span>
+            <span class="field-value">{{ supplier.email }}</span>
+        </div>
+        {% endif %}
+        {% if supplier.phone %}
+        <div class="field">
+            <span class="field-label">Teléfono: </span>
+            <span class="field-value">{{ supplier.phone }}</span>
+        </div>
+        {% endif %}
+        {% if supplier.tax_id %}
+        <div class="field">
+            <span class="field-label">NIT: </span>
+            <span class="field-value">{{ supplier.tax_id }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- LINES TABLE                                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="lines-section">
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 5%;" class="text-center">#</th>
+                <th style="width: 15%;">Código</th>
+                <th style="width: 35%;">Producto</th>
+                <th style="width: 12%;" class="text-center">Cantidad</th>
+                <th style="width: 16%;" class="text-right">Costo Unit.</th>
+                <th style="width: 17%;" class="text-right">Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in lines %}
+            <tr>
+                <td class="text-center">{{ loop.index }}</td>
+                <td class="mono">{{ line.product_sku or '—' }}</td>
+                <td>{{ line.product_name }}</td>
+                <td class="text-center">{{ line.qty_ordered }}</td>
+                <td class="text-right">${{ "{:,.0f}".format(line.unit_cost) }}</td>
+                <td class="text-right">${{ "{:,.0f}".format(line.line_total) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- TOTALS                                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="totals-wrapper">
+    <div class="totals-box">
+        <div class="totals-row subtotal">
+            <span class="totals-label">Subtotal</span>
+            <span>${{ "{:,.0f}".format(subtotal) }}</span>
+        </div>
+        <div class="totals-row total">
+            <span class="totals-label">Total</span>
+            <span>${{ "{:,.0f}".format(total) }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- NOTES                                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+{% if po.notes %}
+<div class="notes-box">
+    <div class="notes-title">Notas</div>
+    <div class="notes-content">{{ po.notes }}</div>
+</div>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- FOOTER                                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="footer">
+    <div class="legal">
+        Esta orden de compra constituye un compromiso de compra sujeto a confirmación por parte del proveedor.
+    </div>
+    <div class="generator">Generado por TraceLog &mdash; {{ generated_at }}</div>
+</div>
+
+</body>
+</html>

@@ -67,6 +67,8 @@ export async function authFetch(
     const h: Record<string, string> = { 'Content-Type': 'application/json' }
     const t = token ?? (auth ? useAuthStore.getState().accessToken : null)
     if (t) h['Authorization'] = `Bearer ${t}`
+    const tenantId = useAuthStore.getState().user?.tenant_id
+    if (tenantId) h['X-Tenant-Id'] = tenantId
     return h
   }
 

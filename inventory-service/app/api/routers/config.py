@@ -1095,3 +1095,132 @@ async def update_approval_threshold(
         "tenant_id": tenant_id,
         "so_approval_threshold": float(config.so_approval_threshold) if config.so_approval_threshold is not None else None,
     }
+
+
+# ─── Global Margin Config ─────────────────────────────────────────────────────
+
+@router.get("/margins")
+async def get_margin_config(
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.view"))],
+    db: AsyncSession = Depends(get_db_session),
+):
+    from sqlalchemy import select as _sel
+    from app.db.models.sales_order import TenantInventoryConfig
+    tenant_id = current_user.get("tenant_id", "default")
+    result = await db.execute(_sel(TenantInventoryConfig).where(TenantInventoryConfig.tenant_id == tenant_id))
+    config = result.scalar_one_or_none()
+    if not config:
+        return {
+            "tenant_id": tenant_id,
+            "margin_target_global": 35.0,
+            "margin_minimum_global": 20.0,
+            "margin_cost_method_global": "last_purchase",
+        }
+    return {
+        "tenant_id": tenant_id,
+        "margin_target_global": float(config.margin_target_global) if config.margin_target_global is not None else 35.0,
+        "margin_minimum_global": float(config.margin_minimum_global) if config.margin_minimum_global is not None else 20.0,
+        "margin_cost_method_global": config.margin_cost_method_global or "last_purchase",
+    }
+
+
+@router.patch("/margins")
+async def update_margin_config(
+    body: dict,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.admin"))],
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+):
+    from sqlalchemy import select as _sel
+    from app.db.models.sales_order import TenantInventoryConfig
+    tenant_id = current_user.get("tenant_id", "default")
+    result = await db.execute(_sel(TenantInventoryConfig).where(TenantInventoryConfig.tenant_id == tenant_id))
+    config = result.scalar_one_or_none()
+    if not config:
+        config = TenantInventoryConfig(tenant_id=tenant_id)
+        db.add(config)
+        await db.flush()
+    if "margin_target_global" in body:
+        config.margin_target_global = Decimal(str(body["margin_target_global"])) if body["margin_target_global"] is not None else None
+    if "margin_minimum_global" in body:
+        config.margin_minimum_global = Decimal(str(body["margin_minimum_global"])) if body["margin_minimum_global"] is not None else None
+    if "margin_cost_method_global" in body:
+        config.margin_cost_method_global = body["margin_cost_method_global"]
+    await db.flush()
+    audit = InventoryAuditService(db)
+    await audit.log(
+        tenant_id=tenant_id, user=current_user,
+        action="inventory.config.margins.update", resource_type="config",
+        resource_id=tenant_id, new_data=body, ip_address=_ip(request),
+    )
+    return {
+        "tenant_id": tenant_id,
+        "margin_target_global": float(config.margin_target_global) if config.margin_target_global is not None else 35.0,
+        "margin_minimum_global": float(config.margin_minimum_global) if config.margin_minimum_global is not None else 20.0,
+        "margin_cost_method_global": config.margin_cost_method_global or "last_purchase",
+    }
+
+
+# ─── Feature Toggles ─────────────────────────────────────────────────────────
+
+@router.get("/features")
+async def get_feature_toggles(
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.view"))],
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Return feature toggles for the tenant."""
+    from sqlalchemy import select
+    from app.db.models.sales_order import TenantInventoryConfig
+
+    result = await db.execute(
+        select(TenantInventoryConfig).where(TenantInventoryConfig.tenant_id == current_user["tenant_id"])
+    )
+    config = result.scalar_one_or_none()
+    features = {
+        "lotes": True, "seriales": True, "variantes": True, "conteo": True,
+        "escaner": False, "picking": True, "eventos": True, "kardex": True,
+        "precios": True, "aprobaciones": False,
+    }
+    if config:
+        for key in features:
+            val = getattr(config, f"feature_{key}", None)
+            if val is not None:
+                features[key] = val
+    return features
+
+
+@router.patch("/features")
+async def update_feature_toggles(
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.config"))],
+    body: dict,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Update feature toggles."""
+    from sqlalchemy import select
+    from app.db.models.sales_order import TenantInventoryConfig
+    import uuid
+
+    tenant_id = current_user["tenant_id"]
+    result = await db.execute(
+        select(TenantInventoryConfig).where(TenantInventoryConfig.tenant_id == tenant_id)
+    )
+    config = result.scalar_one_or_none()
+    if not config:
+        config = TenantInventoryConfig(id=str(uuid.uuid4()), tenant_id=tenant_id)
+        db.add(config)
+
+    valid_keys = ["lotes", "seriales", "variantes", "conteo", "escaner", "picking", "eventos", "kardex", "precios", "aprobaciones"]
+    for key in valid_keys:
+        if key in body:
+            setattr(config, f"feature_{key}", bool(body[key]))
+
+    await db.flush()
+
+    features = {}
+    for key in valid_keys:
+        features[key] = getattr(config, f"feature_{key}", True)
+    return features

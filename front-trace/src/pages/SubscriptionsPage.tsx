@@ -78,7 +78,7 @@ function CreateSubModal({ onClose }: { onClose: () => void }) {
               required
               value={form.tenant_id}
               onChange={e => setForm(f => ({ ...f, tenant_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="default"
             />
           </div>
@@ -87,7 +87,7 @@ function CreateSubModal({ onClose }: { onClose: () => void }) {
             <select
               value={form.plan_slug}
               onChange={e => setForm(f => ({ ...f, plan_slug: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               {plans.map(p => (
                 <option key={p.id} value={p.slug}>{p.name}</option>
@@ -99,7 +99,7 @@ function CreateSubModal({ onClose }: { onClose: () => void }) {
             <select
               value={form.billing_cycle ?? 'monthly'}
               onChange={e => setForm(f => ({ ...f, billing_cycle: e.target.value as 'monthly' | 'annual' | 'custom' }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="monthly">Mensual</option>
               <option value="annual">Anual</option>
@@ -112,7 +112,7 @@ function CreateSubModal({ onClose }: { onClose: () => void }) {
             <button
               type="submit"
               disabled={create.isPending}
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
             >
               {create.isPending ? 'Creando...' : 'Crear'}
             </button>
@@ -145,8 +145,8 @@ export function SubscriptionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100">
-            <CreditCard className="h-5 w-5 text-indigo-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
+            <CreditCard className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Suscripciones</h1>
@@ -155,7 +155,7 @@ export function SubscriptionsPage() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm"
+          className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm"
         >
           <Plus className="h-4 w-4" /> Nueva Suscripción
         </button>
@@ -194,13 +194,13 @@ export function SubscriptionsPage() {
             value={tenantSearch}
             onChange={e => setTenantSearch(e.target.value)}
             placeholder="Buscar tenant..."
-            className="rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 w-48"
+            className="rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-48"
           />
         </div>
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         >
           <option value="">Todos los estados</option>
           <option value="active">Active</option>
@@ -212,7 +212,7 @@ export function SubscriptionsPage() {
         <select
           value={planFilter}
           onChange={e => setPlanFilter(e.target.value)}
-          className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         >
           <option value="">Todos los planes</option>
           {plans.map(p => (
@@ -234,7 +234,7 @@ export function SubscriptionsPage() {
               (subs?.items ?? []).map(sub => (
                 <div
                   key={sub.id}
-                  className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2 cursor-pointer hover:border-indigo-200 hover:shadow-md transition-all"
+                  className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2 cursor-pointer hover:border-primary/30 hover:shadow-md transition-all"
                   onClick={() => navigate(`/platform/subscriptions/${sub.tenant_id}`)}
                 >
                   <div className="flex items-center justify-between">
@@ -243,7 +243,7 @@ export function SubscriptionsPage() {
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500">Plan</span>
-                    <span className="rounded-lg bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">
+                    <span className="rounded-lg bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
                       {sub.plan.name}
                     </span>
                   </div>
@@ -278,12 +278,12 @@ export function SubscriptionsPage() {
               {(subs?.items ?? []).map(sub => (
                 <tr
                   key={sub.id}
-                  className="hover:bg-indigo-50/40 cursor-pointer transition-colors"
+                  className="hover:bg-primary/5 cursor-pointer transition-colors"
                   onClick={() => navigate(`/platform/subscriptions/${sub.tenant_id}`)}
                 >
                   <td className="px-4 py-3 font-mono text-xs text-slate-700">{sub.tenant_id}</td>
                   <td className="px-4 py-3">
-                    <span className="rounded-lg bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">
+                    <span className="rounded-lg bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
                       {sub.plan.name}
                     </span>
                   </td>

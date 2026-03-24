@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Truck, Package, ClipboardList, BarChart3, Layers, CheckCircle2, XCircle, CreditCard, AlertTriangle,
-  ChevronRight, FileText, FlaskConical,
+  ChevronRight, FileText, FlaskConical, Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
@@ -15,15 +15,17 @@ const MODULE_ICONS: Record<string, React.ElementType> = {
   'electronic-invoicing-sandbox': FlaskConical,
   audit: ClipboardList,
   analytics: BarChart3,
+  'ai-analysis': Sparkles,
 }
 
 const MODULE_COLORS: Record<string, { bg: string; text: string }> = {
-  logistics:              { bg: 'bg-indigo-50',  text: 'text-indigo-600' },
+  logistics:              { bg: 'bg-primary/10',  text: 'text-primary' },
   inventory:              { bg: 'bg-emerald-50', text: 'text-emerald-600' },
   'electronic-invoicing': { bg: 'bg-cyan-50',    text: 'text-cyan-600' },
   'electronic-invoicing-sandbox': { bg: 'bg-amber-50', text: 'text-amber-600' },
   audit:                  { bg: 'bg-amber-50',   text: 'text-amber-600' },
   analytics:              { bg: 'bg-purple-50',  text: 'text-purple-600' },
+  'ai-analysis':          { bg: 'bg-violet-50',  text: 'text-violet-600' },
 }
 
 /* ---------- Toggle switch (TailAdmin style) ---------- */
@@ -48,7 +50,7 @@ function Toggle({
       title={title}
       className={cn(
         'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition duration-150 ease-linear',
-        checked ? 'bg-indigo-500' : 'bg-gray-200',
+        checked ? 'bg-primary' : 'bg-gray-200',
         disabled && 'opacity-40 pointer-events-none',
       )}
     >
@@ -101,7 +103,7 @@ export function MarketplacePage() {
         <ol className="flex items-center gap-2 text-sm">
           <li className="text-gray-500">Inicio</li>
           <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
-          <li className="text-indigo-500">Marketplace</li>
+          <li className="text-primary">Marketplace</li>
         </ol>
       </nav>
 
@@ -225,7 +227,7 @@ export function MarketplacePage() {
                   setActivatedModule(null)
                   navigate(`/checkout?module=${slug}`)
                 }}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-500 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-600"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-primary"
               >
                 <CreditCard className="h-4 w-4" />
                 Completar suscripción

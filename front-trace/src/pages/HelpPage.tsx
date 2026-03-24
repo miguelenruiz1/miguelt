@@ -11,8 +11,8 @@ import { Topbar } from '@/components/layout/Topbar'
 function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementType; title: string; subtitle: string }) {
   return (
     <div className="flex items-start gap-4 mb-8 pb-6 border-b border-slate-100">
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 border border-indigo-100/50 shrink-0">
-        <Icon className="h-6 w-6 text-indigo-600" />
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20/50 shrink-0">
+        <Icon className="h-6 w-6 text-primary" />
       </div>
       <div>
         <h1 className="text-xl font-bold text-slate-800">{title}</h1>
@@ -55,7 +55,7 @@ function CodeBlock({ children }: { children: React.ReactNode }) {
 
 function Pill({ children, color = 'slate' }: { children: React.ReactNode; color?: string }) {
   const colors: Record<string, string> = {
-    indigo:  'bg-indigo-100 text-indigo-700',
+    indigo:  'bg-primary/15 text-primary',
     emerald: 'bg-emerald-100 text-emerald-700',
     amber:   'bg-amber-100 text-amber-700',
     red:     'bg-red-100 text-red-700',
@@ -93,16 +93,16 @@ function OverviewSection() {
           <NavLink
             key={to}
             to={to}
-            className="flex items-start gap-3 p-4 rounded-2xl border border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md transition-all group"
+            className="flex items-start gap-3 p-4 rounded-2xl border border-slate-200 bg-white hover:border-primary/50 hover:shadow-md transition-all group"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 shrink-0">
-              <Icon className="h-5 w-5 text-indigo-600" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+              <Icon className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-slate-700 group-hover:text-indigo-700">{label}</p>
+              <p className="text-sm font-bold text-slate-700 group-hover:text-primary">{label}</p>
               <p className="text-xs text-slate-400 mt-0.5">{desc}</p>
             </div>
-            <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-indigo-400 mt-1 shrink-0" />
+            <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-primary/70 mt-1 shrink-0" />
           </NavLink>
         ))}
       </div>
@@ -121,14 +121,14 @@ function AssetsSection() {
         Cada carga es un <strong>cNFT comprimido en Solana</strong>. Su historial de custodia es inmutable y verificable publicamente.
       </InfoBox>
 
-      <H2><GitBranch className="h-4 w-4 text-indigo-400" /> Crear vs Mintear</H2>
+      <H2><GitBranch className="h-4 w-4 text-primary/70" /> Crear vs Mintear</H2>
       <div className="space-y-3">
         <div className="rounded-xl border border-slate-200 p-4">
           <p className="text-sm font-bold text-slate-700 mb-1">Registrar carga existente <Pill color="slate">POST /api/v1/assets</Pill></p>
           <p className="text-xs text-slate-500">Usa el <code className="bg-slate-100 rounded px-1">asset_mint</code> de un NFT ya existente en Solana. Ideal para vincular tokens pre-minteados.</p>
         </div>
-        <div className="rounded-xl border border-indigo-200 bg-indigo-50/30 p-4">
-          <p className="text-sm font-bold text-indigo-700 mb-1">Mintear nueva carga <Pill color="indigo">POST /api/v1/assets/mint</Pill></p>
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <p className="text-sm font-bold text-primary mb-1">Mintear nueva carga <Pill color="indigo">POST /api/v1/assets/mint</Pill></p>
           <p className="text-xs text-slate-500">Crea un nuevo cNFT Solana via <strong>Helius mintCompressedNft</strong> y lo registra automaticamente. El <code className="bg-slate-100 rounded px-1">asset_mint</code> se asigna tras el mint on-chain.</p>
         </div>
       </div>
@@ -145,13 +145,13 @@ function AssetsSection() {
           'Click en "Mintear" — el cNFT se crea en Solana de forma fire-and-forget',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
       </div>
 
-      <H2><Layers className="h-4 w-4 text-indigo-400" /> Maquina de Estados</H2>
+      <H2><Layers className="h-4 w-4 text-primary/70" /> Maquina de Estados</H2>
       <p className="text-xs text-slate-500 mb-3">Los estados validos y sus transiciones permitidas:</p>
       <div className="grid grid-cols-2 gap-2 mb-4">
         {[
@@ -271,8 +271,8 @@ function WalletsSection() {
 
       <H2>Generar vs Registrar</H2>
       <div className="space-y-3">
-        <div className="rounded-xl border border-indigo-200 bg-indigo-50/30 p-4">
-          <p className="text-sm font-bold text-indigo-700 mb-1">Generar nuevo wallet <Pill color="indigo">POST /registry/wallets/generate</Pill></p>
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <p className="text-sm font-bold text-primary mb-1">Generar nuevo wallet <Pill color="indigo">POST /registry/wallets/generate</Pill></p>
           <p className="text-xs text-slate-500 mb-2">El sistema crea un keypair nuevo en el backend, lo almacena de forma segura y hace un airdrop de prueba en devnet (1 SOL). Ideal para wallets operativos bajo control del sistema.</p>
           <CodeBlock>{`{
   "tags": ["transporte", "local"],
@@ -301,7 +301,7 @@ function WalletsSection() {
           'El wallet queda con estado "active" y listo para recibir activos',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -404,7 +404,7 @@ function OrganizationsSection() {
           'Click en "Crear"',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -437,7 +437,7 @@ function OrganizationsSection() {
           'Release al comprador final (qc_passed → released)',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -599,7 +599,7 @@ function IntegrationsSection() {
     <div>
       <SectionHeader icon={Link2} title="Integraciones" subtitle="Solana, Helius, multi-tenancy y arquitectura de blockchain" />
 
-      <H2><Globe className="h-4 w-4 text-indigo-400" /> Solana & Helius</H2>
+      <H2><Globe className="h-4 w-4 text-primary/70" /> Solana & Helius</H2>
       <p className="text-xs text-slate-500 mb-3">
         TraceLog usa <strong>Helius</strong> como proveedor RPC y de mint de cNFTs. Helius gestiona el arbol Merkle comprimido
         y expone la DAS API para verificar activos on-chain.
@@ -638,7 +638,7 @@ POST https://mainnet.helius-rpc.com/?api-key={KEY}
         </div>
       </div>
 
-      <H2><Server className="h-4 w-4 text-indigo-400" /> Variables de Entorno del Backend</H2>
+      <H2><Server className="h-4 w-4 text-primary/70" /> Variables de Entorno del Backend</H2>
       <CodeBlock>{`# Proveedor de blockchain
 HELIUS_API_KEY=tu-api-key-de-helius   # vacio = modo simulacion
 HELIUS_RPC_URL=https://devnet.helius-rpc.com
@@ -655,7 +655,7 @@ JWT_SECRET=clave-jwt-compartida       # obligatorio en produccion
 DATABASE_URL=postgresql+asyncpg://...
 REDIS_URL=redis://...`}</CodeBlock>
 
-      <H2><Zap className="h-4 w-4 text-indigo-400" /> Arbol Merkle por Tenant</H2>
+      <H2><Zap className="h-4 w-4 text-primary/70" /> Arbol Merkle por Tenant</H2>
       <p className="text-xs text-slate-500 mb-3">
         Cada tenant necesita provisionar un arbol Merkle antes de poder mintear cNFTs.
         El arbol es compartido entre todos los activos del tenant.
@@ -675,7 +675,7 @@ POST /api/v1/assets/mint
 X-Tenant-Id: empresa-a
 {"product_type": "Cafe", "metadata": {...}, "initial_custodian_wallet": "..."}`}</CodeBlock>
 
-      <H2><Key className="h-4 w-4 text-indigo-400" /> Multi-Tenancy</H2>
+      <H2><Key className="h-4 w-4 text-primary/70" /> Multi-Tenancy</H2>
       <InfoBox type="warning">
         Todas las requests a la API deben incluir el header <code className="bg-amber-100 rounded px-1">X-Tenant-Id</code> con el slug o UUID del tenant.
         Sin este header, la API devuelve <strong>422 Unprocessable Entity</strong>.
@@ -694,7 +694,7 @@ X-User-Id: 1`}</CodeBlock>
       </p>
       <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 text-xs font-mono text-slate-600">
         <div className="text-slate-400 mb-1"># Seleccion automatica del proveedor</div>
-        <div>HELIUS_API_KEY set → <span className="text-indigo-600">HeliusProvider</span> (produccion)</div>
+        <div>HELIUS_API_KEY set → <span className="text-primary">HeliusProvider</span> (produccion)</div>
         <div>HELIUS_API_KEY vacio → <span className="text-slate-500">SimulationProvider</span> (dev/tests)</div>
         <div>SOLANA_SIMULATION=true → <span className="text-slate-500">SimulationProvider</span> (override)</div>
       </div>
@@ -716,7 +716,7 @@ X-User-Id: 1`}</CodeBlock>
           ['ix_assets_tenant_state', 'assets(tenant_id, state) — tracking board por tenant'],
         ].map(([idx, desc]) => (
           <div key={idx} className="flex gap-2 items-start text-xs">
-            <code className="font-mono text-indigo-600 bg-indigo-50 rounded px-2 py-0.5 shrink-0">{idx}</code>
+            <code className="font-mono text-primary bg-primary/10 rounded px-2 py-0.5 shrink-0">{idx}</code>
             <span className="text-slate-500">{desc}</span>
           </div>
         ))}
@@ -768,7 +768,7 @@ export function HelpPage() {
               className={({ isActive }) =>
                 `flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all mb-0.5 ${
                   isActive
-                    ? 'text-indigo-700 bg-white shadow-sm ring-1 ring-indigo-100'
+                    ? 'text-primary bg-white shadow-sm ring-1 ring-ring/20'
                     : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
                 }`
               }

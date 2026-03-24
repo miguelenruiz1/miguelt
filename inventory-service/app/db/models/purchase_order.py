@@ -46,6 +46,31 @@ class PurchaseOrder(Base):
     is_auto_generated:   Mapped[bool]        = mapped_column(Boolean, nullable=False, server_default="false")
     reorder_trigger_stock: Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True)
     notes:         Mapped[str | None]  = mapped_column(Text, nullable=True)
+    attachments:   Mapped[list | None] = mapped_column(JSONB, nullable=True, server_default="[]")
+
+    # Approval workflow
+    approval_required:  Mapped[bool]            = mapped_column(Boolean, nullable=False, server_default="false")
+    approved_by:        Mapped[str | None]      = mapped_column(String(255), nullable=True)
+    approved_at:        Mapped[DateTime | None]  = mapped_column(DateTime(timezone=True), nullable=True)
+    rejected_reason:    Mapped[str | None]      = mapped_column(Text, nullable=True)
+    rejected_by:        Mapped[str | None]      = mapped_column(String(255), nullable=True)
+    rejected_at:        Mapped[DateTime | None]  = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Send/Confirm tracking
+    sent_at:            Mapped[DateTime | None]  = mapped_column(DateTime(timezone=True), nullable=True)
+    sent_by:            Mapped[str | None]      = mapped_column(String(255), nullable=True)
+    confirmed_at:       Mapped[DateTime | None]  = mapped_column(DateTime(timezone=True), nullable=True)
+    confirmed_by:       Mapped[str | None]      = mapped_column(String(255), nullable=True)
+
+    # Supplier invoice data (filled on receipt)
+    supplier_invoice_number: Mapped[str | None]  = mapped_column(String(100), nullable=True)
+    supplier_invoice_date:   Mapped[Date | None]  = mapped_column(Date, nullable=True)
+    supplier_invoice_total:  Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    payment_terms:           Mapped[str | None]  = mapped_column(String(50), nullable=True)
+    payment_due_date:        Mapped[Date | None]  = mapped_column(Date, nullable=True)
+    related_sales_order_id:  Mapped[str | None]  = mapped_column(
+        String(36), ForeignKey("sales_orders.id", ondelete="SET NULL"), nullable=True
+    )
 
     # Consolidation
     is_consolidated:        Mapped[bool]             = mapped_column(Boolean, nullable=False, server_default="false")
@@ -102,8 +127,31 @@ class PurchaseOrderLine(Base):
     location_id:  Mapped[str | None] = mapped_column(
         String(36), ForeignKey("warehouse_locations.id", ondelete="SET NULL"), nullable=True
     )
+    uom:              Mapped[str | None]        = mapped_column(String(20), nullable=True)
+    qty_in_base_uom:  Mapped[Decimal | None]    = mapped_column(Numeric(15, 6), nullable=True)
     notes:        Mapped[str | None] = mapped_column(Text, nullable=True)
 
     po:      Mapped[PurchaseOrder] = relationship("PurchaseOrder", back_populates="lines")
     product: Mapped[Product]       = relationship("Product")
     variant: Mapped[ProductVariant | None] = relationship("ProductVariant")
+
+
+class POApprovalLog(Base):
+    __tablename__ = "po_approval_logs"
+
+    id:                 Mapped[str]           = mapped_column(String(36), primary_key=True)
+    tenant_id:          Mapped[str]           = mapped_column(String(255), nullable=False)
+    purchase_order_id:  Mapped[str]           = mapped_column(
+        String(36), ForeignKey("purchase_orders.id", ondelete="CASCADE"), nullable=False
+    )
+    action:             Mapped[str]           = mapped_column(String(50), nullable=False)
+    performed_by:       Mapped[str]           = mapped_column(String(255), nullable=False)
+    performed_by_name:  Mapped[str | None]    = mapped_column(String(255), nullable=True)
+    reason:             Mapped[str | None]    = mapped_column(Text, nullable=True)
+    po_total:           Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    created_at:         Mapped[DateTime]      = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        Index("ix_po_approval_logs_tenant", "tenant_id"),
+        Index("ix_po_approval_logs_po", "purchase_order_id"),
+    )

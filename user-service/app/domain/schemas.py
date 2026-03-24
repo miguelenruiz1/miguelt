@@ -185,6 +185,8 @@ class UserResponse(BaseModel):
     invitation_sent_at: datetime | None = None
     invitation_accepted_at: datetime | None = None
     must_change_password: bool = False
+    onboarding_completed: bool = False
+    onboarding_step: str = "welcome"
     created_at: datetime
     updated_at: datetime
     roles: list[RoleSlim] = []

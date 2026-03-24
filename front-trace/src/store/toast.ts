@@ -1,4 +1,8 @@
-import { create } from 'zustand'
+/**
+ * Toast bridge — delegates to sonner under the hood.
+ * All existing code using useToast().success/error/etc. works unchanged.
+ */
+import { toast as sonner } from 'sonner'
 
 export type ToastVariant = 'success' | 'error' | 'warning' | 'info'
 
@@ -8,29 +12,17 @@ export interface Toast {
   variant: ToastVariant
 }
 
-interface ToastStore {
-  toasts: Toast[]
-  push: (message: string, variant?: ToastVariant) => void
-  remove: (id: string) => void
+// Keep the store interface for backward compatibility but delegate to sonner
+export const useToastStore = {
+  getState: () => ({ toasts: [] as Toast[], push: () => {}, remove: () => {} }),
 }
 
-export const useToastStore = create<ToastStore>((set) => ({
-  toasts: [],
-  push: (message, variant = 'info') => {
-    const id = crypto.randomUUID()
-    set((s) => ({ toasts: [...s.toasts, { id, message, variant }] }))
-    setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 4000)
-  },
-  remove: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
-}))
-
-/** Convenience hook */
+/** Convenience hook — used by 50+ files */
 export function useToast() {
-  const { push } = useToastStore()
   return {
-    success: (msg: string) => push(msg, 'success'),
-    error:   (msg: string) => push(msg, 'error'),
-    warning: (msg: string) => push(msg, 'warning'),
-    info:    (msg: string) => push(msg, 'info'),
+    success: (msg: string) => sonner.success(msg),
+    error:   (msg: string) => sonner.error(msg),
+    warning: (msg: string) => sonner.warning(msg),
+    info:    (msg: string) => sonner.info(msg),
   }
 }

@@ -477,6 +477,14 @@ async def get_remission(
                 lot_number = batch.batch_number
 
         product = line.product if hasattr(line, "product") and line.product else None
+        unit_price = float(line.unit_price) if line.unit_price else 0
+        discount = float(line.discount_pct) if hasattr(line, "discount_pct") and line.discount_pct else 0
+        line_subtotal = qty * unit_price
+        line_discount_amount = line_subtotal * (discount / 100) if discount else 0
+        line_total = line_subtotal - line_discount_amount
+        tax_rate = float(line.tax_rate) if hasattr(line, "tax_rate") and line.tax_rate else 0
+        line_tax = line_total * (tax_rate / 100) if tax_rate else 0
+
         lines.append({
             "product_name": (product.name if product else None) or getattr(line, "product_name", None) or line.product_id[:8],
             "product_code": (product.sku if product else None) or getattr(line, "product_sku", None) or "",
@@ -485,6 +493,12 @@ async def get_remission(
             "warehouse_name": line_wh_name or "—",
             "lot_number": lot_number,
             "serial_number": serial_number,
+            "unit_price": unit_price,
+            "discount_pct": discount,
+            "line_subtotal": round(line_subtotal, 2),
+            "line_total": round(line_total, 2),
+            "tax_rate": tax_rate,
+            "tax_amount": round(line_tax, 2),
         })
 
     wh_address = {}
@@ -523,6 +537,10 @@ async def get_remission(
         "lines": lines,
         "total_items": total_items,
         "total_quantity": total_quantity,
+        "subtotal": round(sum(l["line_subtotal"] for l in lines), 2),
+        "total_discount": round(sum(l["line_subtotal"] - l["line_total"] for l in lines), 2),
+        "total_tax": round(sum(l["tax_amount"] for l in lines), 2),
+        "grand_total": round(sum(l["line_total"] + l["tax_amount"] for l in lines), 2),
     }
 
 

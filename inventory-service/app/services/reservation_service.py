@@ -60,7 +60,17 @@ class ReservationService:
                 continue
 
             # Atomic reserve via repo (validates availability)
-            await stock_repo.reserve(line.product_id, eff_wh, qty, variant_id=line.variant_id)
+            try:
+                await stock_repo.reserve(line.product_id, eff_wh, qty, variant_id=line.variant_id)
+            except ValueError:
+                # Enrich error with detailed availability info
+                avail = await stock_repo.get_available_stock(tenant_id, line.product_id, eff_wh)
+                product_name = line.product.name if line.product else line.product_id
+                raise ValueError(
+                    f"Producto '{product_name}': disponible {avail['qty_available']} unidades "
+                    f"({avail['qty_on_hand']} en bodega - {avail['qty_reserved']} reservadas), "
+                    f"solicitadas {float(qty)}"
+                )
 
             reservation = StockReservation(
                 id=str(uuid.uuid4()),

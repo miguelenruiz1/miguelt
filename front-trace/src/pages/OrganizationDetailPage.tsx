@@ -3,8 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Package, Wallet, Plus, Sparkles, RefreshCw } from 'lucide-react'
 import { useOrganization, useOrgAssets, useOrgWallets, useCustodianTypes } from '@/hooks/useTaxonomy'
 import { Topbar } from '@/components/layout/Topbar'
-import { Button } from '@/components/ui/Button'
-import { StateBadge, WalletStatusBadge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/button'
+import { StateBadge, WalletStatusBadge } from '@/components/domain-badges'
 import { Spinner, EmptyState } from '@/components/ui/Misc'
 import { MintNFTModal } from '@/components/assets/MintNFTModal'
 import { GenerateWalletModal } from '@/components/wallets/GenerateWalletModal'
@@ -37,13 +37,13 @@ function AssetCard({ asset, onClick }: { asset: Asset; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="text-left rounded-2xl border border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md transition-all duration-200 p-4 group"
+      className="text-left rounded-2xl border border-slate-200 bg-white hover:border-primary/50 hover:shadow-md transition-all duration-200 p-4 group"
     >
       <div className="flex items-center justify-between gap-2 mb-2">
         <span className="text-2xl">{productEmoji(asset.product_type)}</span>
         <StateBadge state={asset.state} />
       </div>
-      <p className="font-semibold text-slate-800 text-sm truncate group-hover:text-indigo-700 transition-colors">
+      <p className="font-semibold text-slate-800 text-sm truncate group-hover:text-primary transition-colors">
         {name ?? asset.product_type}
       </p>
       {name && (
@@ -96,13 +96,13 @@ function WalletsTab({ orgId, onAddWallet }: { orgId: string; onAddWallet: () => 
             <button
               key={w.id}
               onClick={() => navigate(`/wallets/${w.id}`)}
-              className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm transition-all text-left group"
+              className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-white hover:border-primary/50 hover:shadow-sm transition-all text-left group"
             >
-              <div className="h-9 w-9 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
-                <Wallet className="h-4 w-4 text-indigo-500" />
+              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Wallet className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-800 group-hover:text-indigo-700 transition-colors truncate">
+                <p className="text-sm font-semibold text-slate-800 group-hover:text-primary transition-colors truncate">
                   {w.name ?? shortPubkey(w.wallet_pubkey)}
                 </p>
                 <p className="text-xs text-slate-400 font-mono">{shortPubkey(w.wallet_pubkey)}</p>
@@ -211,7 +211,7 @@ export function OrganizationDetailPage() {
         {/* Back */}
         <Link
           to="/organizations"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors group"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-primary transition-colors group"
         >
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           Volver a Organizaciones

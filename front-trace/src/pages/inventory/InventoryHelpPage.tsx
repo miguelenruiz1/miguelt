@@ -15,8 +15,8 @@ import { Topbar } from '@/components/layout/Topbar'
 function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementType; title: string; subtitle: string }) {
   return (
     <div className="flex items-start gap-4 mb-8 pb-6 border-b border-slate-100">
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 border border-indigo-100/50 shrink-0">
-        <Icon className="h-6 w-6 text-indigo-600" />
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20/50 shrink-0">
+        <Icon className="h-6 w-6 text-primary" />
       </div>
       <div>
         <h1 className="text-xl font-bold text-slate-800">{title}</h1>
@@ -51,7 +51,7 @@ function H2({ children }: { children: React.ReactNode }) {
 
 function Pill({ children, color = 'slate' }: { children: React.ReactNode; color?: string }) {
   const colors: Record<string, string> = {
-    indigo:  'bg-indigo-100 text-indigo-700',
+    indigo:  'bg-primary/15 text-primary',
     emerald: 'bg-emerald-100 text-emerald-700',
     amber:   'bg-amber-100 text-amber-700',
     red:     'bg-red-100 text-red-700',
@@ -120,16 +120,16 @@ function OverviewSection() {
           <NavLink
             key={to}
             to={to}
-            className="flex items-start gap-3 p-4 rounded-2xl border border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md transition-all group"
+            className="flex items-start gap-3 p-4 rounded-2xl border border-slate-200 bg-white hover:border-primary/50 hover:shadow-md transition-all group"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 shrink-0">
-              <Icon className="h-5 w-5 text-indigo-600" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+              <Icon className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-slate-700 group-hover:text-indigo-700">{label}</p>
+              <p className="text-sm font-bold text-slate-700 group-hover:text-primary">{label}</p>
               <p className="text-xs text-slate-400 mt-0.5">{desc}</p>
             </div>
-            <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-indigo-400 mt-1 shrink-0" />
+            <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-primary/70 mt-1 shrink-0" />
           </NavLink>
         ))}
       </div>
@@ -158,7 +158,7 @@ function ProductosSection() {
           'Click en "Crear"',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -247,7 +247,7 @@ function VariantesSection() {
           'Click en "Crear"',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -347,7 +347,7 @@ function BodegasSection() {
           'Click en "Crear"',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -374,7 +374,7 @@ function BodegasSection() {
         ))}
       </div>
 
-      <H2><Activity className="h-4 w-4 text-indigo-400" /> Ocupacion de bodega</H2>
+      <H2><Activity className="h-4 w-4 text-primary/70" /> Ocupacion de bodega</H2>
       <p className="text-xs text-slate-500 mb-3">
         El dashboard muestra KPIs de ocupacion para cada bodega basados en las ubicaciones definidas
         y el stock almacenado en cada una:
@@ -432,7 +432,7 @@ function StockSection() {
         ))}
       </div>
 
-      <H2><BarChart3 className="h-4 w-4 text-indigo-400" /> Niveles de stock</H2>
+      <H2><BarChart3 className="h-4 w-4 text-primary/70" /> Niveles de stock</H2>
       <div className="space-y-2 mt-2">
         {[
           { level: 'Stock minimo', desc: 'Nivel por debajo del cual se genera alerta de reabastecimiento.', color: 'amber' },
@@ -460,7 +460,7 @@ Rotacion          = Unidades vendidas / Stock promedio`}
         para no sobreescribir movimientos que ocurrieron entre el conteo y la aprobacion.
       </InfoBox>
 
-      <H2><ShieldCheck className="h-4 w-4 text-indigo-400" /> Bloqueo por Control de Calidad (QC)</H2>
+      <H2><ShieldCheck className="h-4 w-4 text-primary/70" /> Bloqueo por Control de Calidad (QC)</H2>
       <p className="text-xs text-slate-500 mb-3">
         Cuando un tipo de producto tiene activado <Pill color="indigo">requires_qc</Pill>, todo stock recibido
         entra automaticamente en estado <Pill color="amber">pending_qc</Pill> y no puede ser despachado hasta
@@ -539,7 +539,7 @@ function MovimientosSection() {
         ))}
       </div>
 
-      <H2><Search className="h-4 w-4 text-indigo-400" /> Filtros</H2>
+      <H2><Search className="h-4 w-4 text-primary/70" /> Filtros</H2>
       <p className="text-xs text-slate-500 mb-3">
         La tabla de movimientos permite filtrar por:
       </p>
@@ -601,7 +601,7 @@ function ProveedoresSection() {
           'Click en "Crear"',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -659,7 +659,7 @@ function ComprasSection() {
         en bodega. Cada OC recibe un numero automatico con formato <Pill color="indigo">PO-YYYY-NNNN</Pill>.
       </InfoBox>
 
-      <H2><GitBranch className="h-4 w-4 text-indigo-400" /> Flujo de estados</H2>
+      <H2><GitBranch className="h-4 w-4 text-primary/70" /> Flujo de estados</H2>
       <div className="rounded-xl bg-slate-900 text-slate-100 p-4 text-xs font-mono overflow-x-auto my-3 leading-relaxed">
         {`draft → sent → confirmed → partial → received
   |                              |
@@ -698,13 +698,13 @@ draft ─┘`}
           'Enviar al proveedor cuando este lista',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
       </div>
 
-      <H2><RefreshCw className="h-4 w-4 text-indigo-400" /> Recepcion parcial</H2>
+      <H2><RefreshCw className="h-4 w-4 text-primary/70" /> Recepcion parcial</H2>
       <p className="text-xs text-slate-500 mb-3">
         Si el proveedor envia la mercancia en multiples envios, puedes registrar cada recepcion parcial:
       </p>
@@ -718,7 +718,7 @@ draft ─┘`}
         </div>
       </div>
 
-      <H2><Merge className="h-4 w-4 text-indigo-400" /> Consolidacion de OC</H2>
+      <H2><Merge className="h-4 w-4 text-primary/70" /> Consolidacion de OC</H2>
       <p className="text-xs text-slate-500 mb-3">
         Cuando tienes multiples OC en estado <Pill color="slate">draft</Pill> para el <strong>mismo proveedor</strong>,
         puedes fusionarlas en una sola OC consolidada:
@@ -764,7 +764,7 @@ function ClientesSection() {
           'Click en "Crear"',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -814,7 +814,7 @@ function ClientesSection() {
         los precios se resuelven automaticamente. Ver la seccion <strong>Precios Especiales</strong>.
       </p>
 
-      <H2><Eye className="h-4 w-4 text-indigo-400" /> Portal de cliente</H2>
+      <H2><Eye className="h-4 w-4 text-primary/70" /> Portal de cliente</H2>
       <p className="text-xs text-slate-500 mb-3">
         Desde la pagina de detalle de un cliente, el boton <Pill color="indigo">Ver Portal</Pill> abre
         una vista de solo lectura con la informacion relevante para ese cliente:
@@ -850,7 +850,7 @@ function VentasSection() {
         con formato <Pill color="indigo">SO-YYYY-NNNN</Pill> y soporta el flujo completo de picking, despacho y entrega.
       </InfoBox>
 
-      <H2><GitBranch className="h-4 w-4 text-indigo-400" /> Flujo de estados</H2>
+      <H2><GitBranch className="h-4 w-4 text-primary/70" /> Flujo de estados</H2>
       <div className="rounded-xl bg-slate-900 text-slate-100 p-4 text-xs font-mono overflow-x-auto my-3 leading-relaxed">
         {`draft → pending_approval → confirmed → picking → shipped → delivered
   |         |                  |           |         |
@@ -890,13 +890,13 @@ function VentasSection() {
           'Confirmar — si el total supera el umbral de aprobacion, va a pending_approval',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
       </div>
 
-      <H2><BadgeCheck className="h-4 w-4 text-indigo-400" /> Aprobacion por monto</H2>
+      <H2><BadgeCheck className="h-4 w-4 text-primary/70" /> Aprobacion por monto</H2>
       <p className="text-xs text-slate-500 mb-3">
         Si el tenant configura un umbral de aprobacion (<code className="bg-slate-100 rounded px-1">so_approval_threshold</code>),
         las OV cuyo total supere ese monto requieren aprobacion antes de confirmar:
@@ -985,7 +985,7 @@ total_payable    = total_with_tax - total_retention`}
         verificar linea por linea desde bodega.
       </p>
 
-      <H2><FileText className="h-4 w-4 text-indigo-400" /> Remision de entrega</H2>
+      <H2><FileText className="h-4 w-4 text-primary/70" /> Remision de entrega</H2>
       <p className="text-xs text-slate-500 mb-3">
         Al despachar, se puede generar una <strong>remision</strong> (guia de despacho) en PDF que incluye:
         numero de remision, datos del cliente, productos, cantidades y firma de recibido.
@@ -1020,7 +1020,7 @@ function PreciosSection() {
           '2. Precio base del producto (product_base) — precio de venta configurado en el producto',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -1058,7 +1058,7 @@ function ConteoCliclicoSection() {
       </div>
 
       {/* IRA */}
-      <H2><BarChart3 className="h-4 w-4 text-indigo-400" /> IRA (Inventory Record Accuracy)</H2>
+      <H2><BarChart3 className="h-4 w-4 text-primary/70" /> IRA (Inventory Record Accuracy)</H2>
       <div className="rounded-xl bg-slate-900 text-slate-100 p-4 text-xs font-mono overflow-x-auto my-3 leading-relaxed">
         {`IRA = (items sin discrepancia / total items) x 100
 
@@ -1137,7 +1137,7 @@ Stock ajustado  = Stock actual + Discrepancia  (delta, no absoluto)`}
         ].map(({ name, desc, when }, i) => (
           <div key={name} className="rounded-xl border border-slate-200 p-4">
             <p className="text-sm font-bold text-slate-700 mb-1">
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold text-[10px] mr-2">{i + 1}</span>
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold text-[10px] mr-2">{i + 1}</span>
               {name}
             </p>
             <p className="text-xs text-slate-500 mb-2">{desc}</p>
@@ -1159,7 +1159,7 @@ Stock ajustado  = Stock actual + Discrepancia  (delta, no absoluto)`}
           { title: 'Aprobar el conteo', desc: 'Revisar discrepancias e IRA. Click "Aprobar". Se aplican ajustes de stock (delta), se crean movimientos, se calcula IRA y se actualiza la fecha de ultimo conteo.' },
         ].map(({ title, desc }, i) => (
           <div key={i} className="flex items-start gap-3">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             <div>
               <p className="text-xs font-bold text-slate-700">{title}</p>
               <p className="text-[11px] text-slate-500 mt-0.5">{desc}</p>
@@ -1183,7 +1183,7 @@ Stock ajustado  = Stock actual + Discrepancia  (delta, no absoluto)`}
       </div>
 
       {/* Estados */}
-      <H2><GitBranch className="h-4 w-4 text-indigo-400" /> Estados del conteo</H2>
+      <H2><GitBranch className="h-4 w-4 text-primary/70" /> Estados del conteo</H2>
       <div className="rounded-xl bg-slate-900 text-slate-100 p-4 text-xs font-mono overflow-x-auto my-3 leading-relaxed">
         {`Borrador → En Progreso → Completado → Aprobado
     |             |              |
@@ -1217,7 +1217,7 @@ Stock ajustado  = Stock actual + Discrepancia  (delta, no absoluto)`}
       </div>
 
       {/* Permisos */}
-      <H2><Shield className="h-4 w-4 text-indigo-400" /> Permisos requeridos</H2>
+      <H2><Shield className="h-4 w-4 text-primary/70" /> Permisos requeridos</H2>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
@@ -1285,7 +1285,7 @@ function EventosSection() {
           'Click en "Crear"',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -1490,7 +1490,7 @@ function SerialesSection() {
           'Click en "Crear"',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -1552,7 +1552,7 @@ function LotesSection() {
           'Click en "Crear"',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -1585,7 +1585,7 @@ function LotesSection() {
         </table>
       </div>
 
-      <H2><Calendar className="h-4 w-4 text-indigo-400" /> Control de vencimiento</H2>
+      <H2><Calendar className="h-4 w-4 text-primary/70" /> Control de vencimiento</H2>
       <p className="text-xs text-slate-500">
         Los lotes con fecha de vencimiento permiten aplicar politicas <strong>FEFO</strong> (First Expired, First Out)
         para despachar primero los productos mas proximos a vencer. El sistema puede alertar sobre lotes
@@ -1607,8 +1607,8 @@ function ProduccionSection() {
         Una receta define los componentes necesarios para fabricar un producto terminado.
         Cada receta tiene un producto resultado, una cantidad de rendimiento y una lista de componentes.
       </p>
-      <div className="rounded-xl border border-indigo-200 bg-indigo-50/30 p-4">
-        <p className="text-sm font-bold text-indigo-700 mb-2">Ejemplo de receta</p>
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+        <p className="text-sm font-bold text-primary mb-2">Ejemplo de receta</p>
         <div className="text-xs text-slate-600 space-y-1">
           <p><strong>Producto resultado:</strong> Caja de regalo premium (rinde 1 unidad)</p>
           <p><strong>Componentes:</strong></p>
@@ -1632,13 +1632,13 @@ function ProduccionSection() {
           'Click en "Crear"',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
       </div>
 
-      <H2><GitBranch className="h-4 w-4 text-indigo-400" /> Corridas de produccion</H2>
+      <H2><GitBranch className="h-4 w-4 text-primary/70" /> Corridas de produccion</H2>
       <p className="text-xs text-slate-500 mb-3">
         Una <strong>corrida de produccion</strong> es la ejecucion real de una receta. El flujo incluye aprobacion:
       </p>
@@ -1922,7 +1922,7 @@ function ControlCalidadSection() {
           'Solo el stock aprobado queda disponible para despacho',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -2030,7 +2030,7 @@ function PortalClienteSection() {
           'Se abre la vista de portal con dos pestanas: Stock y Pedidos',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -2106,7 +2106,7 @@ function ClasificacionABCSection() {
           'A = acumulado hasta 80%, B = 80-95%, C = 95-100%',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -2240,7 +2240,7 @@ function PoliticaStockSection() {
           'Los productos de ese tipo seran evaluados automaticamente',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -2299,7 +2299,7 @@ function CostoAlmacenSection() {
           'El sistema calcula automaticamente el costo mensual y por ubicacion',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -2535,7 +2535,7 @@ function PreciosClientesSection() {
           'Click en "Crear"',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -2594,7 +2594,7 @@ function EscanerSection() {
           'Completar cantidad y bodega, confirmar operación',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -2658,7 +2658,7 @@ function PickingSection() {
           'La OV pasa a shipped y el stock se descuenta de la bodega',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -2741,7 +2741,7 @@ function AprobacionesSection() {
           'La OV aprobada pasa a confirmed; la rechazada pasa a rejected',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -2804,7 +2804,7 @@ function ReordenSection() {
           'Las POs creadas se pueden revisar y enviar desde Ordenes de Compra',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -2862,7 +2862,7 @@ function RecetasSection() {
           'Click en "Crear"',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -2925,15 +2925,15 @@ function CategoriasSection() {
           'Click en "Crear"',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
       </div>
 
       <H2>Jerarquia</H2>
-      <div className="rounded-xl border border-indigo-200 bg-indigo-50/30 p-4 mb-4">
-        <p className="text-sm font-bold text-indigo-700 mb-2">Ejemplo de arbol</p>
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 mb-4">
+        <p className="text-sm font-bold text-primary mb-2">Ejemplo de arbol</p>
         <div className="text-xs text-slate-600 font-mono space-y-0.5">
           <p>Alimentos</p>
           <p className="ml-4">├─ Lacteos</p>
@@ -3001,7 +3001,7 @@ function FacturacionSection() {
           'La factura queda registrada con numero, CUFE, URL del PDF y estado',
         ].map((step, i) => (
           <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-bold shrink-0 text-[10px]">{i + 1}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
@@ -3210,7 +3210,7 @@ export function InventoryHelpPage() {
               className={({ isActive }) =>
                 `flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all mb-0.5 ${
                   isActive
-                    ? 'text-indigo-700 bg-white shadow-sm ring-1 ring-indigo-100'
+                    ? 'text-primary bg-white shadow-sm ring-1 ring-ring/20'
                     : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
                 }`
               }

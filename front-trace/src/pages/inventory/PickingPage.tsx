@@ -8,7 +8,7 @@ import {
   useSalesOrders, useSalesOrder, usePickSalesOrder, useShipSalesOrder,
   useStockLevels, useLocations, useCustomers, useProducts,
 } from '@/hooks/useInventory'
-import { useToastStore } from '@/store/toast'
+import { useToast } from '@/store/toast'
 import type { SalesOrder, SalesOrderLine } from '@/types/inventory'
 
 // ---------------------------------------------------------------------------
@@ -48,7 +48,7 @@ function PickQueue({ onSelect }: { onSelect: (id: string) => void }) {
   const { data: pickingData, isLoading: l2 } = useSalesOrders({ status: 'picking', limit: 100 })
   const { data: customersData } = useCustomers()
   const pickMut = usePickSalesOrder()
-  const toast = useToastStore()
+  const toast = useToast()
 
   const customerMap = useMemo(() => {
     const m = new Map<string, string>()
@@ -140,7 +140,7 @@ function PickQueue({ onSelect }: { onSelect: (id: string) => void }) {
               {order.status === 'picking' && (
                 <button
                   onClick={() => onSelect(order.id)}
-                  className="w-full mt-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors"
+                  className="w-full mt-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-xl transition-colors"
                 >
                   <ClipboardList className="h-5 w-5" /> Continuar
                 </button>
@@ -168,7 +168,7 @@ function ActivePicking({ orderId, onBack }: { orderId: string; onBack: () => voi
   const { data: locationsData } = useLocations(order?.warehouse_id ?? undefined)
 
   const shipMut = useShipSalesOrder()
-  const toast = useToastStore()
+  const toast = useToast()
 
   const [pickedSet, setPickedSet] = useState<Set<string>>(new Set())
   const [showPacking, setShowPacking] = useState(false)
@@ -292,7 +292,7 @@ function ActivePicking({ orderId, onBack }: { orderId: string; onBack: () => voi
         </button>
 
         <div className="flex items-center gap-3">
-          <Truck className="h-7 w-7 text-indigo-600" />
+          <Truck className="h-7 w-7 text-primary" />
           <h1 className="text-2xl font-bold text-slate-900">Resumen de Packing</h1>
         </div>
 
@@ -325,7 +325,7 @@ function ActivePicking({ orderId, onBack }: { orderId: string; onBack: () => voi
         <button
           onClick={handleConfirmShip}
           disabled={shipMut.isPending}
-          className="w-full flex items-center justify-center gap-2 px-6 py-4 text-base font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-6 py-4 text-base font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-xl transition-colors"
         >
           <Truck className="h-5 w-5" />
           {shipMut.isPending ? 'Enviando...' : 'Confirmar Envio'}
@@ -352,7 +352,7 @@ function ActivePicking({ orderId, onBack }: { orderId: string; onBack: () => voi
         </div>
         <div className="text-right">
           <p className="text-xs text-slate-400">{fmtDate(order.expected_date)}</p>
-          <p className="text-lg font-bold text-indigo-600 mt-1">${order.total.toLocaleString()} {order.currency}</p>
+          <p className="text-lg font-bold text-primary mt-1">${order.total.toLocaleString()} {order.currency}</p>
         </div>
       </div>
 
@@ -425,7 +425,7 @@ function ActivePicking({ orderId, onBack }: { orderId: string; onBack: () => voi
                   </p>
                 )}
                 {locationHint && (
-                  <p className="flex items-center gap-1 text-xs text-indigo-600 mt-1">
+                  <p className="flex items-center gap-1 text-xs text-primary mt-1">
                     <MapPin className="h-3.5 w-3.5" /> {locationHint}
                   </p>
                 )}

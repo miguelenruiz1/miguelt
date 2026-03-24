@@ -53,7 +53,7 @@ const PasswordRule = ({ ok, text }: { ok: boolean; text: string }) => (
 )
 
 const inputClass =
-  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-indigo-300 focus:outline-none focus:ring-3 focus:ring-indigo-500/20'
+  'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20'
 
 export function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -113,13 +113,13 @@ export function RegisterPage() {
               {/* Logo */}
               <div className="flex items-center gap-2.5 mb-6">
                 <svg width="34" height="34" viewBox="0 0 34 34" fill="none" className="shrink-0">
-                  <rect width="34" height="34" rx="8" fill="#4F46E5" />
+                  <rect width="34" height="34" rx="8" fill="#16a34a" />
                   <path d="M8 11h18v2.5H18.5V25H15V13.5H8V11Z" fill="white" />
                   <path d="M20 17h2.5v5.5H27V25H20V17Z" fill="white" opacity="0.7" />
                 </svg>
                 <p className="text-[19px] leading-none tracking-tight">
                   <span className="font-bold text-gray-900">Trace</span>
-                  <span className="font-medium text-indigo-600">Log</span>
+                  <span className="font-medium text-primary">Log</span>
                 </p>
               </div>
 
@@ -135,13 +135,13 @@ export function RegisterPage() {
               <div>
                 {/* Step indicator */}
                 <div className="flex items-center gap-3 mb-5">
-                  <div className={`flex items-center gap-1.5 text-xs font-medium ${step === 1 ? 'text-indigo-600' : 'text-gray-400'}`}>
-                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${step === 1 ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500'}`}>1</span>
+                  <div className={`flex items-center gap-1.5 text-xs font-medium ${step === 1 ? 'text-primary' : 'text-gray-400'}`}>
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${step === 1 ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'}`}>1</span>
                     Información
                   </div>
                   <div className="w-10 h-px bg-gray-200" />
-                  <div className={`flex items-center gap-1.5 text-xs font-medium ${step === 2 ? 'text-indigo-600' : 'text-gray-400'}`}>
-                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${step === 2 ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500'}`}>2</span>
+                  <div className={`flex items-center gap-1.5 text-xs font-medium ${step === 2 ? 'text-primary' : 'text-gray-400'}`}>
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${step === 2 ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'}`}>2</span>
                     Seguridad
                   </div>
                 </div>
@@ -197,7 +197,7 @@ export function RegisterPage() {
                           <button
                             type="button"
                             onClick={goToStep2}
-                            className="flex w-full items-center justify-center rounded-lg bg-indigo-500 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-600"
+                            className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-primary"
                           >
                             Continuar
                           </button>
@@ -289,7 +289,7 @@ export function RegisterPage() {
                           <input
                             type="checkbox"
                             {...register('terms')}
-                            className="mt-0.5 h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            className="mt-0.5 h-5 w-5 rounded border-gray-300 text-primary focus:ring-ring"
                           />
                           <p className="font-normal text-gray-500 text-sm">
                             Al crear una cuenta aceptas los{' '}
@@ -323,7 +323,7 @@ export function RegisterPage() {
                           <button
                             type="submit"
                             disabled={registerMutation.isPending}
-                            className="flex items-center justify-center rounded-lg bg-indigo-500 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {registerMutation.isPending ? 'Creando...' : 'Crear cuenta'}
                           </button>
@@ -336,7 +336,7 @@ export function RegisterPage() {
                 <div className="mt-5">
                   <p className="text-sm font-normal text-center text-gray-700 sm:text-start">
                     ¿Ya tienes cuenta?{' '}
-                    <Link to="/login" className="text-indigo-500 hover:text-indigo-600">
+                    <Link to="/login" className="text-primary hover:text-primary">
                       Iniciar sesión
                     </Link>
                   </p>

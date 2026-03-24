@@ -18,6 +18,7 @@ from app.domain.schemas import (
     AssetResponse,
     CustodyEventListResponse,
     CustodyEventResponse,
+    GenericEventRequest,
     HandoffRequest,
     LoadedRequest,
     QCRequest,
@@ -408,6 +409,56 @@ async def burn(
         log.info(
             "custody_event",
             action="burn",
+            asset_id=str(asset_id),
+            user_id=request.headers.get("X-User-Id", "unknown"),
+            tenant_id=str(tenant_id),
+        )
+    code = status.HTTP_200_OK if was_cached else status.HTTP_201_CREATED
+    return ORJSONResponse(status_code=code, content=result)
+
+
+# ─── Generic Event Endpoint (Phase 1A) ────────────────────────────────────────
+
+@router.post(
+    "/{asset_id}/events",
+    status_code=status.HTTP_201_CREATED,
+    summary="Record any custody event (generic endpoint for all event types)",
+)
+async def record_event(
+    request: Request,
+    asset_id: uuid.UUID,
+    body: GenericEventRequest,
+    x_user_id: int = Header(..., alias="X-User-Id", description="User ID"),
+    db: AsyncSession = Depends(get_db_session),
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+) -> ORJSONResponse:
+    idempotency_key = getattr(request.state, "idempotency_key", None)
+    svc = CustodyService(db, tenant_id=tenant_id)
+
+    location = body.location.model_dump() if body.location else None
+
+    async def _handler():
+        asset, event = await svc.record_event(
+            asset_id=asset_id,
+            event_type_slug=str(body.event_type),
+            to_wallet=body.to_wallet,
+            location=location,
+            data=body.data,
+            notes=body.notes,
+            result=body.result,
+            reason=body.reason,
+        )
+        await db.commit()
+        await enqueue_anchor(event.id)
+        return {"asset": _asset_resp(asset), "event": _event_resp(event)}
+
+    was_cached, result = await _idempotent_post(
+        idempotency_key, f"event:{asset_id}:{body.event_type}", _handler
+    )
+    if not was_cached:
+        log.info(
+            "custody_event",
+            action=str(body.event_type),
             asset_id=str(asset_id),
             user_id=request.headers.get("X-User-Id", "unknown"),
             tenant_id=str(tenant_id),

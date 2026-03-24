@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { AlertTriangle, Plus, Eye, Clock, MessageSquare, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useFormValidation } from '@/hooks/useFormValidation'
 import {
   useEvents, useEvent, useCreateEvent, useChangeEventStatus, useAddEventImpact,
   useEventTypes, useEventSeverities, useEventStatuses, useWarehouses, useProducts,
@@ -29,8 +31,7 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
     setForm(f => ({ ...f, status_id: defaultStatus }))
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function doSubmit() {
     setError('')
     try {
       await create.mutateAsync({
@@ -46,48 +47,50 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
     }
   }
 
+  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6">
         <h2 className="text-lg font-bold text-slate-900 mb-4">Nuevo Evento</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
           <input required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-            placeholder="Título *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            placeholder="Título *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <div className="grid grid-cols-2 gap-3">
             <select required value={form.event_type_id} onChange={e => setForm(f => ({ ...f, event_type_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Tipo *</option>
               {eventTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
             <select required value={form.severity_id} onChange={e => setForm(f => ({ ...f, severity_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Severidad *</option>
               {severities.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <select required value={form.status_id} onChange={e => setForm(f => ({ ...f, status_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Estado *</option>
               {statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             <select value={form.warehouse_id} onChange={e => setForm(f => ({ ...f, warehouse_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Bodega (opcional)</option>
               {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
           </div>
           <input type="datetime-local" value={form.occurred_at} onChange={e => setForm(f => ({ ...f, occurred_at: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             placeholder="Descripción" rows={2}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           {error && (
             <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{error}</div>
           )}
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
-            <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {create.isPending ? 'Guardando...' : 'Crear evento'}
             </button>
           </div>
@@ -146,11 +149,12 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
     }
   }
 
-  async function handleAddImpact(e: React.FormEvent) {
-    e.preventDefault()
+  async function doAddImpact() {
     await addImpact.mutateAsync({ eventId, data: { ...impactForm, quantity_impact: impactForm.quantity_impact } })
     setImpactForm({ entity_id: '', quantity_impact: '', notes: '' })
   }
+
+  const { formRef: impactFormRef, handleSubmit: validateAndSubmitImpact } = useFormValidation(doAddImpact)
 
   // Progress stepper
   const currentIdx = sortedStatuses.findIndex(s => s.id === event.status_id)
@@ -204,7 +208,7 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
                       {i + 1}
                     </div>
                     {i < sortedStatuses.length - 1 && (
-                      <div className={cn('flex-1 h-0.5', i < currentIdx ? 'bg-indigo-500' : 'bg-slate-200')} />
+                      <div className={cn('flex-1 h-0.5', i < currentIdx ? 'bg-primary' : 'bg-slate-200')} />
                     )}
                   </div>
                 )
@@ -252,7 +256,7 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
                     s.id === event.status_id
                       ? 'ring-2 ring-offset-1 text-white cursor-default'
                       : s.id === pendingStatusId
-                        ? 'ring-2 ring-offset-1 ring-indigo-400 text-white'
+                        ? 'ring-2 ring-offset-1 ring-ring text-white'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-40'
                   )}
                   style={
@@ -277,7 +281,7 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
                   onChange={e => setStatusNotes(e.target.value)}
                   placeholder="Describe la razón del cambio de estado..."
                   rows={2}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 <div className="flex gap-2">
                   <button
@@ -377,7 +381,7 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
                 {imp.notes && <p className="text-xs text-slate-400 mt-1">{imp.notes}</p>}
               </div>
             ))}
-            <form onSubmit={handleAddImpact} className="border-t border-slate-100 pt-3 mt-3 space-y-2">
+            <form ref={impactFormRef} onSubmit={validateAndSubmitImpact} noValidate className="border-t border-slate-100 pt-3 mt-3 space-y-2">
               <select required value={impactForm.entity_id} onChange={e => setImpactForm(f => ({ ...f, entity_id: e.target.value }))}
                 className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm">
                 <option value="">Producto *</option>
@@ -387,7 +391,7 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
                 onChange={e => setImpactForm(f => ({ ...f, quantity_impact: e.target.value }))}
                 placeholder="Cantidad impactada *" className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm" />
               <button type="submit" disabled={addImpact.isPending}
-                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">
+                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-50">
                 Agregar impacto
               </button>
             </form>
@@ -403,6 +407,8 @@ export function EventsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState('')
   const [severityFilter, setSeverityFilter] = useState('')
+  const location = useLocation()
+  useEffect(() => { setShowCreate(false) }, [location.key])
 
   const { data, isLoading } = useEvents({
     event_type_id: typeFilter || undefined,
@@ -423,19 +429,19 @@ export function EventsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">Eventos</h1>
         <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm">
+          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm">
           <Plus className="h-4 w-4" /> Nuevo evento
         </button>
       </div>
 
       <div className="flex gap-3">
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Todos los tipos</option>
           {eventTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
         <select value={severityFilter} onChange={e => setSeverityFilter(e.target.value)}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Todas las severidades</option>
           {severities.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
@@ -506,7 +512,7 @@ export function EventsPage() {
                     <td className="px-4 py-3 text-slate-400 text-xs">{new Date(ev.occurred_at).toLocaleDateString('es')}</td>
                     <td className="px-4 py-3 text-slate-400 text-xs">{resolve(ev.reported_by)}</td>
                     <td className="px-4 py-3">
-                      <Eye className="h-4 w-4 text-slate-400 hover:text-indigo-600" />
+                      <Eye className="h-4 w-4 text-slate-400 hover:text-primary" />
                     </td>
                   </tr>
                 )

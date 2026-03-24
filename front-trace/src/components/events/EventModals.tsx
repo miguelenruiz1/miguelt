@@ -7,12 +7,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { AlertTriangle } from 'lucide-react'
 import { useHandoff, useArrived, useLoaded, useQC, useRelease, useBurn } from '@/hooks/useAssets'
+import { useWalletList } from '@/hooks/useWallets'
 import { ApiError } from '@/lib/api'
 import { useAdminStore } from '@/store/admin'
 import { useToast } from '@/store/toast'
-import { Dialog } from '@/components/ui/Dialog'
-import { Button } from '@/components/ui/Button'
-import { Input, Select, Textarea } from '@/components/ui/Input'
+import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
+import { Button } from '@/components/ui/button'
+import { Input, Select, Textarea } from '@/components/ui/input'
 import { shortPubkey } from '@/lib/utils'
 import type { Asset } from '@/types/api'
 
@@ -29,6 +30,9 @@ type HandoffForm = z.infer<typeof handoffSchema>
 export function HandoffModal({ asset, open, onClose }: { asset: Asset; open: boolean; onClose: () => void }) {
   const handoff = useHandoff(asset.id)
   const toast = useToast()
+  const { data: walletsData } = useWalletList({ status: 'active', limit: 200 })
+  const wallets = (walletsData?.items ?? []).filter(w => w.wallet_pubkey !== asset.current_custodian_wallet)
+
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<HandoffForm>({
     resolver: zodResolver(handoffSchema),
   })
@@ -54,7 +58,21 @@ export function HandoffModal({ asset, open, onClose }: { asset: Asset; open: boo
       footer={<><Button variant="ghost" onClick={onClose}>Cancelar</Button><Button loading={isSubmitting} onClick={handleSubmit(onSubmit)}>Confirmar Transferencia</Button></>}
     >
       <form className="flex flex-col gap-4">
-        <Input label="Custodio destino *" placeholder="Wallet del custodio receptor (debe estar activo)" error={errors.to_wallet?.message} {...register('to_wallet')} />
+        <Select
+          label="Custodio destino *"
+          error={errors.to_wallet?.message}
+          options={[
+            { label: 'Seleccionar custodio...', value: '' },
+            ...wallets.map(w => ({
+              label: `${w.name || shortPubkey(w.wallet_pubkey)}${w.organization_id ? '' : ' (sin org)'}`,
+              value: w.wallet_pubkey,
+            })),
+          ]}
+          {...register('to_wallet')}
+        />
+        {wallets.length === 0 && (
+          <p className="text-xs text-amber-600">No hay otras wallets activas. Crea una en Custodios.</p>
+        )}
         <Input label="Ubicación" placeholder="Ej: Aeropuerto CDMX Puerta 3" {...register('location_label')} />
         <Input label="Notas" placeholder="Opcional" {...register('notes')} />
       </form>

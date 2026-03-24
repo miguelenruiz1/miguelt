@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Factory, Plus, Play, Trash2, Eye, Clock, CheckCircle2, XCircle, AlertTriangle, PackageCheck, PackageX, ShieldCheck, ShieldX, CircleDot, Flag } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useFormValidation } from '@/hooks/useFormValidation'
 import {
   useProductionRuns, useProductionRun, useCreateProductionRun,
   useExecuteProductionRun, useFinishProductionRun,
@@ -134,11 +136,11 @@ function RunDrawer({
 
         <div className="space-y-4">
           {/* Recipe Info */}
-          <div className="bg-indigo-50 rounded-xl p-4">
-            <p className="text-xs font-bold text-indigo-400 uppercase tracking-wide mb-1">Receta</p>
-            <p className="font-semibold text-indigo-900">{recipe?.name ?? '—'}</p>
+          <div className="bg-primary/10 rounded-xl p-4">
+            <p className="text-xs font-bold text-primary/70 uppercase tracking-wide mb-1">Receta</p>
+            <p className="font-semibold text-foreground">{recipe?.name ?? '—'}</p>
             {recipe && (
-              <p className="text-sm text-indigo-600 mt-1">
+              <p className="text-sm text-primary mt-1">
                 Salida: {productMap[recipe.output_entity_id] ?? recipe.output_entity_id.slice(0, 8)} x {recipe.output_quantity}
               </p>
             )}
@@ -377,8 +379,7 @@ function CreateProductionModal({ onClose }: { onClose: () => void }) {
 
   const [form, setForm] = useState({ recipe_id: '', warehouse_id: '', output_warehouse_id: '', multiplier: '1', notes: '' })
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function doSubmit() {
     setError('')
     try {
       await create.mutateAsync({
@@ -394,31 +395,33 @@ function CreateProductionModal({ onClose }: { onClose: () => void }) {
     }
   }
 
+  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
         <h2 className="text-lg font-bold text-slate-900 mb-4">Nueva Corrida de Producción</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
           <select required value={form.recipe_id} onChange={e => setForm(f => ({ ...f, recipe_id: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="">Receta *</option>
             {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
           <select required value={form.warehouse_id} onChange={e => setForm(f => ({ ...f, warehouse_id: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="">Bodega de componentes *</option>
             {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
           <select value={form.output_warehouse_id} onChange={e => setForm(f => ({ ...f, output_warehouse_id: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="">Bodega destino (misma si vacío)</option>
             {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
           <input required type="number" step="0.01" min="0.01" value={form.multiplier}
             onChange={e => setForm(f => ({ ...f, multiplier: e.target.value }))}
-            placeholder="Multiplicador *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            placeholder="Multiplicador *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-            placeholder="Notas (opcional)" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            placeholder="Notas (opcional)" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
 
           {error && (
             <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2">
@@ -429,7 +432,7 @@ function CreateProductionModal({ onClose }: { onClose: () => void }) {
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
-            <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {create.isPending ? 'Creando...' : 'Crear corrida'}
             </button>
           </div>
@@ -449,6 +452,8 @@ export function ProductionPage() {
   const [actionSuccess, setActionSuccess] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [rejectRunId, setRejectRunId] = useState<string | null>(null)
+  const location = useLocation()
+  useEffect(() => { setShowCreate(false) }, [location.key])
 
   const { data, isLoading } = useProductionRuns({ status: statusFilter || undefined })
   const { data: recipes = [] } = useRecipes()
@@ -529,7 +534,7 @@ export function ProductionPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">Producción</h1>
         <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm">
+          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm">
           <Plus className="h-4 w-4" /> Nueva corrida
         </button>
       </div>
@@ -539,7 +544,7 @@ export function ProductionPage() {
         {['', 'pending', 'in_progress', 'awaiting_approval', 'completed', 'rejected', 'canceled'].map(s => (
           <button key={s || 'all'} onClick={() => setStatusFilter(s)}
             className={cn('rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
-              statusFilter === s ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')}>
+              statusFilter === s ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')}>
             {s ? STATUS_LABELS[s] : 'Todos'}
           </button>
         ))}
@@ -607,7 +612,7 @@ export function ProductionPage() {
                       <div className="flex gap-1.5 justify-end">
                         {/* View detail */}
                         <button onClick={() => setSelectedRunId(run.id)}
-                          className="text-slate-400 hover:text-indigo-600 p-1 rounded-lg hover:bg-indigo-50"
+                          className="text-slate-400 hover:text-primary p-1 rounded-lg hover:bg-primary/10"
                           title="Ver detalle">
                           <Eye className="h-4 w-4" />
                         </button>

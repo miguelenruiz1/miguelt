@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import ORJSONResponse
 
 from app.api.deps import ModuleUser, require_permission
@@ -23,9 +23,11 @@ from app.domain.schemas import (
     TransferStockIn,
     WasteStockIn,
 )
+from app.db.models.stock import StockReservation
 from app.repositories.stock_repo import StockRepository
 from app.services.stock_service import StockService
 from app.services.audit_service import InventoryAuditService
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/v1/stock", tags=["stock"])
@@ -64,6 +66,47 @@ async def list_stock(
         offset=offset,
         limit=limit,
     ).model_dump(mode="json"))
+
+
+@router.get("/availability/{product_id}")
+async def get_stock_availability(
+    product_id: str,
+    warehouse_id: str | None = Query(None),
+    current_user: ModuleUser = ...,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Get stock availability for a product: on_hand, reserved, available, in_transit."""
+    tenant_id = current_user.get("tenant_id", "default")
+    repo = StockRepository(db)
+    result = await repo.get_available_stock(tenant_id, product_id, warehouse_id)
+    return ORJSONResponse(content=result)
+
+
+@router.get("/reservations")
+async def list_reservations(
+    product_id: str | None = Query(None),
+    status: str | None = Query("active"),
+    current_user: ModuleUser = ...,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """List stock reservations, optionally filtered by product and status."""
+    tenant_id = current_user.get("tenant_id", "default")
+    q = select(StockReservation).where(StockReservation.tenant_id == tenant_id)
+    if product_id:
+        q = q.where(StockReservation.product_id == product_id)
+    if status:
+        q = q.where(StockReservation.status == status)
+    q = q.order_by(StockReservation.reserved_at.desc()).limit(100)
+    rows = (await db.execute(q)).scalars().all()
+    return ORJSONResponse(content=[{
+        "id": r.id,
+        "sales_order_id": r.sales_order_id,
+        "product_id": r.product_id,
+        "warehouse_id": r.warehouse_id,
+        "quantity": float(r.quantity),
+        "status": r.status,
+        "reserved_at": r.reserved_at.isoformat() if r.reserved_at else None,
+    } for r in rows])
 
 
 @router.patch("/levels/{level_id}/location", response_model=StockLevelOut)

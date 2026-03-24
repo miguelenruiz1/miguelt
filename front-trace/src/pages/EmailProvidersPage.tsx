@@ -135,7 +135,7 @@ function Toggle({
       title={title}
       className={cn(
         'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition duration-150 ease-linear',
-        checked ? 'bg-indigo-500' : 'bg-gray-200',
+        checked ? 'bg-primary' : 'bg-gray-200',
         disabled && 'opacity-40 pointer-events-none',
       )}
     >
@@ -220,7 +220,7 @@ function ConfigureProviderModal({
     }
   }
 
-  const inputCls = 'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-indigo-300 focus:outline-none focus:ring-3 focus:ring-indigo-500/20'
+  const inputCls = 'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
@@ -306,7 +306,7 @@ function ConfigureProviderModal({
                 <button
                   onClick={handleTest}
                   disabled={testMut.isPending}
-                  className="flex items-center gap-1.5 rounded-lg bg-indigo-500 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-600 transition disabled:opacity-50 shadow-sm"
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white hover:bg-primary transition disabled:opacity-50 shadow-sm"
                 >
                   <Send className="h-3.5 w-3.5" />
                   {testMut.isPending ? '...' : 'Probar'}
@@ -351,7 +351,7 @@ function ConfigureProviderModal({
           <button
             onClick={handleSave}
             disabled={saveMut.isPending}
-            className="rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-600 transition disabled:opacity-50 shadow-sm"
+            className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary transition disabled:opacity-50 shadow-sm"
           >
             {saveMut.isPending ? 'Guardando...' : 'Guardar'}
           </button>
@@ -389,7 +389,7 @@ export function EmailProvidersPage() {
         <ol className="flex items-center gap-2 text-sm">
           <li className="text-gray-500">Mi Empresa</li>
           <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
-          <li className="text-indigo-500">Proveedor de Correo</li>
+          <li className="text-primary">Proveedor de Correo</li>
         </ol>
       </nav>
 

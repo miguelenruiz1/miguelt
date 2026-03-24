@@ -22,7 +22,7 @@ export function PlatformUsersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <Globe className="h-6 w-6 text-indigo-600" />
+          <Globe className="h-6 w-6 text-primary" />
           Usuarios — Vista Global
         </h1>
         <p className="text-sm text-slate-500 mt-1">
@@ -39,7 +39,7 @@ export function PlatformUsersPage() {
             placeholder="Buscar por nombre o email..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0) }}
-            className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white/80"
+            className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-ring-300 bg-white/80"
           />
         </div>
         <input
@@ -47,7 +47,7 @@ export function PlatformUsersPage() {
           placeholder="Filtrar por tenant_id..."
           value={tenantFilter}
           onChange={(e) => { setTenantFilter(e.target.value); setPage(0) }}
-          className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white/80 w-48"
+          className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-ring-300 bg-white/80 w-48"
         />
       </div>
 
@@ -70,7 +70,7 @@ export function PlatformUsersPage() {
             data.items.map((u) => (
               <div key={u.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 font-semibold text-xs shrink-0">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary font-semibold text-xs shrink-0">
                     {u.full_name?.[0]?.toUpperCase() ?? '?'}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -94,7 +94,7 @@ export function PlatformUsersPage() {
                   <span className="text-slate-500">Roles</span>
                   <div className="flex flex-wrap gap-1 justify-end">
                     {u.roles?.map((r) => (
-                      <span key={r.id} className="inline-flex items-center rounded-full px-2 py-0.5 font-medium bg-indigo-50 text-indigo-700">
+                      <span key={r.id} className="inline-flex items-center rounded-full px-2 py-0.5 font-medium bg-primary/10 text-primary">
                         {r.name}
                       </span>
                     ))}
@@ -149,7 +149,7 @@ export function PlatformUsersPage() {
                   <tr key={u.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 font-semibold text-xs shrink-0">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary font-semibold text-xs shrink-0">
                           {u.full_name?.[0]?.toUpperCase() ?? '?'}
                         </div>
                         <span className="font-medium text-slate-800">{u.full_name}</span>
@@ -164,7 +164,7 @@ export function PlatformUsersPage() {
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {u.roles?.map((r) => (
-                          <span key={r.id} className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-indigo-50 text-indigo-700">
+                          <span key={r.id} className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary">
                             {r.name}
                           </span>
                         ))}

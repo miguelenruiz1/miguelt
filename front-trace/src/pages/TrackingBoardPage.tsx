@@ -1,108 +1,103 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { RefreshCw } from 'lucide-react'
-import { Topbar } from '@/components/layout/Topbar'
-import { Button } from '@/components/ui/Button'
-import { Spinner } from '@/components/ui/Misc'
-import { StateBadge } from '@/components/ui/Badge'
+import { RefreshCw, ChevronRight, Package, Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
 import { useQueries } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useWalletList } from '@/hooks/useWallets'
 import { useOrganizations } from '@/hooks/useTaxonomy'
-import { fmtDateShort, shortPubkey } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import type { Asset, AssetState } from '@/types/api'
 
-const COLUMNS: { state: AssetState; label: string; color: string }[] = [
-  { state: 'in_custody',  label: 'En Custodia',   color: 'border-indigo-300 bg-indigo-50/60' },
-  { state: 'in_transit',  label: 'En Tránsito',   color: 'border-amber-300 bg-amber-50/60' },
-  { state: 'loaded',      label: 'Cargado',       color: 'border-blue-300 bg-blue-50/60' },
-  { state: 'qc_passed',   label: 'QC Aprobado',   color: 'border-emerald-300 bg-emerald-50/60' },
-  { state: 'qc_failed',   label: 'QC Rechazado',  color: 'border-red-300 bg-red-50/60' },
-  { state: 'released',    label: 'Liberado',      color: 'border-slate-300 bg-slate-50/60' },
-  { state: 'burned',      label: 'Completado',    color: 'border-cyan-300 bg-cyan-50/60' },
+/* ── State definitions ──────────────────────────────────────────── */
+
+const STATES: { state: AssetState; label: string }[] = [
+  { state: 'in_custody',    label: 'En Custodia' },
+  { state: 'in_transit',    label: 'En Tránsito' },
+  { state: 'loaded',        label: 'Cargado' },
+  { state: 'sealed',        label: 'Sellado' },
+  { state: 'customs_hold',  label: 'Aduana' },
+  { state: 'qc_passed',     label: 'QC Aprobado' },
+  { state: 'qc_failed',     label: 'QC Rechazado' },
+  { state: 'damaged',       label: 'Dañado' },
+  { state: 'delivered',     label: 'Entregado' },
+  { state: 'released',      label: 'Liberado' },
+  { state: 'burned',        label: 'Completado' },
 ]
 
-function AssetCard({
-  asset,
-  orgName,
-  onClick,
-}: {
-  asset: Asset
-  orgName: string | null
-  onClick: () => void
-}) {
+const STATE_LABEL: Record<string, string> = Object.fromEntries(STATES.map(s => [s.state, s.label]))
+
+/* ── Badge config ───────────────────────────────────────────────── */
+
+const STATE_BADGE: Record<string, { className?: string; variant?: 'secondary' | 'destructive' | 'outline' }> = {
+  in_custody:   { variant: 'secondary' },
+  in_transit:   { className: 'bg-blue-500/15 text-blue-700 border-0' },
+  loaded:       { className: 'bg-amber-500/15 text-amber-700 border-0' },
+  sealed:       { className: 'bg-violet-500/15 text-violet-700 border-0' },
+  customs_hold: { className: 'bg-orange-500/15 text-orange-700 border-0' },
+  qc_passed:    { className: 'bg-emerald-500/15 text-emerald-700 border-0' },
+  qc_failed:    { variant: 'destructive' },
+  damaged:      { variant: 'destructive' },
+  delivered:    { className: 'bg-emerald-500/15 text-emerald-700 border-0' },
+  released:     { variant: 'outline' },
+  burned:       { variant: 'outline' },
+}
+
+function AssetStateBadge({ state }: { state: string }) {
+  const cfg = STATE_BADGE[state] ?? { variant: 'secondary' as const }
   return (
-    <button
-      onClick={onClick}
-      className="w-full text-left rounded-xl border border-white bg-white shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 p-3 group"
-    >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <span className="font-mono text-xs text-indigo-600 font-semibold group-hover:text-indigo-800 truncate">
-          {shortPubkey(asset.asset_mint)}
-        </span>
-        <StateBadge state={asset.state} />
-      </div>
-      <p className="text-xs font-medium text-slate-700 truncate">{asset.product_type}</p>
-      {orgName && (
-        <p className="text-[11px] text-slate-400 mt-1 truncate">{orgName}</p>
-      )}
-      <p className="text-[10px] text-slate-300 mt-1.5 tabular-nums">
-        {fmtDateShort(asset.updated_at)}
-      </p>
-    </button>
+    <Badge variant={cfg.variant ?? 'secondary'} className={cfg.className}>
+      {STATE_LABEL[state] ?? state}
+    </Badge>
   )
 }
 
-function KanbanColumn({
-  label,
-  color,
-  assets,
-  isLoading,
-  orgName,
-  onCardClick,
-}: {
-  label: string
-  color: string
-  assets: Asset[]
-  isLoading: boolean
-  orgName: (pubkey: string) => string | null
-  onCardClick: (id: string) => void
-}) {
+/* ── Blockchain dot ─────────────────────────────────────────────── */
+
+function BlockchainDot({ status }: { status: string }) {
+  const cfg: Record<string, { dot: string; label: string }> = {
+    CONFIRMED: { dot: 'bg-emerald-500', label: 'Confirmado' },
+    PENDING:   { dot: 'bg-amber-500 animate-pulse', label: 'Pendiente' },
+    FAILED:    { dot: 'bg-red-500', label: 'Fallido' },
+    SIMULATED: { dot: 'bg-blue-400', label: 'Simulado' },
+    SKIPPED:   { dot: 'bg-gray-300', label: 'Sin anclar' },
+  }
+  const c = cfg[status] ?? cfg.SKIPPED
   return (
-    <div className={`flex flex-col rounded-2xl border ${color} min-w-[180px] w-[200px] sm:w-[220px] lg:w-[240px] shrink-0`}>
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/60">
-        <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">{label}</span>
-        <span className="text-xs bg-white/80 text-slate-500 rounded-full px-2 py-0.5 font-semibold">
-          {isLoading ? '…' : assets.length}
-        </span>
-      </div>
-      <div className="flex flex-col gap-2 p-2 overflow-y-auto flex-1" style={{ maxHeight: 'calc(100vh - 220px)' }}>
-        {isLoading ? (
-          <div className="flex justify-center py-6"><Spinner /></div>
-        ) : assets.length === 0 ? (
-          <p className="text-center text-[11px] text-slate-300 py-6">Vacío</p>
-        ) : (
-          assets.map((a) => (
-            <AssetCard
-              key={a.id}
-              asset={a}
-              orgName={orgName(a.current_custodian_wallet)}
-              onClick={() => onCardClick(a.id)}
-            />
-          ))
-        )}
-      </div>
+    <div className="flex items-center gap-1.5" title={c.label}>
+      <div className={cn('h-2 w-2 rounded-full shrink-0', c.dot)} />
+      <span className="text-xs text-muted-foreground">{c.label}</span>
     </div>
   )
 }
 
+/* ── Time helper ────────────────────────────────────────────────── */
+
+function relativeTime(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(ms / 60000)
+  if (mins < 1) return 'ahora'
+  if (mins < 60) return `${mins}m`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h`
+  const days = Math.floor(hrs / 24)
+  return `${days}d`
+}
+
+/* ── Page ────────────────────────────────────────────────────────── */
+
 export function TrackingBoardPage() {
   const navigate = useNavigate()
+  const [stateFilter, setStateFilter] = useState<string>('all')
   const [filterOrgId, setFilterOrgId] = useState('')
 
-  // One independent query per state column — no stale-cache issues, no limit problems
+  // One query per state — same polling logic as before
   const stateResults = useQueries({
-    queries: COLUMNS.map((col) => ({
+    queries: STATES.map((col) => ({
       queryKey: ['assets', 'board', col.state],
       queryFn: () => api.assets.list({ state: col.state, limit: 200 }),
       refetchInterval: 15_000,
@@ -116,11 +111,21 @@ export function TrackingBoardPage() {
   const orgs = orgsData?.items ?? []
 
   const isFetching = stateResults.some((r) => r.isFetching)
-  const totalCount = stateResults.reduce((sum, r) => sum + (r.data?.total ?? 0), 0)
+  const isLoading = stateResults.some((r) => r.isLoading && !r.data)
+
+  // Build counts per state
+  const countByState: Record<string, number> = {}
+  let allAssets: Asset[] = []
+  STATES.forEach((s, i) => {
+    const items = stateResults[i].data?.items ?? []
+    countByState[s.state] = items.length
+    allAssets = allAssets.concat(items)
+  })
+  const totalCount = allAssets.length
 
   const refetchAll = () => stateResults.forEach((r) => r.refetch())
 
-  // Build lookup: pubkey → org name
+  // Org lookup
   const walletOrgMap = new Map<string, string>()
   for (const w of wallets) {
     if (w.organization_id) {
@@ -128,67 +133,183 @@ export function TrackingBoardPage() {
       if (org) walletOrgMap.set(w.wallet_pubkey, org.name)
     }
   }
-
   const getOrgName = (pubkey: string) => walletOrgMap.get(pubkey) ?? null
 
-  // Filter by org if selected
+  // Apply filters
   const orgWalletPubkeys = filterOrgId
     ? new Set(wallets.filter((w) => w.organization_id === filterOrgId).map((w) => w.wallet_pubkey))
     : null
 
-  const getColumnAssets = (idx: number): Asset[] => {
-    const items = stateResults[idx].data?.items ?? []
-    if (!orgWalletPubkeys) return items
-    return items.filter((a) => orgWalletPubkeys.has(a.current_custodian_wallet))
+  let filtered = stateFilter === 'all'
+    ? allAssets
+    : allAssets.filter(a => a.state === stateFilter)
+
+  if (orgWalletPubkeys) {
+    filtered = filtered.filter(a => orgWalletPubkeys.has(a.current_custodian_wallet))
   }
 
-  return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <Topbar
-        title="Panel de Seguimiento"
-        subtitle={`${totalCount} cargas en seguimiento`}
-        actions={
-          <Button variant="ghost" size="icon" onClick={refetchAll} title="Refresh">
-            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-          </Button>
-        }
-      />
+  // Sort by most recent first
+  filtered.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
 
-      {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 border-b border-slate-100 bg-white/50">
-        <span className="text-xs font-semibold text-slate-500 hidden sm:inline">Filtrar por organización:</span>
+  // Smart column visibility — hide Custodio if all empty
+  const hasCustodianData = filtered.some(a => getOrgName(a.current_custodian_wallet) !== null)
+  const colSpan = hasCustodianData ? 7 : 6
+
+  // Tabs — show top states + "Todos"
+  const tabs = [
+    { label: 'Todos', value: 'all', count: totalCount },
+    ...STATES
+      .filter(s => countByState[s.state] > 0)
+      .map(s => ({ label: s.label, value: s.state, count: countByState[s.state] })),
+  ]
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Panel de Seguimiento</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{totalCount} cargas activas</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={refetchAll}>
+            <RefreshCw className={cn('h-3.5 w-3.5 mr-1.5', isFetching && 'animate-spin')} />
+            Actualizar
+          </Button>
+          <span className="text-xs text-muted-foreground hidden sm:inline">Cada 15s</span>
+        </div>
+      </div>
+
+      {/* Filters: state tabs + org select */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex gap-1 flex-wrap">
+          {tabs.map(tab => (
+            <button
+              key={tab.value}
+              onClick={() => setStateFilter(tab.value)}
+              className={cn(
+                'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors duration-150',
+                stateFilter === tab.value
+                  ? 'bg-primary text-primary-foreground font-medium'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80',
+              )}
+            >
+              {tab.label}
+              {tab.count > 0 && (
+                <span className={cn(
+                  'text-[10px] font-medium rounded-full px-1.5',
+                  stateFilter === tab.value
+                    ? 'bg-white/20 text-white'
+                    : 'bg-background text-muted-foreground',
+                )}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
         <select
           value={filterOrgId}
           onChange={(e) => setFilterOrgId(e.target.value)}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          className="h-8 rounded-md border border-input bg-transparent px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
         >
-          <option value="">Todas las organizaciones</option>
+          <option value="">Todas las orgs</option>
           {orgs.map((o) => (
             <option key={o.id} value={o.id}>{o.name}</option>
           ))}
         </select>
-        {filterOrgId && (
-          <Button size="sm" variant="ghost" onClick={() => setFilterOrgId('')}>Limpiar</Button>
-        )}
-        <span className="ml-auto text-xs text-slate-400">Se actualiza cada 15s</span>
       </div>
 
-      {/* Board */}
-      <div className="flex-1 overflow-x-auto p-3 sm:p-6">
-        <div className="flex gap-4 h-full">
-          {COLUMNS.map(({ state, label, color }, i) => (
-            <KanbanColumn
-              key={state}
-              label={label}
-              color={color}
-              assets={getColumnAssets(i)}
-              isLoading={stateResults[i].isLoading && !stateResults[i].data}
-              orgName={getOrgName}
-              onCardClick={(id) => navigate(`/assets/${id}`)}
-            />
-          ))}
-        </div>
+      {/* Table */}
+      <div className="rounded-lg border border-border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="w-[140px]">Producto</TableHead>
+              <TableHead className="w-[100px]">Cantidad</TableHead>
+              <TableHead className="w-[130px]">Estado</TableHead>
+              {hasCustodianData && <TableHead>Custodio</TableHead>}
+              <TableHead className="w-[120px]">Blockchain</TableHead>
+              <TableHead className="w-[80px] text-right">Hace</TableHead>
+              <TableHead className="w-[40px]" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={colSpan} className="h-32 text-center">
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    Cargando...
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={colSpan} className="h-48 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
+                      <Package className="h-6 w-6 text-muted-foreground/50" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Sin cargas activas</p>
+                      <p className="text-xs text-muted-foreground mt-1">Crea una nueva carga para comenzar el seguimiento</p>
+                    </div>
+                    <Button size="sm" onClick={() => navigate('/assets')}>
+                      <Plus className="h-3.5 w-3.5 mr-1.5" />
+                      Nueva carga
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map(asset => {
+                const meta = asset.metadata as Record<string, unknown> | undefined
+                const qty = meta?.weight ?? meta?.quantity ?? meta?.quantity_kg
+                return (
+                  <TableRow
+                    key={asset.id}
+                    className="cursor-pointer hover:bg-muted/40 transition-colors group"
+                    onClick={() => navigate(`/assets/${asset.id}`)}
+                  >
+                    <TableCell className="font-medium capitalize">
+                      {asset.product_type}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {qty != null ? `${Number(qty).toLocaleString('es')} ${(meta?.weight_unit as string) ?? 'kg'}` : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <AssetStateBadge state={asset.state} />
+                    </TableCell>
+                    {hasCustodianData && (
+                      <TableCell className="text-muted-foreground text-sm">
+                        {getOrgName(asset.current_custodian_wallet) ?? '—'}
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      <BlockchainDot status={asset.blockchain_status} />
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground text-right tabular-nums">
+                      {relativeTime(asset.updated_at)}
+                    </TableCell>
+                    <TableCell>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/0 group-hover:text-muted-foreground transition-colors" />
+                    </TableCell>
+                  </TableRow>
+                )
+              })
+            )}
+          </TableBody>
+        </Table>
       </div>
+
+      {/* Footer count */}
+      {filtered.length > 0 && (
+        <p className="text-xs text-muted-foreground text-right">
+          {filtered.length} de {totalCount} cargas
+        </p>
+      )}
     </div>
   )
 }

@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Hash, Plus, Trash2 } from 'lucide-react'
+import { useFormValidation } from '@/hooks/useFormValidation'
 import {
   useSerials, useCreateSerial, useUpdateSerial, useDeleteSerial,
   useProducts, useWarehouses, useSerialStatuses, useProductTypes,
@@ -10,6 +12,8 @@ export function SerialsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [filterEntity, setFilterEntity] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
+  const location = useLocation()
+  useEffect(() => { setShowCreate(false) }, [location.key])
 
   const { data, isLoading } = useSerials({
     entity_id: filterEntity || undefined,
@@ -38,19 +42,19 @@ export function SerialsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">Seriales</h1>
         <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm">
+          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm">
           <Plus className="h-4 w-4" /> Nuevo serial
         </button>
       </div>
 
       <div className="flex gap-3">
         <select value={filterEntity} onChange={e => setFilterEntity(e.target.value)}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Todos los productos</option>
           {(productsData?.items ?? []).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Todos los estados</option>
           {serialStatuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
@@ -79,7 +83,7 @@ export function SerialsPage() {
                     <span className="text-sm font-medium text-slate-700">{productMap[s.entity_id] ?? s.entity_id.slice(0, 8)}</span>
                     <select value={s.status_id}
                       onChange={async e => { await updateSerial.mutateAsync({ id: s.id, data: { status_id: e.target.value } }) }}
-                      className="rounded-full border-0 bg-slate-50 px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      className="rounded-full border-0 bg-slate-50 px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-ring"
                       style={{ color: st?.color ?? '#6366f1' }}
                     >
                       {serialStatuses.map(ss => <option key={ss.id} value={ss.id}>{ss.name}</option>)}
@@ -117,7 +121,7 @@ export function SerialsPage() {
                     <td className="px-4 py-3">
                       <select value={s.status_id}
                         onChange={async e => { await updateSerial.mutateAsync({ id: s.id, data: { status_id: e.target.value } }) }}
-                        className="rounded-full border-0 bg-slate-50 px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        className="rounded-full border-0 bg-slate-50 px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-ring"
                         style={{ color: st?.color ?? '#6366f1' }}
                       >
                         {serialStatuses.map(ss => <option key={ss.id} value={ss.id}>{ss.name}</option>)}
@@ -162,41 +166,42 @@ function CreateSerialModal({
   const create = useCreateSerial()
   const [form, setForm] = useState({ entity_id: '', serial_number: '', status_id: '', warehouse_id: '', notes: '' })
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function doSubmit() {
     await create.mutateAsync({ ...form, warehouse_id: form.warehouse_id || null })
     onClose()
   }
+
+  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
         <h2 className="text-lg font-bold text-slate-900 mb-4">Nuevo Serial</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
           <select required value={form.entity_id} onChange={e => setForm(f => ({ ...f, entity_id: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="">Producto *</option>
             {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <input required value={form.serial_number} onChange={e => setForm(f => ({ ...f, serial_number: e.target.value }))}
-            placeholder="Número de serial *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            placeholder="Número de serial *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring" />
           <div className="grid grid-cols-2 gap-3">
             <select required value={form.status_id} onChange={e => setForm(f => ({ ...f, status_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Estado *</option>
               {statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             <select value={form.warehouse_id} onChange={e => setForm(f => ({ ...f, warehouse_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Bodega</option>
               {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
           </div>
           <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-            placeholder="Notas (opcional)" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            placeholder="Notas (opcional)" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
-            <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {create.isPending ? 'Guardando...' : 'Crear serial'}
             </button>
           </div>

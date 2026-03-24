@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { ClipboardList, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, User } from 'lucide-react'
 import { useInventoryAudit } from '@/hooks/useInventory'
 import { format } from 'date-fns'
@@ -104,13 +104,13 @@ export function InventoryAuditPage() {
             value={action}
             onChange={(e) => { setAction(e.target.value); setPage(0) }}
             placeholder="Buscar acción..."
-            className="rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 w-60"
+            className="rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-60"
           />
         </div>
         <select
           value={resourceType}
           onChange={(e) => { setResourceType(e.target.value); setPage(0) }}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         >
           {RESOURCE_TYPE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -121,14 +121,14 @@ export function InventoryAuditPage() {
             type="date"
             value={dateFrom}
             onChange={(e) => { setDateFrom(e.target.value); setPage(0) }}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <span className="text-slate-400 text-sm">—</span>
           <input
             type="date"
             value={dateTo}
             onChange={(e) => { setDateTo(e.target.value); setPage(0) }}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         {hasFilters && (
@@ -207,74 +207,58 @@ export function InventoryAuditPage() {
                   const displayAction = log.description || log.action
                   const resourceLabel = RESOURCE_TYPE_LABELS[log.resource_type] || log.resource_type
                   return (
-                    <tr key={log.id} className="group">
-                      <td colSpan={6} className="p-0">
-                        <div
-                          className={`flex items-center cursor-pointer hover:bg-slate-50/50 ${isExpanded ? 'bg-slate-50/50' : ''}`}
-                          onClick={() => hasDiff && setExpandedRow(isExpanded ? null : log.id)}
-                        >
-                          <div className="px-4 py-3 w-8">
-                            {hasDiff && (
-                              isExpanded
-                                ? <ChevronUp className="h-3.5 w-3.5 text-slate-400" />
-                                : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-                            )}
-                          </div>
-                          <div className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap flex-shrink-0" style={{ width: '150px' }}>
-                            {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm')}
-                          </div>
-                          <div className="px-4 py-3 flex-1 min-w-0">
-                            <span className="text-sm text-slate-800">
-                              {displayAction}
-                            </span>
-                          </div>
-                          <div className="px-4 py-3 flex-shrink-0" style={{ width: '200px' }}>
-                            {(log.user_name || log.user_email) ? (
-                              <div className="flex items-center gap-2">
-                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 flex-shrink-0">
-                                  <User className="h-3 w-3 text-indigo-600" />
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="text-xs font-medium text-slate-700 truncate">
-                                    {log.user_name || log.user_email}
-                                  </div>
-                                  {log.user_name && log.user_email && (
-                                    <div className="text-[10px] text-slate-400 truncate">
-                                      {log.user_email}
-                                    </div>
-                                  )}
-                                </div>
+                    <React.Fragment key={log.id}>
+                      <tr
+                        className={`border-b border-slate-100 ${hasDiff ? 'cursor-pointer hover:bg-slate-50/50' : ''} ${isExpanded ? 'bg-slate-50/50' : ''}`}
+                        onClick={() => hasDiff && setExpandedRow(isExpanded ? null : log.id)}
+                      >
+                        <td className="px-4 py-3 w-8">
+                          {hasDiff && (
+                            isExpanded
+                              ? <ChevronUp className="h-3.5 w-3.5 text-slate-400" />
+                              : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">
+                          {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm')}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-800">
+                          {displayAction}
+                        </td>
+                        <td className="px-4 py-3">
+                          {(log.user_name || log.user_email) ? (
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 flex-shrink-0">
+                                <User className="h-3 w-3 text-primary" />
                               </div>
-                            ) : (
-                              <span className="text-slate-400 text-xs">—</span>
-                            )}
-                          </div>
-                          <div className="px-4 py-3 flex-shrink-0" style={{ width: '160px' }}>
-                            {log.resource_type ? (
-                              <span className="text-xs text-slate-600">
-                                {resourceLabel}
-                                {log.resource_id && (
-                                  <span className="text-slate-400 ml-1 font-mono">
-                                    #{log.resource_id.slice(0, 8)}
-                                  </span>
-                                )}
-                              </span>
-                            ) : (
-                              <span className="text-slate-400">—</span>
-                            )}
-                          </div>
-                          <div className="px-4 py-3 text-xs text-slate-400 font-mono flex-shrink-0" style={{ width: '120px' }}>
-                            {log.ip_address ?? '—'}
-                          </div>
-                        </div>
-                        {isExpanded && hasDiff && (
-                          <div className="px-6 pb-4 flex gap-4 border-t border-slate-100 pt-3">
-                            <DiffViewer label="Datos anteriores" data={log.old_data} />
-                            <DiffViewer label="Datos nuevos" data={log.new_data} />
-                          </div>
-                        )}
-                      </td>
-                    </tr>
+                              <div className="min-w-0">
+                                <div className="text-xs font-medium text-slate-700 truncate">{log.user_name || log.user_email}</div>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 text-xs">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-600">
+                          {log.resource_type ? (
+                            <>{resourceLabel}{log.resource_id && <span className="text-slate-400 ml-1 font-mono">#{log.resource_id.slice(0, 8)}</span>}</>
+                          ) : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-400 font-mono">
+                          {log.ip_address ?? '—'}
+                        </td>
+                      </tr>
+                      {isExpanded && hasDiff && (
+                        <tr>
+                          <td colSpan={6} className="px-6 pb-4 border-b border-slate-100 bg-slate-50/30">
+                            <div className="flex gap-4 pt-3">
+                              <DiffViewer label="Datos anteriores" data={log.old_data} />
+                              <DiffViewer label="Datos nuevos" data={log.new_data} />
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   )
                 })
               )}

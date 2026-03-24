@@ -236,10 +236,26 @@ class BurnRequest(BaseModel):
     data: dict[str, Any] = Field(default_factory=dict)
 
 
+class GenericEventRequest(BaseModel):
+    """Flexible event request for all event types (system + custom).
+
+    Accepts any event_type slug configured in event_type_configs for the tenant.
+    System types: CREATED, HANDOFF, ARRIVED, LOADED, QC, RELEASED, BURN, etc.
+    Custom types: any slug created by the tenant admin.
+    """
+    event_type: str = Field(..., min_length=1, max_length=50, description="Event type slug")
+    to_wallet: str | None = Field(None, description="Target wallet (for HANDOFF-like events)")
+    location: LocationData | None = None
+    data: dict[str, Any] = Field(default_factory=dict)
+    notes: str | None = None
+    result: Literal["pass", "fail"] | None = Field(None, description="For QC/INSPECTION events")
+    reason: str | None = Field(None, description="For RELEASED/BURN/DAMAGED events")
+
+
 class CustodyEventResponse(OrmBase):
     id: uuid.UUID
     asset_id: uuid.UUID
-    event_type: EventType
+    event_type: str  # system EventType or custom slug from event_type_configs
     from_wallet: str | None
     to_wallet: str | None
     timestamp: datetime
@@ -251,12 +267,69 @@ class CustodyEventResponse(OrmBase):
     anchored: bool
     anchor_attempts: int
     anchor_last_error: str | None
+    notes: str | None = None
     created_at: datetime
 
 
 class CustodyEventListResponse(BaseModel):
     items: list[CustodyEventResponse]
     total: int
+
+
+# ─── Event Type Config (admin-managed) ────────────────────────────────────────
+
+class EventTypeConfigCreate(BaseModel):
+    slug: str = Field(..., min_length=1, max_length=50, pattern=r'^[A-Z0-9_]+$')
+    name: str = Field(..., min_length=1, max_length=100)
+    description: str | None = None
+    icon: str = Field(default="circle")
+    color: str = Field(default="#6366f1")
+    from_states: list[str] = Field(default_factory=list)
+    to_state: str | None = None
+    is_informational: bool = False
+    requires_wallet: bool = False
+    requires_notes: bool = False
+    requires_reason: bool = False
+    requires_admin: bool = False
+    sort_order: int = 0
+
+
+class EventTypeConfigUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    icon: str | None = None
+    color: str | None = None
+    from_states: list[str] | None = None
+    to_state: str | None = None
+    is_informational: bool | None = None
+    requires_wallet: bool | None = None
+    requires_notes: bool | None = None
+    requires_reason: bool | None = None
+    requires_admin: bool | None = None
+    sort_order: int | None = None
+    is_active: bool | None = None
+
+
+class EventTypeConfigResponse(OrmBase):
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    slug: str
+    name: str
+    description: str | None
+    icon: str
+    color: str
+    from_states: list[str]
+    to_state: str | None
+    is_system: bool
+    is_informational: bool
+    requires_wallet: bool
+    requires_notes: bool
+    requires_reason: bool
+    requires_admin: bool
+    sort_order: int
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
 
 
 # ─── Solana ───────────────────────────────────────────────────────────────────

@@ -288,8 +288,60 @@ class CustodyEvent(Base):
     anchored: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     anchor_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     anchor_last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Phase 1A additions
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    shipment_leg_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=_utcnow
     )
 
     asset: Mapped["Asset"] = relationship("Asset", back_populates="events", lazy="noload")
+
+
+# ─── Event Type Configuration (admin-managed) ─────────────────────────────────
+
+class EventTypeConfig(Base):
+    """
+    Admin-configurable event types per tenant.
+    System types (is_system=True) are seeded and cannot be deleted.
+    Admins can create custom types and customize labels/colors/transitions.
+    """
+    __tablename__ = "event_type_configs"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "slug", name="uq_event_type_configs_tenant_slug"),
+        Index("ix_event_type_configs_tenant", "tenant_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    slug: Mapped[str] = mapped_column(Text, nullable=False)              # e.g. "CUSTOMS_HOLD"
+    name: Mapped[str] = mapped_column(Text, nullable=False)              # e.g. "Retención Aduana"
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    icon: Mapped[str] = mapped_column(Text, nullable=False, default="circle")
+    color: Mapped[str] = mapped_column(Text, nullable=False, default="#6366f1")
+    # State machine configuration
+    from_states: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, default=list
+    )  # which asset states allow this event
+    to_state: Mapped[str | None] = mapped_column(Text, nullable=True)    # resulting state (null = informational)
+    # Behavior flags
+    is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_informational: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    requires_wallet: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    requires_notes: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    requires_reason: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    requires_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, default=_utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
+    )

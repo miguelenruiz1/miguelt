@@ -24,8 +24,10 @@ class MovementType(str, enum.Enum):
 
 
 class POStatus(str, enum.Enum):
-    draft     = "draft"
-    sent      = "sent"
+    draft            = "draft"
+    pending_approval = "pending_approval"
+    approved         = "approved"
+    sent             = "sent"
     confirmed = "confirmed"
     partial   = "partial"
     received  = "received"

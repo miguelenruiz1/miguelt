@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { KeyRound, Eye, EyeOff, Check } from 'lucide-react'
 import { useAdminStore } from '@/store/admin'
-import { Button } from '@/components/ui/Button'
-import { Dialog } from '@/components/ui/Dialog'
-import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/button'
+import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
+import { Input } from '@/components/ui/input'
 
 interface TopbarProps {
   title: string

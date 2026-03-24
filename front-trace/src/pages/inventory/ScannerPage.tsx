@@ -348,7 +348,7 @@ function ProductCard({
       {/* Product header */}
       <div className="px-5 py-4 border-b border-slate-100">
         <div className="flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Package className="h-6 w-6" />
           </div>
           <div className="min-w-0 flex-1">
@@ -561,7 +561,7 @@ export function ScannerPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
-          <ScanBarcode className="h-7 w-7 text-indigo-600" />
+          <ScanBarcode className="h-7 w-7 text-primary" />
           Escaner
         </h1>
         <p className="mt-1 text-sm text-slate-500">
@@ -573,7 +573,7 @@ export function ScannerPage() {
       <div className="relative">
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5">
           {isSearching ? (
-            <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
           ) : (
             <ScanBarcode className="h-6 w-6 text-slate-400" />
           )}
@@ -593,9 +593,9 @@ export function ScannerPage() {
           className={cn(
             'w-full rounded-2xl border-2 bg-white py-5 pl-14 pr-5 text-lg font-mono tracking-wider',
             'placeholder:text-slate-300 placeholder:font-sans placeholder:tracking-normal placeholder:text-base',
-            'focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500',
+            'focus:outline-none focus:ring-4 focus:ring-ring/30 focus:border-primary',
             'border-slate-200 transition-all',
-            isSearching && 'border-indigo-400 ring-4 ring-indigo-100',
+            isSearching && 'border-primary/70 ring-4 ring-ring/20',
           )}
         />
         {scanCode && (

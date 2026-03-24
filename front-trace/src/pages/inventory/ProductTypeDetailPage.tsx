@@ -30,7 +30,7 @@ const FIELD_COLORS: Record<string, string> = {
 
 // ─── Tab: Información ────────────────────────────────────────────────────────
 
-function InfoTab({ productType }: { productType: { id: string; name: string; slug: string; description: string | null; color: string | null; requires_qc?: boolean; dispatch_rule?: 'fifo' | 'fefo' | 'lifo'; entry_rule_location_id?: string | null } }) {
+function InfoTab({ productType }: { productType: { id: string; name: string; slug: string; description: string | null; color: string | null; requires_qc?: boolean; dispatch_rule?: 'fifo' | 'fefo' | 'lifo'; entry_rule_location_id?: string | null; sku_prefix?: string | null; default_category_id?: string | null } }) {
   const update = useUpdateProductType()
   const { data: locations = [] } = useLocations()
   const [form, setForm] = useState({
@@ -40,6 +40,7 @@ function InfoTab({ productType }: { productType: { id: string; name: string; slu
     dispatch_rule: (productType.dispatch_rule ?? 'fifo') as 'fifo' | 'fefo' | 'lifo',
     requires_qc: productType.requires_qc ?? false,
     entry_rule_location_id: productType.entry_rule_location_id ?? '',
+    sku_prefix: productType.sku_prefix ?? '',
   })
   const [saved, setSaved] = useState(false)
 
@@ -54,6 +55,7 @@ function InfoTab({ productType }: { productType: { id: string; name: string; slu
         dispatch_rule: form.dispatch_rule,
         requires_qc: form.requires_qc,
         entry_rule_location_id: form.entry_rule_location_id || null,
+        sku_prefix: form.sku_prefix || null,
       },
     })
     setSaved(true)
@@ -68,7 +70,7 @@ function InfoTab({ productType }: { productType: { id: string; name: string; slu
             <label className="block text-xs font-medium text-slate-600 mb-1.5">Nombre *</label>
             <input required value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1.5">Color</label>
@@ -83,7 +85,18 @@ function InfoTab({ productType }: { productType: { id: string; name: string; slu
           <textarea value={form.description}
             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             rows={3} placeholder="Describe este tipo de producto..."
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none" />
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
+        </div>
+
+        {/* SKU prefix */}
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1.5">Prefijo de SKU</label>
+          <input value={form.sku_prefix}
+            onChange={e => setForm(f => ({ ...f, sku_prefix: e.target.value.toUpperCase() }))}
+            placeholder="Ej: MP, PT, INS"
+            maxLength={20}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring font-mono uppercase" />
+          <p className="text-[11px] text-slate-400 mt-1">Los productos de este tipo se crearan con SKU automatico: PREFIJO-0001</p>
         </div>
 
         {/* Dispatch rule */}
@@ -92,7 +105,7 @@ function InfoTab({ productType }: { productType: { id: string; name: string; slu
           <select
             value={form.dispatch_rule}
             onChange={e => setForm(f => ({ ...f, dispatch_rule: e.target.value as 'fifo' | 'fefo' | 'lifo' }))}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="fifo">FIFO (primero en entrar, primero en salir)</option>
             <option value="fefo">FEFO (por vencimiento)</option>
@@ -119,7 +132,7 @@ function InfoTab({ productType }: { productType: { id: string; name: string; slu
           <select
             value={form.entry_rule_location_id}
             onChange={e => setForm(f => ({ ...f, entry_rule_location_id: e.target.value }))}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Sin ubicacion predeterminada</option>
             {locations.map(loc => (
@@ -132,7 +145,7 @@ function InfoTab({ productType }: { productType: { id: string; name: string; slu
         {/* Photo placeholder */}
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1.5">Imagen</label>
-          <div className="rounded-xl border-2 border-dashed border-slate-200 p-8 text-center hover:border-indigo-300 transition-colors cursor-pointer">
+          <div className="rounded-xl border-2 border-dashed border-slate-200 p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
             <ImageIcon className="h-8 w-8 text-slate-300 mx-auto mb-2" />
             <p className="text-xs text-slate-400">Arrastra una imagen o haz clic para subir</p>
             <p className="text-[10px] text-slate-300 mt-1">PNG, JPG hasta 2MB</p>
@@ -147,7 +160,7 @@ function InfoTab({ productType }: { productType: { id: string; name: string; slu
 
       <div className="flex items-center gap-3">
         <button type="submit" disabled={update.isPending}
-          className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+          className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50 transition-colors">
           {update.isPending ? 'Guardando...' : 'Guardar cambios'}
         </button>
         {saved && <span className="text-xs font-medium text-emerald-600">Guardado</span>}
@@ -240,7 +253,7 @@ function FieldsTab({ productTypeId }: { productTypeId: string }) {
             <Link2 className="h-3.5 w-3.5" /> Reusar campo del sistema
           </button>
           <button onClick={openCreate}
-            className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors">
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 transition-colors">
             <Plus className="h-3.5 w-3.5" /> Nuevo campo
           </button>
         </div>
@@ -266,13 +279,13 @@ function FieldsTab({ productTypeId }: { productTypeId: string }) {
                 <button key={f.id}
                   onClick={() => reuseField(f)}
                   disabled={create.isPending}
-                  className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left hover:border-indigo-300 hover:bg-indigo-50/30 transition-colors disabled:opacity-50">
+                  className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left hover:border-primary/50 hover:bg-primary/5 transition-colors disabled:opacity-50">
                   <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0', FIELD_COLORS[f.field_type] ?? 'bg-slate-100 text-slate-600')}>
                     {FIELD_TYPES.find(t => t.value === f.field_type)?.label ?? f.field_type}
                   </span>
                   <span className="text-sm font-medium text-slate-900 flex-1">{f.label}</span>
                   <code className="text-[10px] font-mono text-slate-400">{f.field_key}</code>
-                  <Plus className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                  <Plus className="h-3.5 w-3.5 text-primary shrink-0" />
                 </button>
               ))}
             </div>
@@ -282,19 +295,19 @@ function FieldsTab({ productTypeId }: { productTypeId: string }) {
 
       {/* Create / Edit form */}
       {showForm && (
-        <form onSubmit={submit} className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-4 space-y-3">
+        <form onSubmit={submit} className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-slate-600 mb-1 block">Etiqueta *</label>
               <input required value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
               <label className="text-xs font-medium text-slate-600 mb-1 block">Clave (key) *</label>
               <input required value={form.field_key}
                 onChange={e => setForm(f => ({ ...f, field_key: e.target.value.toLowerCase().replace(/\s+/g, '_') }))}
                 disabled={!!editing}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:bg-slate-50 disabled:text-slate-400"
+                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50 disabled:text-slate-400"
                 placeholder="campo_personalizado" />
             </div>
           </div>
@@ -302,14 +315,14 @@ function FieldsTab({ productTypeId }: { productTypeId: string }) {
             <div>
               <label className="text-xs font-medium text-slate-600 mb-1 block">Tipo</label>
               <select value={form.field_type} onChange={e => setForm(f => ({ ...f, field_type: e.target.value as FieldType }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 {FIELD_TYPES.map(ft => <option key={ft.value} value={ft.value}>{ft.label}</option>)}
               </select>
             </div>
             <div>
               <label className="text-xs font-medium text-slate-600 mb-1 block">Orden</label>
               <input type="number" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: Number(e.target.value) }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="flex items-end pb-1.5">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -324,7 +337,7 @@ function FieldsTab({ productTypeId }: { productTypeId: string }) {
               <label className="text-xs font-medium text-slate-600 mb-1 block">Opciones (separadas por coma)</label>
               <input value={form.options} onChange={e => setForm(f => ({ ...f, options: e.target.value }))}
                 placeholder="Opción 1, Opción 2, Opción 3"
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
           )}
           <div className="flex justify-end gap-2">
@@ -332,7 +345,7 @@ function FieldsTab({ productTypeId }: { productTypeId: string }) {
               <X className="h-3.5 w-3.5" />
             </button>
             <button type="submit" disabled={create.isPending || update.isPending}
-              className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">
+              className="rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-50">
               {editing ? 'Guardar' : 'Crear'}
             </button>
           </div>
@@ -349,7 +362,7 @@ function FieldsTab({ productTypeId }: { productTypeId: string }) {
           <p className="text-xs text-slate-400 mb-4">Crea campos exclusivos o reusa campos existentes del sistema.</p>
           <div className="flex items-center justify-center gap-2">
             <button onClick={openCreate}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700">
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90">
               <Plus className="h-3.5 w-3.5" /> Nuevo campo
             </button>
             <button onClick={() => { setShowReuse(true); setShowForm(false) }}
@@ -388,7 +401,7 @@ function FieldsTab({ productTypeId }: { productTypeId: string }) {
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => openEdit(f)}
-                        className="rounded-lg p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 transition-colors">
+                        className="rounded-lg p-1.5 text-slate-400 hover:text-primary hover:bg-slate-100 transition-colors">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
@@ -473,7 +486,7 @@ export function ProductTypeDetailPage() {
               className={cn(
                 'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors',
                 activeTab === tab.id
-                  ? 'border-indigo-600 text-indigo-600'
+                  ? 'border-primary text-primary'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
               )}>
               <tab.icon className="h-4 w-4" />

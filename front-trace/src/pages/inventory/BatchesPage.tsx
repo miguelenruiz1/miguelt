@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Layers, Plus, Pencil, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useFormValidation } from '@/hooks/useFormValidation'
 import { useBatches, useCreateBatch, useUpdateBatch, useDeleteBatch, useProducts } from '@/hooks/useInventory'
 import { useUserLookup } from '@/hooks/useUserLookup'
 
@@ -9,6 +11,8 @@ export function BatchesPage() {
   const [filterEntity, setFilterEntity] = useState('')
   const [editingBatch, setEditingBatch] = useState<any>(null)
   const deleteBatch = useDeleteBatch()
+  const location = useLocation()
+  useEffect(() => { setShowCreate(false) }, [location.key])
 
   const { data, isLoading } = useBatches({ entity_id: filterEntity || undefined })
   const { data: productsData } = useProducts()
@@ -31,14 +35,14 @@ export function BatchesPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">Lotes</h1>
         <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm">
+          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm">
           <Plus className="h-4 w-4" /> Nuevo lote
         </button>
       </div>
 
       <div className="flex gap-3">
         <select value={filterEntity} onChange={e => setFilterEntity(e.target.value)}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Todos los productos</option>
           {(productsData?.items ?? []).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
@@ -81,7 +85,7 @@ export function BatchesPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-400">{resolve(b.created_by)}</span>
                   <span className="flex gap-1">
-                    <button onClick={() => setEditingBatch(b)} className="p-1 text-slate-400 hover:text-indigo-600"><Pencil className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => setEditingBatch(b)} className="p-1 text-slate-400 hover:text-primary"><Pencil className="h-3.5 w-3.5" /></button>
                     <button onClick={async () => { if (confirm('¿Eliminar lote ' + b.batch_number + '?')) await deleteBatch.mutateAsync(b.id) }}
                       className="p-1 text-slate-400 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
                   </span>
@@ -123,7 +127,7 @@ export function BatchesPage() {
                   </td>
                   <td className="px-4 py-3 text-slate-400 text-xs">{resolve(b.created_by)}</td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => setEditingBatch(b)} className="p-1 text-slate-400 hover:text-indigo-600"><Pencil className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => setEditingBatch(b)} className="p-1 text-slate-400 hover:text-primary"><Pencil className="h-3.5 w-3.5" /></button>
                     <button onClick={async () => { if (confirm('¿Eliminar lote ' + b.batch_number + '?')) await deleteBatch.mutateAsync(b.id) }}
                       className="p-1 text-slate-400 hover:text-red-600 ml-1"><Trash2 className="h-3.5 w-3.5" /></button>
                   </td>
@@ -151,8 +155,7 @@ function CreateBatchModal({ products, onClose }: {
     manufacture_date: '', expiration_date: '', notes: '',
   })
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function doSubmit() {
     await create.mutateAsync({
       ...form,
       manufacture_date: form.manufacture_date || null,
@@ -162,41 +165,43 @@ function CreateBatchModal({ products, onClose }: {
     onClose()
   }
 
+  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
         <h2 className="text-lg font-bold text-slate-900 mb-4">Nuevo Lote</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
           <select required value={form.entity_id} onChange={e => setForm(f => ({ ...f, entity_id: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="">Producto *</option>
             {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <input required value={form.batch_number} onChange={e => setForm(f => ({ ...f, batch_number: e.target.value }))}
-            placeholder="Número de lote *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            placeholder="Número de lote *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring" />
           <div className="grid grid-cols-2 gap-3">
             <input required type="number" step="0.01" value={form.quantity}
               onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
-              placeholder="Cantidad *" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              placeholder="Cantidad *" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             <input type="number" step="0.01" value={form.cost}
               onChange={e => setForm(f => ({ ...f, cost: e.target.value }))}
-              placeholder="Costo" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              placeholder="Costo" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500 mb-1 block">Fabricación</label>
               <input type="date" value={form.manufacture_date} onChange={e => setForm(f => ({ ...f, manufacture_date: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
               <label className="text-xs text-slate-500 mb-1 block">Expiración</label>
               <input type="date" value={form.expiration_date} onChange={e => setForm(f => ({ ...f, expiration_date: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
-            <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {create.isPending ? 'Guardando...' : 'Crear lote'}
             </button>
           </div>
@@ -218,8 +223,7 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
     is_active: batch.is_active,
   })
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function doSubmit() {
     await update.mutateAsync({
       id: batch.id,
       data: {
@@ -235,31 +239,33 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
     onClose()
   }
 
+  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
         <h2 className="text-lg font-bold text-slate-900 mb-4">Editar Lote</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
           <input required value={form.batch_number} onChange={e => setForm(f => ({ ...f, batch_number: e.target.value }))}
-            placeholder="Número de lote *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            placeholder="Número de lote *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring" />
           <div className="grid grid-cols-2 gap-3">
             <input required type="number" step="0.01" value={form.quantity}
               onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
-              placeholder="Cantidad *" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              placeholder="Cantidad *" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             <input type="number" step="0.01" value={form.cost}
               onChange={e => setForm(f => ({ ...f, cost: e.target.value }))}
-              placeholder="Costo" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              placeholder="Costo" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500 mb-1 block">Fabricacion</label>
               <input type="date" value={form.manufacture_date} onChange={e => setForm(f => ({ ...f, manufacture_date: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
               <label className="text-xs text-slate-500 mb-1 block">Expiracion</label>
               <input type="date" value={form.expiration_date} onChange={e => setForm(f => ({ ...f, expiration_date: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
           </div>
           <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -268,7 +274,7 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
           </label>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
-            <button type="submit" disabled={update.isPending} className="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={update.isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {update.isPending ? 'Guardando...' : 'Guardar'}
             </button>
           </div>

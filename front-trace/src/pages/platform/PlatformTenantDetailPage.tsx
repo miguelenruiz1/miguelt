@@ -78,7 +78,7 @@ export function PlatformTenantDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     )
   }
@@ -86,7 +86,7 @@ export function PlatformTenantDetailPage() {
     return (
       <div className="text-center py-12">
         <p className="text-slate-500">Empresa no encontrada</p>
-        <Link to="/platform/tenants" className="text-indigo-600 text-sm mt-2 inline-block">Volver</Link>
+        <Link to="/platform/tenants" className="text-primary text-sm mt-2 inline-block">Volver</Link>
       </div>
     )
   }
@@ -100,12 +100,12 @@ export function PlatformTenantDetailPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <Link to="/platform/tenants" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600 mb-3">
+        <Link to="/platform/tenants" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-primary mb-3">
           <ArrowLeft className="h-4 w-4" /> Empresas
         </Link>
         <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-indigo-100 flex items-center justify-center">
-            <Building2 className="h-6 w-6 text-indigo-600" />
+          <div className="h-12 w-12 rounded-2xl bg-primary/15 flex items-center justify-center">
+            <Building2 className="h-6 w-6 text-primary" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-900">{data.tenant_id}</h1>
@@ -141,7 +141,7 @@ export function PlatformTenantDetailPage() {
           {/* Subscription info */}
           <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-indigo-500" /> Suscripcion
+              <CreditCard className="h-4 w-4 text-primary" /> Suscripcion
             </h3>
             <dl className="space-y-3 text-sm">
               {([
@@ -179,7 +179,7 @@ export function PlatformTenantDetailPage() {
           {/* Modules + gateway */}
           <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-              <Layers className="h-4 w-4 text-indigo-500" /> Modulos
+              <Layers className="h-4 w-4 text-primary" /> Modulos
             </h3>
             <div className="space-y-3">
               {data.modules.length > 0 ? data.modules.map(m => (
@@ -217,7 +217,7 @@ export function PlatformTenantDetailPage() {
           {/* Change plan */}
           <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-              <ArrowUpDown className="h-4 w-4 text-indigo-500" /> Cambiar Plan
+              <ArrowUpDown className="h-4 w-4 text-primary" /> Cambiar Plan
             </h3>
             <p className="text-xs text-slate-400 mb-3">Plan actual: <strong>{sub.plan.name}</strong></p>
             <div className="flex flex-wrap gap-2">
@@ -229,8 +229,8 @@ export function PlatformTenantDetailPage() {
                   className={cn(
                     'px-4 py-2 text-sm rounded-xl border-2 font-medium transition',
                     p.slug === sub.plan.slug
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 cursor-default'
-                      : 'border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50',
+                      ? 'border-primary bg-primary/10 text-primary cursor-default'
+                      : 'border-slate-200 text-slate-600 hover:border-primary/50 hover:bg-primary/10',
                   )}
                 >
                   {p.name} {p.price_monthly > 0 ? `($${p.price_monthly})` : '(Gratis)'}
@@ -245,7 +245,7 @@ export function PlatformTenantDetailPage() {
           {/* Toggle modules */}
           <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-              <Layers className="h-4 w-4 text-indigo-500" /> Modulos
+              <Layers className="h-4 w-4 text-primary" /> Modulos
             </h3>
             <div className="flex gap-3">
               {ALL_MODULES.map(m => {
@@ -274,13 +274,13 @@ export function PlatformTenantDetailPage() {
           {/* Invoice + payment link */}
           <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-              <Receipt className="h-4 w-4 text-indigo-500" /> Facturacion
+              <Receipt className="h-4 w-4 text-primary" /> Facturacion
             </h3>
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => generateInvoice.mutate()}
                 disabled={generateInvoice.isPending}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl disabled:opacity-50 transition"
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-50 transition"
               >
                 <CreditCard className="h-4 w-4" /> Generar Factura
               </button>
@@ -290,7 +290,7 @@ export function PlatformTenantDetailPage() {
                   setPaymentLink(result)
                 }}
                 disabled={generatePaymentLinkMut.isPending}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl disabled:opacity-50 transition"
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/15 rounded-xl disabled:opacity-50 transition"
               >
                 <LinkIcon className="h-4 w-4" /> Generar Link de Pago
               </button>
@@ -304,12 +304,12 @@ export function PlatformTenantDetailPage() {
               <div className="mt-3 bg-slate-50 rounded-xl p-4">
                 <p className="text-xs font-semibold text-slate-500 mb-1">Link de Pago Generado</p>
                 <div className="flex items-center gap-2">
-                  <code className="text-sm text-indigo-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 flex-1 truncate">
+                  <code className="text-sm text-primary bg-white px-3 py-1.5 rounded-lg border border-slate-200 flex-1 truncate">
                     {window.location.origin}{paymentLink.link}
                   </code>
                   <button
                     onClick={() => navigator.clipboard.writeText(`${window.location.origin}${paymentLink.link}`)}
-                    className="px-3 py-1.5 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition"
+                    className="px-3 py-1.5 text-xs font-medium bg-primary/15 text-primary rounded-lg hover:bg-primary/20 transition"
                   >
                     Copiar
                   </button>

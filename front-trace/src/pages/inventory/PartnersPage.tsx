@@ -1,0 +1,254 @@
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { Plus, Search, Users, Truck, ShoppingBag, Building } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { useFormValidation } from '@/hooks/useFormValidation'
+import { SegmentedControl } from '@/components/ui/tabs'
+import {
+  usePartners, useCreatePartner, useUpdatePartner, useDeletePartner,
+  useSupplierTypes, useCustomerTypes,
+} from '@/hooks/useInventory'
+import { useConfirm } from '@/store/confirm'
+import type { BusinessPartner } from '@/types/inventory'
+
+const ROLE_TABS = [
+  { key: 'all', label: 'Todos', icon: Users },
+  { key: 'supplier', label: 'Proveedores', icon: Truck },
+  { key: 'customer', label: 'Clientes', icon: ShoppingBag },
+  { key: 'both', label: 'Ambos', icon: Building },
+] as const
+
+type RoleTab = typeof ROLE_TABS[number]['key']
+
+export function PartnersPage() {
+  const [roleTab, setRoleTab] = useState<RoleTab>('all')
+  const [search, setSearch] = useState('')
+  const [showCreate, setShowCreate] = useState(false)
+  const [editPartner, setEditPartner] = useState<BusinessPartner | null>(null)
+  const confirm = useConfirm()
+  const navigate = useNavigate()
+  const location = useLocation()
+  useEffect(() => { setShowCreate(false); setEditPartner(null) }, [location.key])
+
+  const queryParams = {
+    is_supplier: roleTab === 'supplier' || roleTab === 'both' ? true : roleTab === 'customer' ? undefined : undefined,
+    is_customer: roleTab === 'customer' || roleTab === 'both' ? true : roleTab === 'supplier' ? undefined : undefined,
+    search: search || undefined,
+    limit: 100,
+  }
+  // Refine filters
+  if (roleTab === 'supplier') { queryParams.is_supplier = true }
+  if (roleTab === 'customer') { queryParams.is_customer = true }
+
+  const { data, isLoading } = usePartners(queryParams)
+  const partners = data?.items || []
+
+  // Further filter "both" on client side
+  const filtered = roleTab === 'both'
+    ? partners.filter(p => p.is_supplier && p.is_customer)
+    : partners
+
+  const createMut = useCreatePartner()
+  const updateMut = useUpdatePartner()
+  const deleteMut = useDeletePartner()
+
+  const { data: supplierTypes } = useSupplierTypes()
+  const { data: customerTypes } = useCustomerTypes()
+
+  const [form, setForm] = useState({
+    name: '', code: '', is_supplier: false, is_customer: false,
+    supplier_type_id: '', customer_type_id: '', tax_id: '', contact_name: '',
+    email: '', phone: '', payment_terms_days: '30', lead_time_days: '7',
+    credit_limit: '0', discount_percent: '0', notes: '',
+  })
+
+  const resetForm = () => setForm({
+    name: '', code: '', is_supplier: false, is_customer: false,
+    supplier_type_id: '', customer_type_id: '', tax_id: '', contact_name: '',
+    email: '', phone: '', payment_terms_days: '30', lead_time_days: '7',
+    credit_limit: '0', discount_percent: '0', notes: '',
+  })
+
+  const openEdit = (p: BusinessPartner) => {
+    setForm({
+      name: p.name, code: p.code, is_supplier: p.is_supplier, is_customer: p.is_customer,
+      supplier_type_id: p.supplier_type_id || '', customer_type_id: p.customer_type_id || '',
+      tax_id: p.tax_id || '', contact_name: p.contact_name || '',
+      email: p.email || '', phone: p.phone || '',
+      payment_terms_days: String(p.payment_terms_days), lead_time_days: String(p.lead_time_days),
+      credit_limit: String(p.credit_limit), discount_percent: String(p.discount_percent),
+      notes: p.notes || '',
+    })
+    setEditPartner(p)
+  }
+
+  async function doSubmit() {
+    const payload: Record<string, unknown> = {
+      name: form.name, code: form.code,
+      is_supplier: form.is_supplier, is_customer: form.is_customer,
+      supplier_type_id: form.supplier_type_id || null,
+      customer_type_id: form.customer_type_id || null,
+      tax_id: form.tax_id || null,
+      contact_name: form.contact_name || null,
+      email: form.email || null, phone: form.phone || null,
+      payment_terms_days: Number(form.payment_terms_days),
+      lead_time_days: Number(form.lead_time_days),
+      credit_limit: Number(form.credit_limit),
+      discount_percent: Number(form.discount_percent),
+      notes: form.notes || null,
+    }
+    if (editPartner) {
+      await updateMut.mutateAsync({ id: editPartner.id, data: payload })
+      setEditPartner(null)
+    } else {
+      await createMut.mutateAsync(payload)
+      setShowCreate(false)
+    }
+    resetForm()
+  }
+
+  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
+
+  const roleBadge = (p: BusinessPartner) => {
+    if (p.is_supplier && p.is_customer) return <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">Ambos</span>
+    if (p.is_supplier) return <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Proveedor</span>
+    return <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Cliente</span>
+  }
+
+  const showModal = showCreate || editPartner !== null
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Users className="h-6 w-6 text-gray-700" />
+          <h1 className="text-2xl font-bold">Socios Comerciales</h1>
+        </div>
+        <button onClick={() => { resetForm(); setShowCreate(true) }}
+          className="flex items-center gap-1 px-4 py-2 text-sm bg-gray-900 text-white rounded-xl hover:bg-gray-800">
+          <Plus className="h-4 w-4" />Nuevo socio
+        </button>
+      </div>
+
+      {/* Role tabs + search */}
+      <div className="flex flex-wrap items-center gap-4">
+        <SegmentedControl
+          options={ROLE_TABS.map(t => ({ key: t.key, label: t.label, icon: t.icon }))}
+          value={roleTab}
+          onChange={(k) => setRoleTab(k as RoleTab)}
+        />
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar por nombre, codigo, email..."
+            className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all" />
+        </div>
+      </div>
+
+      {/* Table */}
+      {isLoading ? <div className="text-center py-10 text-gray-400">Cargando...</div> : (
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-gray-100">
+              <th className="p-3 text-left">Nombre</th>
+              <th className="p-3 text-left">Codigo</th>
+              <th className="p-3 text-left">Rol</th>
+              <th className="p-3 text-left">Contacto</th>
+              <th className="p-3 text-left">Email</th>
+              <th className="p-3 text-right">Plazo pago</th>
+              <th className="p-3 text-center">Estado</th>
+              <th className="p-3"></th>
+            </tr></thead>
+            <tbody>
+              {filtered.map(p => (
+                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50 cursor-pointer transition-colors" onClick={() => navigate(`/inventario/clientes/${p.id}`)}>
+                  <td className="p-3 font-medium">{p.name}</td>
+                  <td className="p-3 font-mono text-xs text-gray-500">{p.code}</td>
+                  <td className="p-3">{roleBadge(p)}</td>
+                  <td className="p-3 text-gray-600">{p.contact_name || '\u2014'}</td>
+                  <td className="p-3 text-gray-600">{p.email || '\u2014'}</td>
+                  <td className="p-3 text-right">{p.payment_terms_days}d</td>
+                  <td className="p-3 text-center">{p.is_active ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Activo</span> : <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Inactivo</span>}</td>
+                  <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => openEdit(p)} className="text-xs text-primary hover:underline mr-2">Editar</button>
+                    <button onClick={async () => { const ok = await confirm({ title: 'Desactivar socio', message: `¿Desactivar ${p.name}?`, confirmLabel: 'Desactivar' }); if (ok) deleteMut.mutate(p.id) }}
+                      className="text-xs text-red-500 hover:underline">Desactivar</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filtered.length === 0 && <div className="text-center py-10 text-gray-400">No se encontraron socios comerciales</div>}
+        </div>
+      )}
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <h3 className="text-lg font-semibold mb-4">{editPartner ? 'Editar socio' : 'Nuevo socio comercial'}</h3>
+
+            {/* Role checkboxes */}
+            <div className="flex gap-4 mb-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={form.is_supplier} onChange={e => setForm(f => ({...f, is_supplier: e.target.checked}))} className="rounded" />
+                <Truck className="h-4 w-4 text-blue-600" />Proveedor
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={form.is_customer} onChange={e => setForm(f => ({...f, is_customer: e.target.checked}))} className="rounded" />
+                <ShoppingBag className="h-4 w-4 text-green-600" />Cliente
+              </label>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2"><label className="text-xs text-gray-500">Nombre *</label><input required value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
+              <div><label className="text-xs text-gray-500">Codigo *</label><input required value={form.code} onChange={e => setForm(f => ({...f, code: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
+              <div><label className="text-xs text-gray-500">NIT / RUT</label><input value={form.tax_id} onChange={e => setForm(f => ({...f, tax_id: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
+              <div><label className="text-xs text-gray-500">Contacto</label><input value={form.contact_name} onChange={e => setForm(f => ({...f, contact_name: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
+              <div><label className="text-xs text-gray-500">Email</label><input type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
+              <div><label className="text-xs text-gray-500">Telefono</label><input value={form.phone} onChange={e => setForm(f => ({...f, phone: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
+              <div><label className="text-xs text-gray-500">Plazo pago (dias)</label><input type="number" value={form.payment_terms_days} onChange={e => setForm(f => ({...f, payment_terms_days: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
+
+              {form.is_supplier && (
+                <>
+                  <div><label className="text-xs text-gray-500">Tipo proveedor</label>
+                    <select value={form.supplier_type_id} onChange={e => setForm(f => ({...f, supplier_type_id: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none">
+                      <option value="">Sin tipo</option>
+                      {(supplierTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                  </div>
+                  <div><label className="text-xs text-gray-500">Lead time (dias)</label><input type="number" value={form.lead_time_days} onChange={e => setForm(f => ({...f, lead_time_days: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
+                </>
+              )}
+
+              {form.is_customer && (
+                <>
+                  <div><label className="text-xs text-gray-500">Tipo cliente</label>
+                    <select value={form.customer_type_id} onChange={e => setForm(f => ({...f, customer_type_id: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none">
+                      <option value="">Sin tipo</option>
+                      {(customerTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                  </div>
+                  <div><label className="text-xs text-gray-500">Limite credito</label><input type="number" value={form.credit_limit} onChange={e => setForm(f => ({...f, credit_limit: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
+                  <div><label className="text-xs text-gray-500">Descuento %</label><input type="number" min="0" max="100" value={form.discount_percent} onChange={e => setForm(f => ({...f, discount_percent: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
+                </>
+              )}
+
+              <div className="col-span-2"><label className="text-xs text-gray-500">Notas</label><textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
+            </div>
+
+            <div className="flex gap-3 mt-4">
+              <button type="button" onClick={() => { setShowCreate(false); setEditPartner(null); resetForm() }}
+                className="flex-1 bg-gray-100 text-gray-700 rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-gray-200 transition-colors">Cancelar</button>
+              <button type="submit" disabled={createMut.isPending || updateMut.isPending || (!form.is_supplier && !form.is_customer)}
+                className="flex-1 bg-gray-900 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 transition-colors">
+                {editPartner ? 'Guardar' : 'Crear'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  )
+}

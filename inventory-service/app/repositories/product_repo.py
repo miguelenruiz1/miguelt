@@ -66,7 +66,7 @@ class ProductRepository:
 
         count_q = select(func.count()).select_from(q.subquery())
         total = (await self.db.execute(count_q)).scalar_one()
-        q = q.order_by(Product.name).offset(offset).limit(limit)
+        q = q.order_by(Product.created_at.desc()).offset(offset).limit(limit)
         result = await self.db.execute(q)
         return list(result.scalars().unique().all()), total
 

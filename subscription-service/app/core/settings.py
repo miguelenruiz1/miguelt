@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # ─── Redis ────────────────────────────────────────────────────────────────
     REDIS_URL: str = "redis://redis:6379/3"
 
+    # ─── Frontend URL (for Wompi redirect-url after payment) ─────────────
+    APP_URL: str = "http://localhost:3000"
+
     # ─── Auth delegation ──────────────────────────────────────────────────────
     USER_SERVICE_URL: str = "http://user-api:8001"
     JWT_SECRET: str = "change-me-in-production-min-32-chars!!"

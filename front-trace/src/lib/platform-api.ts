@@ -105,8 +105,9 @@ export const platformApi = {
       `/api/v1/platform/tenants/${tenantId}/reactivate`, {}
     ),
 
-  // Cross-tenant user oversight
-  users: (params?: { search?: string; tenant_id?: string; offset?: number; limit?: number }) => {
+  // Cross-tenant user oversight — calls user-service directly
+  users: async (params?: { search?: string; tenant_id?: string; offset?: number; limit?: number }): Promise<PaginatedUsers> => {
+    const USER_BASE = import.meta.env.VITE_USER_API_URL ?? 'http://localhost:9001'
     const qs = new URLSearchParams()
     if (params) {
       for (const [k, v] of Object.entries(params)) {
@@ -114,6 +115,12 @@ export const platformApi = {
       }
     }
     const q = qs.toString()
-    return get<PaginatedUsers>(`/api/v1/platform/users${q ? `?${q}` : ''}`)
+    const { authFetch } = await import('@/lib/auth-fetch')
+    const res = await authFetch(`${USER_BASE}/api/v1/users/all${q ? `?${q}` : ''}`)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      throw new Error(err.detail ?? res.statusText)
+    }
+    return res.json()
   },
 }

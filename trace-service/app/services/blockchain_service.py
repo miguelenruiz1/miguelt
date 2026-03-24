@@ -61,26 +61,29 @@ class BlockchainService:
         NEVER raises — failures are absorbed and stored as FAILED status.
         """
         try:
+            # Get tenant's Merkle tree (optional — Helius can use shared trees)
             tree = await self._tenant_repo.get_merkle_tree(tenant_id)
-            if tree is None:
-                log.warning(
-                    "no_merkle_tree_for_tenant",
+            tree_address = tree.tree_address if tree else ""
+
+            if not tree_address:
+                log.info(
+                    "minting_without_dedicated_tree",
                     tenant_id=str(tenant_id),
                     asset_id=str(asset_id),
+                    hint="Using Helius shared tree or simulation",
                 )
-                await self._update_status(asset_id, "FAILED", error="No Merkle tree provisioned for tenant")
-                return
 
             normalized_meta = self._build_metadata(product_type, metadata)
             normalized_meta["metadata_hash"] = self._compute_metadata_hash(normalized_meta)
 
             result = await self._provider.mint_cnft(
-                tree_address=tree.tree_address,
+                tree_address=tree_address,
                 owner_pubkey=owner_pubkey,
                 metadata=normalized_meta,
             )
 
-            await self._tenant_repo.increment_leaf_count(tenant_id)
+            if tree:
+                await self._tenant_repo.increment_leaf_count(tenant_id)
 
             new_status = "SIMULATED" if result.is_simulated else "CONFIRMED"
             await self._asset_repo.update_blockchain_fields(

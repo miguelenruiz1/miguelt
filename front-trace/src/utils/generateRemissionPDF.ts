@@ -42,10 +42,20 @@ export interface RemissionData {
     warehouse_name: string
     lot_number: string | null
     serial_number: string | null
+    unit_price: number
+    discount_pct: number
+    line_subtotal: number
+    line_total: number
+    tax_rate: number
+    tax_amount: number
   }[]
 
   total_items: number
   total_quantity: number
+  subtotal: number
+  total_discount: number
+  total_tax: number
+  grand_total: number
 }
 
 function fmtDate(iso: string | null | undefined): string {
@@ -58,6 +68,10 @@ function fmtDateTime(): string {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
+}
+
+function fmtMoney(v: number): string {
+  return '$' + v.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 
 export function generateRemissionPDF(data: RemissionData): void {
@@ -193,16 +207,17 @@ export function generateRemissionPDF(data: RemissionData): void {
     String(i + 1),
     l.product_code || '—',
     l.product_name,
-    l.lot_number || l.serial_number || '—',
     String(l.quantity),
     l.unit,
-    l.warehouse_name,
+    fmtMoney(l.unit_price),
+    l.discount_pct > 0 ? `${l.discount_pct}%` : '—',
+    fmtMoney(l.line_total),
   ])
 
   autoTable(doc, {
     startY: y,
     margin: { left: margin, right: margin },
-    head: [['#', 'Código', 'Producto', 'Lote/Serial', 'Cantidad', 'Unidad', 'Bodega']],
+    head: [['#', 'Código', 'Producto', 'Cant.', 'Und', 'P. Unit.', 'Desc.', 'Total']],
     body: tableBody,
     headStyles: {
       fillColor: [30, 41, 59],
@@ -219,13 +234,14 @@ export function generateRemissionPDF(data: RemissionData): void {
       fillColor: [248, 250, 252],
     },
     columnStyles: {
-      0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 22 },
+      0: { cellWidth: 8, halign: 'center' },
+      1: { cellWidth: 20 },
       2: { cellWidth: 'auto' },
-      3: { cellWidth: 28 },
-      4: { cellWidth: 18, halign: 'right', fontStyle: 'bold' },
-      5: { cellWidth: 16 },
-      6: { cellWidth: 28 },
+      3: { cellWidth: 14, halign: 'right' },
+      4: { cellWidth: 12 },
+      5: { cellWidth: 22, halign: 'right' },
+      6: { cellWidth: 14, halign: 'center' },
+      7: { cellWidth: 24, halign: 'right', fontStyle: 'bold' },
     },
     didDrawPage: () => {
       // Footer on each page
@@ -246,14 +262,39 @@ export function generateRemissionPDF(data: RemissionData): void {
   // Get Y after table
   y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6
 
-  // ── 5. TOTALS ──────────────────────────────────────────────────────
-  doc.setFontSize(9)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(15, 23, 42)
-  doc.text(`Total ítems: ${data.total_items}`, pageW - margin, y, { align: 'right' })
-  y += 5
-  doc.text(`Total unidades: ${data.total_quantity}`, pageW - margin, y, { align: 'right' })
-  y += 5
+  // ── 5. TOTALS BOX ──────────────────────────────────────────────────
+  const totBoxW = 80
+  const totBoxX = pageW - margin - totBoxW
+  const totRows: [string, string, boolean?][] = [
+    ['Subtotal', fmtMoney(data.subtotal)],
+  ]
+  if (data.total_discount > 0) totRows.push(['Descuento', `- ${fmtMoney(data.total_discount)}`])
+  if (data.total_tax > 0) totRows.push(['IVA', fmtMoney(data.total_tax)])
+  totRows.push(['TOTAL', fmtMoney(data.grand_total), true])
+
+  doc.setDrawColor(203, 213, 225)
+  doc.setLineWidth(0.3)
+  const totBoxH = totRows.length * 7 + 4
+  doc.roundedRect(totBoxX, y, totBoxW, totBoxH, 2, 2, 'S')
+
+  let ty = y + 6
+  for (const [label, value, isBold] of totRows) {
+    doc.setFontSize(isBold ? 10 : 8)
+    doc.setFont('helvetica', isBold ? 'bold' : 'normal')
+    doc.setTextColor(isBold ? 15 : 100, isBold ? 23 : 116, isBold ? 42 : 139)
+    doc.text(label, totBoxX + 4, ty)
+    doc.setTextColor(15, 23, 42)
+    doc.text(value as string, totBoxX + totBoxW - 4, ty, { align: 'right' })
+    ty += 7
+  }
+
+  // Items count on the left
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(100, 116, 139)
+  doc.text(`${data.total_items} ítems — ${data.total_quantity} unidades`, margin, y + 6)
+
+  y += totBoxH + 5
 
   // Notes
   if (data.notes) {

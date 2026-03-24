@@ -80,10 +80,11 @@ class AnalyticsService:
         low_stock_levels = await self.stock_repo.list_low_stock(tenant_id)
         alerts = []
         for sl in low_stock_levels:
-            # Compute the effective threshold used
             effective_rp = sl.reorder_point
             if effective_rp <= 0 and sl.product:
                 effective_rp = max(sl.product.reorder_point or 0, sl.product.min_stock_level or 0)
+            qty_reserved = float(sl.qty_reserved) if sl.qty_reserved else 0
+            qty_available = float(sl.qty_on_hand) - qty_reserved
             alerts.append({
                 "product_id": sl.product_id,
                 "sku": sl.product.sku if sl.product else None,
@@ -91,6 +92,8 @@ class AnalyticsService:
                 "warehouse_id": sl.warehouse_id,
                 "warehouse_name": sl.warehouse.name if sl.warehouse else None,
                 "qty_on_hand": float(sl.qty_on_hand),
+                "qty_reserved": qty_reserved,
+                "qty_available": qty_available,
                 "reorder_point": effective_rp,
             })
 
@@ -546,10 +549,10 @@ class AnalyticsService:
                 continue
 
             prod = eoq_prod_map.get(row.product_id)
-            if not prod or not prod.cost_price:
+            if not prod or not prod.last_purchase_cost:
                 continue
 
-            unit_cost = float(prod.cost_price)
+            unit_cost = float(prod.last_purchase_cost)
             holding_cost = unit_cost * (holding_cost_pct / 100)
 
             if holding_cost <= 0:
@@ -604,11 +607,12 @@ class AnalyticsService:
 
             # Current stock value for products of this type
             stock_q = (
-                select(func.sum(StockLevel.qty_on_hand * func.coalesce(Product.cost_price, 0)))
-                .join(Product, Product.id == StockLevel.product_id)
+                select(func.sum(StockLevel.qty_on_hand * func.coalesce(StockLevel.weighted_avg_cost, 0)))
                 .where(
                     StockLevel.tenant_id == tenant_id,
-                    Product.product_type_id == pt.id,
+                    StockLevel.product_id.in_(
+                        select(Product.id).where(Product.product_type_id == pt.id)
+                    ),
                     StockLevel.qty_on_hand > 0,
                 )
             )
@@ -677,8 +681,7 @@ class AnalyticsService:
 
             # Stock value in this warehouse
             sv_result = await self.db.execute(
-                select(func.sum(StockLevel.qty_on_hand * func.coalesce(Product.cost_price, 0)))
-                .join(Product, Product.id == StockLevel.product_id)
+                select(func.sum(StockLevel.qty_on_hand * func.coalesce(StockLevel.weighted_avg_cost, 0)))
                 .where(
                     StockLevel.tenant_id == tenant_id,
                     StockLevel.warehouse_id == wh.id,

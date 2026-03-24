@@ -46,6 +46,11 @@ class UnauthorizedError(AppError):
     error_code = "UNAUTHORIZED"
 
 
+class RateLimitError(AppError):
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS
+    error_code = "AI_RATE_LIMIT_EXCEEDED"
+
+
 def _error_response(
     request: Request,
     status_code: int,

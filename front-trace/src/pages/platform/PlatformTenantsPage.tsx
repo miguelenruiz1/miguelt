@@ -14,7 +14,7 @@ const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> 
 }
 
 const MODULE_COLORS: Record<string, string> = {
-  logistics: 'bg-indigo-100 text-indigo-700',
+  logistics: 'bg-primary/15 text-primary',
   inventory: 'bg-orange-100 text-orange-700',
 }
 
@@ -51,13 +51,13 @@ export function PlatformTenantsPage() {
             placeholder="Buscar por tenant ID..."
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(0) }}
-            className="w-full pl-9 pr-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none"
+            className="w-full pl-9 pr-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none"
           />
         </div>
         <select
           value={statusFilter}
           onChange={e => { setStatusFilter(e.target.value); setPage(0) }}
-          className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none"
+          className="px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none"
         >
           <option value="">Todos los estados</option>
           <option value="active">Activas</option>
@@ -75,7 +75,7 @@ export function PlatformTenantsPage() {
       <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600" />
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
           </div>
         ) : !data?.items.length ? (
           <div className="text-center py-12 text-slate-400">
@@ -92,11 +92,11 @@ export function PlatformTenantsPage() {
                 <Link
                   key={t.tenant_id}
                   to={`/platform/tenants/${encodeURIComponent(t.tenant_id)}`}
-                  className="block rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2 cursor-pointer hover:border-indigo-200 hover:shadow-md transition-all"
+                  className="block rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2 cursor-pointer hover:border-primary/30 hover:shadow-md transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
-                      <Building2 className="h-4 w-4 text-indigo-600" />
+                    <div className="h-9 w-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                      <Building2 className="h-4 w-4 text-primary" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold text-slate-900 truncate">{t.tenant_id}</div>
@@ -164,8 +164,8 @@ export function PlatformTenantsPage() {
                     <tr key={t.tenant_id} className="hover:bg-slate-50/60 transition">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
-                            <Building2 className="h-4 w-4 text-indigo-600" />
+                          <div className="h-9 w-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                            <Building2 className="h-4 w-4 text-primary" />
                           </div>
                           <div>
                             <div className="font-semibold text-slate-900">{t.tenant_id}</div>
@@ -210,7 +210,7 @@ export function PlatformTenantsPage() {
                       <td className="px-3 py-4">
                         <Link
                           to={`/platform/tenants/${encodeURIComponent(t.tenant_id)}`}
-                          className="text-indigo-600 hover:text-indigo-800 transition"
+                          className="text-primary hover:text-primary transition"
                         >
                           <ChevronRight className="h-4 w-4" />
                         </Link>

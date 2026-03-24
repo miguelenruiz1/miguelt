@@ -313,7 +313,7 @@ class CustomerPriceService:
 
         if base_price == 0:
             p_result = await session.execute(
-                select(Product.sale_price).where(Product.id == product_id, Product.tenant_id == tenant_id)
+                select(Product.suggested_sale_price).where(Product.id == product_id, Product.tenant_id == tenant_id)
             )
             pp = p_result.scalar_one_or_none()
             if pp:

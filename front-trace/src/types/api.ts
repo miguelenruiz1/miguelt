@@ -42,8 +42,26 @@ export type AssetState =
   | 'qc_failed'
   | 'released'
   | 'burned'
+  | 'customs_hold'
+  | 'damaged'
+  | 'delivered'
+  | 'sealed'
 
-export type EventType = 'CREATED' | 'HANDOFF' | 'ARRIVED' | 'LOADED' | 'QC' | 'RELEASED' | 'BURN'
+export type EventType =
+  | 'CREATED' | 'HANDOFF' | 'ARRIVED' | 'LOADED' | 'QC' | 'RELEASED' | 'BURN'
+  | 'PICKUP' | 'GATE_IN' | 'GATE_OUT' | 'DEPARTED' | 'CUSTOMS_HOLD'
+  | 'CUSTOMS_CLEARED' | 'DAMAGED' | 'DELIVERED' | 'SEALED' | 'UNSEALED'
+  | 'TEMPERATURE_CHECK' | 'INSPECTION' | 'CONSOLIDATED' | 'DECONSOLIDATED' | 'NOTE'
+
+export interface GenericEventRequest {
+  event_type: EventType
+  to_wallet?: string
+  location?: { lat?: number; lng?: number; label?: string; extra?: Record<string, unknown> }
+  data?: Record<string, unknown>
+  notes?: string
+  result?: 'pass' | 'fail'
+  reason?: string
+}
 
 // ─── Taxonomy ─────────────────────────────────────────────────────────────────
 

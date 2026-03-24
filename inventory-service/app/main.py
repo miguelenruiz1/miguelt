@@ -178,6 +178,8 @@ def create_app() -> FastAPI:
     from app.api.routers.reorder import router as reorder_router
     from app.api.routers.customer_prices import router as customer_prices_router
     from app.api.routers.tax_rates import router as tax_rates_router
+    from app.api.routers.uom import router as uom_router
+    from app.api.routers.partners import router as partners_router
 
     # ─── Static files (uploads) ──────────────────────────────────────────────
     from pathlib import Path
@@ -214,6 +216,8 @@ def create_app() -> FastAPI:
     app.include_router(reorder_router)
     app.include_router(customer_prices_router)
     app.include_router(tax_rates_router)
+    app.include_router(uom_router)
+    app.include_router(partners_router)
 
     return app
 

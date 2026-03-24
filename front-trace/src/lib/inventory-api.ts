@@ -70,16 +70,43 @@ import type {
   VariantAttribute,
   Warehouse,
   WarehouseLocation,
+  UnitOfMeasure,
+  UoMConversion,
+  ProductCostHistory,
+  ProductPricing,
+  PnLReport,
+  GlobalMarginConfig,
+  ConvertResponse,
+  BusinessPartner,
 } from '@/types/inventory'
 
 const BASE = import.meta.env.VITE_INVENTORY_API_URL ?? 'http://localhost:9003'
+
+class ApiError extends Error {
+  status: number
+  body: any
+  constructor(status: number, message: string, body?: any) {
+    super(message)
+    this.status = status
+    this.body = body
+  }
+}
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await authFetch(`${BASE}${path}`, options)
   if (!res.ok) {
     const err = await res.json().catch(() => null)
-    const msg = err?.error?.message ?? err?.detail ?? res.statusText
-    throw new Error(msg)
+    if (res.status === 402) {
+      const { usePlanLimitStore } = await import('@/store/planLimit')
+      usePlanLimitStore.getState().open({
+        resource: err?.resource ?? 'recurso',
+        current: err?.current ?? 0,
+        limit: err?.limit ?? 0,
+        message: err?.error?.message ?? err?.detail ?? 'Has alcanzado el limite de tu plan actual.',
+      })
+    }
+    const msg = err?.error?.message ?? err?.detail?.message ?? err?.detail ?? res.statusText
+    throw new ApiError(res.status, msg, err)
   }
   return res.json()
 }
@@ -88,8 +115,17 @@ async function requestVoid(path: string, options: RequestInit = {}): Promise<voi
   const res = await authFetch(`${BASE}${path}`, options)
   if (!res.ok) {
     const err = await res.json().catch(() => null)
-    const msg = err?.error?.message ?? err?.detail ?? res.statusText
-    throw new Error(msg)
+    if (res.status === 402) {
+      const { usePlanLimitStore } = await import('@/store/planLimit')
+      usePlanLimitStore.getState().open({
+        resource: err?.resource ?? 'recurso',
+        current: err?.current ?? 0,
+        limit: err?.limit ?? 0,
+        message: err?.error?.message ?? err?.detail ?? 'Has alcanzado el limite de tu plan actual.',
+      })
+    }
+    const msg = err?.error?.message ?? err?.detail?.message ?? err?.detail ?? res.statusText
+    throw new ApiError(res.status, msg, err)
   }
 }
 
@@ -213,6 +249,8 @@ export const inventoryStockApi = {
     request<StockMovement>('/api/v1/stock/transfer/initiate', { method: 'POST', body: JSON.stringify(data) }),
   completeTransfer: (movementId: string) =>
     request<StockMovement>(`/api/v1/stock/transfer/${movementId}/complete`, { method: 'POST' }),
+  getAvailability: (productId: string) =>
+    request<{ on_hand: number; reserved: number; available: number; in_transit: number }>(`/api/v1/stock/availability/${productId}`),
 }
 
 // ─── Movements ────────────────────────────────────────────────────────────────
@@ -270,10 +308,18 @@ export const inventoryPOApi = {
     request<PurchaseOrder>(`/api/v1/purchase-orders/${id}/confirm`, { method: 'POST' }),
   cancel: (id: string) =>
     request<PurchaseOrder>(`/api/v1/purchase-orders/${id}/cancel`, { method: 'POST' }),
-  receive: (id: string, lines: Array<{ line_id: string; qty_received: string }>) =>
+  receive: (id: string, data: {
+    lines: Array<{ line_id: string; qty_received: string }>;
+    supplier_invoice_number?: string | null;
+    supplier_invoice_date?: string | null;
+    supplier_invoice_total?: number | null;
+    payment_terms?: string | null;
+    payment_due_date?: string | null;
+    attachments?: Array<{ url: string; name: string; type: string; classification: string }> | null;
+  }) =>
     request<PurchaseOrder>(`/api/v1/purchase-orders/${id}/receive`, {
       method: 'POST',
-      body: JSON.stringify({ lines }),
+      body: JSON.stringify(data),
     }),
   delete: (id: string) => requestVoid(`/api/v1/purchase-orders/${id}`, { method: 'DELETE' }),
   consolidate: (po_ids: string[]) =>
@@ -284,6 +330,36 @@ export const inventoryPOApi = {
     request<ConsolidationInfo>(`/api/v1/purchase-orders/${poId}/consolidation-info`),
   deconsolidate: (poId: string) =>
     request<PurchaseOrder[]>(`/api/v1/purchase-orders/${poId}/deconsolidate`, { method: 'POST' }),
+  submitForApproval: (id: string) =>
+    request<PurchaseOrder>(`/api/v1/purchase-orders/${id}/submit-approval`, { method: 'POST' }),
+  approve: (id: string) =>
+    request<PurchaseOrder>(`/api/v1/purchase-orders/${id}/approve`, { method: 'POST' }),
+  reject: (id: string, reason: string) =>
+    request<PurchaseOrder>(`/api/v1/purchase-orders/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  getApprovalLog: (id: string) =>
+    request<Array<{ id: string; action: string; performed_by: string; performed_by_name: string | null; reason: string | null; po_total: number | null; created_at: string }>>(`/api/v1/purchase-orders/${id}/approval-log`),
+  getPdf: (id: string) =>
+    request<Blob>(`/api/v1/purchase-orders/${id}/pdf`),
+  uploadAttachment: async (poId: string, file: File, classification: string): Promise<{ url: string; name: string; type: string; classification: string }> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    // Must use raw fetch to avoid authFetch setting Content-Type: application/json
+    const token = (await import('@/store/auth')).useAuthStore.getState().accessToken
+    const tenantId = (await import('@/store/auth')).useAuthStore.getState().user?.tenant_id
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    if (tenantId) headers['X-Tenant-Id'] = tenantId
+    const res = await fetch(`${BASE}/api/v1/purchase-orders/${poId}/upload-attachment?classification=${encodeURIComponent(classification)}`, {
+      method: 'POST',
+      body: formData,
+      headers,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => null)
+      throw new Error(err?.detail ?? 'Error al subir archivo')
+    }
+    return res.json()
+  },
 }
 
 // ─── Analytics ────────────────────────────────────────────────────────────────
@@ -303,6 +379,8 @@ export const inventoryAnalyticsApi = {
     request<StockPolicyResult>('/api/v1/analytics/stock-policy'),
   storageValuation: () =>
     request<StorageValuation>('/api/v1/analytics/storage-valuation'),
+  committedStock: () =>
+    request<{ products_with_reservations: number; total_reserved_qty: number; total_reserved_value: number; currency: string }>('/api/v1/analytics/committed-stock'),
 }
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -371,6 +449,11 @@ export const inventoryConfigApi = {
   // SO Approval threshold
   getApprovalThreshold: () => request<ApprovalThreshold>('/api/v1/config/so-approval-threshold'),
   updateApprovalThreshold: (threshold: number | null) => request<ApprovalThreshold>('/api/v1/config/so-approval-threshold', { method: 'PATCH', body: JSON.stringify({ threshold }) }),
+
+  // Feature toggles
+  getFeatures: () => request<Record<string, boolean>>('/api/v1/config/features'),
+  updateFeatures: (data: Record<string, boolean>) =>
+    request<Record<string, boolean>>('/api/v1/config/features', { method: 'PATCH', body: JSON.stringify(data) }),
 }
 
 // ─── Reports (download CSV) ───────────────────────────────────────────────────
@@ -912,4 +995,127 @@ export const inventoryTaxApi = {
     request<TaxRate>(`/api/v1/tax-rates/${id}`, { method: 'DELETE' }),
   initialize: () =>
     request<TaxRate[]>('/api/v1/tax-rates/initialize', { method: 'POST' }),
+}
+
+// ── UoM API ──────────────────────────────────────────────────────────────────
+
+export const inventoryUoMApi = {
+  list: () => request<UnitOfMeasure[]>('/api/v1/uom'),
+  initialize: () => request<UnitOfMeasure[]>('/api/v1/uom/initialize', { method: 'POST' }),
+  create: (data: { name: string; symbol: string; category: string; is_base?: boolean }) =>
+    request<UnitOfMeasure>('/api/v1/uom', { method: 'POST', body: JSON.stringify(data) }),
+  listConversions: () => request<UoMConversion[]>('/api/v1/uom/conversions'),
+  createConversion: (data: { from_uom_id: string; to_uom_id: string; factor: number }) =>
+    request<UoMConversion>('/api/v1/uom/conversions', { method: 'POST', body: JSON.stringify(data) }),
+  convert: (data: { quantity: number; from_uom: string; to_uom: string }) =>
+    request<ConvertResponse>('/api/v1/uom/convert', { method: 'POST', body: JSON.stringify(data) }),
+}
+
+// ── Pricing API ──────────────────────────────────────────────────────────────
+
+export const inventoryPricingApi = {
+  getProductCostHistory: (productId: string, limit = 10, supplierId?: string) => {
+    const params = new URLSearchParams({ limit: String(limit) })
+    if (supplierId) params.set('supplier_id', supplierId)
+    return request<ProductCostHistory[]>(`/api/v1/products/${productId}/cost-history?${params}`)
+  },
+  getProductPricing: (productId: string) =>
+    request<ProductPricing>(`/api/v1/products/${productId}/pricing`),
+  recalculatePrices: (productId: string) =>
+    request<Product>(`/api/v1/products/${productId}/recalculate-prices`, { method: 'POST' }),
+  updateMargins: (productId: string, data: { margin_target?: number; margin_minimum?: number; margin_cost_method?: string }) => {
+    const params = new URLSearchParams()
+    if (data.margin_target !== undefined) params.set('margin_target', String(data.margin_target))
+    if (data.margin_minimum !== undefined) params.set('margin_minimum', String(data.margin_minimum))
+    if (data.margin_cost_method) params.set('margin_cost_method', data.margin_cost_method)
+    return request<Product>(`/api/v1/products/${productId}/margins?${params}`, { method: 'PATCH' })
+  },
+  getGlobalMargins: () => request<GlobalMarginConfig>('/api/v1/config/margins'),
+  updateGlobalMargins: (data: Partial<GlobalMarginConfig>) => {
+    const params = new URLSearchParams()
+    if (data.margin_target_global !== undefined) params.set('margin_target_global', String(data.margin_target_global))
+    if (data.margin_minimum_global !== undefined) params.set('margin_minimum_global', String(data.margin_minimum_global))
+    if (data.margin_cost_method_global) params.set('margin_cost_method_global', data.margin_cost_method_global)
+    if (data.below_minimum_requires_auth !== undefined) params.set('below_minimum_requires_auth', String(data.below_minimum_requires_auth))
+    return request<GlobalMarginConfig>(`/api/v1/config/margins?${params}`, { method: 'PATCH' })
+  },
+}
+
+// ── P&L API ──────────────────────────────────────────────────────────────────
+
+export const inventoryPnLApi = {
+  getPnL: (dateFrom?: string, dateTo?: string, productId?: string) => {
+    const params = new URLSearchParams()
+    if (dateFrom) params.set('date_from', dateFrom)
+    if (dateTo) params.set('date_to', dateTo)
+    if (productId) params.set('product_id', productId)
+    return request<PnLReport>(`/api/v1/reports/pnl?${params}`)
+  },
+  downloadCsv: async (dateFrom?: string, dateTo?: string) => {
+    const params = new URLSearchParams()
+    if (dateFrom) params.set('date_from', dateFrom)
+    if (dateTo) params.set('date_to', dateTo)
+    const res = await fetch(`${BASE}/api/v1/reports/pnl/csv?${params}`, {
+      headers: {
+        'X-Tenant-Id': useAuthStore.getState().user?.tenant_id ?? 'default',
+        'X-User-Id': useAuthStore.getState().user?.id ?? '1',
+        ...(useAuthStore.getState().accessToken ? { Authorization: `Bearer ${useAuthStore.getState().accessToken}` } : {}),
+      },
+    })
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `pnl-${new Date().toISOString().slice(0, 10)}.zip`
+    a.click()
+    URL.revokeObjectURL(url)
+  },
+  downloadPdf: async (dateFrom?: string, dateTo?: string) => {
+    const params = new URLSearchParams()
+    if (dateFrom) params.set('date_from', dateFrom)
+    if (dateTo) params.set('date_to', dateTo)
+    const res = await fetch(`${BASE}/api/v1/reports/pnl/pdf?${params}`, {
+      headers: {
+        'X-Tenant-Id': useAuthStore.getState().user?.tenant_id ?? 'default',
+        'X-User-Id': useAuthStore.getState().user?.id ?? '1',
+        ...(useAuthStore.getState().accessToken ? { Authorization: `Bearer ${useAuthStore.getState().accessToken}` } : {}),
+      },
+    })
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `pnl-${new Date().toISOString().slice(0, 10)}.pdf`
+    a.click()
+    URL.revokeObjectURL(url)
+  },
+  getAiAnalysis: (dateFrom?: string, dateTo?: string, force?: boolean) => {
+    const params = new URLSearchParams()
+    if (dateFrom) params.set('date_from', dateFrom)
+    if (dateTo) params.set('date_to', dateTo)
+    if (force) params.set('force', 'true')
+    return request<import('@/types/inventory').PnLAnalysis>(`/api/v1/reports/pnl/analysis?${params}`)
+  },
+}
+
+// ── Partners API (unified suppliers + customers) ─────────────────────────────
+
+export const inventoryPartnersApi = {
+  list: (params?: { is_supplier?: boolean; is_customer?: boolean; is_active?: boolean; search?: string; offset?: number; limit?: number }) => {
+    const sp = new URLSearchParams()
+    if (params?.is_supplier !== undefined) sp.set('is_supplier', String(params.is_supplier))
+    if (params?.is_customer !== undefined) sp.set('is_customer', String(params.is_customer))
+    if (params?.is_active !== undefined) sp.set('is_active', String(params.is_active))
+    if (params?.search) sp.set('search', params.search)
+    if (params?.offset !== undefined) sp.set('offset', String(params.offset))
+    if (params?.limit !== undefined) sp.set('limit', String(params.limit))
+    return request<{ items: BusinessPartner[]; total: number; offset: number; limit: number }>(`/api/v1/partners?${sp}`)
+  },
+  get: (id: string) => request<BusinessPartner>(`/api/v1/partners/${id}`),
+  create: (data: Partial<BusinessPartner>) =>
+    request<BusinessPartner>('/api/v1/partners', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<BusinessPartner>) =>
+    request<BusinessPartner>(`/api/v1/partners/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: string) =>
+    requestVoid(`/api/v1/partners/${id}`, { method: 'DELETE' }),
 }

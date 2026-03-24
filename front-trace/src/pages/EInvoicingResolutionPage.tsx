@@ -76,15 +76,15 @@ export function EInvoicingResolutionPage() {
         <ol className="flex items-center gap-2 text-sm">
           <li className="text-gray-500">Inicio</li>
           <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
-          <li><Link to="/facturacion-electronica" className="text-gray-500 hover:text-indigo-600">Facturación Electrónica</Link></li>
+          <li><Link to="/facturacion-electronica" className="text-gray-500 hover:text-primary">Facturación Electrónica</Link></li>
           <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
-          <li className="text-indigo-500">Resolución DIAN</li>
+          <li className="text-primary">Resolución DIAN</li>
         </ol>
       </nav>
 
       <div>
         <h1 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
-          <Hash className="h-6 w-6 text-indigo-500" />
+          <Hash className="h-6 w-6 text-primary" />
           Resolución de Facturación DIAN
         </h1>
         <p className="text-sm text-gray-500 mt-1">
@@ -118,7 +118,7 @@ export function EInvoicingResolutionPage() {
         </div>
 
         {loadingMatias ? (
-          <div className="flex justify-center py-6"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600" /></div>
+          <div className="flex justify-center py-6"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" /></div>
         ) : hasMatiasRes ? (
           <div className="space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -155,7 +155,7 @@ export function EInvoicingResolutionPage() {
               </div>
               <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
                 <p className="text-xs font-medium text-gray-400 uppercase">Próxima factura</p>
-                <p className="text-xl font-bold text-indigo-600 mt-1 font-mono">{matiasRes.next_invoice_number}</p>
+                <p className="text-xl font-bold text-primary mt-1 font-mono">{matiasRes.next_invoice_number}</p>
               </div>
             </div>
 
@@ -194,7 +194,7 @@ export function EInvoicingResolutionPage() {
             <button
               type="button"
               onClick={populateForm}
-              className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+              className="text-xs text-primary hover:text-primary font-medium"
             >
               Cargar datos actuales
             </button>
@@ -209,7 +209,7 @@ export function EInvoicingResolutionPage() {
                 value={form.resolution_number}
                 onChange={e => setForm(f => ({ ...f, resolution_number: e.target.value }))}
                 required
-                className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-indigo-300 focus:ring-3 focus:ring-indigo-500/20 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-primary/50 focus:ring-3 focus:ring-ring/20 focus:outline-none"
                 placeholder="18764000001"
               />
             </div>
@@ -220,7 +220,7 @@ export function EInvoicingResolutionPage() {
                 onChange={e => setForm(f => ({ ...f, prefix: e.target.value.slice(0, 10) }))}
                 required
                 maxLength={10}
-                className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-indigo-300 focus:ring-3 focus:ring-indigo-500/20 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-primary/50 focus:ring-3 focus:ring-ring/20 focus:outline-none"
                 placeholder="FE"
               />
             </div>
@@ -232,7 +232,7 @@ export function EInvoicingResolutionPage() {
                 onChange={e => setForm(f => ({ ...f, range_from: e.target.value }))}
                 required
                 min={0}
-                className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-indigo-300 focus:ring-3 focus:ring-indigo-500/20 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-primary/50 focus:ring-3 focus:ring-ring/20 focus:outline-none"
                 placeholder="1"
               />
             </div>
@@ -244,7 +244,7 @@ export function EInvoicingResolutionPage() {
                 onChange={e => setForm(f => ({ ...f, range_to: e.target.value }))}
                 required
                 min={1}
-                className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-indigo-300 focus:ring-3 focus:ring-indigo-500/20 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-primary/50 focus:ring-3 focus:ring-ring/20 focus:outline-none"
                 placeholder="5000000"
               />
             </div>
@@ -255,7 +255,7 @@ export function EInvoicingResolutionPage() {
                 value={form.valid_from}
                 onChange={e => setForm(f => ({ ...f, valid_from: e.target.value }))}
                 required
-                className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-indigo-300 focus:ring-3 focus:ring-indigo-500/20 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-primary/50 focus:ring-3 focus:ring-ring/20 focus:outline-none"
               />
             </div>
             <div>
@@ -265,7 +265,7 @@ export function EInvoicingResolutionPage() {
                 value={form.valid_to}
                 onChange={e => setForm(f => ({ ...f, valid_to: e.target.value }))}
                 required
-                className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-indigo-300 focus:ring-3 focus:ring-indigo-500/20 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-primary/50 focus:ring-3 focus:ring-ring/20 focus:outline-none"
               />
             </div>
           </div>
@@ -274,7 +274,7 @@ export function EInvoicingResolutionPage() {
             <button
               type="submit"
               disabled={createMut.isPending}
-              className="rounded-lg bg-indigo-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-600 disabled:opacity-50"
+              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary disabled:opacity-50"
             >
               {createMut.isPending ? 'Guardando...' : 'Guardar resolución'}
             </button>
