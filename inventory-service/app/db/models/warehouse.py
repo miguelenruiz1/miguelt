@@ -77,6 +77,11 @@ class WarehouseLocation(Base):
         String(20), nullable=False, server_default="bin"
     )
     is_active:          Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="true")
+    max_weight_kg:      Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    max_capacity:       Mapped[int | None]   = mapped_column(Integer, nullable=True)
+    blocked_inbound:    Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="false")
+    blocked_outbound:   Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="false")
+    block_reason:       Mapped[str | None] = mapped_column(String(255), nullable=True)
     sort_order:         Mapped[int]        = mapped_column(Integer, nullable=False, server_default="0")
     created_by:         Mapped[str | None] = mapped_column(String(255), nullable=True)
     updated_by:         Mapped[str | None] = mapped_column(String(255), nullable=True)
