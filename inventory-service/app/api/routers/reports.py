@@ -241,3 +241,32 @@ async def get_pnl_ai_analysis(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"error": "ai_unavailable", "message": f"Análisis no disponible: {str(exc)}"},
         )
+
+
+@router.get("/pnl/memory")
+async def get_pnl_memory(
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("reports.view"))],
+    db: AsyncSession = Depends(get_db_session),
+    redis: aioredis.Redis = Depends(get_redis),
+):
+    """Get AI memory for this tenant (analysis history, detected patterns)."""
+    from app.services.ai_analysis_service import AiAnalysisService
+    tenant_id = current_user.get("tenant_id", "default")
+    ai_svc = AiAnalysisService(db, redis)
+    return await ai_svc.get_tenant_memory(tenant_id)
+
+
+@router.delete("/pnl/memory")
+async def delete_pnl_memory(
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("reports.view"))],
+    db: AsyncSession = Depends(get_db_session),
+    redis: aioredis.Redis = Depends(get_redis),
+):
+    """Reset AI memory for this tenant. Useful if the business changes."""
+    from app.services.ai_analysis_service import AiAnalysisService
+    tenant_id = current_user.get("tenant_id", "default")
+    ai_svc = AiAnalysisService(db, redis)
+    deleted = await ai_svc.delete_tenant_memory(tenant_id)
+    return {"status": "ok", "deleted": deleted}
