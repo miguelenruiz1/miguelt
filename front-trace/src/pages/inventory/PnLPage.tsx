@@ -388,6 +388,14 @@ function AiInsightsPanelInner({ dateFrom, dateTo }: { dateFrom: string; dateTo: 
 
       {expanded && (
         <div className="border-t border-border px-5 py-4">
+          {/* Last saved badge */}
+          {analysis?.cache_source === 'last_saved' && analysis?.cached_at && (
+            <div className="flex items-center justify-between mb-3 text-xs text-muted-foreground">
+              <span>Analisis del {new Date(analysis.cached_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+              <button onClick={(e) => { e.stopPropagation(); handleRegenerate() }} className="text-primary hover:underline font-medium">Actualizar</button>
+            </div>
+          )}
+
           {isLoading ? (
             <div className="space-y-3 animate-pulse">
               <div className="h-4 w-3/4 rounded bg-muted" />
@@ -400,7 +408,7 @@ function AiInsightsPanelInner({ dateFrom, dateTo }: { dateFrom: string; dateTo: 
               <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
               <div>
                 <p className="text-sm font-medium text-amber-800">Limite diario alcanzado</p>
-                <p className="text-xs text-amber-600 mt-0.5">10 analisis por dia en tu plan actual. El contador se reinicia a medianoche.</p>
+                <p className="text-xs text-amber-600 mt-0.5">El contador se reinicia a medianoche.</p>
               </div>
             </div>
           ) : is503 ? (

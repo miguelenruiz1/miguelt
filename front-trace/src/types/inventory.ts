@@ -1549,6 +1549,9 @@ export interface PnLAnalysis {
   oportunidades: PnLOportunidad[]
   productos_estrella: PnLProductoEstrella[]
   recomendaciones: PnLRecomendacion[]
+  is_cached?: boolean
+  cached_at?: string
+  cache_source?: 'fresh' | 'session_cache' | 'last_saved'
 }
 
 export interface GlobalMarginConfig {
