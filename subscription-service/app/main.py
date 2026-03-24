@@ -119,7 +119,6 @@ def create_app() -> FastAPI:
     from app.api.routers.usage import router as usage_router
     from app.api.routers.webhooks import router as webhooks_router
     from app.api.routers.checkout import router as checkout_router
-    from app.api.routers.ai_settings import router as ai_settings_router
 
     app.include_router(health_router)
     app.include_router(plans_router)
@@ -132,7 +131,6 @@ def create_app() -> FastAPI:
     app.include_router(usage_router)
     app.include_router(webhooks_router)
     app.include_router(checkout_router)
-    app.include_router(ai_settings_router)
 
     return app
 

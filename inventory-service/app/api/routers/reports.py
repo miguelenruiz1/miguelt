@@ -195,93 +195,73 @@ async def get_pnl_ai_analysis(
     date_to: date | None = None,
     force: bool = Query(False, description="Skip cache and regenerate"),
     db: AsyncSession = Depends(get_db_session),
-    redis: aioredis.Redis = Depends(get_redis),
 ):
-    """AI-powered P&L analysis using Claude Haiku 4.5."""
+    """Proxy to ai-service for P&L analysis."""
     from datetime import datetime as _dt, timezone as _tz
     from app.services.pnl_service import PnLService
-    from app.services.ai_analysis_service import AiAnalysisService, AiNotConfiguredError, AiFeatureDisabledError
+    from app.core.settings import get_settings
+    import httpx
 
     tenant_id = current_user.get("tenant_id", "default")
+    settings = get_settings()
+
+    # 1. Get PnL data from local DB
     svc = PnLService(db)
     dt_from = _dt.combine(date_from, _dt.min.time()).replace(tzinfo=_tz.utc) if date_from else _dt(2020, 1, 1, tzinfo=_tz.utc)
     dt_to = _dt.combine(date_to, _dt.max.time()).replace(tzinfo=_tz.utc) if date_to else _dt.now(_tz.utc)
-
     pnl = await svc.get_full_pnl(tenant_id, dt_from, dt_to)
 
-    from app.core.errors import RateLimitError
+    # 2. Get business context from local DB
+    from app.db.models.category import Category
+    from app.db.models.config import ProductType
+    from app.db.models.warehouse import Warehouse
+    from app.db.models.partner import Partner
+    from sqlalchemy import select as sa_select
 
-    ai_svc = AiAnalysisService(db, redis)
+    categories = [r[0] for r in (await db.execute(sa_select(Category.name).where(Category.tenant_id == tenant_id).limit(20))).all()]
+    product_types = [r[0] for r in (await db.execute(sa_select(ProductType.name).where(ProductType.tenant_id == tenant_id).limit(10))).all()]
+    warehouses = [r[0] for r in (await db.execute(sa_select(Warehouse.name).where(Warehouse.tenant_id == tenant_id).limit(10))).all()]
     try:
-        analysis = await ai_svc.analyze_pnl(
-            pnl_data=pnl,
-            tenant_id=tenant_id,
-            date_from=str(date_from or "2020-01-01"),
-            date_to=str(date_to or _dt.now(_tz.utc).date()),
-            force=force,
-        )
-        return analysis
-    except AiNotConfiguredError:
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail={"error": "ai_not_configured", "message": "Análisis IA no configurado"},
-        )
-    except AiFeatureDisabledError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"error": "feature_disabled", "message": str(exc)},
-        )
-    except RateLimitError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail={"error": "ai_rate_limit_exceeded", "message": str(exc), "retry_after": "mañana"},
-        )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"error": "ai_unavailable", "message": f"Análisis no disponible: {str(exc)}"},
-        )
+        suppliers = [r[0] for r in (await db.execute(sa_select(Partner.name).where(Partner.tenant_id == tenant_id, Partner.is_supplier == True, Partner.is_active == True).limit(15))).all()]  # noqa: E712
+    except Exception:
+        suppliers = []
 
+    # Enrich products with category/type names
+    from app.db.models import Product
+    cat_map = {r[0]: (r[1] or "") for r in (await db.execute(sa_select(Product.id, Category.name).outerjoin(Category, Product.category_id == Category.id).where(Product.tenant_id == tenant_id))).all()}
+    type_map = {r[0]: (r[1] or "") for r in (await db.execute(sa_select(Product.id, ProductType.name).outerjoin(ProductType, Product.product_type_id == ProductType.id).where(Product.tenant_id == tenant_id))).all()}
 
-@router.get("/pnl/memory")
-async def get_pnl_memory(
-    current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("reports.view"))],
-    db: AsyncSession = Depends(get_db_session),
-    redis: aioredis.Redis = Depends(get_redis),
-):
-    """Get AI memory for this tenant (analysis history, detected patterns)."""
-    from app.services.ai_analysis_service import AiAnalysisService
-    tenant_id = current_user.get("tenant_id", "default")
-    ai_svc = AiAnalysisService(db, redis)
-    return await ai_svc.get_tenant_memory(tenant_id)
+    for p in pnl.get("products", []):
+        pid = p.get("product_id", "")
+        p["categoria"] = cat_map.get(pid, "")
+        p["tipo"] = type_map.get(pid, "")
 
+    biz_context = {
+        "empresa": tenant_id,
+        "categorias_productos": categories,
+        "tipos_producto": product_types,
+        "bodegas": warehouses,
+        "proveedores_activos": suppliers,
+    }
 
-@router.delete("/pnl/memory")
-async def delete_pnl_memory(
-    current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("reports.view"))],
-    db: AsyncSession = Depends(get_db_session),
-    redis: aioredis.Redis = Depends(get_redis),
-):
-    """Reset AI memory for this tenant. Useful if the business changes."""
-    from app.services.ai_analysis_service import AiAnalysisService
-    tenant_id = current_user.get("tenant_id", "default")
-    ai_svc = AiAnalysisService(db, redis)
-    deleted = await ai_svc.delete_tenant_memory(tenant_id)
-    return {"status": "ok", "deleted": deleted}
-
-
-@router.delete("/pnl/last")
-async def delete_pnl_last(
-    current_user: ModuleUser,
-    _: Annotated[dict, Depends(require_permission("reports.view"))],
-    db: AsyncSession = Depends(get_db_session),
-    redis: aioredis.Redis = Depends(get_redis),
-):
-    """Delete last saved analysis. Forces fresh analysis on next request."""
-    from app.services.ai_analysis_service import AiAnalysisService
-    tenant_id = current_user.get("tenant_id", "default")
-    ai_svc = AiAnalysisService(db, redis)
-    deleted = await ai_svc.delete_last_analysis(tenant_id)
-    return {"status": "ok", "deleted": deleted}
+    # 3. Call ai-service
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                f"{settings.AI_SERVICE_URL}/api/v1/analyze/pnl",
+                json={
+                    "tenant_id": tenant_id,
+                    "date_from": str(date_from or "2020-01-01"),
+                    "date_to": str(date_to or _dt.now(_tz.utc).date()),
+                    "force": force,
+                    "pnl_data": pnl,
+                    "business_context": biz_context,
+                },
+            )
+        if resp.status_code == 200:
+            return resp.json()
+        # Forward error from ai-service
+        err = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+        raise HTTPException(status_code=resp.status_code, detail=err.get("error", err.get("detail", f"AI service error: {resp.status_code}")))
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail={"error": "ai_unavailable", "message": f"AI service unreachable: {str(exc)}"})
