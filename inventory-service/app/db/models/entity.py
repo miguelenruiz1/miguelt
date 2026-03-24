@@ -40,6 +40,8 @@ class Product(Base):
     )
     auto_reorder:     Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="false")
     valuation_method: Mapped[str]        = mapped_column(String(20), nullable=False, server_default="weighted_average")
+    weight_per_unit:  Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True)
+    volume_per_unit:  Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True)
 
     # ── Dynamic pricing ──────────────────────────────────────────────────
     margin_target:          Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)

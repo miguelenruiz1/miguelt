@@ -134,6 +134,81 @@ async def assign_stock_location(
     return ORJSONResponse(StockLevelOut.model_validate(level).model_dump(mode="json"))
 
 
+@router.post("/relocate", response_model=StockMovementOut, status_code=201)
+async def relocate_within_warehouse(
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    product_id: str = Query(...),
+    warehouse_id: str = Query(...),
+    from_location_id: str = Query(...),
+    to_location_id: str = Query(...),
+    quantity: str = Query(...),
+    variant_id: str | None = Query(None),
+    notes: str | None = Query(None),
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    """Move stock between locations within the same warehouse. Creates a transfer movement."""
+    from decimal import Decimal as D
+    tenant_id = current_user.get("tenant_id", "default")
+    svc = StockService(db)
+
+    # Issue from source location
+    from app.db.models.stock import StockLevel
+    from sqlalchemy import select
+    source_level = (await db.execute(
+        select(StockLevel).where(
+            StockLevel.product_id == product_id,
+            StockLevel.warehouse_id == warehouse_id,
+            StockLevel.location_id == from_location_id,
+            StockLevel.tenant_id == tenant_id,
+        )
+    )).scalar_one_or_none()
+    if not source_level or float(source_level.qty_on_hand) < float(quantity):
+        from app.core.errors import ValidationError
+        raise ValidationError(f"Stock insuficiente en ubicacion origen: {float(source_level.qty_on_hand) if source_level else 0} disponible, {quantity} requerido")
+
+    qty = D(quantity)
+    source_level.qty_on_hand -= qty
+    await db.flush()
+
+    # Upsert destination location
+    dest_level = (await db.execute(
+        select(StockLevel).where(
+            StockLevel.product_id == product_id,
+            StockLevel.warehouse_id == warehouse_id,
+            StockLevel.location_id == to_location_id,
+            StockLevel.tenant_id == tenant_id,
+        )
+    )).scalar_one_or_none()
+    if dest_level:
+        dest_level.qty_on_hand += qty
+    else:
+        import uuid
+        from app.db.models.stock import StockLevel as SL
+        dest_level = SL(id=str(uuid.uuid4()), tenant_id=tenant_id, product_id=product_id, warehouse_id=warehouse_id,
+                        location_id=to_location_id, qty_on_hand=qty, variant_id=variant_id)
+        db.add(dest_level)
+    await db.flush()
+
+    # Create movement record
+    from app.db.models.enums import MovementType
+    movement = await svc.movement_repo.create({
+        "tenant_id": tenant_id, "movement_type": MovementType.transfer,
+        "product_id": product_id, "from_warehouse_id": warehouse_id, "to_warehouse_id": warehouse_id,
+        "quantity": qty, "reference": f"RELOCATE:{from_location_id}->{to_location_id}",
+        "notes": notes, "performed_by": current_user.get("id"), "variant_id": variant_id,
+    })
+
+    audit = InventoryAuditService(db)
+    await audit.log(tenant_id=tenant_id, user=current_user, action="inventory.stock.relocate",
+                    resource_type="stock", resource_id=movement.id,
+                    new_data={"from_location": from_location_id, "to_location": to_location_id, "qty": str(qty)},
+                    ip_address=_ip(request))
+
+    return ORJSONResponse(StockMovementOut.model_validate(movement).model_dump(mode="json"))
+
+
 @router.post("/receive", response_model=StockMovementOut, status_code=201)
 async def receive_stock(
     body: ReceiveStockIn,

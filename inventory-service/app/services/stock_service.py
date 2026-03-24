@@ -64,6 +64,49 @@ class StockService:
             raise NotFoundError(f"Warehouse {warehouse_id!r} not found")
         return wh
 
+    async def _validate_location_capacity(self, location_id: str, product, quantity: Decimal, tenant_id: str) -> None:
+        """Validate weight and unit capacity constraints on a warehouse location."""
+        from app.db.models.warehouse import WarehouseLocation
+        from sqlalchemy import select
+
+        loc = (await self.db.execute(select(WarehouseLocation).where(WarehouseLocation.id == location_id))).scalar_one_or_none()
+        if not loc:
+            return
+
+        if loc.blocked_inbound:
+            raise ValidationError(f"Ubicacion '{loc.name}' bloqueada para entradas" + (f": {loc.block_reason}" if loc.block_reason else ""))
+
+        # Weight check
+        if loc.max_weight_kg and product.weight_per_unit:
+            from app.db.models.stock import StockLevel
+            from sqlalchemy import func
+            current_weight_result = await self.db.execute(
+                select(func.coalesce(func.sum(StockLevel.qty_on_hand * product.weight_per_unit), 0))
+                .where(StockLevel.location_id == location_id, StockLevel.tenant_id == tenant_id)
+            )
+            current_weight = float(current_weight_result.scalar_one())
+            new_weight = float(quantity) * float(product.weight_per_unit or 0)
+            if current_weight + new_weight > float(loc.max_weight_kg):
+                raise ValidationError(
+                    f"Peso excede capacidad de ubicacion '{loc.name}': "
+                    f"actual {current_weight:.1f}kg + nuevo {new_weight:.1f}kg = {current_weight + new_weight:.1f}kg > max {float(loc.max_weight_kg):.1f}kg"
+                )
+
+        # Unit capacity check
+        if loc.max_capacity:
+            from app.db.models.stock import StockLevel
+            from sqlalchemy import func
+            current_units_result = await self.db.execute(
+                select(func.coalesce(func.sum(StockLevel.qty_on_hand), 0))
+                .where(StockLevel.location_id == location_id, StockLevel.tenant_id == tenant_id)
+            )
+            current_units = float(current_units_result.scalar_one())
+            if current_units + float(quantity) > loc.max_capacity:
+                raise ValidationError(
+                    f"Capacidad excedida en ubicacion '{loc.name}': "
+                    f"actual {int(current_units)} + nuevo {int(quantity)} = {int(current_units + float(quantity))} > max {loc.max_capacity}"
+                )
+
     async def receive(
         self,
         tenant_id: str,
@@ -96,10 +139,10 @@ class StockService:
             pt = await self._get_product_type(product_id, tenant_id)
             if pt and pt.requires_qc:
                 level.qc_status = "pending_qc"
-            if location_id:
-                level.location_id = location_id
-            elif pt and pt.entry_rule_location_id:
-                level.location_id = pt.entry_rule_location_id
+            effective_location_id = location_id or (pt.entry_rule_location_id if pt else None)
+            if effective_location_id:
+                await self._validate_location_capacity(effective_location_id, product, qty_primary, tenant_id)
+                level.location_id = effective_location_id
             await self.db.flush()
 
         movement = await self.movement_repo.create({
