@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Shield, Plus, Trash2, ToggleLeft, ToggleRight, Zap } from 'lucide-react'
 import { useAnchorRules, useCreateAnchorRule, useUpdateAnchorRule, useDeleteAnchorRule, useSeedAnchorRules } from '@/hooks/useLogistics'
-import type { AnchorRuleCreate } from '@/types/inventory'
-import { useToastStore } from '@/store/toast'
+import type { AnchorRuleCreate } from '@/types/logistics'
+import { useToast } from '@/store/toast'
 
 const ENTITY_TYPES = [
   { value: 'purchase_order', label: 'Ordenes de Compra' },
@@ -24,7 +24,7 @@ export default function AnchorRulesPage() {
   const updateMut = useUpdateAnchorRule()
   const deleteMut = useDeleteAnchorRule()
   const seedMut = useSeedAnchorRules()
-  const toast = useToastStore()
+  const toast = useToast()
   const [showCreate, setShowCreate] = useState(false)
   const [form, setForm] = useState<Partial<AnchorRuleCreate>>({
     entity_type: 'purchase_order',

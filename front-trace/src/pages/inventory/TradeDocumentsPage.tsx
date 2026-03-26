@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { FileCheck, FilePlus, Shield, Stamp, Building2, FileText, Check, X } from 'lucide-react'
 import { useTradeDocuments, useCreateTradeDoc, useApproveTradeDoc, useRejectTradeDoc, useDeleteTradeDoc } from '@/hooks/useLogistics'
-import type { TradeDocCreate, TradeDocType, TradeDocStatus } from '@/types/inventory'
-import { useToastStore } from '@/store/toast'
-import { useConfirmStore } from '@/store/confirm'
+import type { TradeDocCreate, TradeDocType, TradeDocStatus } from '@/types/logistics'
+import { useToast } from '@/store/toast'
+import { useConfirm } from '@/store/confirm'
 
 const DOC_TYPES: { value: TradeDocType; label: string; icon: typeof FileCheck }[] = [
   { value: 'cert_origen', label: 'Cert. Origen', icon: Stamp },
@@ -45,8 +45,8 @@ export default function TradeDocumentsPage() {
   const approveMut = useApproveTradeDoc()
   const rejectMut = useRejectTradeDoc()
   const deleteMut = useDeleteTradeDoc()
-  const toast = useToastStore()
-  const confirm = useConfirmStore()
+  const toast = useToast()
+  const confirm = useConfirm()
 
   const [form, setForm] = useState<Partial<TradeDocCreate>>({ document_type: 'cert_origen', title: '' })
 

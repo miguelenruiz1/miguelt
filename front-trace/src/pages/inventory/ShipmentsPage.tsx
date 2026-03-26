@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Ship, Truck, Plane, FileText, Plus, ExternalLink, MoreHorizontal, ArrowRightLeft } from 'lucide-react'
 import { useShipmentDocuments, useCreateShipment, useUpdateShipmentStatus, useDeleteShipment } from '@/hooks/useLogistics'
-import type { ShipmentDocCreate, ShipmentDocType, ShipmentStatus } from '@/types/inventory'
-import { useToastStore } from '@/store/toast'
-import { useConfirmStore } from '@/store/confirm'
+import type { ShipmentDocCreate, ShipmentDocType, ShipmentStatus } from '@/types/logistics'
+import { useToast } from '@/store/toast'
+import { useConfirm } from '@/store/confirm'
 
 const DOC_TYPES: { value: ShipmentDocType; label: string; icon: typeof Ship }[] = [
   { value: 'remision', label: 'Remision', icon: FileText },
@@ -43,8 +43,8 @@ export default function ShipmentsPage() {
   const createMut = useCreateShipment()
   const statusMut = useUpdateShipmentStatus()
   const deleteMut = useDeleteShipment()
-  const toast = useToastStore()
-  const confirm = useConfirmStore()
+  const toast = useToast()
+  const confirm = useConfirm()
 
   const [form, setForm] = useState<Partial<ShipmentDocCreate>>({ document_type: 'remision', document_number: '' })
 

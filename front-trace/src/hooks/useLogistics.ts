@@ -13,7 +13,7 @@ import type {
   ShipmentDocCreate, ShipmentDocUpdate,
   TradeDocCreate, TradeDocUpdate,
   AnchorRuleCreate, AnchorRuleUpdate,
-} from '@/types/inventory'
+} from '@/types/logistics'
 
 // ── Shipments ─────────────────────────────────────────────────────────────────
 

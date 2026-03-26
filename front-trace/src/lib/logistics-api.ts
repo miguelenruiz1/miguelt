@@ -8,7 +8,7 @@ import type {
   TradeDocument, TradeDocCreate, TradeDocUpdate,
   AnchorRule, AnchorRuleCreate, AnchorRuleUpdate,
   PublicBatchVerification,
-} from '@/types/inventory'
+} from '@/types/logistics'
 
 const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
