@@ -63,11 +63,11 @@ const invGroups = [
     ],
   },
   {
-    key: 'logistica', icon: Ship, label: 'Logistica Internacional',
+    key: 'logistica-int', icon: Ship, label: 'Logistica Internacional',
     items: [
-      { to: '/inventario/envios', icon: Ship, label: 'Documentos Transporte', permission: 'inventory.view' },
-      { to: '/inventario/documentos-comex', icon: Award, label: 'Comercio Exterior', permission: 'inventory.view' },
-      { to: '/inventario/blockchain', icon: Link2, label: 'Blockchain', permission: 'inventory.admin' },
+      { to: '/logistica/envios', icon: Ship, label: 'Documentos Transporte', permission: 'inventory.view' },
+      { to: '/logistica/documentos-comex', icon: Award, label: 'Comercio Exterior', permission: 'inventory.view' },
+      { to: '/logistica/blockchain', icon: Link2, label: 'Blockchain', permission: 'inventory.view' },
     ],
   },
   {

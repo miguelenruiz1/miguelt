@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Shield, Plus, Trash2, ToggleLeft, ToggleRight, Zap } from 'lucide-react'
-import { useAnchorRules, useCreateAnchorRule, useUpdateAnchorRule, useDeleteAnchorRule, useSeedAnchorRules } from '@/hooks/useInventory'
+import { useAnchorRules, useCreateAnchorRule, useUpdateAnchorRule, useDeleteAnchorRule, useSeedAnchorRules } from '@/hooks/useLogistics'
 import type { AnchorRuleCreate } from '@/types/inventory'
 import { useToastStore } from '@/store/toast'
 

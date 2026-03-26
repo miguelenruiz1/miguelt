@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Ship, Truck, Plane, FileText, Plus, ExternalLink, MoreHorizontal, ArrowRightLeft } from 'lucide-react'
-import { useShipmentDocuments, useCreateShipment, useUpdateShipmentStatus, useDeleteShipment } from '@/hooks/useInventory'
+import { useShipmentDocuments, useCreateShipment, useUpdateShipmentStatus, useDeleteShipment } from '@/hooks/useLogistics'
 import type { ShipmentDocCreate, ShipmentDocType, ShipmentStatus } from '@/types/inventory'
 import { useToastStore } from '@/store/toast'
 import { useConfirmStore } from '@/store/confirm'

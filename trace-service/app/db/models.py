@@ -135,6 +135,121 @@ class AnchorRequest(Base):
     )
 
 
+# ─── Anchor Rules ────────────────────────────────────────────────────────────
+
+class AnchorRule(Base):
+    """Configurable rules that define what supply chain events get anchored on blockchain."""
+    __tablename__ = "anchor_rules"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    entity_type: Mapped[str] = mapped_column(Text, nullable=False)
+    trigger_event: Mapped[str] = mapped_column(Text, nullable=False)
+    conditions: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    actions: Mapped[dict] = mapped_column(JSONB, nullable=False, default=lambda: {"anchor": True})
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_by: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow)
+
+
+# ─── Shipment Documents ──────────────────────────────────────────────────────
+
+class ShipmentDocument(Base):
+    """Transport documents: remision, BL, AWB, carta porte, guia terrestre."""
+    __tablename__ = "shipment_documents"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    document_type: Mapped[str] = mapped_column(Text, nullable=False)
+    document_number: Mapped[str] = mapped_column(Text, nullable=False)
+    carrier_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    carrier_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    vehicle_plate: Mapped[str | None] = mapped_column(Text, nullable=True)
+    driver_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    driver_id_number: Mapped[str | None] = mapped_column(Text, nullable=True)
+    origin_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    destination_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    origin_city: Mapped[str | None] = mapped_column(Text, nullable=True)
+    destination_city: Mapped[str | None] = mapped_column(Text, nullable=True)
+    origin_country: Mapped[str | None] = mapped_column(Text, nullable=True)
+    destination_country: Mapped[str | None] = mapped_column(Text, nullable=True)
+    vessel_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    voyage_number: Mapped[str | None] = mapped_column(Text, nullable=True)
+    container_number: Mapped[str | None] = mapped_column(Text, nullable=True)
+    container_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    seal_number: Mapped[str | None] = mapped_column(Text, nullable=True)
+    flight_number: Mapped[str | None] = mapped_column(Text, nullable=True)
+    total_packages: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_weight_kg: Mapped[float | None] = mapped_column(Text, nullable=True)
+    total_volume_m3: Mapped[float | None] = mapped_column(Text, nullable=True)
+    cargo_description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    declared_value: Mapped[float | None] = mapped_column(Text, nullable=True)
+    declared_currency: Mapped[str | None] = mapped_column(Text, nullable=True)
+    issued_date: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    shipped_date: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    estimated_arrival: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    actual_arrival: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="draft")
+    tracking_number: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tracking_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    anchor_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    anchor_status: Mapped[str] = mapped_column(Text, nullable=False, default="none")
+    anchor_tx_sig: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    file_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reference_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reference_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow)
+
+
+# ─── Trade Documents ─────────────────────────────────────────────────────────
+
+class TradeDocument(Base):
+    """Trade/compliance documents: cert origen, fitosanitario, INVIMA, DEX, DIM."""
+    __tablename__ = "trade_documents"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    document_type: Mapped[str] = mapped_column(Text, nullable=False)
+    document_number: Mapped[str | None] = mapped_column(Text, nullable=True)
+    shipment_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("shipment_documents.id", ondelete="SET NULL"), nullable=True
+    )
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    issuing_authority: Mapped[str | None] = mapped_column(Text, nullable=True)
+    issuing_country: Mapped[str | None] = mapped_column(Text, nullable=True)
+    issued_date: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    expiry_date: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="pending")
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    content_data: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    file_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    file_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    hs_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    fob_value: Mapped[float | None] = mapped_column(Text, nullable=True)
+    cif_value: Mapped[float | None] = mapped_column(Text, nullable=True)
+    currency: Mapped[str | None] = mapped_column(Text, nullable=True)
+    anchor_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    anchor_status: Mapped[str] = mapped_column(Text, nullable=False, default="none")
+    anchor_tx_sig: Mapped[str | None] = mapped_column(Text, nullable=True)
+    anchored_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    reference_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reference_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow)
+
+    shipment_document: Mapped["ShipmentDocument | None"] = relationship("ShipmentDocument", lazy="noload")
+
+
 # ─── CustodianType ────────────────────────────────────────────────────────────
 
 class CustodianType(Base):

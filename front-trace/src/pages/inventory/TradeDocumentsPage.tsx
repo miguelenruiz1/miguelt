@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FileCheck, FilePlus, Shield, Stamp, Building2, FileText, Check, X } from 'lucide-react'
-import { useTradeDocuments, useCreateTradeDoc, useApproveTradeDoc, useRejectTradeDoc, useDeleteTradeDoc } from '@/hooks/useInventory'
+import { useTradeDocuments, useCreateTradeDoc, useApproveTradeDoc, useRejectTradeDoc, useDeleteTradeDoc } from '@/hooks/useLogistics'
 import type { TradeDocCreate, TradeDocType, TradeDocStatus } from '@/types/inventory'
 import { useToastStore } from '@/store/toast'
 import { useConfirmStore } from '@/store/confirm'

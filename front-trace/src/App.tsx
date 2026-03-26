@@ -737,29 +737,18 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      // ── Logistica (trace-service) ────────────────────────────────────────────
       {
-        path: 'inventario/envios',
-        element: (
-          <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><ShipmentsPage /></ModuleGuard>
-          </ProtectedRoute>
-        ),
+        path: 'logistica/envios',
+        element: <ProtectedRoute><ShipmentsPage /></ProtectedRoute>,
       },
       {
-        path: 'inventario/documentos-comex',
-        element: (
-          <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><TradeDocumentsPage /></ModuleGuard>
-          </ProtectedRoute>
-        ),
+        path: 'logistica/documentos-comex',
+        element: <ProtectedRoute><TradeDocumentsPage /></ProtectedRoute>,
       },
       {
-        path: 'inventario/blockchain',
-        element: (
-          <ProtectedRoute permission="inventory.admin">
-            <ModuleGuard><AnchorRulesPage /></ModuleGuard>
-          </ProtectedRoute>
-        ),
+        path: 'logistica/blockchain',
+        element: <ProtectedRoute><AnchorRulesPage /></ProtectedRoute>,
       },
       // ── Cumplimiento (compliance module-gated) ──────────────────────────────
       {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search, Shield, CheckCircle2, Clock, Package, MapPin, Calendar, ExternalLink, AlertTriangle } from 'lucide-react'
-import { usePublicBatchVerification } from '@/hooks/useInventory'
+import { usePublicBatchVerification } from '@/hooks/useLogistics'
 
 const STATUS_BADGES: Record<string, { color: string; label: string }> = {
   ok: { color: 'bg-green-100 text-green-700', label: 'Vigente' },
