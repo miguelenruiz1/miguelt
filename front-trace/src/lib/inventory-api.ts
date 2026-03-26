@@ -78,18 +78,6 @@ import type {
   GlobalMarginConfig,
   ConvertResponse,
   BusinessPartner,
-  ShipmentDocument,
-  ShipmentDocCreate,
-  ShipmentDocUpdate,
-  TradeDocument,
-  TradeDocCreate,
-  TradeDocUpdate,
-  BlockchainStatus,
-  BlockchainVerifyResult,
-  AnchorRule,
-  AnchorRuleCreate,
-  AnchorRuleUpdate,
-  PublicBatchVerification,
 } from '@/types/inventory'
 
 const BASE = import.meta.env.VITE_INVENTORY_API_URL ?? 'http://localhost:9003'
@@ -1130,89 +1118,4 @@ export const inventoryPartnersApi = {
     request<BusinessPartner>(`/api/v1/partners/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (id: string) =>
     requestVoid(`/api/v1/partners/${id}`, { method: 'DELETE' }),
-}
-
-// ── Shipments API ─────────────────────────────────────────────────────────
-
-export const inventoryShipmentsApi = {
-  list: (params?: { document_type?: string; po_id?: string; so_id?: string; offset?: number; limit?: number }) => {
-    const sp = new URLSearchParams()
-    if (params?.document_type) sp.set('document_type', params.document_type)
-    if (params?.po_id) sp.set('po_id', params.po_id)
-    if (params?.so_id) sp.set('so_id', params.so_id)
-    if (params?.offset !== undefined) sp.set('offset', String(params.offset))
-    if (params?.limit !== undefined) sp.set('limit', String(params.limit))
-    return request<ShipmentDocument[]>(`/api/v1/shipments?${sp}`)
-  },
-  get: (id: string) => request<ShipmentDocument>(`/api/v1/shipments/${id}`),
-  create: (data: ShipmentDocCreate) =>
-    request<ShipmentDocument>('/api/v1/shipments', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: string, data: ShipmentDocUpdate) =>
-    request<ShipmentDocument>(`/api/v1/shipments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  updateStatus: (id: string, status: string) =>
-    request<ShipmentDocument>(`/api/v1/shipments/${id}/status`, { method: 'POST', body: JSON.stringify({ status }) }),
-  delete: (id: string) =>
-    requestVoid(`/api/v1/shipments/${id}`, { method: 'DELETE' }),
-}
-
-// ── Trade Documents API ───────────────────────────────────────────────────
-
-export const inventoryTradeDocsApi = {
-  list: (params?: { document_type?: string; po_id?: string; so_id?: string; shipment_id?: string; offset?: number; limit?: number }) => {
-    const sp = new URLSearchParams()
-    if (params?.document_type) sp.set('document_type', params.document_type)
-    if (params?.po_id) sp.set('po_id', params.po_id)
-    if (params?.so_id) sp.set('so_id', params.so_id)
-    if (params?.shipment_id) sp.set('shipment_id', params.shipment_id)
-    if (params?.offset !== undefined) sp.set('offset', String(params.offset))
-    if (params?.limit !== undefined) sp.set('limit', String(params.limit))
-    return request<TradeDocument[]>(`/api/v1/trade-documents?${sp}`)
-  },
-  get: (id: string) => request<TradeDocument>(`/api/v1/trade-documents/${id}`),
-  create: (data: TradeDocCreate) =>
-    request<TradeDocument>('/api/v1/trade-documents', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: string, data: TradeDocUpdate) =>
-    request<TradeDocument>(`/api/v1/trade-documents/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  approve: (id: string) =>
-    request<TradeDocument>(`/api/v1/trade-documents/${id}/approve`, { method: 'POST' }),
-  reject: (id: string, reason?: string) =>
-    request<TradeDocument>(`/api/v1/trade-documents/${id}/reject${reason ? `?reason=${encodeURIComponent(reason)}` : ''}`, { method: 'POST' }),
-  delete: (id: string) =>
-    requestVoid(`/api/v1/trade-documents/${id}`, { method: 'DELETE' }),
-}
-
-// ── Blockchain API ────────────────────────────────────────────────────────
-
-export const inventoryBlockchainApi = {
-  getStatus: (entityType: string, entityId: string) =>
-    request<BlockchainStatus>(`/api/v1/blockchain/status/${entityType}/${entityId}`),
-  verify: (entityType: string, entityId: string) =>
-    request<BlockchainVerifyResult>(`/api/v1/blockchain/verify/${entityType}/${entityId}`),
-}
-
-// ── Anchor Rules API ──────────────────────────────────────────────────────
-
-export const inventoryAnchorRulesApi = {
-  list: (entityType?: string) => {
-    const sp = new URLSearchParams()
-    if (entityType) sp.set('entity_type', entityType)
-    return request<AnchorRule[]>(`/api/v1/anchor-rules?${sp}`)
-  },
-  get: (id: string) => request<AnchorRule>(`/api/v1/anchor-rules/${id}`),
-  create: (data: AnchorRuleCreate) =>
-    request<AnchorRule>('/api/v1/anchor-rules', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: string, data: AnchorRuleUpdate) =>
-    request<AnchorRule>(`/api/v1/anchor-rules/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  delete: (id: string) =>
-    requestVoid(`/api/v1/anchor-rules/${id}`, { method: 'DELETE' }),
-  seedDefaults: () =>
-    request<AnchorRule[]>('/api/v1/anchor-rules/seed-defaults', { method: 'POST' }),
-}
-
-// ── Public Verification API (no auth) ─────────────────────────────────────
-
-export const publicVerifyApi = {
-  verifyBatch: (batchNumber: string, tenantId = 'default') =>
-    fetch(`${BASE}/api/v1/public/batch/${encodeURIComponent(batchNumber)}/verify?tenant_id=${tenantId}`)
-      .then(res => res.json() as Promise<PublicBatchVerification>),
 }
