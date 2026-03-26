@@ -39,7 +39,6 @@ class Product(Base):
         String(36), ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True
     )
     auto_reorder:     Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="false")
-    track_on_chain:   Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="false")
     valuation_method: Mapped[str]        = mapped_column(String(20), nullable=False, server_default="weighted_average")
     weight_per_unit:  Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True)
     volume_per_unit:  Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True)

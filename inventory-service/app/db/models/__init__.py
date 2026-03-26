@@ -46,8 +46,6 @@ from app.db.models.uom import UnitOfMeasure, UoMConversion
 from app.db.models.cost_history import ProductCostHistory
 from app.db.models.cycle_count import CycleCount, CycleCountItem, IRASnapshot
 from app.db.models.audit import InventoryAuditLog
-from app.db.models.anchor_rule import AnchorRule
-from app.db.models.shipment import ShipmentDocument, TradeDocument
 
 __all__ = [
     # Enums
@@ -98,8 +96,4 @@ __all__ = [
     "ProductCostHistory",
     # Business Partner
     "BusinessPartner",
-    # Anchor Rules
-    "AnchorRule",
-    # Shipment & Trade Documents
-    "ShipmentDocument", "TradeDocument",
 ]

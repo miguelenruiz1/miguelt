@@ -1,7 +1,6 @@
 """Business logic for batch tracking."""
 from __future__ import annotations
 
-import asyncio
 from datetime import date
 
 from sqlalchemy import func, select
@@ -14,10 +13,10 @@ from app.db.models.tracking import EntityBatch
 from app.db.models.entity import Product
 from app.db.models.sales_order import SalesOrder, SalesOrderLine
 from app.db.models.customer import Customer
-from app.db.models.purchase_order import PurchaseOrder
 from app.domain.schemas import BatchOut
+
 from app.domain.schemas.tracking import (
-    BatchDispatchEntry, BatchSearchResult, BlockchainProofEntry, TraceForwardOut,
+    BatchDispatchEntry, BatchSearchResult, TraceForwardOut,
 )
 from app.repositories.batch_repo import BatchRepository
 
@@ -46,59 +45,7 @@ class BatchService:
     async def create(self, tenant_id: str, data: dict):
         if "metadata" in data:
             data["metadata_"] = data.pop("metadata")
-        batch = await self.repo.create(tenant_id, data)
-
-        # ── Mint cNFT if product has track_on_chain=true ───────────────
-        try:
-            product = (await self.db.execute(
-                select(Product).where(Product.id == batch.entity_id)
-            )).scalar_one_or_none()
-
-            if product and product.track_on_chain:
-                batch.blockchain_status = "pending"
-                await self.db.flush()
-
-                asyncio.create_task(self._mint_batch_cnft(
-                    tenant_id=tenant_id,
-                    batch=batch,
-                    product=product,
-                ))
-        except Exception:
-            pass  # Non-fatal
-
-        return batch
-
-    async def _mint_batch_cnft(self, tenant_id: str, batch, product) -> None:
-        """Background task: mint cNFT for batch via trace-service."""
-        try:
-            from app.clients import trace_client
-
-            result = await trace_client.mint_batch_cnft(
-                tenant_id=tenant_id,
-                batch_id=batch.id,
-                batch_number=batch.batch_number,
-                product_name=product.name,
-                product_type=product.product_type_id,
-                manufacture_date=batch.manufacture_date.isoformat() if batch.manufacture_date else None,
-                expiration_date=batch.expiration_date.isoformat() if batch.expiration_date else None,
-            )
-
-            if result:
-                # Update batch with blockchain info — need a fresh session
-                from app.db.session import get_db
-                async with get_db() as session:
-                    from sqlalchemy import update
-                    await session.execute(
-                        update(EntityBatch)
-                        .where(EntityBatch.id == batch.id)
-                        .values(
-                            blockchain_asset_id=result.get("id"),
-                            blockchain_tx_sig=result.get("blockchain_tx_signature"),
-                            blockchain_status=result.get("blockchain_status", "pending"),
-                        )
-                    )
-        except Exception:
-            pass  # Best-effort
+        return await self.repo.create(tenant_id, data)
 
     async def update(self, tenant_id: str, batch_id: str, data: dict):
         obj = await self.repo.get(tenant_id, batch_id)
@@ -243,13 +190,8 @@ class BatchService:
                 customer_id=customer_id,
                 customer_name=customer_name,
                 warehouse_id=m.from_warehouse_id,
-                anchor_hash=m.anchor_hash,
-                anchor_tx_sig=m.anchor_tx_sig,
             ))
             total_dispatched += float(m.quantity)
-
-        # ── Build blockchain proof chain ───────────────────────────────
-        proof_chain = await self._build_proof_chain(tenant_id, batch, movements)
 
         return TraceForwardOut(
             batch=BatchOut.model_validate(batch),
@@ -258,96 +200,4 @@ class BatchService:
             dispatches=dispatches,
             total_dispatched=total_dispatched,
             total_remaining=float(batch.quantity),
-            blockchain_proof=proof_chain,
         )
-
-    async def _build_proof_chain(
-        self, tenant_id: str, batch, movements: list,
-    ) -> list[BlockchainProofEntry]:
-        """Build the complete blockchain proof chain for a batch."""
-        chain: list[BlockchainProofEntry] = []
-
-        # 1. Batch creation anchor
-        if batch.anchor_hash:
-            chain.append(BlockchainProofEntry(
-                event_type="batch_created",
-                entity_type="batch",
-                entity_id=batch.id,
-                anchor_hash=batch.anchor_hash,
-                anchor_tx_sig=batch.anchor_tx_sig,
-                timestamp=batch.created_at,
-            ))
-
-        # 2. PO receipt that brought this batch in (purchase movements)
-        po_movements = (await self.db.execute(
-            select(StockMovement).where(
-                StockMovement.batch_id == batch.id,
-                StockMovement.tenant_id == tenant_id,
-                StockMovement.movement_type.in_([MovementType.purchase]),
-            ).order_by(StockMovement.created_at)
-        )).scalars().all()
-
-        for pm in po_movements:
-            if pm.anchor_hash:
-                chain.append(BlockchainProofEntry(
-                    event_type="po_receipt",
-                    entity_type="movement",
-                    entity_id=pm.id,
-                    anchor_hash=pm.anchor_hash,
-                    anchor_tx_sig=pm.anchor_tx_sig,
-                    timestamp=pm.created_at,
-                ))
-            # Also check the PO itself
-            if pm.reference and pm.reference.startswith("PO-"):
-                po = (await self.db.execute(
-                    select(PurchaseOrder).where(
-                        PurchaseOrder.po_number == pm.reference,
-                        PurchaseOrder.tenant_id == tenant_id,
-                    )
-                )).scalar_one_or_none()
-                if po and po.anchor_hash:
-                    chain.append(BlockchainProofEntry(
-                        event_type="po_anchored",
-                        entity_type="purchase_order",
-                        entity_id=po.id,
-                        anchor_hash=po.anchor_hash,
-                        anchor_tx_sig=po.anchor_tx_sig,
-                        timestamp=po.created_at,
-                    ))
-
-        # 3. Dispatch movements (sale/transfer)
-        for m in movements:
-            if m.anchor_hash:
-                chain.append(BlockchainProofEntry(
-                    event_type="dispatched",
-                    entity_type="movement",
-                    entity_id=m.id,
-                    anchor_hash=m.anchor_hash,
-                    anchor_tx_sig=m.anchor_tx_sig,
-                    timestamp=m.created_at,
-                ))
-
-        # 4. SO delivery anchors
-        so_numbers = set()
-        for m in movements:
-            if m.reference and m.reference.startswith("SO:"):
-                so_numbers.add(m.reference[3:])
-
-        for so_num in so_numbers:
-            so = (await self.db.execute(
-                select(SalesOrder).where(
-                    SalesOrder.order_number == so_num,
-                    SalesOrder.tenant_id == tenant_id,
-                )
-            )).scalar_one_or_none()
-            if so and so.anchor_hash:
-                chain.append(BlockchainProofEntry(
-                    event_type="so_delivered",
-                    entity_type="sales_order",
-                    entity_id=so.id,
-                    anchor_hash=so.anchor_hash,
-                    anchor_tx_sig=so.anchor_tx_sig,
-                    timestamp=so.delivered_date,
-                ))
-
-        return chain

@@ -90,12 +90,6 @@ class BatchOut(OrmBase):
     quantity: Decimal
     notes: str | None
     is_active: bool
-    # Blockchain fields
-    anchor_hash: str | None = None
-    anchor_status: str = "none"
-    anchor_tx_sig: str | None = None
-    blockchain_asset_id: str | None = None
-    blockchain_status: str = "none"
     created_by: str | None = None
     updated_by: str | None = None
     created_at: datetime
@@ -119,19 +113,6 @@ class BatchDispatchEntry(BaseModel):
     customer_id: str | None = None
     customer_name: str | None = None
     warehouse_id: str | None = None
-    # Blockchain proof
-    anchor_hash: str | None = None
-    anchor_tx_sig: str | None = None
-
-
-class BlockchainProofEntry(BaseModel):
-    """A single link in the on-chain proof chain."""
-    event_type: str
-    entity_type: str
-    entity_id: str
-    anchor_hash: str | None = None
-    anchor_tx_sig: str | None = None
-    timestamp: datetime | None = None
 
 
 class TraceForwardOut(BaseModel):
@@ -141,8 +122,6 @@ class TraceForwardOut(BaseModel):
     dispatches: list[BatchDispatchEntry]
     total_dispatched: float
     total_remaining: float
-    # Blockchain proof chain
-    blockchain_proof: list[BlockchainProofEntry] = []
 
 
 class SOBatchEntry(BaseModel):

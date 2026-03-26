@@ -41,8 +41,6 @@ class Settings(BaseSettings):
     # ─── AI Service ──────────────────────────────────────────────────────
     AI_SERVICE_URL: str = "http://ai-api:8006"
 
-    # ─── Trace Service (Anchoring-as-a-Service) ──────────────────────────
-    TRACE_SERVICE_URL: str = "http://trace-api:8000"
 
     @field_validator("LOG_LEVEL")
     @classmethod

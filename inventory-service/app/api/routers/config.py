@@ -1160,13 +1160,15 @@ async def update_margin_config(
     request: Request,
     db: AsyncSession = Depends(get_db_session),
 ):
+    from decimal import Decimal
     from sqlalchemy import select as _sel
     from app.db.models.sales_order import TenantInventoryConfig
+    import uuid as _uuid
     tenant_id = current_user.get("tenant_id", "default")
     result = await db.execute(_sel(TenantInventoryConfig).where(TenantInventoryConfig.tenant_id == tenant_id))
     config = result.scalar_one_or_none()
     if not config:
-        config = TenantInventoryConfig(tenant_id=tenant_id)
+        config = TenantInventoryConfig(id=str(_uuid.uuid4()), tenant_id=tenant_id)
         db.add(config)
         await db.flush()
     if "margin_target_global" in body:
