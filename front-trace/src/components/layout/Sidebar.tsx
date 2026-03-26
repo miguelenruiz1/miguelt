@@ -63,14 +63,6 @@ const invGroups = [
     ],
   },
   {
-    key: 'logistica-int', icon: Ship, label: 'Logistica Internacional',
-    items: [
-      { to: '/logistica/envios', icon: Ship, label: 'Documentos Transporte', permission: 'inventory.view' },
-      { to: '/logistica/documentos-comex', icon: Award, label: 'Comercio Exterior', permission: 'inventory.view' },
-      { to: '/logistica/blockchain', icon: Link2, label: 'Blockchain', permission: 'inventory.view' },
-    ],
-  },
-  {
     key: 'informes', icon: BarChart3, label: 'Informes',
     items: [
       { to: '/inventario/reportes', icon: BarChart3, label: 'Reportes', permission: 'reports.view' },
@@ -108,6 +100,9 @@ const logisticaItems = [
   { to: '/assets', icon: Box, label: 'Cargas' },
   { to: '/wallets', icon: Wallet, label: 'Custodios' },
   { to: '/organizations', icon: Building2, label: 'Organizaciones' },
+  { to: '/logistica/envios', icon: Ship, label: 'Transporte' },
+  { to: '/logistica/documentos-comex', icon: Award, label: 'Comercio Exterior' },
+  { to: '/logistica/blockchain', icon: Link2, label: 'Blockchain' },
 ]
 
 const ayudaItems = [
