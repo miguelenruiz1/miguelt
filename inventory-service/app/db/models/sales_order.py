@@ -94,6 +94,16 @@ class SalesOrder(Base):
     remission_number:       Mapped[str | None]       = mapped_column(String(50), nullable=True)
     remission_generated_at: Mapped[DateTime | None]   = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Trade / international
+    exchange_rate:       Mapped[Decimal | None]   = mapped_column(Numeric(14, 6), nullable=True)
+    incoterm:            Mapped[str | None]       = mapped_column(String(10), nullable=True)
+    origin_country:      Mapped[str | None]       = mapped_column(String(3), nullable=True)
+    destination_country: Mapped[str | None]       = mapped_column(String(3), nullable=True)
+    is_international:    Mapped[bool]             = mapped_column(Boolean, nullable=False, server_default="false")
+    carrier_name:        Mapped[str | None]       = mapped_column(String(150), nullable=True)
+    tracking_number:     Mapped[str | None]       = mapped_column(String(100), nullable=True)
+    tracking_url:        Mapped[str | None]       = mapped_column(String(500), nullable=True)
+
     # Approval workflow
     approval_required:      Mapped[bool]             = mapped_column(Boolean, nullable=False, server_default="false")
     approved_by:            Mapped[str | None]       = mapped_column(String(100), nullable=True)

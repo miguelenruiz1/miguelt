@@ -81,6 +81,16 @@ class PurchaseOrder(Base):
         String(36), ForeignKey("purchase_orders.id", ondelete="SET NULL"), nullable=True
     )
 
+    # Trade / international
+    currency:      Mapped[str]            = mapped_column(String(3), nullable=False, server_default="COP")
+    exchange_rate: Mapped[Decimal | None] = mapped_column(Numeric(14, 6), nullable=True)
+    incoterm:      Mapped[str | None]     = mapped_column(String(10), nullable=True)
+    origin_country:      Mapped[str | None] = mapped_column(String(3), nullable=True)
+    destination_country: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    port_of_loading:     Mapped[str | None] = mapped_column(String(100), nullable=True)
+    port_of_discharge:   Mapped[str | None] = mapped_column(String(100), nullable=True)
+    is_international:    Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="false")
+
     # Blockchain anchoring
     anchor_hash:      Mapped[str | None]  = mapped_column(String(64), nullable=True)
     anchor_status:    Mapped[str]         = mapped_column(String(20), nullable=False, server_default="none")
