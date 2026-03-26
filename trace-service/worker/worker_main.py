@@ -101,6 +101,79 @@ async def anchor_event(ctx: dict[str, Any], event_id: str) -> dict[str, Any]:
             raise
 
 
+# ─── Job: anchor_generic (Anchoring-as-a-Service) ────────────────────────────
+
+async def anchor_generic(ctx: dict[str, Any], anchor_request_id: str) -> dict[str, Any]:
+    """
+    Anchor a generic AnchorRequest on Solana via the Memo Program.
+    Called by other microservices through the /api/v1/anchoring/hash endpoint.
+    """
+    db_factory = ctx["db_factory"]
+    solana_client = ctx["solana_client"]
+    settings = ctx["settings"]
+
+    log.info("anchor_generic_started", anchor_request_id=anchor_request_id)
+
+    async with db_factory() as session:
+        from app.repositories.anchor_repo import AnchorRequestRepository
+        import uuid as _uuid
+
+        repo = AnchorRequestRepository(session)
+        ar = await repo.get_by_id(_uuid.UUID(anchor_request_id))
+
+        if ar is None:
+            log.warning("anchor_generic_not_found", anchor_request_id=anchor_request_id)
+            return {"status": "not_found", "id": anchor_request_id}
+
+        if ar.anchor_status == "anchored":
+            log.info("anchor_generic_already_done", id=anchor_request_id, sig=ar.solana_tx_sig)
+            return {"status": "already_anchored", "sig": ar.solana_tx_sig}
+
+        try:
+            tx_sig = await solana_client.send_memo(ar.payload_hash)
+            await repo.mark_anchored(ar.id, tx_sig)
+            await session.commit()
+            log.info(
+                "anchor_generic_success",
+                anchor_request_id=anchor_request_id,
+                tx_sig=tx_sig,
+                attempts=ar.attempts + 1,
+            )
+
+            # Fire callback if configured
+            if ar.callback_url:
+                await _fire_callback(ar.callback_url, ar.payload_hash, tx_sig)
+
+            return {"status": "anchored", "sig": tx_sig}
+
+        except Exception as exc:
+            error_msg = str(exc)[:500]
+            await repo.increment_attempt(ar.id, error=error_msg)
+            await session.commit()
+            log.error(
+                "anchor_generic_failed",
+                anchor_request_id=anchor_request_id,
+                attempts=ar.attempts + 1,
+                error=error_msg,
+            )
+            raise
+
+
+async def _fire_callback(url: str, payload_hash: str, tx_sig: str) -> None:
+    """Best-effort POST to the callback URL when anchoring completes."""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            await client.post(url, json={
+                "payload_hash": payload_hash,
+                "solana_tx_sig": tx_sig,
+                "anchor_status": "anchored",
+            })
+        log.info("anchor_callback_sent", url=url, hash=payload_hash[:16])
+    except Exception as exc:
+        log.warning("anchor_callback_failed", url=url, exc=str(exc))
+
+
 # ─── Cron: sweep unanchored events ───────────────────────────────────────────
 
 async def retry_blockchain_mint(ctx: dict[str, Any], asset_id_str: str) -> None:
@@ -181,6 +254,30 @@ async def sweep_pending_anchors(ctx: dict[str, Any]) -> None:
     if enqueued:
         log.info("sweep_enqueued_pending", count=enqueued)
 
+    # Also sweep pending AnchorRequests (Anchoring-as-a-Service)
+    async with db_factory() as session:
+        from app.repositories.anchor_repo import AnchorRequestRepository
+
+        ar_repo = AnchorRequestRepository(session)
+        pending_anchors = await ar_repo.get_pending(limit=100)
+
+        ar_enqueued = 0
+        for ar in pending_anchors:
+            if ar.attempts >= settings.ANCHOR_MAX_RETRIES:
+                continue
+            try:
+                await arq_pool.enqueue_job(
+                    "anchor_generic",
+                    str(ar.id),
+                    _queue_name=settings.ANCHOR_QUEUE_NAME,
+                )
+                ar_enqueued += 1
+            except Exception as exc:
+                log.warning("sweep_ar_enqueue_failed", anchor_id=str(ar.id), exc=str(exc))
+
+    if ar_enqueued:
+        log.info("sweep_enqueued_anchor_requests", count=ar_enqueued)
+
 
 # ─── Lifecycle ────────────────────────────────────────────────────────────────
 
@@ -244,7 +341,7 @@ def _redis_settings() -> RedisSettings:
 
 
 class WorkerSettings:
-    functions = [anchor_event, retry_blockchain_mint]
+    functions = [anchor_event, retry_blockchain_mint, anchor_generic]
     cron_jobs = [
         cron(sweep_pending_anchors, minute={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55})
     ]

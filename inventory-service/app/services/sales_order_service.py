@@ -536,8 +536,51 @@ class SalesOrderService:
                     })
         # else: old order without reservations — stock was already deducted at ship time
 
+        # ── Blockchain anchoring (compute hash before set_status) ──────
+        anchor_hash = None
+        try:
+            from datetime import datetime as _dt, timezone as _tz
+            from app.utils.hashing import compute_anchor_hash
+
+            anchor_payload = {
+                "order_number": order.order_number,
+                "customer_id": order.customer_id,
+                "warehouse_id": order.warehouse_id,
+                "status": "delivered",
+                "lines": [
+                    {
+                        "product_id": line.product_id,
+                        "qty_shipped": str(line.qty_shipped),
+                        "batch_id": line.batch_id,
+                    }
+                    for line in order.lines
+                ],
+                "delivered_at": _dt.now(_tz.utc).isoformat(),
+                "tenant_id": tenant_id,
+            }
+            anchor_hash = compute_anchor_hash(anchor_payload)
+            order.anchor_hash = anchor_hash
+            order.anchor_status = "pending"
+        except Exception:
+            pass  # Non-fatal
+
         order.updated_by = user_id
-        return await self.repo.set_status(order, SalesOrderStatus.delivered)
+        order = await self.repo.set_status(order, SalesOrderStatus.delivered)
+
+        # Fire-and-forget anchoring after commit
+        if anchor_hash:
+            try:
+                from app.clients import trace_client
+                await trace_client.anchor_event_background(
+                    tenant_id=tenant_id,
+                    source_entity_type="sales_order",
+                    source_entity_id=order.id,
+                    payload_hash=anchor_hash,
+                )
+            except Exception:
+                pass
+
+        return order
 
     async def retry_einvoice(self, order_id: str, tenant_id: str):
         """Retry electronic invoicing for a failed order."""

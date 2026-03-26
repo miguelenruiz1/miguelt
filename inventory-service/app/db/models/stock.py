@@ -117,6 +117,13 @@ class StockMovement(Base):
     layer_consumed_ids: Mapped[list | None]   = mapped_column(JSONB, nullable=True)
     status:            Mapped[str]            = mapped_column(String(20), nullable=False, server_default="completed")
     completed_at:      Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Blockchain anchoring
+    anchor_hash:       Mapped[str | None]     = mapped_column(String(64), nullable=True)
+    anchor_status:     Mapped[str]            = mapped_column(String(20), nullable=False, server_default="none")
+    anchor_tx_sig:     Mapped[str | None]     = mapped_column(String(128), nullable=True)
+    anchored_at:       Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     created_at:        Mapped[DateTime]       = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     product:                Mapped[Product]          = relationship("Product", back_populates="movements")

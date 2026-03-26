@@ -261,4 +261,39 @@ class POService:
         new_status = POStatus.received if all_received else (POStatus.partial if any_received else po.status)
         received_date = date.today() if all_received else po.received_date
 
-        return await self.repo.update(po, {"status": new_status, "received_date": received_date})
+        po = await self.repo.update(po, {"status": new_status, "received_date": received_date})
+
+        # ── Blockchain anchoring (fire-and-forget) ─────────────────────
+        if new_status in (POStatus.received, POStatus.partial):
+            try:
+                from app.utils.hashing import compute_anchor_hash
+                from app.clients import trace_client
+
+                anchor_payload = {
+                    "po_number": po.po_number,
+                    "supplier_id": po.supplier_id,
+                    "warehouse_id": po.warehouse_id,
+                    "status": new_status.value,
+                    "lines": [
+                        {
+                            "product_id": r["line_id"],
+                            "qty_received": str(r["qty_received"]),
+                        }
+                        for r in line_receipts
+                    ],
+                    "received_at": datetime.now(timezone.utc).isoformat(),
+                    "tenant_id": tenant_id,
+                }
+                anchor_hash = compute_anchor_hash(anchor_payload)
+                await self.repo.update(po, {"anchor_hash": anchor_hash, "anchor_status": "pending"})
+
+                await trace_client.anchor_event_background(
+                    tenant_id=tenant_id,
+                    source_entity_type="purchase_order",
+                    source_entity_id=po.id,
+                    payload_hash=anchor_hash,
+                )
+            except Exception:
+                pass  # Non-fatal: anchoring failure must not block PO receipt
+
+        return po

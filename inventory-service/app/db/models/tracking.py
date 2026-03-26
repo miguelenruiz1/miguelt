@@ -100,6 +100,18 @@ class EntityBatch(Base):
     notes:            Mapped[str | None]     = mapped_column(Text, nullable=True)
     metadata_:        Mapped[dict]           = mapped_column("metadata", JSONB, nullable=False, server_default="{}")
     is_active:        Mapped[bool]           = mapped_column(Boolean, nullable=False, server_default="true")
+
+    # Blockchain anchoring
+    anchor_hash:      Mapped[str | None]     = mapped_column(String(64), nullable=True)
+    anchor_status:    Mapped[str]            = mapped_column(String(20), nullable=False, server_default="none")
+    anchor_tx_sig:    Mapped[str | None]     = mapped_column(String(128), nullable=True)
+    anchored_at:      Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Blockchain cNFT (minted via trace-service)
+    blockchain_asset_id: Mapped[str | None]  = mapped_column(String(128), nullable=True)
+    blockchain_tx_sig:   Mapped[str | None]  = mapped_column(String(128), nullable=True)
+    blockchain_status:   Mapped[str]         = mapped_column(String(20), nullable=False, server_default="none")
+
     created_by:       Mapped[str | None]     = mapped_column(String(255), nullable=True)
     updated_by:       Mapped[str | None]     = mapped_column(String(255), nullable=True)
     created_at:       Mapped[DateTime]       = mapped_column(DateTime(timezone=True), server_default=func.now())

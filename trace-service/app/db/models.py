@@ -92,6 +92,49 @@ class TenantMerkleTree(Base):
     )
 
 
+# ─── Anchor Requests (Anchoring-as-a-Service) ────────────────────────────────
+
+class AnchorRequest(Base):
+    """
+    Generic anchoring request from any microservice.
+    Stores a SHA-256 hash and tracks its Solana Memo Program anchoring lifecycle.
+    """
+    __tablename__ = "anchor_requests"
+    __table_args__ = (
+        Index("ix_anchor_requests_status", "anchor_status"),
+        Index("ix_anchor_requests_hash", "payload_hash"),
+        Index("ix_anchor_requests_tenant", "tenant_id"),
+        Index(
+            "ix_anchor_requests_source",
+            "source_service", "source_entity_type", "source_entity_id",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    source_service: Mapped[str] = mapped_column(Text, nullable=False)
+    source_entity_type: Mapped[str] = mapped_column(Text, nullable=False)
+    source_entity_id: Mapped[str] = mapped_column(Text, nullable=False)
+    payload_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    anchor_status: Mapped[str] = mapped_column(Text, nullable=False, default="pending")
+    solana_tx_sig: Mapped[str | None] = mapped_column(Text, nullable=True)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    callback_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, default=_utcnow
+    )
+    anchored_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
+    )
+
+
 # ─── CustodianType ────────────────────────────────────────────────────────────
 
 class CustodianType(Base):

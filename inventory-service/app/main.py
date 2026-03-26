@@ -109,6 +109,9 @@ async def lifespan(app: FastAPI):
         await deps._http_client.aclose()
         deps._http_client = None
 
+    from app.clients import trace_client
+    await trace_client.close_client()
+
     log.info("inventory_service_stopped")
 
 
@@ -180,6 +183,8 @@ def create_app() -> FastAPI:
     from app.api.routers.tax_rates import router as tax_rates_router
     from app.api.routers.uom import router as uom_router
     from app.api.routers.partners import router as partners_router
+    from app.api.routers.blockchain import router as blockchain_router
+    from app.api.routers.public_verify import router as public_verify_router
 
     # ─── Static files (uploads) ──────────────────────────────────────────────
     from pathlib import Path
@@ -218,6 +223,8 @@ def create_app() -> FastAPI:
     app.include_router(tax_rates_router)
     app.include_router(uom_router)
     app.include_router(partners_router)
+    app.include_router(blockchain_router)
+    app.include_router(public_verify_router)
 
     return app
 

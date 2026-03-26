@@ -54,6 +54,13 @@ class SalesOrder(Base):
     currency:         Mapped[str]              = mapped_column(String(3), nullable=False, server_default="USD")
     notes:            Mapped[str | None]       = mapped_column(Text, nullable=True)
     extra_data:       Mapped[dict]             = mapped_column("extra_data", JSONB, nullable=False, server_default="{}")
+
+    # Blockchain anchoring
+    anchor_hash:      Mapped[str | None]       = mapped_column(String(64), nullable=True)
+    anchor_status:    Mapped[str]              = mapped_column(String(20), nullable=False, server_default="none")
+    anchor_tx_sig:    Mapped[str | None]       = mapped_column(String(128), nullable=True)
+    anchored_at:      Mapped[DateTime | None]   = mapped_column(DateTime(timezone=True), nullable=True)
+
     created_at:       Mapped[DateTime]         = mapped_column(DateTime(timezone=True), server_default=func.now())
     created_by:       Mapped[str | None]       = mapped_column(String(255), nullable=True)
     updated_at:       Mapped[DateTime]         = mapped_column(

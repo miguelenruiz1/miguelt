@@ -117,6 +117,7 @@ def create_app() -> FastAPI:
     from app.api.routers.taxonomy import router as taxonomy_router
     from app.api.routers.tenants import router as tenants_router
     from app.api.routers.event_config import router as event_config_router
+    from app.api.routers.anchoring import router as anchoring_router
 
     app.include_router(health_router)
     app.include_router(tenants_router, prefix="/api/v1")
@@ -125,6 +126,7 @@ def create_app() -> FastAPI:
     app.include_router(solana_router, prefix="/api/v1")
     app.include_router(taxonomy_router, prefix="/api/v1")
     app.include_router(event_config_router, prefix="/api/v1")
+    app.include_router(anchoring_router, prefix="/api/v1")
 
     # ─── Prometheus metrics (optional) ────────────────────────────────────────
     try:
