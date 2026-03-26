@@ -185,6 +185,7 @@ def create_app() -> FastAPI:
     from app.api.routers.partners import router as partners_router
     from app.api.routers.blockchain import router as blockchain_router
     from app.api.routers.public_verify import router as public_verify_router
+    from app.api.routers.anchor_rules import router as anchor_rules_router
 
     # ─── Static files (uploads) ──────────────────────────────────────────────
     from pathlib import Path
@@ -225,6 +226,7 @@ def create_app() -> FastAPI:
     app.include_router(partners_router)
     app.include_router(blockchain_router)
     app.include_router(public_verify_router)
+    app.include_router(anchor_rules_router)
 
     return app
 

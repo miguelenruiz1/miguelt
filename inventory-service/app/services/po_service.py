@@ -108,7 +108,9 @@ class POService:
             "sent_at": datetime.now(timezone.utc),
             "sent_by": user_id,
         }
-        return await self.repo.update(po, update_data)
+        po = await self.repo.update(po, update_data)
+        await self._append_chain_hash(po, tenant_id, "sent", user_id)
+        return po
 
     async def confirm(self, po_id: str, tenant_id: str, user_id: str | None = None, expected_date=None) -> PurchaseOrder:
         """Confirm PO (supplier accepted). Status must be sent."""
@@ -123,7 +125,43 @@ class POService:
         }
         if expected_date:
             update_data["expected_date"] = expected_date
-        return await self.repo.update(po, update_data)
+        po = await self.repo.update(po, update_data)
+        await self._append_chain_hash(po, tenant_id, "confirmed", user_id)
+        return po
+
+    async def _append_chain_hash(
+        self, po: PurchaseOrder, tenant_id: str, event: str, user_id: str | None = None,
+    ) -> None:
+        """Append a hash link to the PO's approval chain (prev_hash → new_hash)."""
+        try:
+            from app.utils.hashing import compute_anchor_hash
+
+            chain_entry = {
+                "po_number": po.po_number,
+                "event": event,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "user_id": user_id,
+                "prev_hash": po.anchor_hash,
+            }
+            new_hash = compute_anchor_hash(chain_entry)
+
+            # Append to chain log
+            chain = list(po.anchor_chain or [])
+            chain.append({
+                "event": event,
+                "hash": new_hash,
+                "prev_hash": po.anchor_hash,
+                "timestamp": chain_entry["timestamp"],
+                "user_id": user_id,
+            })
+
+            await self.repo.update(po, {
+                "prev_anchor_hash": po.anchor_hash,
+                "anchor_hash": new_hash,
+                "anchor_chain": chain,
+            })
+        except Exception:
+            pass  # Non-fatal
 
     async def cancel(self, po_id: str, tenant_id: str) -> PurchaseOrder:
         po = await self.get(po_id, tenant_id)
@@ -263,37 +301,59 @@ class POService:
 
         po = await self.repo.update(po, {"status": new_status, "received_date": received_date})
 
-        # ── Blockchain anchoring (fire-and-forget) ─────────────────────
+        # ── Blockchain anchoring (rule-based, fire-and-forget) ─────────
         if new_status in (POStatus.received, POStatus.partial):
             try:
+                from app.services.anchor_rules_service import AnchorRulesService
                 from app.utils.hashing import compute_anchor_hash
                 from app.clients import trace_client
 
-                anchor_payload = {
-                    "po_number": po.po_number,
-                    "supplier_id": po.supplier_id,
-                    "warehouse_id": po.warehouse_id,
-                    "status": new_status.value,
-                    "lines": [
-                        {
-                            "product_id": r["line_id"],
-                            "qty_received": str(r["qty_received"]),
-                        }
-                        for r in line_receipts
-                    ],
-                    "received_at": datetime.now(timezone.utc).isoformat(),
-                    "tenant_id": tenant_id,
-                }
-                anchor_hash = compute_anchor_hash(anchor_payload)
-                await self.repo.update(po, {"anchor_hash": anchor_hash, "anchor_status": "pending"})
+                # Compute PO total for rule evaluation
+                po_total = sum(l.qty_received * l.unit_cost for l in po.lines if l.unit_cost)
 
-                await trace_client.anchor_event_background(
+                rules_svc = AnchorRulesService(self.db)
+                decision = await rules_svc.should_anchor(
                     tenant_id=tenant_id,
-                    source_entity_type="purchase_order",
-                    source_entity_id=po.id,
-                    payload_hash=anchor_hash,
+                    entity_type="purchase_order",
+                    trigger_event="received",
+                    context={
+                        "total": po_total,
+                        "supplier_id": po.supplier_id,
+                        "product_types": [l.product_id for l in po.lines],
+                    },
                 )
+
+                if decision["should_anchor"]:
+                    anchor_payload = {
+                        "po_number": po.po_number,
+                        "supplier_id": po.supplier_id,
+                        "warehouse_id": po.warehouse_id,
+                        "status": new_status.value,
+                        "lines": [
+                            {
+                                "product_id": r["line_id"],
+                                "qty_received": str(r["qty_received"]),
+                            }
+                            for r in line_receipts
+                        ],
+                        "received_at": datetime.now(timezone.utc).isoformat(),
+                        "tenant_id": tenant_id,
+                        "prev_anchor_hash": po.anchor_hash,
+                    }
+                    anchor_hash = compute_anchor_hash(anchor_payload)
+                    await self.repo.update(po, {
+                        "anchor_hash": anchor_hash,
+                        "anchor_status": "pending",
+                        "prev_anchor_hash": po.anchor_hash,
+                    })
+
+                    await trace_client.anchor_event_background(
+                        tenant_id=tenant_id,
+                        source_entity_type="purchase_order",
+                        source_entity_id=po.id,
+                        payload_hash=anchor_hash,
+                    )
             except Exception:
-                pass  # Non-fatal: anchoring failure must not block PO receipt
+                pass  # Non-fatal
 
         return po

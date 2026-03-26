@@ -82,10 +82,12 @@ class PurchaseOrder(Base):
     )
 
     # Blockchain anchoring
-    anchor_hash:   Mapped[str | None]  = mapped_column(String(64), nullable=True)
-    anchor_status: Mapped[str]         = mapped_column(String(20), nullable=False, server_default="none")
-    anchor_tx_sig: Mapped[str | None]  = mapped_column(String(128), nullable=True)
-    anchored_at:   Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    anchor_hash:      Mapped[str | None]  = mapped_column(String(64), nullable=True)
+    anchor_status:    Mapped[str]         = mapped_column(String(20), nullable=False, server_default="none")
+    anchor_tx_sig:    Mapped[str | None]  = mapped_column(String(128), nullable=True)
+    anchored_at:      Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    prev_anchor_hash: Mapped[str | None]  = mapped_column(String(64), nullable=True)
+    anchor_chain:     Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
     created_by:    Mapped[str | None]  = mapped_column(String(255), nullable=True)
     updated_by:    Mapped[str | None]  = mapped_column(String(255), nullable=True)
