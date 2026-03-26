@@ -37,6 +37,11 @@ import {
   inventoryPricingApi,
   inventoryPnLApi,
   inventoryPartnersApi,
+  inventoryShipmentsApi,
+  inventoryTradeDocsApi,
+  inventoryBlockchainApi,
+  inventoryAnchorRulesApi,
+  publicVerifyApi,
 } from '@/lib/inventory-api'
 import type {
   Category,
@@ -2206,5 +2211,182 @@ export function useDownloadPnLPdf() {
   return useMutation({
     mutationFn: ({ dateFrom, dateTo }: { dateFrom?: string; dateTo?: string }) =>
       inventoryPnLApi.downloadPdf(dateFrom, dateTo),
+  })
+}
+
+// ── Shipment Documents ────────────────────────────────────────────────────
+
+export function useShipmentDocuments(params?: { document_type?: string; po_id?: string; so_id?: string }) {
+  return useQuery({
+    queryKey: ['inventory', 'shipments', params],
+    queryFn: () => inventoryShipmentsApi.list(params),
+  })
+}
+
+export function useShipmentDocument(id: string) {
+  return useQuery({
+    queryKey: ['inventory', 'shipments', id],
+    queryFn: () => inventoryShipmentsApi.get(id),
+    enabled: !!id,
+  })
+}
+
+export function useCreateShipment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: import('@/types/inventory').ShipmentDocCreate) => inventoryShipmentsApi.create(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'shipments'] }),
+  })
+}
+
+export function useUpdateShipment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: import('@/types/inventory').ShipmentDocUpdate }) =>
+      inventoryShipmentsApi.update(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'shipments'] }),
+  })
+}
+
+export function useUpdateShipmentStatus() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) => inventoryShipmentsApi.updateStatus(id, status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'shipments'] }),
+  })
+}
+
+export function useDeleteShipment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => inventoryShipmentsApi.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'shipments'] }),
+  })
+}
+
+// ── Trade Documents ───────────────────────────────────────────────────────
+
+export function useTradeDocuments(params?: { document_type?: string; po_id?: string; so_id?: string; shipment_id?: string }) {
+  return useQuery({
+    queryKey: ['inventory', 'trade-docs', params],
+    queryFn: () => inventoryTradeDocsApi.list(params),
+  })
+}
+
+export function useTradeDocument(id: string) {
+  return useQuery({
+    queryKey: ['inventory', 'trade-docs', id],
+    queryFn: () => inventoryTradeDocsApi.get(id),
+    enabled: !!id,
+  })
+}
+
+export function useCreateTradeDoc() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: import('@/types/inventory').TradeDocCreate) => inventoryTradeDocsApi.create(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'trade-docs'] }),
+  })
+}
+
+export function useUpdateTradeDoc() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: import('@/types/inventory').TradeDocUpdate }) =>
+      inventoryTradeDocsApi.update(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'trade-docs'] }),
+  })
+}
+
+export function useApproveTradeDoc() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => inventoryTradeDocsApi.approve(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'trade-docs'] }),
+  })
+}
+
+export function useRejectTradeDoc() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => inventoryTradeDocsApi.reject(id, reason),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'trade-docs'] }),
+  })
+}
+
+export function useDeleteTradeDoc() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => inventoryTradeDocsApi.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'trade-docs'] }),
+  })
+}
+
+// ── Blockchain ────────────────────────────────────────────────────────────
+
+export function useBlockchainStatus(entityType: string, entityId: string) {
+  return useQuery({
+    queryKey: ['inventory', 'blockchain', entityType, entityId],
+    queryFn: () => inventoryBlockchainApi.getStatus(entityType, entityId),
+    enabled: !!entityType && !!entityId,
+  })
+}
+
+export function useBlockchainVerify() {
+  return useMutation({
+    mutationFn: ({ entityType, entityId }: { entityType: string; entityId: string }) =>
+      inventoryBlockchainApi.verify(entityType, entityId),
+  })
+}
+
+// ── Anchor Rules ──────────────────────────────────────────────────────────
+
+export function useAnchorRules(entityType?: string) {
+  return useQuery({
+    queryKey: ['inventory', 'anchor-rules', entityType],
+    queryFn: () => inventoryAnchorRulesApi.list(entityType),
+  })
+}
+
+export function useCreateAnchorRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: import('@/types/inventory').AnchorRuleCreate) => inventoryAnchorRulesApi.create(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'anchor-rules'] }),
+  })
+}
+
+export function useUpdateAnchorRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: import('@/types/inventory').AnchorRuleUpdate }) =>
+      inventoryAnchorRulesApi.update(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'anchor-rules'] }),
+  })
+}
+
+export function useDeleteAnchorRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => inventoryAnchorRulesApi.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'anchor-rules'] }),
+  })
+}
+
+export function useSeedAnchorRules() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => inventoryAnchorRulesApi.seedDefaults(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'anchor-rules'] }),
+  })
+}
+
+// ── Public Verification ───────────────────────────────────────────────────
+
+export function usePublicBatchVerification(batchNumber: string, tenantId?: string) {
+  return useQuery({
+    queryKey: ['public', 'verify', batchNumber],
+    queryFn: () => publicVerifyApi.verifyBatch(batchNumber, tenantId),
+    enabled: !!batchNumber,
   })
 }

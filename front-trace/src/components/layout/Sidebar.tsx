@@ -9,6 +9,7 @@ import {
   ShoppingBag, Tag, BellRing, BookText, Shapes,
   Users2, Globe, ScanLine, PackageCheck, RefreshCw, Scale, Search,
   CheckCircle, MapPin, Award, ChevronsUpDown, Sparkles,
+  Ship, Plane, Shield, Link2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLiveness } from '@/hooks/useHealth'
@@ -59,6 +60,14 @@ const invGroups = [
       { to: '/inventario/ventas', icon: ShoppingBag, label: 'Ventas', permission: 'inventory.view' },
       { to: '/inventario/precios-clientes', icon: Tag, label: 'Precios', permission: 'inventory.view', feature: 'precios' },
       { to: '/inventario/aprobaciones', icon: ShieldCheck, label: 'Aprobaciones', permission: 'inventory.view', feature: 'aprobaciones' },
+    ],
+  },
+  {
+    key: 'logistica', icon: Ship, label: 'Logistica Internacional',
+    items: [
+      { to: '/inventario/envios', icon: Ship, label: 'Documentos Transporte', permission: 'inventory.view' },
+      { to: '/inventario/documentos-comex', icon: Award, label: 'Comercio Exterior', permission: 'inventory.view' },
+      { to: '/inventario/blockchain', icon: Link2, label: 'Blockchain', permission: 'inventory.admin' },
     ],
   },
   {

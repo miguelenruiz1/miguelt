@@ -66,6 +66,10 @@ import { KardexPage } from '@/pages/inventory/KardexPage'
 import { VariantsPage } from '@/pages/inventory/VariantsPage'
 import { ScannerPage } from '@/pages/inventory/ScannerPage'
 import { PickingPage } from '@/pages/inventory/PickingPage'
+import ShipmentsPage from '@/pages/inventory/ShipmentsPage'
+import TradeDocumentsPage from '@/pages/inventory/TradeDocumentsPage'
+import AnchorRulesPage from '@/pages/inventory/AnchorRulesPage'
+import PublicVerifyPage from '@/pages/PublicVerifyPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { CustomerDetailPage } from '@/pages/inventory/CustomerDetailPage'
 import { CustomerPortalPage } from '@/pages/inventory/CustomerPortalPage'
@@ -113,6 +117,8 @@ const router = createBrowserRouter([
   { path: '/forgot-password',    element: <ForgotPasswordPage /> },
   { path: '/reset-password',     element: <ResetPasswordPage /> },
   { path: '/verify/:certificateNumber', element: <React.Suspense fallback={null}><VerifyCertificatePage /></React.Suspense> },
+  { path: '/verificar', element: <PublicVerifyPage /> },
+  { path: '/verificar/:batchNumber', element: <PublicVerifyPage /> },
 
   // ─── Onboarding (protected, no layout) ──────────────────────────────────────
   { path: '/onboarding', element: <ProtectedRoute><OnboardingPage /></ProtectedRoute> },
@@ -728,6 +734,30 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute permission="admin.audit">
             <ModuleGuard><InventoryAuditPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inventario/envios',
+        element: (
+          <ProtectedRoute permission="inventory.view">
+            <ModuleGuard><ShipmentsPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inventario/documentos-comex',
+        element: (
+          <ProtectedRoute permission="inventory.view">
+            <ModuleGuard><TradeDocumentsPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inventario/blockchain',
+        element: (
+          <ProtectedRoute permission="inventory.admin">
+            <ModuleGuard><AnchorRulesPage /></ModuleGuard>
           </ProtectedRoute>
         ),
       },
