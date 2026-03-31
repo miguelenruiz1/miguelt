@@ -560,6 +560,30 @@ services:
       retries: 5
       start_period: 15s
 
+  gateway:
+    build: ./gateway
+    image: trace-gateway:latest
+    container_name: trace-gateway
+    ports:
+      - "9000:9000"
+    depends_on:
+      - api
+      - user-api
+      - subscription-api
+      - inventory-api
+      - integration-api
+      - compliance-api
+      - ai-api
+      - media-api
+    networks:
+      - trace-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 networks:
   trace-net:
     driver: bridge

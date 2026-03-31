@@ -695,7 +695,7 @@ export function PurchaseOrderDetailPage() {
                     {classLabel}
                   </span>
                   {att.url && (
-                    <a href={att.url.startsWith('http') ? att.url : `${import.meta.env.VITE_INVENTORY_API_URL ?? 'http://localhost:9003'}${att.url}`}
+                    <a href={att.url.startsWith('http') ? att.url : `${import.meta.env.VITE_API_URL ?? 'http://localhost:9000'}${att.url}`}
                       target="_blank" rel="noopener noreferrer"
                       className="text-xs text-primary hover:underline shrink-0">
                       Ver

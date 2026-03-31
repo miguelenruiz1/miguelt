@@ -1,0 +1,4 @@
+.env.production
+.env.staging
+*.pem
+*.key

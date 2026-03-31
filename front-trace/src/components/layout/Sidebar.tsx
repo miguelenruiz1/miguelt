@@ -529,7 +529,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-500/20 text-[10px] font-semibold text-emerald-400">
               {user.avatar_url ? (
                 <img
-                  src={user.avatar_url.startsWith('http') ? user.avatar_url : `${import.meta.env.VITE_USER_API_URL ?? 'http://localhost:9001'}${user.avatar_url}`}
+                  src={user.avatar_url.startsWith('http') ? user.avatar_url : `${import.meta.env.VITE_API_URL ?? 'http://localhost:9000'}${user.avatar_url}`}
                   alt={user.full_name}
                   className="h-full w-full object-cover rounded-md"
                 />

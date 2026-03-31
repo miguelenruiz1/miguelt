@@ -31,7 +31,7 @@ export class ApiError extends Error {
 
 // ─── Base fetch helper ────────────────────────────────────────────────────────
 
-const BASE = import.meta.env.VITE_API_URL ?? ''
+const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 interface RequestOptions {
   idempotencyKey?: string

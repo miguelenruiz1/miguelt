@@ -85,7 +85,7 @@ import type {
   BusinessPartner,
 } from '@/types/inventory'
 
-const BASE = import.meta.env.VITE_INVENTORY_API_URL ?? 'http://localhost:9003'
+const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 class ApiError extends Error {
   status: number

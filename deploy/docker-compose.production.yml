@@ -1,0 +1,379 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# TRACE PLATFORM — Production Docker Compose
+# ═══════════════════════════════════════════════════════════════════════════════
+# Usage: docker compose -f deploy/docker-compose.production.yml --env-file deploy/.env.production up -d
+#
+# Key differences from development:
+#   - 1 PostgreSQL (8 databases) instead of 8 PostgreSQL instances
+#   - No MailHog, no Adminer
+#   - Gateway as single entry point (port 9000)
+#   - All services use production env vars
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ── Database (single instance, 8 databases) ──────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: trace
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trace"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - trace-net
+
+  # ── Redis ────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy volatile-ttl
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - trace-net
+
+  # ── Gateway ──────────────────────────────────────────────────────────────
+  gateway:
+    build: ../gateway
+    ports:
+      - "9000:9000"
+    depends_on:
+      trace-api:
+        condition: service_healthy
+      user-api:
+        condition: service_healthy
+      subscription-api:
+        condition: service_healthy
+      inventory-api:
+        condition: service_healthy
+      integration-api:
+        condition: service_healthy
+      compliance-api:
+        condition: service_healthy
+      media-api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - trace-net
+
+  # ── Trace API ────────────────────────────────────────────────────────────
+  trace-api:
+    build: ../trace-service
+    environment:
+      DATABASE_URL: ${TRACE_DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}/0
+      ARQ_REDIS_URL: ${REDIS_URL}/1
+      JWT_SECRET: ${JWT_SECRET}
+      S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN}
+      TRACE_ADMIN_KEY: ${TRACE_ADMIN_KEY}
+      SOLANA_SIMULATION: ${SOLANA_SIMULATION}
+      SOLANA_NETWORK: ${SOLANA_NETWORK}
+      SOLANA_RPC_URL: ${SOLANA_RPC_URL}
+      SOLANA_KEYPAIR: ${SOLANA_KEYPAIR}
+      HELIUS_API_KEY: ${HELIUS_API_KEY}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
+      SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
+      COMPLIANCE_SERVICE_URL: http://compliance-api:8005
+      MEDIA_SERVICE_URL: http://media-api:8007
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_S3_REGION: ${AWS_S3_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - trace-uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - trace-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
+
+  # ── Trace Worker ─────────────────────────────────────────────────────────
+  trace-worker:
+    build: ../trace-service
+    environment:
+      DATABASE_URL: ${TRACE_DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}/0
+      ARQ_REDIS_URL: ${REDIS_URL}/1
+      SOLANA_SIMULATION: ${SOLANA_SIMULATION}
+      SOLANA_NETWORK: ${SOLANA_NETWORK}
+      SOLANA_RPC_URL: ${SOLANA_RPC_URL}
+      SOLANA_KEYPAIR: ${SOLANA_KEYPAIR}
+      HELIUS_API_KEY: ${HELIUS_API_KEY}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - trace-net
+    command: arq app.worker.WorkerSettings
+
+  # ── User API ─────────────────────────────────────────────────────────────
+  user-api:
+    build: ../user-service
+    environment:
+      DATABASE_URL: ${USER_DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}/2
+      JWT_SECRET: ${JWT_SECRET}
+      S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@trace.app}
+      MEDIA_SERVICE_URL: http://media-api:8007
+      SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
+      FRONTEND_URL: ${FRONTEND_URL}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-480}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - trace-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 2"
+
+  # ── Subscription API ─────────────────────────────────────────────────────
+  subscription-api:
+    build: ../subscription-service
+    environment:
+      DATABASE_URL: ${SUBSCRIPTION_DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}/3
+      JWT_SECRET: ${JWT_SECRET}
+      USER_SERVICE_URL: http://user-api:8001
+      INTEGRATION_SERVICE_URL: http://integration-api:8004
+      APP_URL: ${APP_URL}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user-api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - trace-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8002/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8002 --workers 2"
+
+  # ── Inventory API ────────────────────────────────────────────────────────
+  inventory-api:
+    build: ../inventory-service
+    environment:
+      DATABASE_URL: ${INVENTORY_DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}/4
+      JWT_SECRET: ${JWT_SECRET}
+      S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN}
+      USER_SERVICE_URL: http://user-api:8001
+      SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
+      TRACE_SERVICE_URL: http://trace-api:8000
+      MEDIA_SERVICE_URL: http://media-api:8007
+      AI_SERVICE_URL: http://ai-api:8006
+      INTEGRATION_SERVICE_URL: http://integration-api:8004
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - inventory-uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user-api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - trace-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8003/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8003 --workers 2"
+
+  # ── Integration API ──────────────────────────────────────────────────────
+  integration-api:
+    build: ../integration-service
+    environment:
+      DATABASE_URL: ${INTEGRATION_DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}/5
+      JWT_SECRET: ${JWT_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      USER_SERVICE_URL: http://user-api:8001
+      SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
+      INVENTORY_SERVICE_URL: http://inventory-api:8003
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user-api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - trace-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8004/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8004 --workers 2"
+
+  # ── Compliance API ───────────────────────────────────────────────────────
+  compliance-api:
+    build: ../compliance-service
+    environment:
+      DATABASE_URL: ${COMPLIANCE_DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}/6
+      JWT_SECRET: ${JWT_SECRET}
+      S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN}
+      USER_SERVICE_URL: http://user-api:8001
+      SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
+      TRACE_SERVICE_URL: http://trace-api:8000
+      MEDIA_SERVICE_URL: http://media-api:8007
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
+      GFW_API_KEY: ${GFW_API_KEY:-}
+      SOLANA_NETWORK: ${SOLANA_NETWORK:-devnet}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_BUCKET_NAME: ${AWS_S3_BUCKET:-tracelog-certificates}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user-api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - trace-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8005/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8005 --workers 2"
+
+  # ── AI API ───────────────────────────────────────────────────────────────
+  ai-api:
+    build: ../ai-service
+    environment:
+      DATABASE_URL: ${AI_DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}/7
+      JWT_SECRET: ${JWT_SECRET}
+      USER_SERVICE_URL: http://user-api:8001
+      INVENTORY_SERVICE_URL: http://inventory-api:8003
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user-api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - trace-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8006/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8006 --workers 2"
+
+  # ── Media API ────────────────────────────────────────────────────────────
+  media-api:
+    build: ../media-service
+    environment:
+      DATABASE_URL: ${MEDIA_DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}/8
+      S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_S3_REGION: ${AWS_S3_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - media-uploads:/app/uploads/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - trace-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8007/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8007 --workers 2"
+
+networks:
+  trace-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  trace-uploads:
+  inventory-uploads:
+  media-uploads:

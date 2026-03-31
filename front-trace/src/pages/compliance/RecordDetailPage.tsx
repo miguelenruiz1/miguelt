@@ -787,7 +787,7 @@ function CertificateTab({ recordId, record }: { recordId: string; record: Compli
       {/* Actions */}
       <div className="flex flex-wrap gap-3">
         <button onClick={async () => {
-          const base = import.meta.env.VITE_COMPLIANCE_API_URL ?? ''
+          const base = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
           const res = await authFetch(`${base}/api/v1/compliance/certificates/${certificate.id}/download`)
           if (!res.ok) return
           const blob = await res.blob()

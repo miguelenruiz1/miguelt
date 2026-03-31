@@ -8,7 +8,7 @@ import type {
   SyncLog,
 } from '@/types/integration'
 
-const BASE = import.meta.env.VITE_INTEGRATION_API_URL ?? 'http://localhost:9004'
+const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await authFetch(`${BASE}${path}`, options)

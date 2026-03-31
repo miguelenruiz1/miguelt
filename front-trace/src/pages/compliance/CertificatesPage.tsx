@@ -25,7 +25,7 @@ const statusLabel: Record<string, string> = {
   expired: 'Expirado',
 }
 
-const COMPLIANCE_BASE = import.meta.env.VITE_COMPLIANCE_API_URL ?? ''
+const COMPLIANCE_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 

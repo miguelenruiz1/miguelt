@@ -28,7 +28,7 @@ import type {
   ValidationResult,
 } from '@/types/compliance'
 
-const BASE = import.meta.env.VITE_COMPLIANCE_API_URL ?? ''
+const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await authFetch(`${BASE}${path}`, options)

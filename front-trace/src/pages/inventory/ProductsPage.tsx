@@ -22,8 +22,8 @@ import type { CustomField, Product, ProductType, ProductVariant } from '@/types/
 import { inventoryProductsApi } from '@/lib/inventory-api'
 import MediaPickerModal from '@/components/compliance/MediaPickerModal'
 
-const INV_API_BASE = import.meta.env.VITE_INVENTORY_API_URL ?? 'http://localhost:9003'
-const MEDIA_API_BASE = import.meta.env.VITE_MEDIA_API_URL ?? 'http://localhost:9007'
+const INV_API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
+const MEDIA_API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 function imgSrc(img: string | { media_file_id?: string; url?: string }) {
   // New format: { media_file_id, url } — url is relative to media-service

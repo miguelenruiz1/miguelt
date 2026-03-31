@@ -1,71 +1,191 @@
-import { Fragment, useState, useEffect, useMemo } from 'react'
-import { Shield, Plus, Save, Search, LayoutTemplate, FilePlus2 } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import {
+  Shield, Plus, Save, Truck, Boxes, Factory, ShieldCheck, FileText, Sparkles,
+  Users, Eye, CreditCard, Settings, Webhook,
+} from 'lucide-react'
 import { useRoles, usePermissions, useSetRolePermissions, useCreateRole } from '@/hooks/useRoles'
 import type { Permission } from '@/types/auth'
 import { useQueryClient } from '@tanstack/react-query'
-import { RoleTemplateModal } from '@/components/auth/RoleTemplateModal'
-import { CreateTemplateModal } from '@/components/auth/CreateTemplateModal'
+import { cn } from '@/lib/utils'
 
-// ─── Permission matrix cell ───────────────────────────────────────────────────
+// ─── Permission groups (simplified UX) ───────────────────────────────────────
 
-function PermCell({
-  roleId,
-  permId,
-  checked,
-  onChange,
-}: {
-  roleId: string
-  permId: string
-  checked: boolean
-  onChange: (roleId: string, permId: string, checked: boolean) => void
-}) {
-  return (
-    <td className="px-3 py-2 text-center border-r border-slate-100 last:border-0">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(roleId, permId, e.target.checked)}
-        className="h-4 w-4 rounded border-slate-300 text-primary cursor-pointer"
-      />
-    </td>
-  )
+interface PermGroup {
+  key: string
+  label: string
+  description: string
+  icon: React.ElementType
+  color: string
+  /** permission slug prefixes that belong to this group */
+  prefixes: string[]
 }
 
-// ─── New Role Form ────────────────────────────────────────────────────────────
+// Operational permissions — what employees actually use day-to-day
+const OPERATIONS_GROUPS: PermGroup[] = [
+  {
+    key: 'logistics',
+    label: 'Logística',
+    description: 'Cargas, custodios, organizaciones, tracking, blockchain',
+    icon: Truck,
+    color: 'bg-blue-500',
+    prefixes: ['logistics.', 'assets.', 'wallets.', 'organizations.', 'taxonomy.'],
+  },
+  {
+    key: 'inventory',
+    label: 'Inventario',
+    description: 'Productos, bodegas, stock, movimientos, lotes, seriales',
+    icon: Boxes,
+    color: 'bg-orange-500',
+    prefixes: ['inventory.', 'products.', 'warehouses.', 'stock.', 'movements.', 'batches.', 'serials.', 'variants.', 'config.', 'cycle_counts.', 'events.'],
+  },
+  {
+    key: 'commerce',
+    label: 'Compras y Ventas',
+    description: 'Órdenes de compra/venta, socios comerciales, clientes, proveedores, precios',
+    icon: CreditCard,
+    color: 'bg-emerald-500',
+    prefixes: ['purchase_orders.', 'sales_orders.', 'suppliers.', 'customers.', 'price_lists.'],
+  },
+  {
+    key: 'production',
+    label: 'Producción',
+    description: 'Recetas (BOM), corridas de producción, emisiones, recibos, MRP',
+    icon: Factory,
+    color: 'bg-violet-500',
+    prefixes: ['production.', 'recipes.'],
+  },
+  {
+    key: 'compliance',
+    label: 'Cumplimiento',
+    description: 'Marcos normativos, parcelas, registros, certificados',
+    icon: ShieldCheck,
+    color: 'bg-green-600',
+    prefixes: ['compliance.'],
+  },
+  {
+    key: 'reports',
+    label: 'Reportes',
+    description: 'Reportes, descargas CSV, kardex',
+    icon: Eye,
+    color: 'bg-amber-500',
+    prefixes: ['reports.', 'audit.'],
+  },
+]
 
-function NewRoleRow({ onSave }: { onSave: (name: string, slug: string) => void }) {
-  const [name, setName] = useState('')
-  const [slug, setSlug] = useState('')
+// Admin permissions — only for business owners / administrators
+const ADMIN_GROUPS: PermGroup[] = [
+  {
+    key: 'team',
+    label: 'Gestión de Equipo',
+    description: 'Crear usuarios, asignar roles, ver auditoría',
+    icon: Users,
+    color: 'bg-purple-500',
+    prefixes: ['admin.', 'users.', 'roles.', 'system.'],
+  },
+  {
+    key: 'invoicing',
+    label: 'Facturación Electrónica',
+    description: 'Facturas DIAN, notas crédito/débito, resoluciones',
+    icon: FileText,
+    color: 'bg-slate-600',
+    prefixes: ['integrations.'],
+  },
+  {
+    key: 'subscription',
+    label: 'Suscripción y Pagos',
+    description: 'Plan activo, licencias, facturación SaaS',
+    icon: CreditCard,
+    color: 'bg-indigo-500',
+    prefixes: ['subscription.', 'plans.', 'licenses.'],
+  },
+  {
+    key: 'email',
+    label: 'Configuración de Correo',
+    description: 'Plantillas de email, proveedor de envío',
+    icon: Settings,
+    color: 'bg-pink-500',
+    prefixes: ['email.', 'email_providers.', 'email_templates.'],
+  },
+]
+
+const ALL_GROUPS = [...OPERATIONS_GROUPS, ...ADMIN_GROUPS]
+
+function matchesGroup(permSlug: string, group: PermGroup): boolean {
+  return group.prefixes.some(prefix => permSlug.startsWith(prefix))
+}
+
+// ─── Group Row ────────────────────────────────────────────────────────────────
+
+function GroupRow({
+  group,
+  roles,
+  groupPermIds,
+  isGroupActive,
+  isGroupPartial,
+  toggleGroup,
+}: {
+  group: PermGroup
+  roles: { id: string; name: string; is_system?: boolean }[]
+  groupPermIds: Record<string, string[]>
+  isGroupActive: (roleId: string, groupKey: string) => boolean
+  isGroupPartial: (roleId: string, groupKey: string) => boolean
+  toggleGroup: (roleId: string, groupKey: string) => void
+}) {
+  const permCount = groupPermIds[group.key]?.length ?? 0
+  if (permCount === 0) return null
+  const Icon = group.icon
 
   return (
-    <tr className="bg-primary/5 border-b border-slate-200">
-      <td className="px-4 py-2 sticky left-0 z-10 bg-primary/5">
-        <div className="flex items-center gap-2">
-          <input
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value)
-              setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))
-            }}
-            placeholder="Nombre del rol"
-            className="w-36 rounded-lg border border-primary/50 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <input
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            placeholder="slug"
-            className="w-24 rounded-lg border border-primary/50 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <button
-            onClick={() => { if (name && slug) { onSave(name, slug); setName(''); setSlug('') } }}
-            className="rounded-lg bg-primary px-2 py-1 text-xs text-white hover:bg-primary/90 flex items-center gap-1"
-          >
-            <Plus className="h-3 w-3" /> Agregar
-          </button>
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+        <div className={cn('flex h-9 w-9 items-center justify-center rounded-xl text-white shrink-0', group.color)}>
+          <Icon className="h-4 w-4" />
         </div>
-      </td>
-      {/* empty cells for each role column placeholder */}
-    </tr>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-slate-800">{group.label}</h3>
+          <p className="text-xs text-slate-400">{group.description}</p>
+        </div>
+      </div>
+      <div className="px-5 py-3 flex flex-wrap gap-3">
+        {roles.map(role => {
+          const active = isGroupActive(role.id, group.key)
+          const partial = isGroupPartial(role.id, group.key)
+          return (
+            <button
+              key={role.id}
+              onClick={() => toggleGroup(role.id, group.key)}
+              className={cn(
+                'flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-medium transition-all',
+                active
+                  ? 'border-primary bg-primary/5 text-primary'
+                  : partial
+                    ? 'border-amber-300 bg-amber-50 text-amber-700'
+                    : 'border-slate-200 text-slate-500 hover:border-slate-300',
+              )}
+            >
+              <div className={cn(
+                'h-4 w-4 rounded border-2 flex items-center justify-center shrink-0',
+                active ? 'border-primary bg-primary' : partial ? 'border-amber-400 bg-amber-400' : 'border-slate-300',
+              )}>
+                {(active || partial) && (
+                  <svg className="h-3 w-3 text-white" viewBox="0 0 12 12" fill="none">
+                    {active ? (
+                      <path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    ) : (
+                      <path d="M3 6H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    )}
+                  </svg>
+                )}
+              </div>
+              <span>{role.name}</span>
+              {role.is_system && (
+                <span className="text-[10px] bg-purple-50 text-purple-600 rounded px-1">sistema</span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
@@ -78,13 +198,10 @@ export function RolesPage() {
   const setPerms = useSetRolePermissions()
   const qc = useQueryClient()
 
-  // Local state: roleId → Set<permId>
   const [localPerms, setLocalPerms] = useState<Record<string, Set<string>>>({})
   const [dirty, setDirty] = useState<Set<string>>(new Set())
-  const [filter, setFilter] = useState('')
   const [saving, setSaving] = useState(false)
-  const [templateOpen, setTemplateOpen] = useState(false)
-  const [createTmplOpen, setCreateTmplOpen] = useState(false)
+  const [newRoleName, setNewRoleName] = useState('')
 
   // Load permissions for all roles
   useEffect(() => {
@@ -107,30 +224,48 @@ export function RolesPage() {
     load()
   }, [roles.length])
 
-  // Group permissions by module
-  const modules = useMemo(() => {
-    const filtered = allPerms.filter(
-      (p) =>
-        !filter ||
-        p.name.toLowerCase().includes(filter.toLowerCase()) ||
-        p.slug.toLowerCase().includes(filter.toLowerCase()),
-    )
-    const grouped: Record<string, Permission[]> = {}
-    for (const p of filtered) {
-      if (!grouped[p.module]) grouped[p.module] = []
-      grouped[p.module].push(p)
+  // Map perm slugs to IDs per group
+  const groupPermIds = useMemo(() => {
+    const map: Record<string, string[]> = {}
+    for (const group of ALL_GROUPS) {
+      map[group.key] = allPerms
+        .filter(p => matchesGroup(p.slug, group))
+        .map(p => p.id)
     }
-    return grouped
-  }, [allPerms, filter])
+    return map
+  }, [allPerms])
 
-  const handleChange = (roleId: string, permId: string, checked: boolean) => {
-    setLocalPerms((prev) => {
+  // Check if a role has ALL perms in a group
+  function isGroupActive(roleId: string, groupKey: string): boolean {
+    const ids = groupPermIds[groupKey] ?? []
+    if (ids.length === 0) return false
+    const roleSet = localPerms[roleId]
+    if (!roleSet) return false
+    return ids.every(id => roleSet.has(id))
+  }
+
+  // Check if a role has SOME perms in a group
+  function isGroupPartial(roleId: string, groupKey: string): boolean {
+    const ids = groupPermIds[groupKey] ?? []
+    if (ids.length === 0) return false
+    const roleSet = localPerms[roleId]
+    if (!roleSet) return false
+    const count = ids.filter(id => roleSet.has(id)).length
+    return count > 0 && count < ids.length
+  }
+
+  function toggleGroup(roleId: string, groupKey: string) {
+    const ids = groupPermIds[groupKey] ?? []
+    const active = isGroupActive(roleId, groupKey)
+    setLocalPerms(prev => {
       const set = new Set(prev[roleId] ?? [])
-      if (checked) set.add(permId)
-      else set.delete(permId)
+      for (const id of ids) {
+        if (active) set.delete(id)
+        else set.add(id)
+      }
       return { ...prev, [roleId]: set }
     })
-    setDirty((prev) => new Set(prev).add(roleId))
+    setDirty(prev => new Set(prev).add(roleId))
   }
 
   const handleSave = async () => {
@@ -150,12 +285,19 @@ export function RolesPage() {
     }
   }
 
+  const handleCreateRole = () => {
+    if (!newRoleName.trim()) return
+    const slug = newRoleName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    createRole.mutate({ name: newRoleName.trim(), slug })
+    setNewRoleName('')
+  }
+
   if (rolesLoading || permsLoading) {
     return <div className="p-8 text-slate-500">Cargando...</div>
   }
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-8 space-y-6 max-w-5xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -164,101 +306,49 @@ export function RolesPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Roles y Permisos</h1>
-            <p className="text-sm text-slate-500">Matriz de control de acceso</p>
+            <p className="text-sm text-slate-500">Asigna módulos completos a cada rol</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCreateTmplOpen(true)}
-            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-          >
-            <FilePlus2 className="h-4 w-4" />
-            Crear plantilla
-          </button>
-          <button
-            onClick={() => setTemplateOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors"
-          >
-            <LayoutTemplate className="h-4 w-4" />
-            Crear desde plantilla
-          </button>
+      </div>
+
+      {/* New role */}
+      <div className="flex items-center gap-2">
+        <input
+          value={newRoleName}
+          onChange={e => setNewRoleName(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleCreateRole()}
+          placeholder="Nombre del nuevo rol..."
+          className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-64"
+        />
+        <button
+          onClick={handleCreateRole}
+          disabled={!newRoleName.trim() || createRole.isPending}
+          className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
+        >
+          <Plus className="h-4 w-4" /> Crear rol
+        </button>
+      </div>
+
+      {/* Operaciones — day-to-day employee access */}
+      <div>
+        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Operaciones</h2>
+        <p className="text-xs text-slate-400 mb-4">Permisos del día a día — asigna a empleados, operarios y colaboradores</p>
+        <div className="space-y-3">
+          {OPERATIONS_GROUPS.map(group => (
+            <GroupRow key={group.key} group={group} roles={roles} groupPermIds={groupPermIds} isGroupActive={isGroupActive} isGroupPartial={isGroupPartial} toggleGroup={toggleGroup} />
+          ))}
         </div>
       </div>
 
-      {/* Filter */}
-      <div className="relative max-w-xs">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <input
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Buscar permiso..."
-          className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-      </div>
-
-      {/* Matrix table */}
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white/80 shadow-sm">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="sticky left-0 z-20 bg-slate-50 px-4 py-3 text-left font-semibold text-slate-600 min-w-[220px]">
-                Permiso
-              </th>
-              {roles.map((role) => (
-                <th
-                  key={role.id}
-                  className="px-3 py-3 text-center font-semibold text-slate-600 min-w-[100px] border-l border-slate-100"
-                >
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="truncate max-w-[90px]">{role.name}</span>
-                    {role.is_system && (
-                      <span className="text-[10px] text-purple-600 bg-purple-50 rounded px-1">sistema</span>
-                    )}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(modules).map(([module, perms]) => (
-              <Fragment key={module}>
-                {/* Module header row */}
-                <tr className="bg-slate-50/80">
-                  <td
-                    colSpan={roles.length + 1}
-                    className="sticky left-0 px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-t border-slate-100 bg-slate-50/80"
-                  >
-                    {module}
-                  </td>
-                </tr>
-                {/* Permission rows */}
-                {perms.map((perm) => (
-                  <tr key={perm.id} className="border-b border-slate-100 hover:bg-slate-50/50">
-                    <td className="sticky left-0 z-10 bg-white px-4 py-2 hover:bg-slate-50/50">
-                      <div>
-                        <div className="text-slate-700 font-medium text-xs">{perm.name}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">{perm.slug}</div>
-                      </div>
-                    </td>
-                    {roles.map((role) => (
-                      <PermCell
-                        key={role.id}
-                        roleId={role.id}
-                        permId={perm.id}
-                        checked={localPerms[role.id]?.has(perm.id) ?? false}
-                        onChange={handleChange}
-                      />
-                    ))}
-                  </tr>
-                ))}
-              </Fragment>
-            ))}
-            {/* New role row */}
-            <NewRoleRow
-              onSave={(name, slug) => createRole.mutate({ name, slug })}
-            />
-          </tbody>
-        </table>
+      {/* Administración — business owner only */}
+      <div>
+        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Administración</h2>
+        <p className="text-xs text-slate-400 mb-4">Solo para dueños o gerentes — control total del negocio</p>
+        <div className="space-y-3">
+          {ADMIN_GROUPS.map(group => (
+            <GroupRow key={group.key} group={group} roles={roles} groupPermIds={groupPermIds} isGroupActive={isGroupActive} isGroupPartial={isGroupPartial} toggleGroup={toggleGroup} />
+          ))}
+        </div>
       </div>
 
       {/* Floating save bar */}
@@ -276,16 +366,17 @@ export function RolesPage() {
             {saving ? 'Guardando...' : 'Guardar cambios'}
           </button>
           <button
-            onClick={() => setDirty(new Set())}
+            onClick={() => {
+              // Reload from server
+              setDirty(new Set())
+              qc.invalidateQueries({ queryKey: ['admin', 'roles'] })
+            }}
             className="text-slate-400 hover:text-white text-xs"
           >
             Cancelar
           </button>
         </div>
       )}
-
-      <RoleTemplateModal open={templateOpen} onClose={() => setTemplateOpen(false)} />
-      <CreateTemplateModal open={createTmplOpen} onClose={() => setCreateTmplOpen(false)} />
     </div>
   )
 }

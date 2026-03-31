@@ -22,7 +22,7 @@ export class EmailProvidersApiError extends Error {
 
 // ─── Base fetch ───────────────────────────────────────────────────────────────
 
-const BASE = import.meta.env.VITE_USER_API_URL ?? 'http://localhost:9001'
+const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 async function request<T>(
   method: string,

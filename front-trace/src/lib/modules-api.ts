@@ -1,7 +1,7 @@
 import type { ModuleDefinition, TenantModuleStatus } from '@/types/modules'
 import { authFetch } from '@/lib/auth-fetch'
 
-const BASE = import.meta.env.VITE_SUBSCRIPTION_API_URL ?? 'http://localhost:9002'
+const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 async function request<T>(path: string, options: RequestInit = {}, auth = true): Promise<T> {
   const res = await authFetch(`${BASE}${path}`, options, auth)

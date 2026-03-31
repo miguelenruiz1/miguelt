@@ -458,7 +458,7 @@ export function AssetDetailPage() {
 function CertificateDownloadButton({ assetId }: { assetId: string }) {
   const { data: records = [] } = useAssetCompliance(assetId)
   const [downloading, setDownloading] = useState(false)
-  const complianceUrl = import.meta.env.VITE_COMPLIANCE_API_URL ?? ''
+  const complianceUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
   // Find the first record that has a certificate
   const recordWithCert = records.find(r =>
@@ -646,7 +646,7 @@ function ComplianceRecordCard({ record: r }: { record: { id: string; framework_s
   const navigate = useNavigate()
   const { data: cert } = useRecordCertificate(r.id)
   const generate = useGenerateCertificate(r.id)
-  const complianceUrl = import.meta.env.VITE_COMPLIANCE_API_URL ?? ''
+  const complianceUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
   const canGenerate = ['ready', 'declared', 'compliant'].includes(r.compliance_status)
 
   return (

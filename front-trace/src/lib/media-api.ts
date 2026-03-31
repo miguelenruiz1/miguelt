@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/auth'
 import { ApiError } from '@/lib/api'
 import type { MediaFile, PaginatedResponse } from '@/types/api'
 
-const BASE = import.meta.env.VITE_MEDIA_API_URL ?? 'http://localhost:9007'
+const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 interface RequestOptions {
   params?: Record<string, string | number | undefined>
@@ -97,8 +97,7 @@ export const mediaApi = {
 export async function fetchMediaReferenceCounts(fileIds: string[]): Promise<Record<string, number>> {
   if (fileIds.length === 0) return {}
   const store = useAuthStore.getState()
-  const traceBase = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
-  const compBase = import.meta.env.VITE_COMPLIANCE_API_URL ?? 'http://localhost:9005'
+  const gateway = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'X-Tenant-Id': store.tenantId ?? 'default',
@@ -107,10 +106,10 @@ export async function fetchMediaReferenceCounts(fileIds: string[]): Promise<Reco
   if (store.accessToken) headers['Authorization'] = `Bearer ${store.accessToken}`
 
   const [traceRes, compRes] = await Promise.allSettled([
-    fetch(`${traceBase}/api/v1/media/files/reference-counts`, {
+    fetch(`${gateway}/api/v1/media/files/reference-counts`, {
       method: 'POST', headers, body: JSON.stringify(fileIds),
     }).then(r => r.ok ? r.json() : { counts: {} }),
-    fetch(`${compBase}/api/v1/compliance/records/media-reference-counts`, {
+    fetch(`${gateway}/api/v1/compliance/records/media-reference-counts`, {
       method: 'POST', headers, body: JSON.stringify(fileIds),
     }).then(r => r.ok ? r.json() : { counts: {} }),
   ])

@@ -55,7 +55,7 @@ const LANGUAGES = [
   { value: 'pt', label: 'Português' },
 ]
 
-const USER_API_BASE = import.meta.env.VITE_USER_API_URL ?? 'http://localhost:9001'
+const USER_API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 const inputCls = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all hover:border-slate-300'
 const labelCls = 'block text-sm font-medium text-slate-700 mb-1.5'

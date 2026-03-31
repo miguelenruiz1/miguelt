@@ -21,7 +21,7 @@ export class PaymentsApiError extends Error {
 
 // ─── Base fetch ───────────────────────────────────────────────────────────────
 
-const BASE = import.meta.env.VITE_SUBSCRIPTION_API_URL ?? 'http://localhost:9002'
+const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 async function request<T>(
   method: string,

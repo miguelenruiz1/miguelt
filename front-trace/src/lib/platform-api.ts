@@ -9,7 +9,7 @@ import type {
   PaymentLinkResult,
 } from '@/types/platform'
 
-const BASE = import.meta.env.VITE_SUBSCRIPTION_API_URL ?? 'http://localhost:9002'
+const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await authFetch(`${BASE}${path}`, {
@@ -107,7 +107,7 @@ export const platformApi = {
 
   // Cross-tenant user oversight — calls user-service directly
   users: async (params?: { search?: string; tenant_id?: string; offset?: number; limit?: number }): Promise<PaginatedUsers> => {
-    const USER_BASE = import.meta.env.VITE_USER_API_URL ?? 'http://localhost:9001'
+    const USER_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
     const qs = new URLSearchParams()
     if (params) {
       for (const [k, v] of Object.entries(params)) {

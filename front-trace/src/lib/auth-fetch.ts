@@ -6,7 +6,7 @@
 import { useAuthStore } from '@/store/auth'
 import { useConfirmStore } from '@/store/confirm'
 
-const USER_API = import.meta.env.VITE_USER_API_URL ?? 'http://localhost:9001'
+const USER_API = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 let _refreshing: Promise<string | null> | null = null
 
