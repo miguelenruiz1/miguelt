@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, Spinner } from '@/components/ui/Misc'
 import { useLiveness, useReadiness, useSolanaAccount, useSolanaTx } from '@/hooks/useHealth'
-import { CheckCircle2, AlertCircle, Search, RefreshCw, Link2 } from 'lucide-react'
+import { useAdminStore } from '@/store/admin'
+import { CheckCircle2, AlertCircle, Search, RefreshCw, Link2, KeyRound, Eye, EyeOff, Check, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function SystemPage() {
@@ -23,7 +24,7 @@ export function SystemPage() {
     <div className="flex flex-col flex-1 overflow-hidden">
       <Topbar
         title="Sistema"
-        subtitle="Verificaciones de salud y herramientas Solana"
+        subtitle="Configuración de plataforma, blockchain y herramientas Solana"
         actions={
           <Button variant="ghost" size="sm" onClick={() => { refetchH(); refetchR(); }}>
             <RefreshCw className="h-4 w-4" /> Actualizar
@@ -32,6 +33,9 @@ export function SystemPage() {
       />
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+        {/* Blockchain Admin Key */}
+        <BlockchainConfigCard />
 
         {/* Health */}
         <Card>
@@ -84,6 +88,85 @@ export function SystemPage() {
     </div>
   )
 }
+
+/* ─── Blockchain Config Card ──────────────────────────────────────────────── */
+
+function BlockchainConfigCard() {
+  const { adminKey, setAdminKey } = useAdminStore()
+  const [draft, setDraft] = useState('')
+  const [showKey, setShowKey] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  function handleSave() {
+    setAdminKey(draft.trim())
+    setDraft('')
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
+  }
+
+  function handleClear() {
+    setAdminKey('')
+    setDraft('')
+  }
+
+  return (
+    <Card>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
+          <Shield className="h-5 w-5 text-amber-600" />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-slate-800">Clave de Blockchain</h2>
+          <p className="text-xs text-slate-500">Requerida para operaciones de liberación y anclaje en Solana</p>
+        </div>
+        {adminKey && (
+          <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-600">
+            <Check className="h-3 w-3" /> Configurada
+          </span>
+        )}
+      </div>
+
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <input
+            type={showKey ? 'text' : 'password'}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={adminKey ? '(dejar vacío para mantener)' : 'Ingresa TRACE_ADMIN_KEY...'}
+            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 pr-10 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring"
+          />
+          <button
+            type="button"
+            onClick={() => setShowKey(v => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+          >
+            {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        <Button size="md" onClick={handleSave} disabled={!draft.trim()}>
+          <KeyRound className="h-4 w-4" /> Guardar
+        </Button>
+        {adminKey && (
+          <Button size="md" variant="ghost" onClick={handleClear} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+            Limpiar
+          </Button>
+        )}
+      </div>
+
+      {saved && (
+        <p className="mt-2 text-xs text-emerald-600 flex items-center gap-1">
+          <Check className="h-3.5 w-3.5" /> Clave guardada en localStorage
+        </p>
+      )}
+
+      <p className="mt-2 text-xs text-slate-400">
+        Debe coincidir con TRACE_ADMIN_KEY en el .env del backend. Se almacena en localStorage del navegador.
+      </p>
+    </Card>
+  )
+}
+
+/* ─── Helpers ──────────────────────────────────────────────────────────────── */
 
 function HealthRow({ label, value, loading }: { label: string; value?: string; loading: boolean }) {
   const ok = value === 'ok'

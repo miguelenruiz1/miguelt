@@ -5,10 +5,16 @@ import type {
   ActivationUpdateInput,
   CreatePlotInput,
   CreateRecordInput,
+  CreateRiskAssessmentInput,
+  CreateSupplyChainNodeInput,
   DeclarationUpdate,
+  DocumentLinkInput,
   PlotLinkInput,
+  ReorderNodesInput,
   UpdatePlotInput,
   UpdateRecordInput,
+  UpdateRiskAssessmentInput,
+  UpdateSupplyChainNodeInput,
 } from '@/types/compliance'
 
 const KEYS = {
@@ -28,6 +34,10 @@ const KEYS = {
   certificateList: (p: object) => ['compliance', 'certificates', 'list', p] as const,
   certificate: (id: string) => ['compliance', 'certificates', id] as const,
   verify: (num: string) => ['compliance', 'verify', num] as const,
+  recordDocuments: (id: string) => ['compliance', 'records', id, 'documents'] as const,
+  plotDocuments: (id: string) => ['compliance', 'plots', id, 'documents'] as const,
+  riskAssessment: (recordId: string) => ['compliance', 'risk-assessment', recordId] as const,
+  supplyChain: (recordId: string) => ['compliance', 'records', recordId, 'supply-chain'] as const,
 }
 
 // ─── Frameworks ──────────────────────────────────────────────────────────────
@@ -129,6 +139,16 @@ export function useDeletePlot() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => complianceApi.plots.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.plots })
+    },
+  })
+}
+
+export function useScreenDeforestation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => complianceApi.plots.screenDeforestation(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.plots })
     },
@@ -310,6 +330,184 @@ export function useRevokeCertificate() {
       complianceApi.certificates.revoke(id, reason),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.certificates })
+    },
+  })
+}
+
+// ─── DDS Export & TRACES NT ──────────────────────────────────────────────────
+
+export function useExportDds() {
+  return useMutation({
+    mutationFn: (recordId: string) => complianceApi.records.exportDds(recordId),
+  })
+}
+
+export function useSubmitTraces() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (recordId: string) => complianceApi.records.submitTraces(recordId),
+    onSuccess: (_data, recordId) => {
+      qc.invalidateQueries({ queryKey: KEYS.record(recordId) })
+    },
+  })
+}
+
+// ─── Record Documents ────────────────────────────────────────────────────────
+
+export function useRecordDocuments(recordId: string) {
+  return useQuery({
+    queryKey: KEYS.recordDocuments(recordId),
+    queryFn: () => complianceApi.records.documents(recordId),
+    enabled: Boolean(recordId),
+  })
+}
+
+export function useAttachRecordDocument(recordId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: DocumentLinkInput) => complianceApi.records.attachDocument(recordId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.recordDocuments(recordId) })
+      qc.invalidateQueries({ queryKey: KEYS.record(recordId) })
+    },
+  })
+}
+
+export function useDetachRecordDocument(recordId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (docId: string) => complianceApi.records.detachDocument(recordId, docId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.recordDocuments(recordId) })
+      qc.invalidateQueries({ queryKey: KEYS.record(recordId) })
+    },
+  })
+}
+
+// ─── Plot Documents ─────────────────────────────────────────────────────────
+
+export function usePlotDocuments(plotId: string) {
+  return useQuery({
+    queryKey: KEYS.plotDocuments(plotId),
+    queryFn: () => complianceApi.plots.documents(plotId),
+    enabled: Boolean(plotId),
+  })
+}
+
+export function useAttachPlotDocument(plotId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: DocumentLinkInput) => complianceApi.plots.attachDocument(plotId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.plotDocuments(plotId) })
+      qc.invalidateQueries({ queryKey: KEYS.plot(plotId) })
+    },
+  })
+}
+
+export function useDetachPlotDocument(plotId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (docId: string) => complianceApi.plots.detachDocument(plotId, docId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.plotDocuments(plotId) })
+      qc.invalidateQueries({ queryKey: KEYS.plot(plotId) })
+    },
+  })
+}
+
+// ─── Risk Assessment (EUDR Art. 10-11) ──────────────────────────────────────
+
+export function useRiskAssessment(recordId: string) {
+  return useQuery({
+    queryKey: KEYS.riskAssessment(recordId),
+    queryFn: () => complianceApi.riskAssessments.getByRecord(recordId),
+    enabled: Boolean(recordId),
+    retry: false,
+  })
+}
+
+export function useCreateRiskAssessment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: CreateRiskAssessmentInput) => complianceApi.riskAssessments.create(data),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: KEYS.riskAssessment(variables.record_id) })
+    },
+  })
+}
+
+export function useUpdateRiskAssessment(assessmentId: string, recordId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: UpdateRiskAssessmentInput) =>
+      complianceApi.riskAssessments.update(assessmentId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.riskAssessment(recordId) })
+    },
+  })
+}
+
+export function useCompleteRiskAssessment(recordId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (assessmentId: string) => complianceApi.riskAssessments.complete(assessmentId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.riskAssessment(recordId) })
+      qc.invalidateQueries({ queryKey: KEYS.record(recordId) })
+    },
+  })
+}
+
+// ─── Supply Chain (EUDR Art. 9.1.e-f) ───────────────────────────────────────
+
+export function useSupplyChain(recordId: string) {
+  return useQuery({
+    queryKey: KEYS.supplyChain(recordId),
+    queryFn: () => complianceApi.records.supplyChain(recordId),
+    enabled: Boolean(recordId),
+  })
+}
+
+export function useAddSupplyChainNode(recordId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: CreateSupplyChainNodeInput) =>
+      complianceApi.records.addSupplyChainNode(recordId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.supplyChain(recordId) })
+    },
+  })
+}
+
+export function useUpdateSupplyChainNode(recordId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ nodeId, data }: { nodeId: string; data: UpdateSupplyChainNodeInput }) =>
+      complianceApi.records.updateSupplyChainNode(recordId, nodeId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.supplyChain(recordId) })
+    },
+  })
+}
+
+export function useDeleteSupplyChainNode(recordId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (nodeId: string) => complianceApi.records.deleteSupplyChainNode(recordId, nodeId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.supplyChain(recordId) })
+    },
+  })
+}
+
+export function useReorderSupplyChain(recordId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: ReorderNodesInput) =>
+      complianceApi.records.reorderSupplyChain(recordId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.supplyChain(recordId) })
     },
   })
 }

@@ -185,6 +185,109 @@ async def mint_batch_cnft(
         return None
 
 
+def _s2s_headers() -> dict[str, str]:
+    return {"X-Service-Token": get_settings().S2S_SERVICE_TOKEN}
+
+
+async def notify_po_received(
+    *,
+    tenant_id: str,
+    po_id: str,
+    entity_id: str,
+    warehouse_id: str,
+    quantity: int,
+    batch_id: str | None = None,
+) -> dict[str, Any] | None:
+    """
+    Fire-and-forget: notify trace-service that a PO was received.
+    Creates an Asset in trace with initial workflow state.
+    """
+    try:
+        client = _get_client()
+        resp = await client.post(
+            f"{_base_url()}/api/v1/internal/assets/from-po-receipt",
+            json={
+                "po_id": po_id,
+                "entity_id": entity_id,
+                "batch_id": batch_id,
+                "warehouse_id": warehouse_id,
+                "tenant_id": tenant_id,
+                "quantity": quantity,
+            },
+            headers=_s2s_headers(),
+        )
+        if resp.status_code in (200, 201):
+            data = resp.json()
+            log.info(
+                "trace_po_receipt_notified",
+                po_id=po_id,
+                asset_id=data.get("asset_id"),
+            )
+            return data
+        else:
+            log.warning("trace_po_receipt_failed", status_code=resp.status_code, body=resp.text[:200])
+            return None
+    except Exception as exc:
+        log.warning("trace_po_receipt_error", exc=str(exc))
+        return None
+
+
+async def notify_po_received_background(
+    **kwargs: Any,
+) -> None:
+    """Fire-and-forget wrapper — launches as background task."""
+    asyncio.create_task(notify_po_received(**kwargs))
+
+
+async def notify_so_shipped(
+    *,
+    tenant_id: str,
+    so_id: str,
+    asset_ids: list[str],
+    to_wallet_id: str,
+    tracking_number: str | None = None,
+) -> dict[str, Any] | None:
+    """
+    Fire-and-forget: notify trace-service that a SO was shipped.
+    Performs handoff on each asset.
+    """
+    try:
+        client = _get_client()
+        resp = await client.post(
+            f"{_base_url()}/api/v1/internal/assets/handoff-from-so",
+            json={
+                "so_id": so_id,
+                "asset_ids": asset_ids,
+                "to_wallet_id": to_wallet_id,
+                "tracking_number": tracking_number,
+                "tenant_id": tenant_id,
+            },
+            headers=_s2s_headers(),
+        )
+        if resp.status_code in (200, 201):
+            data = resp.json()
+            log.info(
+                "trace_so_shipped_notified",
+                so_id=so_id,
+                handoffs=len(data.get("handoffs", [])),
+                errors=len(data.get("errors", [])),
+            )
+            return data
+        else:
+            log.warning("trace_so_shipped_failed", status_code=resp.status_code, body=resp.text[:200])
+            return None
+    except Exception as exc:
+        log.warning("trace_so_shipped_error", exc=str(exc))
+        return None
+
+
+async def notify_so_shipped_background(
+    **kwargs: Any,
+) -> None:
+    """Fire-and-forget wrapper — launches as background task."""
+    asyncio.create_task(notify_so_shipped(**kwargs))
+
+
 async def close_client() -> None:
     global _http_client
     if _http_client is not None and not _http_client.is_closed:

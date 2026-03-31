@@ -1,0 +1,184 @@
+import { useEffect } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, GeoJSON, useMap } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import type { CompliancePlot } from '@/types/compliance'
+
+// Fix Leaflet default icon issue with bundlers
+delete (L.Icon.Default.prototype as any)._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+})
+
+const RISK_COLORS: Record<string, string> = {
+  low: '#22c55e',
+  standard: '#f59e0b',
+  high: '#ef4444',
+}
+
+function FitBounds({ plots }: { plots: CompliancePlot[] }) {
+  const map = useMap()
+  useEffect(() => {
+    const points = plots
+      .filter(p => p.lat != null && p.lng != null)
+      .map(p => [Number(p.lat), Number(p.lng)] as [number, number])
+    if (points.length > 0) {
+      const bounds = L.latLngBounds(points)
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 })
+    }
+  }, [plots, map])
+  return null
+}
+
+interface PlotMapProps {
+  plots: CompliancePlot[]
+  height?: string
+  onPlotClick?: (plot: CompliancePlot) => void
+  selectedPlotId?: string
+}
+
+export function PlotMap({ plots, height = '400px', onPlotClick, selectedPlotId }: PlotMapProps) {
+  const validPlots = plots.filter(p => p.lat != null && p.lng != null)
+
+  if (validPlots.length === 0) {
+    return (
+      <div className="rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-400 text-sm" style={{ height }}>
+        Sin parcelas con coordenadas para mostrar en el mapa
+      </div>
+    )
+  }
+
+  const center: [number, number] = [
+    Number(validPlots[0].lat),
+    Number(validPlots[0].lng),
+  ]
+
+  return (
+    <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm relative z-0" style={{ height }}>
+      <MapContainer center={center} zoom={10} style={{ height: '100%', width: '100%' }}>
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <FitBounds plots={validPlots} />
+        {validPlots.map(plot => {
+          const lat = Number(plot.lat)
+          const lng = Number(plot.lng)
+          const color = RISK_COLORS[plot.risk_level] || RISK_COLORS.standard
+          const isSelected = plot.id === selectedPlotId
+          const radius = plot.plot_area_ha ? Math.max(8, Math.min(20, Math.sqrt(Number(plot.plot_area_ha)) * 4)) : 10
+
+          return (
+            <CircleMarker
+              key={plot.id}
+              center={[lat, lng]}
+              radius={isSelected ? radius + 4 : radius}
+              pathOptions={{
+                color: isSelected ? '#4f46e5' : color,
+                fillColor: plot.deforestation_free ? color : '#ef4444',
+                fillOpacity: isSelected ? 0.8 : 0.6,
+                weight: isSelected ? 3 : 2,
+              }}
+              eventHandlers={{
+                click: () => onPlotClick?.(plot),
+              }}
+            >
+              <Popup>
+                <div className="text-xs space-y-1 min-w-40">
+                  <p className="font-bold text-sm">{plot.plot_code}</p>
+                  {plot.municipality && <p>{plot.municipality}, {plot.region}</p>}
+                  {plot.plot_area_ha && <p>Area: {Number(plot.plot_area_ha).toFixed(2)} ha</p>}
+                  <p>
+                    Deforestacion: {' '}
+                    <span className={plot.deforestation_free ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                      {plot.deforestation_free ? 'Libre' : 'Con alertas'}
+                    </span>
+                  </p>
+                  <p>Riesgo: <span style={{ color }}>{plot.risk_level}</span></p>
+                  <p className="text-gray-400">{lat.toFixed(6)}, {lng.toFixed(6)}</p>
+                </div>
+              </Popup>
+            </CircleMarker>
+          )
+        })}
+      </MapContainer>
+    </div>
+  )
+}
+
+interface SinglePlotMapProps {
+  plot: CompliancePlot
+  height?: string
+  geojsonData?: GeoJSON.GeoJsonObject | null
+}
+
+function FitGeoJSON({ geojson }: { geojson: GeoJSON.GeoJsonObject }) {
+  const map = useMap()
+  useEffect(() => {
+    try {
+      const layer = L.geoJSON(geojson as any)
+      const bounds = layer.getBounds()
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [30, 30] })
+      }
+    } catch {
+      // ignore invalid geojson
+    }
+  }, [geojson, map])
+  return null
+}
+
+export function SinglePlotMap({ plot, height = '300px', geojsonData }: SinglePlotMapProps) {
+  if (plot.lat == null || plot.lng == null) {
+    return (
+      <div className="rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-400 text-sm" style={{ height }}>
+        Sin coordenadas
+      </div>
+    )
+  }
+
+  const lat = Number(plot.lat)
+  const lng = Number(plot.lng)
+  const color = RISK_COLORS[plot.risk_level] || RISK_COLORS.standard
+
+  return (
+    <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm relative z-0" style={{ height }}>
+      <MapContainer center={[lat, lng]} zoom={15} style={{ height: '100%', width: '100%' }}>
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {geojsonData ? (
+          <>
+            <FitGeoJSON geojson={geojsonData} />
+            <GeoJSON
+              data={geojsonData as any}
+              style={() => ({
+                color,
+                fillColor: plot.deforestation_free ? color : '#ef4444',
+                fillOpacity: 0.3,
+                weight: 3,
+              })}
+            />
+          </>
+        ) : (
+          <>
+            <CircleMarker
+              center={[lat, lng]}
+              radius={15}
+              pathOptions={{
+                color,
+                fillColor: plot.deforestation_free ? color : '#ef4444',
+                fillOpacity: 0.6,
+                weight: 3,
+              }}
+            />
+            <Marker position={[lat, lng]} />
+          </>
+        )}
+      </MapContainer>
+    </div>
+  )
+}

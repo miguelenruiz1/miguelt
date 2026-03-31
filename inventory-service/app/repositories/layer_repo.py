@@ -88,6 +88,22 @@ class LayerRepository:
         total_value = sum(l.quantity_remaining * l.unit_cost for l in layers)
         return total_value / total_qty
 
+    async def weighted_avg_cost(self, entity_id: str) -> Decimal:
+        """Weighted average cost across ALL warehouses for an entity."""
+        result = await self.db.execute(
+            select(StockLayer)
+            .where(
+                StockLayer.entity_id == entity_id,
+                StockLayer.quantity_remaining > 0,
+            )
+        )
+        layers = list(result.scalars().all())
+        total_qty = sum(l.quantity_remaining for l in layers)
+        if total_qty <= 0:
+            return Decimal("0")
+        total_value = sum(l.quantity_remaining * l.unit_cost for l in layers)
+        return total_value / total_qty
+
     async def list_layers(
         self, tenant_id: str, entity_id: str, warehouse_id: str | None = None
     ) -> list[StockLayer]:

@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Index, Integer, Numeric, Text, UniqueConstraint
+from sqlalchemy import Boolean, Date, Index, Integer, Numeric, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -43,6 +43,11 @@ class CompliancePlot(Base):
     cutoff_date_compliant: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     legal_land_use: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     risk_level: Mapped[str] = mapped_column(Text, nullable=False, default="standard")
+    # Crop establishment & renovation (EUDR Colombia gap)
+    establishment_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    crop_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    renovation_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    renovation_type: Mapped[str | None] = mapped_column(Text, nullable=True)
     satellite_report_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     satellite_report_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     satellite_verified_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)

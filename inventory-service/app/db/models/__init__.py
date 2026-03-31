@@ -40,6 +40,13 @@ from app.db.models.production import (
     EntityRecipe,
     RecipeComponent,
     ProductionRun,
+    ProductionEmission,
+    ProductionEmissionLine,
+    ProductionReceipt,
+    ProductionReceiptLine,
+    ProductionResource,
+    RecipeResource,
+    ProductionRunResourceCost,
     StockLayer,
 )
 from app.db.models.uom import UnitOfMeasure, UoMConversion
@@ -85,7 +92,11 @@ __all__ = [
     # Tracking
     "SerialStatus", "EntitySerial", "EntityBatch",
     # Production
-    "EntityRecipe", "RecipeComponent", "ProductionRun", "StockLayer",
+    "EntityRecipe", "RecipeComponent", "ProductionRun",
+    "ProductionEmission", "ProductionEmissionLine",
+    "ProductionReceipt", "ProductionReceiptLine",
+    "ProductionResource", "RecipeResource", "ProductionRunResourceCost",
+    "StockLayer",
     # Cycle Count
     "CycleCount", "CycleCountItem", "IRASnapshot",
     # Audit

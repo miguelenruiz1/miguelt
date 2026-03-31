@@ -43,6 +43,11 @@ import type {
   Product,
   ProductDiscrepancy,
   ProductionRun,
+  ProductionEmission,
+  ProductionReceipt,
+  ProductionResource,
+  MRPResult,
+  CapacityResult,
   ProductType,
   ProductVariant,
   PurchaseOrder,
@@ -196,8 +201,17 @@ export const inventoryProductsApi = {
     }
     return res.json()
   },
-  deleteImage: (productId: string, imageUrl: string) =>
-    request<Product>(`/api/v1/products/${productId}/images?image_url=${encodeURIComponent(imageUrl)}`, { method: 'DELETE' }),
+  addImageFromMedia: (productId: string, mediaFileId: string) =>
+    request<Product>(`/api/v1/products/${productId}/images/from-media`, {
+      method: 'POST',
+      body: JSON.stringify({ media_file_id: mediaFileId }),
+    }),
+  deleteImage: (productId: string, imageUrl: string, mediaFileId?: string) => {
+    const params = new URLSearchParams()
+    if (imageUrl) params.set('image_url', imageUrl)
+    if (mediaFileId) params.set('media_file_id', mediaFileId)
+    return request<Product>(`/api/v1/products/${productId}/images?${params}`, { method: 'DELETE' })
+  },
 }
 
 // ─── Warehouses ───────────────────────────────────────────────────────────────
@@ -649,27 +663,59 @@ export const inventoryRecipesApi = {
 // ─── Production Runs ─────────────────────────────────────────────────────────
 
 export const inventoryProductionApi = {
-  list: (params?: { status?: string; offset?: number; limit?: number }) => {
+  list: (params?: { status?: string; order_type?: string; offset?: number; limit?: number }) => {
     const qs = new URLSearchParams()
     if (params?.status) qs.set('status', params.status)
+    if (params?.order_type) qs.set('order_type', params.order_type)
     if (params?.offset !== undefined) qs.set('offset', String(params.offset))
     if (params?.limit !== undefined) qs.set('limit', String(params.limit))
     return request<PaginatedInventory<ProductionRun>>(`/api/v1/production-runs?${qs}`)
   },
   get: (id: string) => request<ProductionRun>(`/api/v1/production-runs/${id}`),
-  create: (data: { recipe_id: string; warehouse_id: string; multiplier?: string; notes?: string }) =>
+  create: (data: Record<string, unknown>) =>
     request<ProductionRun>('/api/v1/production-runs', { method: 'POST', body: JSON.stringify(data) }),
-  execute: (id: string) =>
-    request<ProductionRun>(`/api/v1/production-runs/${id}/execute`, { method: 'POST' }),
-  finish: (id: string) =>
-    request<ProductionRun>(`/api/v1/production-runs/${id}/finish`, { method: 'POST' }),
-  approve: (id: string) =>
-    request<ProductionRun>(`/api/v1/production-runs/${id}/approve`, { method: 'POST' }),
-  reject: (id: string, rejection_notes: string) =>
-    request<ProductionRun>(`/api/v1/production-runs/${id}/reject`, {
-      method: 'POST', body: JSON.stringify({ rejection_notes }),
-    }),
+  update: (id: string, data: Record<string, unknown>) =>
+    request<ProductionRun>(`/api/v1/production-runs/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (id: string) => requestVoid(`/api/v1/production-runs/${id}`, { method: 'DELETE' }),
+  // Status transitions
+  release: (id: string) =>
+    request<ProductionRun>(`/api/v1/production-runs/${id}/release`, { method: 'POST' }),
+  cancel: (id: string) =>
+    request<ProductionRun>(`/api/v1/production-runs/${id}/cancel`, { method: 'POST' }),
+  close: (id: string) =>
+    request<ProductionRun>(`/api/v1/production-runs/${id}/close`, { method: 'POST' }),
+  // Emissions
+  listEmissions: (runId: string) =>
+    request<ProductionEmission[]>(`/api/v1/production-runs/${runId}/emissions`),
+  createEmission: (runId: string, data?: Record<string, unknown>) =>
+    request<ProductionEmission>(`/api/v1/production-runs/${runId}/emissions`, {
+      method: 'POST', body: JSON.stringify(data ?? {}),
+    }),
+  // Receipts
+  listReceipts: (runId: string) =>
+    request<ProductionReceipt[]>(`/api/v1/production-runs/${runId}/receipts`),
+  createReceipt: (runId: string, data?: Record<string, unknown>) =>
+    request<ProductionReceipt>(`/api/v1/production-runs/${runId}/receipts`, {
+      method: 'POST', body: JSON.stringify(data ?? {}),
+    }),
+  // MRP
+  mrpExplode: (data: Record<string, unknown>) =>
+    request<MRPResult>('/api/v1/production-runs/mrp/explode', { method: 'POST', body: JSON.stringify(data) }),
+  // Capacity
+  checkCapacity: (runId: string) =>
+    request<CapacityResult>(`/api/v1/production-runs/${runId}/check-capacity`, { method: 'POST' }),
+}
+
+// ── Production Resources ────────────────────────────────────────────────────
+
+export const inventoryResourcesApi = {
+  list: () => request<ProductionResource[]>('/api/v1/production-resources'),
+  get: (id: string) => request<ProductionResource>(`/api/v1/production-resources/${id}`),
+  create: (data: Record<string, unknown>) =>
+    request<ProductionResource>('/api/v1/production-resources', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Record<string, unknown>) =>
+    request<ProductionResource>(`/api/v1/production-resources/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: string) => requestVoid(`/api/v1/production-resources/${id}`, { method: 'DELETE' }),
 }
 
 // ─── Cycle Counts ───────────────────────────────────────────────────────────

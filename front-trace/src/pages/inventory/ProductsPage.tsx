@@ -20,15 +20,26 @@ import { CopyableId } from '@/components/inventory/CopyableId'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import type { CustomField, Product, ProductType, ProductVariant } from '@/types/inventory'
 import { inventoryProductsApi } from '@/lib/inventory-api'
+import MediaPickerModal from '@/components/compliance/MediaPickerModal'
 
 const INV_API_BASE = import.meta.env.VITE_INVENTORY_API_URL ?? 'http://localhost:9003'
-function imgSrc(url: string) {
-  return url.startsWith('http') ? url : `${INV_API_BASE}${url}`
+const MEDIA_API_BASE = import.meta.env.VITE_MEDIA_API_URL ?? 'http://localhost:9007'
+
+function imgSrc(img: string | { media_file_id?: string; url?: string }) {
+  // New format: { media_file_id, url } — url is relative to media-service
+  if (typeof img === 'object' && img.url) {
+    return img.url.startsWith('http') ? img.url : `${MEDIA_API_BASE}${img.url}`
+  }
+  // Legacy format: plain string URL — relative to inventory-service
+  const url = typeof img === 'string' ? img : ''
+  if (url.startsWith('http')) return url
+  if (url.startsWith('/uploads/media/')) return `${MEDIA_API_BASE}${url}`
+  return `${INV_API_BASE}${url}`
 }
 
 // ─── Product thumbnail (reused in table + cards) ────────────────────────────
 
-function ProductThumb({ images, name, size = 'sm' }: { images?: string[]; name: string; size?: 'sm' | 'md' | 'lg' }) {
+function ProductThumb({ images, name, size = 'sm' }: { images?: (string | { media_file_id?: string; url?: string })[]; name: string; size?: 'sm' | 'md' | 'lg' }) {
   const dim = size === 'lg' ? 'h-24 w-24' : size === 'md' ? 'h-14 w-14' : 'h-9 w-9'
   const iconDim = size === 'lg' ? 'h-8 w-8' : size === 'md' ? 'h-5 w-5' : 'h-4 w-4'
   if (images && images.length > 0) {
@@ -801,7 +812,7 @@ function ProductDrawer({
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
   const [showAdjust, setShowAdjust] = useState(false)
-  const drawerImgRef = useRef<HTMLInputElement>(null)
+  const [showImagePicker, setShowImagePicker] = useState(false)
   const { data: levels = [] } = useStockByProduct(product.id)
   const { data: warehouses = [] } = useWarehouses()
   const { data: suppliers = [] } = useSuppliers()
@@ -985,7 +996,11 @@ function ProductDrawer({
                       <img src={imgSrc(img)} alt="" className="h-full w-full object-cover" />
                       <button
                         type="button"
-                        onClick={() => deleteImage.mutate({ productId: product.id, imageUrl: img })}
+                        onClick={() => {
+                          const url = typeof img === 'string' ? img : (img.url ?? '')
+                          const mid = typeof img === 'object' ? img.media_file_id : undefined
+                          deleteImage.mutate({ productId: product.id, imageUrl: url, mediaFileId: mid })
+                        }}
                         className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         {deleteImage.isPending ? (
@@ -998,7 +1013,7 @@ function ProductDrawer({
                   ))}
                   <button
                     type="button"
-                    onClick={() => drawerImgRef.current?.click()}
+                    onClick={() => setShowImagePicker(true)}
                     disabled={uploadImage.isPending}
                     className="h-16 w-16 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 hover:border-primary/50 hover:text-primary/70 transition-colors disabled:opacity-50"
                   >
@@ -1009,15 +1024,12 @@ function ProductDrawer({
                     )}
                   </button>
                 </div>
-                <input
-                  ref={drawerImgRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  className="hidden"
-                  onChange={e => {
-                    const file = e.target.files?.[0]
-                    if (file) uploadImage.mutate({ productId: product.id, file })
-                    e.target.value = ''
+                <MediaPickerModal
+                  open={showImagePicker}
+                  onClose={() => setShowImagePicker(false)}
+                  onSelect={async (mediaFileId) => {
+                    await uploadImage.mutateAsync({ productId: product.id, mediaFileId })
+                    setShowImagePicker(false)
                   }}
                 />
               </div>

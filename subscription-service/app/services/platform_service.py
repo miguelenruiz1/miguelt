@@ -9,6 +9,8 @@ from sqlalchemy import func, select, case, literal_column, text, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.settings import get_settings
+
 from app.db.models import (
     BillingCycle,
     EventType,
@@ -143,14 +145,19 @@ class PlatformService:
                 "mrr": round(price * r.count, 2),
             })
 
-        # Module adoption
+        # Module adoption — only count tenants that have a subscription
         module_adoption = []
         ma_result = await self.db.execute(
             select(
                 TenantModuleActivation.module_slug,
                 func.count(TenantModuleActivation.id).label("count"),
             )
-            .where(TenantModuleActivation.is_active.is_(True))
+            .where(
+                TenantModuleActivation.is_active.is_(True),
+                TenantModuleActivation.tenant_id.in_(
+                    select(Subscription.tenant_id)
+                ),
+            )
             .group_by(TenantModuleActivation.module_slug)
         )
         for r in ma_result.all():
@@ -586,25 +593,64 @@ class PlatformService:
             "canceled_this_month_count": len(recently_canceled),
         }
 
-    # ── Onboard tenant (create subscription + activate modules) ───────────────
+    # ── Onboard tenant (full flow: user + subscription + modules) ──────────────
 
     async def onboard_tenant(
         self,
         tenant_id: str,
+        company_name: str,
+        admin_email: str,
+        admin_password: str,
+        admin_name: str,
         plan_slug: str,
         billing_cycle: str = "monthly",
         modules: list[str] | None = None,
         notes: str | None = None,
         performed_by: str | None = None,
+        http_client: "httpx.AsyncClient | None" = None,
     ) -> dict:
-        # Check if tenant already has a subscription
+        import httpx as _httpx
+        import logging
+
+        log = logging.getLogger("platform.onboard")
+        settings = get_settings()
+
+        # 1. Check if tenant already has a subscription
         existing = await self.sub_repo.get_by_tenant(tenant_id)
         if existing:
-            raise ValueError(f"Tenant {tenant_id!r} already has a subscription")
+            raise ValueError(f"Tenant '{tenant_id}' ya tiene una suscripción activa")
 
+        # 2. Register admin user in user-service (creates the tenant there)
+        client = http_client or _httpx.AsyncClient(timeout=15.0)
+        user_created = None
+        try:
+            resp = await client.post(
+                f"{settings.USER_SERVICE_URL}/api/v1/auth/register",
+                headers={"X-Tenant-Id": tenant_id, "Content-Type": "application/json"},
+                json={
+                    "email": admin_email,
+                    "username": admin_email.split("@")[0],
+                    "full_name": admin_name,
+                    "password": admin_password,
+                    "company": company_name,
+                    "tenant_id": tenant_id,
+                },
+            )
+            if resp.status_code == 201:
+                user_created = resp.json()
+                log.info("onboard_user_created tenant=%s email=%s", tenant_id, admin_email)
+            elif resp.status_code == 409 or "already exists" in resp.text.lower():
+                log.info("onboard_user_already_exists tenant=%s email=%s", tenant_id, admin_email)
+            else:
+                detail = resp.json().get("detail", resp.text) if resp.headers.get("content-type", "").startswith("application/json") else resp.text
+                raise ValueError(f"Error al crear usuario admin: {detail}")
+        except _httpx.RequestError as exc:
+            raise ValueError(f"user-service no disponible: {exc}")
+
+        # 3. Create subscription locally
         plan = await self.plan_repo.get_by_slug(plan_slug)
         if not plan:
-            raise ValueError(f"Plan {plan_slug!r} not found")
+            raise ValueError(f"Plan '{plan_slug}' no encontrado")
 
         now = datetime.now(timezone.utc)
         cycle = BillingCycle(billing_cycle) if billing_cycle in [e.value for e in BillingCycle] else BillingCycle.monthly
@@ -624,11 +670,16 @@ class PlatformService:
             subscription_id=sub.id,
             tenant_id=tenant_id,
             event_type=EventType.created,
-            data={"plan_slug": plan_slug, "source": "platform_onboard"},
+            data={
+                "plan_slug": plan_slug,
+                "admin_email": admin_email,
+                "company_name": company_name,
+                "source": "platform_onboard",
+            },
             performed_by=performed_by,
         )
 
-        # Activate modules
+        # 4. Activate modules
         activated = []
         for slug in (modules or []):
             existing_mod = (await self.db.execute(
@@ -668,6 +719,9 @@ class PlatformService:
             "billing_cycle": cycle.value,
             "period_end": sub.current_period_end.isoformat(),
             "modules_activated": activated,
+            "admin_email": admin_email,
+            "company_name": company_name,
+            "user_created": user_created is not None,
         }
 
     # ── Change plan for a tenant ──────────────────────────────────────────────

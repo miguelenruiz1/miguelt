@@ -281,16 +281,17 @@ async def upload_avatar(
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> UserResponse:
+    """Upload avatar via media-service and store reference."""
+    from app.clients.media_client import upload_file as media_upload, delete_file as media_delete
+
     settings = get_settings()
 
-    # Validate content type
     if file.content_type not in ("image/jpeg", "image/png", "image/webp", "image/gif"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Formato no soportado. Usa JPG, PNG, WebP o GIF.",
         )
 
-    # Read and validate size
     content = await file.read()
     if len(content) > settings.MAX_AVATAR_SIZE:
         raise HTTPException(
@@ -298,25 +299,25 @@ async def upload_avatar(
             detail=f"La imagen excede el límite de {settings.MAX_AVATAR_SIZE // (1024*1024)} MB.",
         )
 
-    # Save file
-    ext = file.content_type.split("/")[-1].replace("jpeg", "jpg")
-    filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}.{ext}"
-    avatars_dir = Path(settings.UPLOAD_DIR) / "avatars"
-    avatars_dir.mkdir(parents=True, exist_ok=True)
+    media_file = await media_upload(
+        tenant_id=current_user.tenant_id,
+        file_bytes=content,
+        filename=file.filename or f"avatar-{current_user.id}.{file.content_type.split('/')[-1]}",
+        content_type=file.content_type,
+        category="general",
+        document_type="avatar",
+        title=f"Avatar — {current_user.full_name}",
+        uploaded_by=current_user.id,
+    )
+    if not media_file:
+        raise HTTPException(status_code=502, detail="Error al subir avatar a media-service")
 
-    # Remove old avatar file if exists
-    if current_user.avatar_url:
-        old_name = current_user.avatar_url.split("/avatars/")[-1] if "/avatars/" in (current_user.avatar_url or "") else None
-        if old_name:
-            old_path = avatars_dir / old_name
-            if old_path.exists():
-                old_path.unlink()
+    # Delete old avatar from media-service if it was a media reference
+    old_url = current_user.avatar_url or ""
+    if old_url and hasattr(current_user, 'avatar_media_file_id') and current_user.avatar_media_file_id:
+        await media_delete(current_user.tenant_id, current_user.avatar_media_file_id)
 
-    filepath = avatars_dir / filename
-    filepath.write_bytes(content)
-
-    # Update user record
-    avatar_url = f"/uploads/avatars/{filename}"
+    avatar_url = media_file["url"]
     repo = UserRepository(db)
     svc = UserService(db)
     await svc.update(current_user.id, avatar_url=avatar_url)
@@ -330,16 +331,6 @@ async def delete_avatar(
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> UserResponse:
-    settings = get_settings()
-
-    # Remove file
-    if current_user.avatar_url and "/avatars/" in current_user.avatar_url:
-        old_name = current_user.avatar_url.split("/avatars/")[-1]
-        old_path = Path(settings.UPLOAD_DIR) / "avatars" / old_name
-        if old_path.exists():
-            old_path.unlink()
-
-    # Clear URL
     repo = UserRepository(db)
     svc = UserService(db)
     await svc.update(current_user.id, avatar_url=None)

@@ -12,6 +12,7 @@ from app.adapters.registry import get_adapter
 from app.db.session import get_db_session
 from app.domain.schemas.integration import InvoiceResolutionOut
 from app.services.resolution_service import ResolutionService
+from app.services.webhook_service import WebhookService
 
 router = APIRouter(prefix="/api/v1/internal", tags=["internal"])
 
@@ -39,8 +40,6 @@ async def create_invoice_internal(
     svc = ResolutionService(db)
     invoice_number: str | None = None
     try:
-        if provider_slug == "sandbox":
-            await svc.ensure_sandbox_resolution(x_tenant_id)
         resolution = await svc.get_active_resolution(x_tenant_id, provider_slug)
         if resolution:
             invoice_number, _ = await svc.get_next_number(x_tenant_id, provider_slug)
@@ -93,8 +92,6 @@ async def create_credit_note_internal(
     svc = ResolutionService(db)
     credit_note_number: str | None = None
     try:
-        if provider_slug == "sandbox":
-            await svc.ensure_sandbox_resolution(x_tenant_id)
         resolution = await svc.get_active_resolution(x_tenant_id, provider_slug)
         if resolution:
             credit_note_number, _ = await svc.get_next_number(x_tenant_id, provider_slug)
@@ -131,3 +128,32 @@ async def get_resolution_internal(
     """Get active resolution for a tenant — internal, no auth."""
     svc = ResolutionService(db)
     return await svc.get_active_resolution(x_tenant_id, provider)
+
+
+@router.post("/events")
+async def receive_event(
+    body: dict,
+    x_tenant_id: str = Header(...),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Receive an event from another microservice and dispatch to webhook subscribers.
+
+    Called by inventory-api, trace-api, compliance-api, media-api when something happens.
+    """
+    event_type = body.get("event_type")
+    payload = body.get("payload", {})
+    source_service = body.get("source_service", "unknown")
+
+    if not event_type:
+        raise HTTPException(status_code=400, detail="event_type is required")
+
+    svc = WebhookService(db)
+    results = await svc.dispatch_event(x_tenant_id, event_type, payload, source_service)
+    await db.commit()
+
+    return {
+        "event_type": event_type,
+        "tenant_id": x_tenant_id,
+        "dispatched_to": len(results),
+        "results": results,
+    }

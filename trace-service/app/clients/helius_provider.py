@@ -70,7 +70,9 @@ class HeliusProvider(IBlockchainProvider):
             "params": params,
         }
         resp = await self._http.post(url, json=payload, timeout=30.0)
-        resp.raise_for_status()
+        if resp.status_code >= 400:
+            log.error("helius_rpc_http_error", status=resp.status_code, body=resp.text[:500], method=method)
+            resp.raise_for_status()
         body = resp.json()
         if "error" in body:
             raise HeliusError(body["error"])
@@ -248,6 +250,8 @@ class HeliusProvider(IBlockchainProvider):
         Mint a cNFT using Helius mintCompressedNft JSON-RPC method.
         Helius manages the fee payer and tree interaction.
         If tree_address is empty, Helius uses a shared tree (free).
+
+        metadata must include '_asset_id' for the metadata URI.
         """
         params: dict[str, Any] = {
             "name": metadata.get("name", metadata.get("product_type", "Trace Asset")),
@@ -258,21 +262,52 @@ class HeliusProvider(IBlockchainProvider):
             "imageUrl": metadata.get("image_url", ""),
             "externalUrl": metadata.get("external_url", ""),
             "sellerFeeBasisPoints": 0,
+            # Do NOT pass "uri" — let Helius auto-host the metadata JSON.
+            # Helius reads name/description/attributes/imageUrl and generates
+            # a hosted metadata URI that explorers (XRAY, etc.) can fetch.
+            "confirmTransaction": True,
         }
         if tree_address:
             params["treeAddress"] = tree_address
 
-        result = await self._rpc("mintCompressedNft", [params])
+        result = await self._rpc("mintCompressedNft", params)
+
+        asset_id = result.get("assetId")
+        tx_sig = result.get("signature", "")
+
+        # Helius shared tree may not return assetId immediately.
+        # Use getSignaturesForAsset or parse tx to find it.
+        if not asset_id and tx_sig:
+            import asyncio
+            await asyncio.sleep(2)  # wait for indexing
+            try:
+                # Use DAS getTransaction to find the minted asset
+                tx_data = await self._rpc("getTransaction", [
+                    tx_sig, {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0}
+                ])
+                # Parse the inner instructions for the asset ID
+                # The cNFT asset ID is derived from the tree + leaf index
+                if tx_data:
+                    # Try to get asset by searching recent assets of the owner
+                    search = await self._rpc("searchAssets", {
+                        "ownerAddress": owner_pubkey,
+                        "sortBy": {"sortBy": "created", "sortDirection": "desc"},
+                        "limit": 1,
+                    })
+                    if search and search.get("items"):
+                        asset_id = search["items"][0].get("id")
+            except Exception as exc:
+                log.warning("cnft_asset_id_lookup_failed", tx=tx_sig, exc=str(exc))
 
         log.info(
             "helius_mint_success",
-            asset_id=result.get("assetId"),
-            tx=result.get("signature"),
+            asset_id=asset_id,
+            tx=tx_sig,
         )
 
         return MintResult(
-            asset_id=result["assetId"],
-            tx_signature=result["signature"],
+            asset_id=asset_id,
+            tx_signature=tx_sig,
             tree_address=result.get("treeAddress", tree_address),
             leaf_index=result.get("leafIndex"),
             is_simulated=False,
@@ -324,17 +359,36 @@ def _merkle_tree_account_size(
 
 
 def _build_attributes(metadata: dict[str, Any]) -> list[dict[str, str]]:
-    """Convert metadata dict to Metaplex-style attribute list."""
-    attrs = []
-    field_map = {
+    """Convert metadata dict to Metaplex-style attribute list.
+
+    Known fields get human-readable Spanish labels.
+    All other fields are included with their key as trait_type.
+    """
+    # Known fields → Spanish labels
+    field_labels = {
         "product_type": "Tipo de Producto",
         "weight": "Peso",
         "weight_unit": "Unidad de Peso",
         "quality_grade": "Calidad",
         "origin": "Origen",
         "metadata_hash": "Hash de Integridad",
+        "batch_number": "Número de Lote",
+        "batch_id": "ID de Lote",
+        "harvest_date": "Fecha de Cosecha",
+        "expiry_date": "Fecha de Vencimiento",
+        "supplier": "Proveedor",
+        "variety": "Variedad",
+        "certification": "Certificación",
+        "humidity": "Humedad",
+        "temperature": "Temperatura",
     }
-    for key, label in field_map.items():
-        if key in metadata:
-            attrs.append({"trait_type": label, "value": str(metadata[key])})
+    # Fields that go into separate NFT properties (not attributes)
+    skip_keys = {"name", "description", "symbol", "image_url", "external_url"}
+
+    attrs = []
+    for key, value in metadata.items():
+        if key in skip_keys or value is None or value == "":
+            continue
+        label = field_labels.get(key, key.replace("_", " ").title())
+        attrs.append({"trait_type": label, "value": str(value)})
     return attrs

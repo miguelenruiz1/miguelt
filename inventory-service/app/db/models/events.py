@@ -136,6 +136,7 @@ class EventStatusLog(Base):
     __tablename__ = "event_status_logs"
 
     id:             Mapped[str]            = mapped_column(String(36), primary_key=True)
+    tenant_id:      Mapped[str]            = mapped_column(String(255), nullable=False, index=True)
     event_id:       Mapped[str]            = mapped_column(
         String(36), ForeignKey("inventory_events.id", ondelete="CASCADE"), nullable=False
     )
@@ -162,6 +163,7 @@ class EventImpact(Base):
     __tablename__ = "event_impacts"
 
     id:              Mapped[str]            = mapped_column(String(36), primary_key=True)
+    tenant_id:       Mapped[str]            = mapped_column(String(255), nullable=False, index=True)
     event_id:        Mapped[str]            = mapped_column(
         String(36), ForeignKey("inventory_events.id", ondelete="CASCADE"), nullable=False
     )

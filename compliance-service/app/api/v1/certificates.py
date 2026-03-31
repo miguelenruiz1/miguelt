@@ -157,6 +157,41 @@ async def get_certificate(
     return cert
 
 
+@router.get(
+    "/certificates/{certificate_id}/download",
+)
+async def download_certificate(
+    certificate_id: uuid.UUID,
+    user: ModuleUser,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Download the PDF file for a certificate."""
+    from fastapi.responses import FileResponse
+    from pathlib import Path
+
+    tid = _tenant_id(user)
+    repo = CertificateRepository(db)
+    cert = await repo.get_by_id(certificate_id)
+    if cert is None or cert.tenant_id != tid:
+        raise NotFoundError(f"Certificate '{certificate_id}' not found")
+
+    if not cert.pdf_url:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="PDF not generated yet")
+
+    # Convert file:// URL to path
+    pdf_path = cert.pdf_url.replace("file://", "")
+    if not Path(pdf_path).exists():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="PDF file not found on disk")
+
+    return FileResponse(
+        path=pdf_path,
+        media_type="application/pdf",
+        filename=f"{cert.certificate_number}.pdf",
+    )
+
+
 @router.post(
     "/certificates/{certificate_id}/regenerate",
     response_model=CertificateResponse,

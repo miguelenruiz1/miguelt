@@ -1,10 +1,8 @@
 import { useState } from 'react'
 import {
   Building2, Plus, Pencil, Trash2, Wallet, X, Check, ChevronDown, ChevronRight,
-  Truck, Package, Warehouse, Shield, Sprout, Factory, Ship, Plane, Train,
-  MapPin, Users, Store, Box, Archive, Globe, Layers, Scale, FlaskConical, BarChart2,
-  Leaf, PackageOpen,
 } from 'lucide-react'
+import * as LucideIcons from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/button'
@@ -28,44 +26,48 @@ const labelCls = 'text-xs font-medium text-slate-700 block mb-1.5'
 
 // ─── Icon picker ──────────────────────────────────────────────────────────────
 
-const ICON_OPTIONS: { name: string; Icon: React.ElementType }[] = [
-  { name: 'sprout',        Icon: Sprout },
-  { name: 'building2',     Icon: Building2 },
-  { name: 'truck',         Icon: Truck },
-  { name: 'package',       Icon: Package },
-  { name: 'warehouse',     Icon: Warehouse },
-  { name: 'shield',        Icon: Shield },
-  { name: 'factory',       Icon: Factory },
-  { name: 'ship',          Icon: Ship },
-  { name: 'plane',         Icon: Plane },
-  { name: 'train',         Icon: Train },
-  { name: 'map-pin',       Icon: MapPin },
-  { name: 'users',         Icon: Users },
-  { name: 'store',         Icon: Store },
-  { name: 'box',           Icon: Box },
-  { name: 'archive',       Icon: Archive },
-  { name: 'globe',         Icon: Globe },
-  { name: 'layers',        Icon: Layers },
-  { name: 'scale',         Icon: Scale },
-  { name: 'flask-conical', Icon: FlaskConical },
-  { name: 'bar-chart-2',   Icon: BarChart2 },
-  { name: 'leaf',          Icon: Leaf },
-  { name: 'package-open',  Icon: PackageOpen },
-]
+// Build icon list from ALL lucide-react icons
+function toKebab(str: string): string {
+  return str.replace(/([a-z])([A-Z])/g, '$1-$2').replace(/([A-Z])([A-Z][a-z])/g, '$1-$2').toLowerCase()
+}
+
+const ALL_ICONS: { name: string; Icon: React.ElementType }[] = (() => {
+  const skip = new Set(['createLucideIcon', 'default', 'icons', 'Icon'])
+  const result: { name: string; Icon: React.ElementType }[] = []
+  for (const [key, val] of Object.entries(LucideIcons)) {
+    if (skip.has(key)) continue
+    if (typeof val !== 'object' && typeof val !== 'function') continue
+    if (key[0] !== key[0].toUpperCase()) continue
+    result.push({ name: toKebab(key), Icon: val as React.ElementType })
+  }
+  return result.sort((a, b) => a.name.localeCompare(b.name))
+})()
 
 export function renderCustodianIcon(name: string, cls = 'h-4 w-4') {
-  const found = ICON_OPTIONS.find((o) => o.name === name)
+  const found = ALL_ICONS.find((o) => o.name === name)
   if (!found) return null
   const { Icon } = found
   return <Icon className={cls} />
 }
 
 function IconPicker({ value, onChange }: { value: string; onChange: (name: string) => void }) {
+  const [search, setSearch] = useState('')
+  const filtered = search
+    ? ALL_ICONS.filter(o => o.name.includes(search.toLowerCase()))
+    : ALL_ICONS.slice(0, 120) // Show first 120 by default for performance
+
   return (
     <div className="col-span-2">
-      <label className={labelCls}>Icono</label>
-      <div className="grid grid-cols-11 gap-1 p-2 bg-white rounded-lg border border-slate-200">
-        {ICON_OPTIONS.map(({ name, Icon }) => (
+      <label className={labelCls}>Icono ({ALL_ICONS.length} disponibles)</label>
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Buscar: truck, ship, factory, coffee, leaf..."
+        className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs mb-2 focus:outline-none focus:ring-2 focus:ring-ring/20"
+      />
+      <div className="grid grid-cols-12 gap-1 p-2 bg-white rounded-lg border border-slate-200 max-h-44 overflow-y-auto">
+        {filtered.map(({ name, Icon }) => (
           <button
             key={name}
             type="button"
@@ -73,14 +75,20 @@ function IconPicker({ value, onChange }: { value: string; onChange: (name: strin
             onClick={() => onChange(name)}
             className={`flex items-center justify-center h-8 w-8 rounded-lg transition-all ${
               value === name
-                ? 'bg-primary text-white shadow-sm'
+                ? 'bg-primary text-white shadow-sm ring-2 ring-primary/30'
                 : 'text-slate-400 hover:bg-primary/10 hover:text-primary'
             }`}
           >
             <Icon className="h-4 w-4" />
           </button>
         ))}
+        {filtered.length === 0 && (
+          <p className="col-span-12 text-center text-xs text-slate-400 py-3">Sin resultados para "{search}"</p>
+        )}
       </div>
+      {value && (
+        <p className="text-[10px] text-slate-400 mt-1">Seleccionado: <span className="font-mono font-medium text-slate-600">{value}</span></p>
+      )}
     </div>
   )
 }
@@ -108,7 +116,20 @@ function TypeForm({ initial, onSave, onCancel }: {
         {!initial && (
           <div>
             <label className={labelCls}>Slug *</label>
-            <input type="text" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="finca" className={fieldCls} />
+            <input
+              type="text"
+              value={slug}
+              onChange={(e) => {
+                const val = e.target.value
+                  .toLowerCase()
+                  .replace(/\s+/g, '_')
+                  .replace(/[^a-z0-9_-]/g, '')
+                setSlug(val)
+              }}
+              placeholder="finca"
+              className={fieldCls}
+            />
+            <p className="text-[10px] text-slate-400 mt-0.5">Solo minusculas, numeros, guiones y guion bajo</p>
           </div>
         )}
         <div className="flex flex-col gap-1">
@@ -128,7 +149,10 @@ function TypeForm({ initial, onSave, onCancel }: {
       </div>
       <div className="flex gap-2 justify-end">
         <Button size="sm" variant="ghost" onClick={onCancel}><X className="h-3.5 w-3.5" /> Cancelar</Button>
-        <Button size="sm" onClick={() => onSave({ name, slug, color, icon, description })}>
+        <Button size="sm" onClick={() => {
+          const finalSlug = slug || name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_-]/g, '')
+          onSave({ name, slug: finalSlug, color, icon, description })
+        }}>
           <Check className="h-3.5 w-3.5" /> Guardar
         </Button>
       </div>

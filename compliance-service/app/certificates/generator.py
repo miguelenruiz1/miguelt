@@ -18,10 +18,13 @@ from app.core.errors import CertificateNotReadyError, NotFoundError
 from app.core.logging import get_logger
 from app.core.settings import get_settings
 from app.models.certificate import ComplianceCertificate
+from app.models.document_link import ComplianceRecordDocument, CompliancePlotDocument
 from app.models.framework import ComplianceFramework
 from app.models.plot import CompliancePlot
 from app.models.plot_link import CompliancePlotLink
 from app.models.record import ComplianceRecord
+from app.models.risk_assessment import ComplianceRiskAssessment
+from app.models.supply_chain_node import ComplianceSupplyChainNode
 from app.repositories.certificate_repo import CertificateRepository
 
 log = get_logger(__name__)
@@ -127,6 +130,17 @@ def _validate_record_for_certificate(
     if not plots:
         missing.append("plots (at least 1 plot must be linked)")
 
+    # EUDR Art. 9.1.c / Art. 2.28: plots >= 4 ha require polygon
+    for plot in plots:
+        area = plot.get("plot_area_ha")
+        geojson = plot.get("geojson_arweave_url") or plot.get("geojson_hash")
+        geotype = plot.get("geolocation_type", "point")
+        if area and float(area) >= 4.0 and not geojson and geotype != "polygon":
+            missing.append(
+                f"plot '{plot.get('plot_code', '?')}': parcela >= 4 ha requiere poligono "
+                "(geojson_arweave_url) — EUDR Art. 9.1.c / Art. 2.28"
+            )
+
     if missing:
         raise CertificateNotReadyError(
             f"Record is missing required fields for EUDR certification: {', '.join(missing)}"
@@ -164,8 +178,14 @@ def _fmt_lng(lng: float | None) -> str:
 
 def _build_blockchain_context(asset_data: dict | None) -> dict[str, Any]:
     """Build the blockchain context dict from trace-service asset data."""
-    solana_network = os.environ.get("SOLANA_NETWORK", "devnet")
-    network = "Solana Devnet" if solana_network == "devnet" else "Solana Mainnet"
+    from app.core.settings import get_settings
+    solana_network = get_settings().SOLANA_NETWORK
+    network_labels = {
+        "devnet": "Solana Devnet",
+        "testnet": "Solana Testnet",
+        "mainnet-beta": "Solana Mainnet",
+    }
+    network = network_labels.get(solana_network, f"Solana {solana_network}")
 
     if asset_data is None:
         return {
@@ -276,6 +296,10 @@ class CertificateGenerator:
                     "legal_land_use": plot.legal_land_use,
                     "risk_level": plot.risk_level,
                     "risk_label": RISK_LABELS.get(plot.risk_level or "", "Estándar"),
+                    "establishment_date": _fmt_date(getattr(plot, "establishment_date", None)),
+                    "crop_type": getattr(plot, "crop_type", None),
+                    "renovation_date": _fmt_date(getattr(plot, "renovation_date", None)),
+                    "renovation_type": getattr(plot, "renovation_type", None),
                     "quantity_from_plot_kg": float(link.quantity_from_plot_kg) if link.quantity_from_plot_kg else None,
                     "percentage_from_plot": float(link.percentage_from_plot) if link.percentage_from_plot else None,
                 })
@@ -346,6 +370,98 @@ class CertificateGenerator:
             except Exception as exc:
                 log.warning("asset_fetch_failed", asset_id=str(record.asset_id), error=str(exc))
 
+            # ── Step 5b: Load risk assessment, supply chain, documents ────────
+            risk_assessment_data: dict | None = None
+            ra = (
+                await self.db.execute(
+                    select(ComplianceRiskAssessment).where(
+                        ComplianceRiskAssessment.record_id == record_id,
+                        ComplianceRiskAssessment.tenant_id == tenant_id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if ra is not None:
+                risk_assessment_data = {
+                    "country_risk_level": ra.country_risk_level,
+                    "country_risk_label": RISK_LABELS.get(ra.country_risk_level or "", "—"),
+                    "country_risk_notes": ra.country_risk_notes,
+                    "country_benchmarking_source": ra.country_benchmarking_source,
+                    "supply_chain_risk_level": ra.supply_chain_risk_level,
+                    "supply_chain_risk_label": RISK_LABELS.get(ra.supply_chain_risk_level or "", "—"),
+                    "supply_chain_notes": ra.supply_chain_notes,
+                    "supplier_verification_status": ra.supplier_verification_status,
+                    "traceability_confidence": ra.traceability_confidence,
+                    "regional_risk_level": ra.regional_risk_level,
+                    "regional_risk_label": RISK_LABELS.get(ra.regional_risk_level or "", "—"),
+                    "deforestation_prevalence": ra.deforestation_prevalence,
+                    "indigenous_rights_risk": ra.indigenous_rights_risk,
+                    "overall_risk_level": ra.overall_risk_level,
+                    "overall_risk_label": RISK_LABELS.get(ra.overall_risk_level or "", ra.overall_risk_level or "—"),
+                    "conclusion": ra.conclusion,
+                    "conclusion_notes": ra.conclusion_notes,
+                    "mitigation_measures": ra.mitigation_measures or [],
+                    "status": ra.status,
+                    "assessed_at": _fmt_date(ra.assessed_at),
+                }
+
+            supply_chain_data: list[dict] = []
+            sc_nodes = (
+                await self.db.execute(
+                    select(ComplianceSupplyChainNode)
+                    .where(
+                        ComplianceSupplyChainNode.record_id == record_id,
+                        ComplianceSupplyChainNode.tenant_id == tenant_id,
+                    )
+                    .order_by(ComplianceSupplyChainNode.sequence_order)
+                )
+            ).scalars().all()
+            role_labels = {
+                "producer": "Productor", "collector": "Recolector",
+                "processor": "Procesador", "exporter": "Exportador",
+                "importer": "Importador", "trader": "Comerciante",
+            }
+            for node in sc_nodes:
+                supply_chain_data.append({
+                    "sequence_order": node.sequence_order,
+                    "role": node.role,
+                    "role_label": role_labels.get(node.role, node.role),
+                    "actor_name": node.actor_name,
+                    "actor_country": node.actor_country,
+                    "actor_country_label": COUNTRY_LABELS.get((node.actor_country or "").upper(), node.actor_country),
+                    "actor_tax_id": node.actor_tax_id,
+                    "actor_eori": node.actor_eori,
+                    "handoff_date": _fmt_date(node.handoff_date),
+                    "quantity_kg": float(node.quantity_kg) if node.quantity_kg else None,
+                    "verification_status": node.verification_status,
+                })
+
+            doc_type_labels = {
+                "land_title": "Título de tierra", "legal_cert": "Certificado legal",
+                "deforestation_report": "Reporte de deforestación",
+                "satellite_image": "Imagen satelital",
+                "supplier_declaration": "Declaración de proveedor",
+                "transport_doc": "Documento de transporte",
+                "geojson_boundary": "Polígono GeoJSON", "other": "Otro",
+            }
+            record_docs_data: list[dict] = []
+            rec_docs = (
+                await self.db.execute(
+                    select(ComplianceRecordDocument).where(
+                        ComplianceRecordDocument.record_id == record_id,
+                        ComplianceRecordDocument.tenant_id == tenant_id,
+                    )
+                )
+            ).scalars().all()
+            for doc in rec_docs:
+                record_docs_data.append({
+                    "document_type": doc.document_type,
+                    "type_label": doc_type_labels.get(doc.document_type, doc.document_type),
+                    "filename": doc.filename,
+                    "file_hash": doc.file_hash,
+                    "description": doc.description,
+                    "uploaded_at": _fmt_date(doc.uploaded_at),
+                })
+
             # ── Step 6: Build context & render HTML with Jinja2 ───────────────
             blockchain = _build_blockchain_context(asset_data)
 
@@ -405,8 +521,19 @@ class CertificateGenerator:
                     "declaration_reference": record.declaration_reference,
                     "declaration_submission_date": _fmt_date(record.declaration_submission_date),
                     "declaration_status": record.declaration_status,
+                    # Annex II #2 — Activity type
+                    "activity_type": getattr(record, "activity_type", "export"),
+                    # Annex II #10 — Signatory
+                    "signatory_name": getattr(record, "signatory_name", None),
+                    "signatory_role": getattr(record, "signatory_role", None),
+                    "signatory_date": _fmt_date(getattr(record, "signatory_date", None)),
+                    # Annex II #8 — Prior DDS references
+                    "prior_dds_references": getattr(record, "prior_dds_references", None),
                 },
                 "plots": plots,
+                "risk_assessment": risk_assessment_data,
+                "supply_chain": supply_chain_data,
+                "documents": record_docs_data,
                 "blockchain": blockchain,
                 "tenant": {
                     "name": "TraceLog",

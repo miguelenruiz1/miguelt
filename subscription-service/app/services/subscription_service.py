@@ -184,7 +184,62 @@ class SubscriptionService:
             data={"invoice_number": invoice_number, "amount": float(amount)},
             performed_by=performed_by,
         )
+
+        # Electronic invoice via integration-service (fire-and-forget)
+        await self._try_einvoice(invoice, tenant_id)
+
         return invoice
+
+    async def _try_einvoice(self, invoice, tenant_id: str):
+        """Issue electronic invoice for subscription billing. Never raises."""
+        import logging
+        log = logging.getLogger("subscription.einvoice")
+        try:
+            from app.core.settings import get_settings
+            settings = get_settings()
+            provider_slug = "matias"  # MATIAS handles both production and sandbox mode
+
+            invoice.einvoice_status = "pending"
+            await self.db.flush()
+
+            payload = {
+                "number": invoice.invoice_number,
+                "date": invoice.created_at.strftime("%Y-%m-%d") if invoice.created_at else None,
+                "currency": invoice.currency,
+                "customer": {"nit": tenant_id, "name": f"Tenant {tenant_id}", "email": ""},
+                "items": invoice.line_items or [],
+                "subtotal": float(invoice.amount),
+                "tax_amount": 0,
+                "total": float(invoice.amount),
+                "notes": f"Suscripcion Trace — {invoice.invoice_number}",
+            }
+
+            import httpx
+            async with httpx.AsyncClient(timeout=15.0) as http:
+                resp = await http.post(
+                    f"{settings.INTEGRATION_SERVICE_URL}/api/v1/internal/invoices/{provider_slug}",
+                    json=payload,
+                    headers={"X-Tenant-Id": "platform"},
+                )
+                if resp.status_code < 300:
+                    data = resp.json()
+                    invoice.cufe = data.get("cufe", "")
+                    invoice.einvoice_number = data.get("invoice_number") or None
+                    invoice.einvoice_pdf_url = data.get("pdf_url") or None
+                    invoice.einvoice_remote_id = data.get("remote_id", "")
+                    invoice.einvoice_provider = provider_slug
+                    invoice.einvoice_status = data.get("status", "issued")
+                else:
+                    invoice.einvoice_status = "failed"
+                    log.warning("sub_einvoice_failed invoice=%s status=%s", invoice.id, resp.status_code)
+            await self.db.flush()
+        except Exception:
+            log.exception("sub_einvoice_error invoice=%s", getattr(invoice, "id", "?"))
+            try:
+                invoice.einvoice_status = "failed"
+                await self.db.flush()
+            except Exception:
+                pass
 
     async def mark_invoice_paid(
         self,

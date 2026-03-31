@@ -1,10 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { newUUID } from '@/lib/utils'
-import type {
-  AssetCreate, AssetMintRequest, AssetState, HandoffRequest, ArrivedRequest,
-  LoadedRequest, QCRequest, ReleaseRequest, BurnRequest,
-} from '@/types/api'
+import type { AssetCreate, AssetMintRequest, AssetState, GenericEventRequest } from '@/types/api'
 
 const KEYS = {
   all: ['assets'] as const,
@@ -35,7 +32,7 @@ export function useAssetEvents(id: string) {
     queryKey: KEYS.events(id),
     queryFn: () => api.assets.events(id, { limit: 200 }),
     enabled: Boolean(id),
-    refetchInterval: 15_000, // poll every 15s to catch anchor updates
+    refetchInterval: 15_000,
   })
 }
 
@@ -63,59 +60,11 @@ function invalidateAsset(qc: ReturnType<typeof useQueryClient>, id: string) {
   qc.invalidateQueries({ queryKey: ['assets', 'board'] })
 }
 
-export function useHandoff(assetId: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (data: HandoffRequest) => api.assets.handoff(assetId, data, newUUID()),
-    onSuccess: () => invalidateAsset(qc, assetId),
-  })
-}
-
-export function useArrived(assetId: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (data: ArrivedRequest) => api.assets.arrived(assetId, data),
-    onSuccess: () => invalidateAsset(qc, assetId),
-  })
-}
-
-export function useLoaded(assetId: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (data: LoadedRequest) => api.assets.loaded(assetId, data),
-    onSuccess: () => invalidateAsset(qc, assetId),
-  })
-}
-
-export function useQC(assetId: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (data: QCRequest) => api.assets.qc(assetId, data),
-    onSuccess: () => invalidateAsset(qc, assetId),
-  })
-}
-
-export function useRelease(assetId: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({ data, adminKey }: { data: ReleaseRequest; adminKey: string }) =>
-      api.assets.release(assetId, data, adminKey, newUUID()),
-    onSuccess: () => invalidateAsset(qc, assetId),
-  })
-}
-
-export function useBurn(assetId: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (data: BurnRequest) => api.assets.burn(assetId, data, newUUID()),
-    onSuccess: () => invalidateAsset(qc, assetId),
-  })
-}
-
+/** Generic event recorder — the only way to record custody events. */
 export function useRecordEvent(assetId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: import('@/types/api').GenericEventRequest) =>
+    mutationFn: (data: GenericEventRequest) =>
       api.assets.recordEvent(assetId, data, newUUID()),
     onSuccess: () => invalidateAsset(qc, assetId),
   })

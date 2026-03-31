@@ -67,24 +67,34 @@ class EmailService:
         tenant_id: str | None = None,
         is_system: bool = False,
     ) -> bool:
-        """Send an email. Tries active email provider first, falls back to SMTP."""
-        # Try active email provider first
-        if db and tenant_id:
+        """Send an email. Platform Resend > SMTP/Mailhog fallback."""
+        # 1. Platform-level Resend (configured by superuser, transparent to tenants)
+        if self.settings.RESEND_API_KEY:
             try:
-                from app.services.email_provider_service import EmailProviderService
-                provider_svc = EmailProviderService(db)
-                active = await provider_svc.get_active(tenant_id)
-                if active:
-                    result = await provider_svc.send_email(tenant_id, to, subject, html_body)
-                    return result.get("ok", False)
+                import httpx
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    resp = await client.post(
+                        "https://api.resend.com/emails",
+                        headers={
+                            "Authorization": f"Bearer {self.settings.RESEND_API_KEY}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "from": self.settings.SMTP_FROM,
+                            "to": [to],
+                            "subject": subject,
+                            "html": html_body,
+                        },
+                    )
+                    if resp.status_code < 300:
+                        logger.info("email_sent_via_resend", extra={"to": to})
+                        return True
+                    logger.warning("resend_failed status=%s", resp.status_code)
             except Exception:
-                logger.debug("email_provider_dispatch_failed, falling back to SMTP")
+                logger.exception("resend_error, falling back to SMTP")
 
-        # Fall back to legacy SMTP config
-        if db and tenant_id:
-            smtp_cfg = await self._get_smtp_config(db, tenant_id)
-        else:
-            smtp_cfg = _env_smtp_config(self.settings)
+        # 2. Fall back to SMTP (Mailhog in dev)
+        smtp_cfg = _env_smtp_config(self.settings)
 
         msg = EmailMessage()
         msg["From"] = smtp_cfg["from_addr"]

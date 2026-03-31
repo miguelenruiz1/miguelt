@@ -167,6 +167,7 @@ def create_app() -> FastAPI:
     from app.api.routers.batches import router as batches_router
     from app.api.routers.recipes import router as recipes_router
     from app.api.routers.production import router as production_router
+    from app.api.routers.resources import router as resources_router
     from app.api.routers.cycle_counts import router as cycle_counts_router
     from app.api.routers.audit import router as audit_router
     from app.api.routers.imports import router as imports_router
@@ -180,6 +181,7 @@ def create_app() -> FastAPI:
     from app.api.routers.tax_rates import router as tax_rates_router
     from app.api.routers.uom import router as uom_router
     from app.api.routers.partners import router as partners_router
+    from app.api.routers.internal import router as internal_router
 
     # ─── Static files (uploads) ──────────────────────────────────────────────
     from pathlib import Path
@@ -205,6 +207,7 @@ def create_app() -> FastAPI:
     app.include_router(batches_router)
     app.include_router(recipes_router)
     app.include_router(production_router)
+    app.include_router(resources_router)
     app.include_router(cycle_counts_router)
     app.include_router(audit_router)
     app.include_router(imports_router)
@@ -218,6 +221,7 @@ def create_app() -> FastAPI:
     app.include_router(tax_rates_router)
     app.include_router(uom_router)
     app.include_router(partners_router)
+    app.include_router(internal_router)
     return app
 
 

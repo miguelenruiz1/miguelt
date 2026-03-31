@@ -58,6 +58,9 @@ class ComplianceRecord(Base):
     # EU export specific
     operator_eori: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Activity type (Annex II #2: import, domestic_production, export)
+    activity_type: Mapped[str] = mapped_column(Text, nullable=False, default="export")
+
     # Declarations (EUDR Art. 9.1.g, 9.1.h)
     deforestation_free_declaration: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     legal_compliance_declaration: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -77,6 +80,14 @@ class ComplianceRecord(Base):
     last_validated_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     validation_result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     missing_fields: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+
+    # Signatory (Annex II #10: name, role, date of the person signing)
+    signatory_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    signatory_role: Mapped[str | None] = mapped_column(Text, nullable=True)
+    signatory_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    # Prior DDS references (Annex II #8: for derived products)
+    prior_dds_references: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
     # Retention
     documents_retention_until: Mapped[date | None] = mapped_column(Date, nullable=True)

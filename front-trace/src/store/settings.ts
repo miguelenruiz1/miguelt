@@ -25,3 +25,15 @@ export function explorerAddressUrl(pubkey: string, cluster: SolanaCluster) {
 export function explorerTxUrl(sig: string, cluster: SolanaCluster) {
   return `https://explorer.solana.com/tx/${sig}?cluster=${cluster}`
 }
+
+/** XRAY by Helius — viewer for cNFTs with full metadata + image */
+export function xrayAssetUrl(assetId: string, cluster: SolanaCluster) {
+  const net = cluster === 'mainnet-beta' ? '' : '?network=devnet'
+  return `https://xray.helius.xyz/token/${assetId}${net}`
+}
+
+/** XRAY transaction viewer */
+export function xrayTxUrl(sig: string, cluster: SolanaCluster) {
+  const net = cluster === 'mainnet-beta' ? '' : '?network=devnet'
+  return `https://xray.helius.xyz/tx/${sig}${net}`
+}

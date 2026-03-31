@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Package, Edit, Archive, Plus } from 'lucide-react'
+import { Package, Edit, Archive, Plus, CheckCircle2 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { usePlans, useCreatePlan, useUpdatePlan, useArchivePlan } from '@/hooks/usePlans'
+import { subscriptionApi } from '@/lib/subscription-api'
 import type { Plan, PlanCreate, PlanUpdate } from '@/types/subscription'
 import { cn } from '@/lib/utils'
-
-const ALL_MODULES = ['logistics', 'inventory', 'audit', 'analytics']
 
 // ─── Plan Modal ───────────────────────────────────────────────────────────────
 
@@ -17,6 +17,12 @@ function PlanModal({
 }) {
   const createMut = useCreatePlan()
   const updateMut = useUpdatePlan()
+
+  const { data: catalog = [] } = useQuery({
+    queryKey: ['module-catalog'],
+    queryFn: () => subscriptionApi.modules.catalog(),
+    staleTime: 120_000,
+  })
 
   const isEdit = !!plan
 
@@ -43,6 +49,15 @@ function PlanModal({
     }))
   }
 
+  // Auto-generate slug from name
+  function handleNameChange(value: string) {
+    setForm(f => ({
+      ...f,
+      name: value,
+      ...(!isEdit && (!f.slug || f.slug === slugify(f.name)) ? { slug: slugify(value) } : {}),
+    }))
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const data = {
@@ -63,6 +78,7 @@ function PlanModal({
   }
 
   const isPending = createMut.isPending || updateMut.isPending
+  const inputCls = 'w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
@@ -72,21 +88,23 @@ function PlanModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
-              <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              <input required value={form.name} onChange={e => handleNameChange(e.target.value)}
+                placeholder="Ej: Profesional"
+                className={inputCls} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Slug</label>
               <input required value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))}
                 disabled={isEdit}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50 disabled:text-slate-400" />
+                className={cn(inputCls, 'font-mono', isEdit && 'bg-slate-50 text-slate-400')} />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
             <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              placeholder="Descripción breve del plan"
+              className={inputCls} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -94,14 +112,14 @@ function PlanModal({
               <label className="block text-sm font-medium text-slate-700 mb-1">Precio/mes ($)</label>
               <input type="number" step="0.01" value={form.price_monthly}
                 onChange={e => setForm(f => ({ ...f, price_monthly: Number(e.target.value) }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className={inputCls} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Precio/año ($)</label>
               <input type="number" step="0.01" value={form.price_annual}
                 onChange={e => setForm(f => ({ ...f, price_annual: e.target.value }))}
                 placeholder="Opcional"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className={inputCls} />
             </div>
           </div>
 
@@ -109,38 +127,54 @@ function PlanModal({
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Max usuarios</label>
               <input type="number" value={form.max_users} onChange={e => setForm(f => ({ ...f, max_users: Number(e.target.value) }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className={inputCls} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Max activos</label>
               <input type="number" value={form.max_assets} onChange={e => setForm(f => ({ ...f, max_assets: Number(e.target.value) }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className={inputCls} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Max wallets</label>
               <input type="number" value={form.max_wallets} onChange={e => setForm(f => ({ ...f, max_wallets: Number(e.target.value) }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className={inputCls} />
             </div>
           </div>
 
+          {/* Modules from catalog */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Módulos</label>
-            <div className="flex flex-wrap gap-2">
-              {ALL_MODULES.map(mod => (
-                <button
-                  key={mod}
-                  type="button"
-                  onClick={() => toggleModule(mod)}
-                  className={cn(
-                    'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors border',
-                    form.modules.includes(mod)
-                      ? 'bg-primary text-white border-primary'
-                      : 'bg-white text-slate-500 border-slate-200 hover:border-primary/50',
-                  )}
-                >
-                  {mod}
-                </button>
-              ))}
+            <label className="block text-sm font-medium text-slate-700 mb-2">Módulos incluidos</label>
+            <div className="grid grid-cols-2 gap-2">
+              {catalog.map(mod => {
+                const selected = form.modules.includes(mod.slug)
+                return (
+                  <button
+                    key={mod.slug}
+                    type="button"
+                    onClick={() => toggleModule(mod.slug)}
+                    className={cn(
+                      'flex items-center gap-2 rounded-xl border-2 px-3 py-2.5 text-left text-sm font-medium transition',
+                      selected
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-slate-200 text-slate-600 hover:border-slate-300',
+                    )}
+                  >
+                    {selected ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
+                    ) : (
+                      <div className="h-4 w-4 shrink-0 rounded-full border-2 border-slate-300" />
+                    )}
+                    <div className="min-w-0">
+                      <div className="truncate">{mod.name}</div>
+                      {mod.dependencies?.length ? (
+                        <div className="text-[10px] text-slate-400 font-normal">
+                          Requiere: {mod.dependencies.join(', ')}
+                        </div>
+                      ) : null}
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -180,7 +214,7 @@ function PlanCard({ plan, onEdit }: { plan: Plan; onEdit: () => void }) {
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-lg font-bold text-slate-800">{plan.name}</h3>
-          <p className="text-xs text-slate-400 mt-0.5">{plan.slug}</p>
+          <p className="text-xs text-slate-400 mt-0.5 font-mono">{plan.slug}</p>
         </div>
         <div className="flex gap-1">
           <button onClick={onEdit} className="rounded-lg p-1.5 text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors">
@@ -286,4 +320,14 @@ export function PlansPage() {
       {showCreate && <PlanModal onClose={() => setShowCreate(false)} />}
     </div>
   )
+}
+
+function slugify(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 50)
 }

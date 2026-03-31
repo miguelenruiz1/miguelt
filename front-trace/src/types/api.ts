@@ -34,27 +34,12 @@ export interface MerkleTree {
 
 export type WalletStatus = 'active' | 'suspended' | 'revoked'
 
-export type AssetState =
-  | 'in_transit'
-  | 'in_custody'
-  | 'loaded'
-  | 'qc_passed'
-  | 'qc_failed'
-  | 'released'
-  | 'burned'
-  | 'customs_hold'
-  | 'damaged'
-  | 'delivered'
-  | 'sealed'
-
-export type EventType =
-  | 'CREATED' | 'HANDOFF' | 'ARRIVED' | 'LOADED' | 'QC' | 'RELEASED' | 'BURN'
-  | 'PICKUP' | 'GATE_IN' | 'GATE_OUT' | 'DEPARTED' | 'CUSTOMS_HOLD'
-  | 'CUSTOMS_CLEARED' | 'DAMAGED' | 'DELIVERED' | 'SEALED' | 'UNSEALED'
-  | 'TEMPERATURE_CHECK' | 'INSPECTION' | 'CONSOLIDATED' | 'DECONSOLIDATED' | 'NOTE'
+// Asset state and event type are dynamic strings (workflow-driven)
+export type AssetState = string
+export type EventType = string
 
 export interface GenericEventRequest {
-  event_type: EventType
+  event_type: string
   to_wallet?: string
   location?: { lat?: number; lng?: number; label?: string; extra?: Record<string, unknown> }
   data?: Record<string, unknown>
@@ -143,6 +128,7 @@ export interface Asset {
   metadata: Record<string, unknown>
   current_custodian_wallet: string
   state: AssetState
+  workflow_state_id: string | null
   last_event_hash: string | null
   blockchain_asset_id: string | null
   blockchain_tree_address: string | null
@@ -163,7 +149,7 @@ export interface LocationData {
 export interface CustodyEvent {
   id: string
   asset_id: string
-  event_type: EventType
+  event_type: string
   from_wallet: string | null
   to_wallet: string | null
   timestamp: string
@@ -215,39 +201,6 @@ export interface AssetMintRequest {
   initial_custodian_wallet: string
 }
 
-export interface HandoffRequest {
-  to_wallet: string
-  location?: LocationData
-  data?: Record<string, unknown>
-}
-
-export interface ArrivedRequest {
-  location?: LocationData
-  data?: Record<string, unknown>
-}
-
-export interface LoadedRequest {
-  location?: LocationData
-  data?: Record<string, unknown>
-}
-
-export interface QCRequest {
-  result: 'pass' | 'fail'
-  notes?: string
-  data?: Record<string, unknown>
-}
-
-export interface ReleaseRequest {
-  external_wallet: string
-  reason: string
-  data?: Record<string, unknown>
-}
-
-export interface BurnRequest {
-  reason: string
-  data?: Record<string, unknown>
-}
-
 // ─── Response wrappers ────────────────────────────────────────────────────────
 
 export interface PaginatedResponse<T> {
@@ -285,6 +238,243 @@ export interface SolanaTxResponse {
   confirmations: number | null
   err: unknown
   simulated: boolean
+}
+
+// ─── Workflow Engine ─────────────────────────────────────────────────────────
+
+export interface WorkflowState {
+  id: string
+  tenant_id: string
+  slug: string
+  label: string
+  color: string
+  icon: string | null
+  is_initial: boolean
+  is_terminal: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface WorkflowStateCreate {
+  slug: string
+  label: string
+  color?: string
+  icon?: string
+  is_initial?: boolean
+  is_terminal?: boolean
+  sort_order?: number
+}
+
+export interface WorkflowStateUpdate {
+  label?: string
+  color?: string
+  icon?: string
+  is_initial?: boolean
+  is_terminal?: boolean
+  sort_order?: number
+}
+
+export interface WorkflowTransition {
+  id: string
+  tenant_id: string
+  from_state_id: string | null
+  from_state: WorkflowState | null
+  to_state_id: string
+  to_state: WorkflowState | null
+  event_type_slug: string | null
+  label: string | null
+  requires_data: Record<string, unknown> | null
+  created_at: string
+}
+
+export interface WorkflowTransitionCreate {
+  from_state_id: string | null
+  to_state_id: string
+  event_type_slug?: string
+  label?: string
+  requires_data?: Record<string, unknown>
+}
+
+export interface WorkflowEventType {
+  id: string
+  tenant_id: string
+  slug: string
+  name: string
+  description: string | null
+  icon: string
+  color: string
+  is_informational: boolean
+  requires_wallet: boolean
+  requires_notes: boolean
+  requires_reason: boolean
+  requires_admin: boolean
+  data_schema: Record<string, unknown> | null
+  required_documents: DocumentRequirementsConfig | null
+  compliance_required_documents: DocumentRequirementsConfig | null
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface WorkflowEventTypeCreate {
+  slug: string
+  name: string
+  description?: string
+  icon?: string
+  color?: string
+  is_informational?: boolean
+  requires_wallet?: boolean
+  requires_notes?: boolean
+  requires_reason?: boolean
+  requires_admin?: boolean
+  data_schema?: Record<string, unknown>
+  required_documents?: DocumentRequirementsConfig
+  compliance_required_documents?: DocumentRequirementsConfig
+  sort_order?: number
+}
+
+export interface WorkflowEventTypeUpdate {
+  name?: string
+  description?: string
+  icon?: string
+  color?: string
+  is_informational?: boolean
+  requires_wallet?: boolean
+  requires_notes?: boolean
+  requires_reason?: boolean
+  requires_admin?: boolean
+  data_schema?: Record<string, unknown>
+  required_documents?: DocumentRequirementsConfig
+  compliance_required_documents?: DocumentRequirementsConfig
+  sort_order?: number
+  is_active?: boolean
+}
+
+export interface IndustryPresetInfo {
+  states: number
+  transitions: number
+  event_types: number
+}
+
+export interface ActionStateInfo {
+  slug: string
+  label: string
+  color: string
+  icon: string | null
+  is_terminal: boolean
+}
+
+export interface ActionEventTypeInfo {
+  slug: string
+  name: string
+  description: string | null
+  icon: string
+  color: string
+  is_informational: boolean
+  requires_wallet: boolean
+  requires_notes: boolean
+  requires_reason: boolean
+  requires_admin: boolean
+}
+
+export interface AvailableAction {
+  transition_id: string
+  to_state: ActionStateInfo | null
+  event_type_slug: string | null
+  label: string | null
+  event_type: ActionEventTypeInfo | null
+}
+
+export interface SeedResult {
+  preset: string
+  states_created: number
+  transitions_created: number
+  event_types_created: number
+}
+
+// ─── Media Module ────────────────────────────────────────────────────────────
+
+export interface MediaFile {
+  id: string
+  tenant_id: string
+  filename: string
+  original_filename: string
+  content_type: string
+  file_size: number
+  file_hash: string
+  storage_backend: string
+  url: string
+  category: string
+  document_type: string | null
+  title: string | null
+  description: string | null
+  tags: string[]
+  uploaded_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EventDocumentLink {
+  id: string
+  event_id: string
+  asset_id: string
+  media_file_id: string
+  document_type: string
+  is_required: boolean
+  compliance_source: string | null
+  linked_by: string | null
+  created_at: string
+  file: {
+    id: string
+    filename: string
+    original_filename: string
+    content_type: string
+    file_size: number
+    file_hash: string
+    url: string
+    title: string | null
+    category: string
+    storage_backend: string
+  }
+}
+
+export interface DocumentRequirement {
+  type: string
+  label: string
+  required: boolean
+  accept?: string[]
+  max_size_mb?: number
+  max_count?: number
+}
+
+export interface DocumentRequirementsConfig {
+  documents: DocumentRequirement[]
+  block_transition?: boolean
+}
+
+export interface DocumentRequirementsResponse {
+  event_type_slug: string
+  base_requirements: DocumentRequirement[]
+  compliance_requirements: DocumentRequirement[]
+  compliance_active: boolean
+  merged_requirements: DocumentRequirement[]
+  block_transition: boolean
+}
+
+export interface DocumentCompleteness {
+  complete: boolean
+  total_uploaded: number
+  total_required: number
+  missing: { type: string; label: string; source: string }[]
+  satisfied: { type: string; label: string; count: number }[]
+  block_transition: boolean
+}
+
+export interface EventDocumentsResponse {
+  documents: EventDocumentLink[]
+  completeness: DocumentCompleteness
 }
 
 // ─── API error ────────────────────────────────────────────────────────────────

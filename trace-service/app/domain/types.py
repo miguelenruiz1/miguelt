@@ -22,6 +22,7 @@ class AssetState(StrEnum):
     DAMAGED = "damaged"
     DELIVERED = "delivered"
     SEALED = "sealed"
+    RETURNED = "returned"
 
 
 # Terminal states — no further events allowed
@@ -62,6 +63,7 @@ class EventType(StrEnum):
     CONSOLIDATED = "CONSOLIDATED"           # consolidado con otras cargas
     DECONSOLIDATED = "DECONSOLIDATED"       # desconsolidado
     NOTE = "NOTE"                           # nota/anotación libre
+    RETURN = "RETURN"                       # devolución / logística inversa
 
 
 # ─── Informational events: do NOT change asset state ──────────────────────────
@@ -95,6 +97,7 @@ EVENT_STATE_TRANSITIONS: dict[EventType, AssetState] = {
     EventType.DELIVERED: AssetState.DELIVERED,
     EventType.SEALED: AssetState.SEALED,
     EventType.UNSEALED: AssetState.LOADED,
+    EventType.RETURN: AssetState.RETURNED,
 }
 
 
@@ -117,6 +120,7 @@ VALID_FROM_STATES: dict[EventType, frozenset[AssetState]] = {
         AssetState.IN_CUSTODY,
     }),
     EventType.QC: frozenset({
+        AssetState.IN_CUSTODY,  # allow QC after arrival
         AssetState.LOADED,
         AssetState.QC_FAILED,  # allow re-inspection after failure
     }),
@@ -158,6 +162,11 @@ VALID_FROM_STATES: dict[EventType, frozenset[AssetState]] = {
     }),
     EventType.UNSEALED: frozenset({
         AssetState.SEALED,
+    }),
+    EventType.RETURN: frozenset({
+        AssetState.DELIVERED,
+        AssetState.IN_TRANSIT,
+        AssetState.IN_CUSTODY,
     }),
     # Informational events — any non-terminal state
     EventType.TEMPERATURE_CHECK: _NON_TERMINAL,

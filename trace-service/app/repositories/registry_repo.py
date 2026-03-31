@@ -63,6 +63,19 @@ class RegistryRepository:
         )
         return result.scalar_one_or_none() is not None
 
+    async def find_by_tag(
+        self, tenant_id: uuid.UUID, tag: str
+    ) -> RegistryWallet | None:
+        """Find first active wallet with a specific tag for a tenant."""
+        result = await self._db.execute(
+            select(RegistryWallet).where(
+                RegistryWallet.tenant_id == tenant_id,
+                RegistryWallet.status == WalletStatus.ACTIVE,
+                RegistryWallet.tags.contains([tag]),
+            ).limit(1)
+        )
+        return result.scalar_one_or_none()
+
     async def list(
         self,
         tag: str | None = None,

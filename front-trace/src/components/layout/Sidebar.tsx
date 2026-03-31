@@ -2,14 +2,14 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutGrid, Wallet, Box, Activity, Building2, Kanban, FileText, FolderTree,
-  Settings, ChevronRight, CircleHelp, BookOpen, Users, ShieldCheck, Eye, ListChecks,
+  Settings, ChevronRight, CircleHelp, Users, ShieldCheck, Eye, ListChecks,
   LogOut, CreditCard, Grid3x3, Warehouse, ArrowLeftRight, ShoppingCart,
   Percent, BarChart3, Banknote, Zap, Fingerprint, ScrollText, Factory, Mail, Send,
   Crown, Store, TrendingUp, UserCog, UserPlus, FlaskConical,
   ShoppingBag, Tag, BellRing, BookText, Shapes,
   Users2, Globe, ScanLine, PackageCheck, RefreshCw, Scale, Search,
   CheckCircle, MapPin, Award, ChevronsUpDown, Sparkles,
-  Ship, Plane, Shield, Link2,
+  Ship, Plane, Shield, FolderOpen, Link2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLiveness } from '@/hooks/useHealth'
@@ -23,6 +23,7 @@ import { useFeatureToggles } from '@/hooks/useInventory'
 const topItems = [
   { to: '/marketplace', icon: Store, label: 'Marketplace' },
   { to: '/', icon: LayoutGrid, label: 'Dashboard' },
+  { to: '/media', icon: FolderOpen, label: 'Media' },
 ]
 
 const invTop = [
@@ -83,8 +84,14 @@ const invGroups = [
 ]
 
 const produccionItems = [
-  { to: '/inventario/recetas', icon: ScrollText, label: 'Recetas', permission: 'production.view' },
-  { to: '/inventario/produccion', icon: Factory, label: 'Corridas', permission: 'production.view' },
+  { to: '/produccion', icon: LayoutGrid, label: 'Inicio', permission: 'production.view' },
+  { to: '/produccion/ordenes', icon: Factory, label: 'Ordenes', permission: 'production.view' },
+  { to: '/produccion/recetas', icon: ScrollText, label: 'Recetas (BOM)', permission: 'production.view' },
+  { to: '/produccion/recursos', icon: Users2, label: 'Recursos', permission: 'production.view' },
+  { to: '/produccion/mrp', icon: Search, label: 'MRP', permission: 'production.view' },
+  { to: '/produccion/emisiones', icon: Send, label: 'Emisiones', permission: 'production.view' },
+  { to: '/produccion/recibos', icon: PackageCheck, label: 'Recibos', permission: 'production.view' },
+  { to: '/produccion/reportes', icon: BarChart3, label: 'Reportes', permission: 'production.view' },
 ]
 
 const cumplimientoItems = [
@@ -100,27 +107,17 @@ const logisticaItems = [
   { to: '/assets', icon: Box, label: 'Cargas' },
   { to: '/wallets', icon: Wallet, label: 'Custodios' },
   { to: '/organizations', icon: Building2, label: 'Organizaciones' },
-  { to: '/logistica/envios', icon: Ship, label: 'Transporte' },
-  { to: '/logistica/documentos-comex', icon: Award, label: 'Comercio Exterior' },
-  { to: '/logistica/blockchain', icon: Link2, label: 'Blockchain' },
+  { to: '/logistica/analiticas', icon: BarChart3, label: 'Analiticas' },
+  { to: '/configuracion/flujo-de-trabajo', icon: Settings, label: 'Flujo de trabajo' },
 ]
 
-const ayudaItems = [
-  { to: '/help', icon: BookOpen, label: 'Inicio' },
-  { to: '/help/assets', icon: Box, label: 'Cargas' },
-  { to: '/help/wallets', icon: Wallet, label: 'Custodios' },
-  { to: '/help/organizations', icon: Building2, label: 'Organizaciones' },
-  { to: '/help/tracking', icon: Kanban, label: 'Seguimiento' },
-]
 
 const empresaAlwaysItems = [
   { to: '/empresa/suscripcion', icon: CreditCard, label: 'Suscripcion', permission: 'subscription.view' },
   { to: '/settings/billing',    icon: Banknote,    label: 'Facturacion', permission: 'subscription.view' },
+  { to: '/empresa/webhooks',    icon: Zap,         label: 'Webhooks',    permission: 'subscription.view' },
 ]
-const empresaModuleItems = [
-  { to: '/empresa/plantillas',  icon: Mail, label: 'Plantillas', permission: 'email.view' },
-  { to: '/empresa/correo',      icon: Send, label: 'Correo',     permission: 'email.manage' },
-]
+const empresaModuleItems: typeof empresaAlwaysItems = []
 
 const equipoItems = [
   { to: '/equipo/usuarios',  icon: Users,         label: 'Usuarios',  permission: 'admin.users' },
@@ -302,10 +299,9 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
   const [logisticaOpen, setLogisticaOpen] = useState(true)
   const [inventarioOpen, setInventarioOpen] = useState(true)
-  const [ayudaOpen, setAyudaOpen] = useState(false)
   const [equipoOpen, setEquipoOpen] = useState(true)
   const [empresaOpen, setEmpresaOpen] = useState(false)
-  const [plataformaOpen, setPlataformaOpen] = useState(false)
+  const [plataformaOpen, setPlataformaOpen] = useState(true)
   const [produccionOpen, setProduccionOpen] = useState(true)
   const [cumplimientoOpen, setCumplimientoOpen] = useState(true)
   const [openInvGroup, setOpenInvGroup] = useState<string | null>(null)
@@ -327,12 +323,11 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
   const isLogisticsActive = useIsModuleActive('logistics')
   const isInventoryActive = useIsModuleActive('inventory')
   const isEInvoicingActive = useIsModuleActive('electronic-invoicing')
-  const isEInvoicingSandboxActive = useIsModuleActive('electronic-invoicing-sandbox')
   const isProductionActive = useIsModuleActive('production')
   const isComplianceActive = useIsModuleActive('compliance')
 
   const visibleEquipoItems = equipoItems.filter((item) => hasPermission(item.permission))
-  const anyModuleActive = isLogisticsActive || isInventoryActive || isEInvoicingActive || isEInvoicingSandboxActive || isProductionActive || isComplianceActive
+  const anyModuleActive = isLogisticsActive || isInventoryActive || isEInvoicingActive || isProductionActive || isComplianceActive
   const visibleEmpresaItems = [
     ...empresaAlwaysItems.filter((item) => hasPermission(item.permission)),
     ...(anyModuleActive ? empresaModuleItems.filter((item) => hasPermission(item.permission)) : []),
@@ -412,23 +407,6 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             {logisticaItems.map(({ to, icon, label }) => (
               <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
             ))}
-            {!collapsed && (<>
-              <button
-                onClick={() => setAyudaOpen(o => !o)}
-                className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-[color:var(--sidebar-foreground)] opacity-60 hover:opacity-90 rounded-md hover:bg-white/[0.05] transition-all"
-              >
-                <CircleHelp className="h-4 w-4 opacity-50" />
-                <span>Ayuda</span>
-                <ChevronRight className={cn('h-3 w-3 ml-auto transition-transform duration-150', ayudaOpen && 'rotate-90')} />
-              </button>
-              {ayudaOpen && (
-                <div className="space-y-0.5 mt-0.5">
-                  {ayudaItems.map(({ to, label }) => (
-                    <SubNavLink key={to} to={to} label={label} onClick={onClose} />
-                  ))}
-                </div>
-              )}
-            </>)}
           </Section>
         )}
 
@@ -478,25 +456,13 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           </Section>
         )}
 
-        {/* Produccion */}
-        {isInventoryActive && isProductionActive && (
+        {/* Produccion (modulo independiente) */}
+        {isProductionActive && (
           <Section label="Produccion" isOpen={produccionOpen} onToggle={() => setProduccionOpen(o => !o)} collapsed={collapsed}>
             {produccionItems.filter(i => hasPermission(i.permission)).map(({ to, icon, label }) => (
               <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
             ))}
           </Section>
-        )}
-
-        {/* E-Invoicing */}
-        {isInventoryActive && isEInvoicingActive && (
-          <div className="pt-1 space-y-0.5">
-            <NavItem to="/facturacion-electronica" icon={FileText} label="Facturacion Electronica" onClick={onClose} collapsed={collapsed} />
-          </div>
-        )}
-        {isInventoryActive && isEInvoicingSandboxActive && (
-          <div className="space-y-0.5">
-            <NavItem to="/facturacion-electronica-sandbox" icon={FlaskConical} label="Sandbox" onClick={onClose} collapsed={collapsed} />
-          </div>
         )}
 
         {/* Cumplimiento */}
@@ -540,12 +506,13 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             <NavItem to="/platform/plans" icon={Box} label="Planes" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/subscriptions" icon={CreditCard} label="Suscripciones" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/users" icon={Globe} label="Usuarios" onClick={onClose} collapsed={collapsed} />
-            <NavItem to="/platform/marketplace" icon={Store} label="Marketplace" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/team" icon={UserCog} label="Equipo" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/onboard" icon={UserPlus} label="Onboarding" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/payments" icon={Banknote} label="Pagos" onClick={onClose} collapsed={collapsed} />
-            <NavItem to="/platform/blockchain" icon={Activity} label="Blockchain" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/ai" icon={Sparkles} label="Inteligencia Artificial" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/blockchain" icon={Link2} label="Blockchain" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/facturacion-electronica" icon={FileText} label="Facturacion Electronica" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/empresa/correo" icon={Mail} label="Correo" onClick={onClose} collapsed={collapsed} />
           </Section>
         )}
       </nav>

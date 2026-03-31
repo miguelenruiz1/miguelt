@@ -111,6 +111,8 @@ def create_app() -> FastAPI:
     from app.api.v1.records import router as records_router
     from app.api.v1.assets import router as assets_router
     from app.api.v1.certificates import router as certificates_router
+    from app.api.v1.risk_assessments import router as risk_assessments_router
+    from app.api.v1.supply_chain import router as supply_chain_router
 
     app.include_router(health_router)
     app.include_router(frameworks_router)
@@ -119,6 +121,8 @@ def create_app() -> FastAPI:
     app.include_router(records_router)
     app.include_router(assets_router)
     app.include_router(certificates_router)
+    app.include_router(risk_assessments_router)
+    app.include_router(supply_chain_router)
 
     # ─── Prometheus metrics (optional) ────────────────────────────────────────
     try:

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RefreshCw, ChevronRight, Package, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -10,50 +10,27 @@ import { useQueries } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useWalletList } from '@/hooks/useWallets'
 import { useOrganizations } from '@/hooks/useTaxonomy'
+import { useWorkflowStates } from '@/hooks/useWorkflow'
 import { cn } from '@/lib/utils'
-import type { Asset, AssetState } from '@/types/api'
+import type { Asset, WorkflowState } from '@/types/api'
 
-/* ── State definitions ──────────────────────────────────────────── */
+/* ── (Legacy states removed — columns are now 100% workflow-driven) ── */
 
-const STATES: { state: AssetState; label: string }[] = [
-  { state: 'in_custody',    label: 'En Custodia' },
-  { state: 'in_transit',    label: 'En Tránsito' },
-  { state: 'loaded',        label: 'Cargado' },
-  { state: 'sealed',        label: 'Sellado' },
-  { state: 'customs_hold',  label: 'Aduana' },
-  { state: 'qc_passed',     label: 'QC Aprobado' },
-  { state: 'qc_failed',     label: 'QC Rechazado' },
-  { state: 'damaged',       label: 'Dañado' },
-  { state: 'delivered',     label: 'Entregado' },
-  { state: 'released',      label: 'Liberado' },
-  { state: 'burned',        label: 'Completado' },
-]
+/* ── Dynamic badge using workflow state color ──────────────────── */
 
-const STATE_LABEL: Record<string, string> = Object.fromEntries(STATES.map(s => [s.state, s.label]))
-
-/* ── Badge config ───────────────────────────────────────────────── */
-
-const STATE_BADGE: Record<string, { className?: string; variant?: 'secondary' | 'destructive' | 'outline' }> = {
-  in_custody:   { variant: 'secondary' },
-  in_transit:   { className: 'bg-blue-500/15 text-blue-700 border-0' },
-  loaded:       { className: 'bg-amber-500/15 text-amber-700 border-0' },
-  sealed:       { className: 'bg-violet-500/15 text-violet-700 border-0' },
-  customs_hold: { className: 'bg-orange-500/15 text-orange-700 border-0' },
-  qc_passed:    { className: 'bg-emerald-500/15 text-emerald-700 border-0' },
-  qc_failed:    { variant: 'destructive' },
-  damaged:      { variant: 'destructive' },
-  delivered:    { className: 'bg-emerald-500/15 text-emerald-700 border-0' },
-  released:     { variant: 'outline' },
-  burned:       { variant: 'outline' },
-}
-
-function AssetStateBadge({ state }: { state: string }) {
-  const cfg = STATE_BADGE[state] ?? { variant: 'secondary' as const }
-  return (
-    <Badge variant={cfg.variant ?? 'secondary'} className={cfg.className}>
-      {STATE_LABEL[state] ?? state}
-    </Badge>
-  )
+function DynamicStateBadge({ state, stateMap }: { state: string; stateMap: Map<string, { label: string; color: string }> }) {
+  const cfg = stateMap.get(state)
+  if (cfg) {
+    return (
+      <Badge
+        className="border-0"
+        style={{ backgroundColor: `${cfg.color}20`, color: cfg.color }}
+      >
+        {cfg.label}
+      </Badge>
+    )
+  }
+  return <Badge variant="secondary">{state}</Badge>
 }
 
 /* ── Blockchain dot ─────────────────────────────────────────────── */
@@ -95,11 +72,32 @@ export function TrackingBoardPage() {
   const [stateFilter, setStateFilter] = useState<string>('all')
   const [filterOrgId, setFilterOrgId] = useState('')
 
-  // One query per state — same polling logic as before
+  // Load workflow states (dynamic) — falls back to legacy if empty
+  const { data: workflowStates } = useWorkflowStates()
+
+  const columns = useMemo(() => {
+    if (!workflowStates?.length) return []
+    return workflowStates.map(ws => ({
+      slug: ws.slug,
+      label: ws.label,
+      color: ws.color,
+    }))
+  }, [workflowStates])
+
+  // Build a lookup map for badge rendering
+  const stateMap = useMemo(() => {
+    const m = new Map<string, { label: string; color: string }>()
+    for (const c of columns) {
+      m.set(c.slug, { label: c.label, color: c.color })
+    }
+    return m
+  }, [columns])
+
+  // One query per state column — same polling logic
   const stateResults = useQueries({
-    queries: STATES.map((col) => ({
-      queryKey: ['assets', 'board', col.state],
-      queryFn: () => api.assets.list({ state: col.state, limit: 200 }),
+    queries: columns.map((col) => ({
+      queryKey: ['assets', 'board', col.slug],
+      queryFn: () => api.assets.list({ state: col.slug, limit: 200 }),
       refetchInterval: 15_000,
     })),
   })
@@ -116,9 +114,9 @@ export function TrackingBoardPage() {
   // Build counts per state
   const countByState: Record<string, number> = {}
   let allAssets: Asset[] = []
-  STATES.forEach((s, i) => {
-    const items = stateResults[i].data?.items ?? []
-    countByState[s.state] = items.length
+  columns.forEach((s, i) => {
+    const items = stateResults[i]?.data?.items ?? []
+    countByState[s.slug] = items.length
     allAssets = allAssets.concat(items)
   })
   const totalCount = allAssets.length
@@ -157,10 +155,10 @@ export function TrackingBoardPage() {
 
   // Tabs — show top states + "Todos"
   const tabs = [
-    { label: 'Todos', value: 'all', count: totalCount },
-    ...STATES
-      .filter(s => countByState[s.state] > 0)
-      .map(s => ({ label: s.label, value: s.state, count: countByState[s.state] })),
+    { label: 'Todos', value: 'all', count: totalCount, color: undefined as string | undefined },
+    ...columns
+      .filter(s => countByState[s.slug] > 0)
+      .map(s => ({ label: s.label, value: s.slug, count: countByState[s.slug], color: s.color })),
   ]
 
   return (
@@ -190,9 +188,16 @@ export function TrackingBoardPage() {
               className={cn(
                 'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors duration-150',
                 stateFilter === tab.value
-                  ? 'bg-primary text-primary-foreground font-medium'
+                  ? 'font-medium'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80',
               )}
+              style={
+                stateFilter === tab.value && tab.color
+                  ? { backgroundColor: tab.color, color: '#fff' }
+                  : stateFilter === tab.value
+                    ? { backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }
+                    : undefined
+              }
             >
               {tab.label}
               {tab.count > 0 && (
@@ -280,7 +285,7 @@ export function TrackingBoardPage() {
                       {qty != null ? `${Number(qty).toLocaleString('es')} ${(meta?.weight_unit as string) ?? 'kg'}` : '—'}
                     </TableCell>
                     <TableCell>
-                      <AssetStateBadge state={asset.state} />
+                      <DynamicStateBadge state={asset.state} stateMap={stateMap} />
                     </TableCell>
                     {hasCustodianData && (
                       <TableCell className="text-muted-foreground text-sm">

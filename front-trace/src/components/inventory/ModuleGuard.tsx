@@ -2,8 +2,16 @@ import { useIsModuleActive } from '@/hooks/useModules'
 import { ShieldX, Zap } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
-export function ModuleGuard({ children }: { children: React.ReactNode }) {
-  const isActive = useIsModuleActive('inventory')
+const MODULE_LABELS: Record<string, string> = {
+  inventory: 'Inventario',
+  production: 'Produccion',
+  logistics: 'Logistica',
+  compliance: 'Cumplimiento',
+  'electronic-invoicing': 'Facturacion Electronica',
+}
+
+export function ModuleGuard({ module = 'inventory', children }: { module?: string; children: React.ReactNode }) {
+  const isActive = useIsModuleActive(module)
 
   if (!isActive) {
     return (
@@ -11,9 +19,9 @@ export function ModuleGuard({ children }: { children: React.ReactNode }) {
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 mb-4">
           <ShieldX className="h-8 w-8 text-slate-400" />
         </div>
-        <h2 className="text-xl font-bold text-slate-800 mb-2">Módulo no activado</h2>
+        <h2 className="text-xl font-bold text-slate-800 mb-2">Modulo no activado</h2>
         <p className="text-sm text-slate-500 max-w-sm mb-6">
-          El módulo <strong>Inventario</strong> no está activo para tu organización.
+          El modulo <strong>{MODULE_LABELS[module] ?? module}</strong> no esta activo para tu organizacion.
           Un administrador puede activarlo desde el Marketplace.
         </p>
         <NavLink

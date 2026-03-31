@@ -1,727 +1,565 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Factory, Plus, Play, Trash2, Eye, Clock, CheckCircle2, XCircle, AlertTriangle, PackageCheck, PackageX, ShieldCheck, ShieldX, CircleDot, Flag } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useFormValidation } from '@/hooks/useFormValidation'
 import {
-  useProductionRuns, useProductionRun, useCreateProductionRun,
-  useExecuteProductionRun, useFinishProductionRun,
-  useApproveProductionRun, useRejectProductionRun,
-  useDeleteProductionRun,
+  Factory, Plus, Trash2, Eye, Clock, CheckCircle2, XCircle, AlertTriangle,
+  PackageCheck, Play, Square, Lock, Send, PackageOpen, BarChart3, Loader2, FileText, FolderOpen,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import {
+  useProductionRuns, useProductionRun, useCreateProductionRun, useUpdateProductionRun,
+  useReleaseProductionRun, useCancelProductionRun, useCloseProductionRun, useDeleteProductionRun,
+  useProductionEmissions, useCreateProductionEmission,
+  useProductionReceipts, useCreateProductionReceipt,
   useRecipes, useWarehouses, useProducts, useStockLevels,
 } from '@/hooks/useInventory'
+import { useToast } from '@/store/toast'
+import { useConfirm } from '@/store/confirm'
+import MediaPickerModal from '@/components/compliance/MediaPickerModal'
+import { mediaApi, mediaFileUrl } from '@/lib/media-api'
+import type { ProductionRun, ProductionRunStatus } from '@/types/inventory'
+
+// ── Status config ───────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-slate-100 text-slate-600',
-  in_progress: 'bg-blue-100 text-blue-700',
-  awaiting_approval: 'bg-amber-100 text-amber-700',
+  planned: 'bg-slate-100 text-slate-600',
+  released: 'bg-blue-100 text-blue-700',
+  in_progress: 'bg-amber-100 text-amber-700',
   completed: 'bg-emerald-100 text-emerald-700',
-  rejected: 'bg-red-100 text-red-700',
-  canceled: 'bg-red-100 text-red-700',
+  closed: 'bg-gray-100 text-gray-600',
+  canceled: 'bg-red-100 text-red-600',
+  rejected: 'bg-red-100 text-red-600',
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: 'Pendiente',
-  in_progress: 'En progreso',
-  awaiting_approval: 'Por aprobar',
+  planned: 'Planificada',
+  released: 'Liberada',
+  in_progress: 'En produccion',
   completed: 'Completada',
-  rejected: 'Rechazada',
+  closed: 'Cerrada',
   canceled: 'Cancelada',
+  rejected: 'Rechazada',
 }
 
 const STATUS_ICONS: Record<string, typeof Clock> = {
-  pending: Clock,
-  in_progress: CircleDot,
-  awaiting_approval: ShieldCheck,
+  planned: Clock,
+  released: Play,
+  in_progress: Factory,
   completed: CheckCircle2,
-  rejected: ShieldX,
+  closed: Lock,
   canceled: XCircle,
+  rejected: XCircle,
 }
 
-/* ─── Reject Modal ─────────────────────────────────────────────────────────── */
-
-function RejectModal({ onClose, onConfirm, isPending }: {
-  onClose: () => void
-  onConfirm: (notes: string) => void
-  isPending: boolean
-}) {
-  const [notes, setNotes] = useState('')
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
-        <h2 className="text-lg font-bold text-slate-900 mb-2">Rechazar corrida</h2>
-        <p className="text-sm text-slate-500 mb-4">Indica el motivo del rechazo. La corrida quedará como rechazada y no afectará el stock.</p>
-        <textarea
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          placeholder="Motivo del rechazo *"
-          rows={3}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
-        />
-        <div className="flex gap-3 pt-3">
-          <button type="button" onClick={onClose}
-            className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
-            Cancelar
-          </button>
-          <button
-            onClick={() => onConfirm(notes)}
-            disabled={!notes.trim() || isPending}
-            className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
-          >
-            {isPending ? 'Rechazando...' : 'Rechazar'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
+const ORDER_TYPE_LABELS: Record<string, string> = {
+  standard: 'Estandar',
+  special: 'Especial',
+  disassembly: 'Desmontaje',
 }
 
-/* ─── Run Detail Drawer ─────────────────────────────────────────────────────── */
+const STATUS_TABS: { key: string; label: string }[] = [
+  { key: '', label: 'Todas' },
+  { key: 'planned', label: 'Planificadas' },
+  { key: 'released', label: 'Liberadas' },
+  { key: 'in_progress', label: 'En produccion' },
+  { key: 'completed', label: 'Completadas' },
+  { key: 'closed', label: 'Cerradas' },
+]
 
-function RunDrawer({
-  runId,
-  onClose,
-  onExecute,
-  onFinish,
-  onDelete,
-  onApprove,
-  onReject,
-}: {
-  runId: string
-  onClose: () => void
-  onExecute: (id: string) => void
-  onFinish: (id: string) => void
-  onDelete: (id: string) => void
-  onApprove: (id: string) => void
-  onReject: (id: string) => void
-}) {
-  const { data: run } = useProductionRun(runId)
-  const { data: recipes = [] } = useRecipes()
-  const { data: warehouses = [] } = useWarehouses()
-  const { data: productsData } = useProducts()
-  const { data: stockLevels = [] } = useStockLevels(
-    run ? { warehouse_id: run.warehouse_id } : undefined
-  )
-  const [confirmDelete, setConfirmDelete] = useState(false)
-
-  const recipeMap = Object.fromEntries(recipes.map(r => [r.id, r]))
-  const whMap = Object.fromEntries(warehouses.map(w => [w.id, w.name]))
-  const productMap = Object.fromEntries((productsData?.items ?? []).map(p => [p.id, p.name]))
-  const stockMap: Record<string, number> = {}
-  for (const s of stockLevels) {
-    stockMap[s.product_id] = (stockMap[s.product_id] ?? 0) + Number(s.qty_on_hand) - Number(s.qty_reserved)
-  }
-
-  if (!run) return null
-
-  const recipe = recipeMap[run.recipe_id]
-  const StatusIcon = STATUS_ICONS[run.status] ?? Clock
-
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-md bg-white h-full shadow-2xl p-6 overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="font-bold text-slate-900 font-mono">{run.run_number}</h2>
-            <div className="flex items-center gap-2 mt-1">
-              <StatusIcon className="h-3.5 w-3.5" />
-              <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', STATUS_COLORS[run.status])}>
-                {STATUS_LABELS[run.status] ?? run.status}
-              </span>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl font-bold">x</button>
-        </div>
-
-        <div className="space-y-4">
-          {/* Recipe Info */}
-          <div className="bg-primary/10 rounded-xl p-4">
-            <p className="text-xs font-bold text-primary/70 uppercase tracking-wide mb-1">Receta</p>
-            <p className="font-semibold text-foreground">{recipe?.name ?? '—'}</p>
-            {recipe && (
-              <p className="text-sm text-primary mt-1">
-                Salida: {productMap[recipe.output_entity_id] ?? recipe.output_entity_id.slice(0, 8)} x {recipe.output_quantity}
-              </p>
-            )}
-          </div>
-
-          {/* Run Details */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-slate-50 rounded-xl p-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Bodega componentes</p>
-              <p className="font-medium text-slate-800 text-sm">{whMap[run.warehouse_id] ?? '—'}</p>
-            </div>
-            <div className="bg-slate-50 rounded-xl p-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Bodega destino</p>
-              <p className="font-medium text-slate-800 text-sm">{run.output_warehouse_id ? whMap[run.output_warehouse_id] ?? '—' : whMap[run.warehouse_id] ?? '—'}</p>
-              {run.output_warehouse_id && run.output_warehouse_id !== run.warehouse_id && (
-                <span className="inline-flex rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-bold text-blue-600 mt-1">Diferente</span>
-              )}
-            </div>
-          </div>
-          <div className="bg-slate-50 rounded-xl p-3">
-            <p className="text-[10px] font-bold text-slate-400 uppercase">Multiplicador</p>
-            <p className="font-bold text-slate-900 text-sm">{run.multiplier}x</p>
-          </div>
-
-          {/* Components with stock availability */}
-          {recipe?.components?.length ? (() => {
-            const allSufficient = recipe.components.every(c => {
-              const required = Number(c.quantity_required) * Number(run.multiplier)
-              const available = stockMap[c.component_entity_id] ?? 0
-              return available >= required
-            })
-            return (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-                    Componentes ({recipe.components.length})
-                  </h3>
-                  {run.status === 'pending' && (
-                    <span className={cn(
-                      'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold',
-                      allSufficient ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
-                    )}>
-                      {allSufficient ? <PackageCheck className="h-3 w-3" /> : <PackageX className="h-3 w-3" />}
-                      {allSufficient ? 'Stock OK' : 'Stock insuficiente'}
-                    </span>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  {recipe.components.map(c => {
-                    const required = Number(c.quantity_required) * Number(run.multiplier)
-                    const available = stockMap[c.component_entity_id] ?? 0
-                    const sufficient = available >= required
-                    return (
-                      <div key={c.id} className={cn(
-                        'rounded-xl p-3',
-                        run.status === 'pending'
-                          ? sufficient ? 'bg-emerald-50/60' : 'bg-red-50/60 border border-red-100'
-                          : 'bg-slate-50'
-                      )}>
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-slate-700 text-sm">
-                            {productMap[c.component_entity_id] ?? c.component_entity_id.slice(0, 8)}
-                          </span>
-                          <span className="font-bold text-slate-900 text-sm">
-                            {required.toFixed(2)}
-                          </span>
-                        </div>
-                        {run.status === 'pending' && (
-                          <div className="flex justify-between items-center mt-1">
-                            <span className={cn('text-xs', sufficient ? 'text-emerald-600' : 'text-red-600')}>
-                              Disponible: {available.toFixed(2)}
-                            </span>
-                            {!sufficient && (
-                              <span className="text-[10px] font-bold text-red-500">
-                                Faltan {(required - available).toFixed(2)}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })() : null}
-
-          {/* Approval Info */}
-          {run.status === 'completed' && run.approved_by && (
-            <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-              <p className="text-xs font-bold text-emerald-500 uppercase tracking-wide mb-1">Aprobado por</p>
-              <p className="font-semibold text-emerald-800 text-sm">{run.approved_by}</p>
-              {run.approved_at && (
-                <p className="text-xs text-emerald-600 mt-1">
-                  {new Date(run.approved_at).toLocaleString('es-CO')}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Rejection Info */}
-          {run.status === 'rejected' && (
-            <div className="bg-red-50 rounded-xl p-4 border border-red-100">
-              <p className="text-xs font-bold text-red-500 uppercase tracking-wide mb-1">Rechazada</p>
-              {run.rejection_notes && (
-                <p className="text-sm text-red-700 mt-1">{run.rejection_notes}</p>
-              )}
-            </div>
-          )}
-
-          {/* Timestamps */}
-          <div className="border-t border-slate-100 pt-3 space-y-1">
-            <p className="text-xs text-slate-400">
-              Creado: {new Date(run.created_at).toLocaleString('es-CO')}
-            </p>
-            {run.started_at && (
-              <p className="text-xs text-slate-400">
-                Iniciado: {new Date(run.started_at).toLocaleString('es-CO')}
-              </p>
-            )}
-            {run.completed_at && (
-              <p className="text-xs text-slate-400">
-                Completado: {new Date(run.completed_at).toLocaleString('es-CO')}
-              </p>
-            )}
-            {run.notes && (
-              <p className="text-xs text-slate-500 italic mt-2">{run.notes}</p>
-            )}
-          </div>
-
-          {/* Pending Actions — Ejecutar + Eliminar */}
-          {run.status === 'pending' && (() => {
-            const canExecute = recipe?.components?.every(c => {
-              const required = Number(c.quantity_required) * Number(run.multiplier)
-              const available = stockMap[c.component_entity_id] ?? 0
-              return available >= required
-            }) ?? false
-            return (
-            <div className="border-t border-slate-100 pt-4 space-y-2">
-              {!canExecute && (
-                <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                  <p className="text-xs text-amber-700">No hay suficiente stock para ejecutar esta producción. Revisa los componentes marcados en rojo.</p>
-                </div>
-              )}
-              <button
-                onClick={() => { onExecute(run.id); onClose() }}
-                disabled={!canExecute}
-                className={cn(
-                  "w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white",
-                  canExecute
-                    ? "bg-emerald-600 hover:bg-emerald-700"
-                    : "bg-slate-300 cursor-not-allowed"
-                )}
-              >
-                <Play className="h-4 w-4" /> Iniciar producción
-              </button>
-
-              {confirmDelete ? (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => { onDelete(run.id); onClose() }}
-                    className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-                  >
-                    Confirmar eliminar
-                  </button>
-                  <button
-                    onClick={() => setConfirmDelete(false)}
-                    className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setConfirmDelete(true)}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4" /> Eliminar corrida
-                </button>
-              )}
-            </div>
-            )
-          })()}
-
-          {/* In Progress Actions — Finalizar */}
-          {run.status === 'in_progress' && (
-            <div className="border-t border-slate-100 pt-4 space-y-2">
-              <div className="flex items-center gap-2 rounded-xl bg-blue-50 border border-blue-200 px-3 py-2">
-                <CircleDot className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                <p className="text-xs text-blue-700">Producción en curso. Cuando el producto esté listo, finaliza para enviar a aprobación.</p>
-              </div>
-              <button
-                onClick={() => { onFinish(run.id); onClose() }}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600"
-              >
-                <Flag className="h-4 w-4" /> Finalizar producción
-              </button>
-            </div>
-          )}
-
-          {/* Awaiting Approval Actions — Aprobar / Rechazar */}
-          {run.status === 'awaiting_approval' && (
-            <div className="border-t border-slate-100 pt-4 space-y-2">
-              <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2">
-                <ShieldCheck className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                <p className="text-xs text-amber-700">Esta corrida requiere aprobación de un supervisor.</p>
-              </div>
-              <button
-                onClick={() => { onApprove(run.id); onClose() }}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
-              >
-                <ShieldCheck className="h-4 w-4" /> Aprobar
-              </button>
-              <button
-                onClick={() => { onReject(run.id) }}
-                className="w-full flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
-              >
-                <ShieldX className="h-4 w-4" /> Rechazar
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ─── Create Modal ──────────────────────────────────────────────────────────── */
-
-function CreateProductionModal({ onClose }: { onClose: () => void }) {
-  const { data: recipes = [] } = useRecipes()
-  const { data: warehouses = [] } = useWarehouses()
-  const create = useCreateProductionRun()
-  const [error, setError] = useState('')
-
-  const [form, setForm] = useState({ recipe_id: '', warehouse_id: '', output_warehouse_id: '', multiplier: '1', notes: '' })
-
-  async function doSubmit() {
-    setError('')
-    try {
-      await create.mutateAsync({
-        recipe_id: form.recipe_id,
-        warehouse_id: form.warehouse_id,
-        output_warehouse_id: form.output_warehouse_id || undefined,
-        multiplier: form.multiplier,
-        notes: form.notes || undefined,
-      })
-      onClose()
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al crear corrida')
-    }
-  }
-
-  const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
-        <h2 className="text-lg font-bold text-slate-900 mb-4">Nueva Corrida de Producción</h2>
-        <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
-          <select required value={form.recipe_id} onChange={e => setForm(f => ({ ...f, recipe_id: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="">Receta *</option>
-            {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </select>
-          <select required value={form.warehouse_id} onChange={e => setForm(f => ({ ...f, warehouse_id: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="">Bodega de componentes *</option>
-            {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-          </select>
-          <select value={form.output_warehouse_id} onChange={e => setForm(f => ({ ...f, output_warehouse_id: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="">Bodega destino (misma si vacío)</option>
-            {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-          </select>
-          <input required type="number" step="0.01" min="0.01" value={form.multiplier}
-            onChange={e => setForm(f => ({ ...f, multiplier: e.target.value }))}
-            placeholder="Multiplicador *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-          <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-            placeholder="Notas (opcional)" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-
-          {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2">
-              <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
-            <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
-              {create.isPending ? 'Creando...' : 'Crear corrida'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-/* ─── Main Page ─────────────────────────────────────────────────────────────── */
+// ── Main page ───────────────────────────────────────────────────────────────
 
 export function ProductionPage() {
-  const [showCreate, setShowCreate] = useState(false)
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState('')
-  const [actionError, setActionError] = useState('')
-  const [actionSuccess, setActionSuccess] = useState('')
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
-  const [rejectRunId, setRejectRunId] = useState<string | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const location = useLocation()
-  useEffect(() => { setShowCreate(false) }, [location.key])
+  useEffect(() => { setSelectedId(null); setShowCreate(false) }, [location.key])
 
   const { data, isLoading } = useProductionRuns({ status: statusFilter || undefined })
-  const { data: recipes = [] } = useRecipes()
-  const { data: warehouses = [] } = useWarehouses()
-  const execute = useExecuteProductionRun()
-  const finish = useFinishProductionRun()
-  const approve = useApproveProductionRun()
-  const reject = useRejectProductionRun()
-  const del = useDeleteProductionRun()
-
-  const recipeMap = Object.fromEntries(recipes.map(r => [r.id, r.name]))
-  const whMap = Object.fromEntries(warehouses.map(w => [w.id, w.name]))
-
-  // Auto-dismiss success banner after 5 seconds
-  useEffect(() => {
-    if (!actionSuccess) return
-    const t = setTimeout(() => setActionSuccess(''), 5000)
-    return () => clearTimeout(t)
-  }, [actionSuccess])
-
-  async function handleExecute(runId: string) {
-    setActionError('')
-    setActionSuccess('')
-    try {
-      const result = await execute.mutateAsync(runId)
-      setActionSuccess(`Producción ${result.run_number} iniciada`)
-    } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Error al iniciar producción')
-    }
-  }
-
-  async function handleFinish(runId: string) {
-    setActionError('')
-    setActionSuccess('')
-    try {
-      const result = await finish.mutateAsync(runId)
-      setActionSuccess(`Producción ${result.run_number} finalizada — pendiente de aprobación`)
-    } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Error al finalizar producción')
-    }
-  }
-
-  async function handleApprove(runId: string) {
-    setActionError('')
-    setActionSuccess('')
-    try {
-      const result = await approve.mutateAsync(runId)
-      setActionSuccess(`Producción ${result.run_number} aprobada exitosamente`)
-    } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Error al aprobar producción')
-    }
-  }
-
-  async function handleReject(runId: string, notes: string) {
-    setActionError('')
-    setActionSuccess('')
-    try {
-      const result = await reject.mutateAsync({ id: runId, rejection_notes: notes })
-      setActionSuccess(`Producción ${result.run_number} rechazada`)
-      setRejectRunId(null)
-    } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Error al rechazar producción')
-    }
-  }
-
-  async function handleDelete(runId: string) {
-    setActionError('')
-    setConfirmDeleteId(null)
-    try {
-      await del.mutateAsync(runId)
-    } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Error al eliminar corrida')
-    }
-  }
+  const runs = data?.items ?? []
+  const toast = useToast()
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Producción</h1>
-        <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm">
-          <Plus className="h-4 w-4" /> Nueva corrida
+        <div className="flex items-center gap-3">
+          <Factory className="h-6 w-6 text-gray-700" />
+          <h1 className="text-2xl font-bold">Produccion</h1>
+        </div>
+        <button onClick={() => { setShowCreate(true); setSelectedId(null) }}
+          className="flex items-center gap-1 px-4 py-2 text-sm bg-gray-900 text-white rounded-xl hover:bg-gray-800">
+          <Plus className="h-4 w-4" /> Nueva orden
         </button>
       </div>
 
-      {/* Status Filter */}
-      <div className="flex gap-2 flex-wrap">
-        {['', 'pending', 'in_progress', 'awaiting_approval', 'completed', 'rejected', 'canceled'].map(s => (
-          <button key={s || 'all'} onClick={() => setStatusFilter(s)}
-            className={cn('rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
-              statusFilter === s ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')}>
-            {s ? STATUS_LABELS[s] : 'Todos'}
+      {/* Status tabs */}
+      <div className="flex gap-1.5 flex-wrap">
+        {STATUS_TABS.map(t => (
+          <button key={t.key} onClick={() => setStatusFilter(t.key)}
+            className={cn('px-3 py-1.5 text-xs font-medium rounded-full border transition-colors',
+              statusFilter === t.key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+            )}>
+            {t.label}
           </button>
         ))}
       </div>
 
-      {/* Success Banner */}
-      {actionSuccess && (
-        <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-            <p className="flex-1 text-sm font-medium text-emerald-700">{actionSuccess}</p>
-            <button onClick={() => setActionSuccess('')} className="text-emerald-400 hover:text-emerald-600 text-sm font-bold flex-shrink-0">x</button>
-          </div>
-        </div>
-      )}
-
-      {/* Error Banner */}
-      {actionError && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 text-sm text-red-700 whitespace-pre-line">{actionError}</div>
-            <button onClick={() => setActionError('')} className="text-red-400 hover:text-red-600 text-sm font-bold flex-shrink-0">x</button>
-          </div>
-        </div>
-      )}
-
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        {isLoading ? (
-          <div className="p-8 text-center text-slate-400">Cargando...</div>
-        ) : !data?.items?.length ? (
-          <div className="p-8 text-center">
-            <Factory className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-            <p className="text-sm text-slate-400">Sin corridas de producción</p>
-          </div>
-        ) : (
+      {isLoading ? (
+        <div className="text-center py-16 text-gray-400"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
+      ) : runs.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">Sin ordenes de produccion</div>
+      ) : (
+        <div className="bg-white rounded-xl border overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-100">
-              <tr>
-                {['Corrida', 'Receta', 'Bodega', 'Mult.', 'Estado', 'Fecha', ''].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {data.items.map(run => {
-                const StatusIcon = STATUS_ICONS[run.status] ?? Clock
+            <thead><tr className="border-b bg-gray-50">
+              <th className="p-3 text-left"># Orden</th>
+              <th className="p-3 text-left">Tipo</th>
+              <th className="p-3 text-left">Estado</th>
+              <th className="p-3 text-left">Receta</th>
+              <th className="p-3 text-right">Multiplicador</th>
+              <th className="p-3 text-right">Prioridad</th>
+              <th className="p-3 text-left">Fecha</th>
+              <th className="p-3"></th>
+            </tr></thead>
+            <tbody>
+              {runs.map(run => {
+                const Icon = STATUS_ICONS[run.status] ?? Clock
                 return (
-                  <tr key={run.id} className="group hover:bg-slate-50">
-                    <td className="px-4 py-3 font-mono text-xs text-slate-700 font-semibold">{run.run_number}</td>
-                    <td className="px-4 py-3 font-medium text-slate-700">{recipeMap[run.recipe_id] ?? '—'}</td>
-                    <td className="px-4 py-3 text-slate-500">{whMap[run.warehouse_id] ?? '—'}</td>
-                    <td className="px-4 py-3 font-bold text-slate-900">{run.multiplier}x</td>
-                    <td className="px-4 py-3">
-                      <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold', STATUS_COLORS[run.status])}>
-                        <StatusIcon className="h-3 w-3" />
-                        {STATUS_LABELS[run.status] ?? run.status}
+                  <tr key={run.id} className="border-b border-gray-50 hover:bg-gray-50/50 cursor-pointer" onClick={() => setSelectedId(run.id)}>
+                    <td className="p-3 font-mono text-xs font-medium">{run.run_number}</td>
+                    <td className="p-3 text-xs text-gray-500">{ORDER_TYPE_LABELS[run.order_type] ?? run.order_type}</td>
+                    <td className="p-3">
+                      <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold', STATUS_COLORS[run.status])}>
+                        <Icon className="h-3 w-3" /> {STATUS_LABELS[run.status] ?? run.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-400">
-                      {new Date(run.created_at).toLocaleDateString('es-CO')}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1.5 justify-end">
-                        {/* View detail */}
-                        <button onClick={() => setSelectedRunId(run.id)}
-                          className="text-slate-400 hover:text-primary p-1 rounded-lg hover:bg-primary/10"
-                          title="Ver detalle">
-                          <Eye className="h-4 w-4" />
-                        </button>
-
-                        {/* Execute — only pending */}
-                        {run.status === 'pending' && (
-                          <button
-                            onClick={() => handleExecute(run.id)}
-                            disabled={execute.isPending}
-                            className="flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-                            title="Iniciar producción"
-                          >
-                            <Play className="h-3 w-3" />
-                            Iniciar
-                          </button>
-                        )}
-
-                        {/* Finish — only in_progress */}
-                        {run.status === 'in_progress' && (
-                          <button
-                            onClick={() => handleFinish(run.id)}
-                            disabled={finish.isPending}
-                            className="flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
-                            title="Finalizar producción"
-                          >
-                            <Flag className="h-3 w-3" />
-                            Finalizar
-                          </button>
-                        )}
-
-                        {/* Approve — only awaiting_approval */}
-                        {run.status === 'awaiting_approval' && (
-                          <button
-                            onClick={() => handleApprove(run.id)}
-                            disabled={approve.isPending}
-                            className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-                            title="Aprobar"
-                          >
-                            <ShieldCheck className="h-3 w-3" />
-                            Aprobar
-                          </button>
-                        )}
-
-                        {/* Reject — only awaiting_approval */}
-                        {run.status === 'awaiting_approval' && (
-                          <button
-                            onClick={() => setRejectRunId(run.id)}
-                            disabled={reject.isPending}
-                            className="flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
-                            title="Rechazar"
-                          >
-                            <ShieldX className="h-3 w-3" />
-                            Rechazar
-                          </button>
-                        )}
-
-                        {/* Delete — only pending */}
-                        {run.status === 'pending' && (
-                          confirmDeleteId === run.id ? (
-                            <div className="flex items-center gap-1">
-                              <button
-                                disabled={del.isPending}
-                                onClick={() => handleDelete(run.id)}
-                                className="rounded-lg bg-red-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-red-700 disabled:opacity-60"
-                              >
-                                {del.isPending ? '...' : 'Confirmar'}
-                              </button>
-                              <button onClick={() => setConfirmDeleteId(null)}
-                                className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] text-slate-500 hover:bg-slate-50">
-                                No
-                              </button>
-                            </div>
-                          ) : (
-                            <button onClick={() => setConfirmDeleteId(run.id)}
-                              className="text-slate-400 hover:text-red-500 p-1 rounded-lg hover:bg-red-50"
-                              title="Eliminar corrida">
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )
-                        )}
-                      </div>
+                    <td className="p-3 text-gray-600 text-xs">{run.recipe_id.slice(0, 8)}...</td>
+                    <td className="p-3 text-right font-mono">{run.multiplier}x</td>
+                    <td className="p-3 text-right">{run.priority}</td>
+                    <td className="p-3 text-xs text-gray-400">{new Date(run.created_at).toLocaleDateString('es-CO')}</td>
+                    <td className="p-3 text-right">
+                      <button onClick={e => { e.stopPropagation(); setSelectedId(run.id) }} className="text-xs text-primary hover:underline">
+                        <Eye className="h-3.5 w-3.5" />
+                      </button>
                     </td>
                   </tr>
                 )
               })}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
 
-      {showCreate && <CreateProductionModal onClose={() => setShowCreate(false)} />}
-      {selectedRunId && (
-        <RunDrawer
-          runId={selectedRunId}
-          onClose={() => setSelectedRunId(null)}
-          onExecute={handleExecute}
-          onFinish={handleFinish}
-          onDelete={handleDelete}
-          onApprove={handleApprove}
-          onReject={(id) => { setSelectedRunId(null); setRejectRunId(id) }}
-        />
+      {/* Create modal */}
+      {showCreate && <CreateRunModal onClose={() => setShowCreate(false)} />}
+
+      {/* Detail drawer */}
+      {selectedId && <RunDetail runId={selectedId} onClose={() => setSelectedId(null)} />}
+    </div>
+  )
+}
+
+// ── Create modal ────────────────────────────────────────────────────────────
+
+function CreateRunModal({ onClose }: { onClose: () => void }) {
+  const create = useCreateProductionRun()
+  const { data: recipesData } = useRecipes()
+  const { data: whData } = useWarehouses()
+  const toast = useToast()
+  const recipes = Array.isArray(recipesData) ? recipesData : recipesData?.items ?? []
+  const warehouses = Array.isArray(whData) ? whData : whData?.items ?? []
+
+  const [form, setForm] = useState({
+    recipe_id: '', warehouse_id: '', output_warehouse_id: '', multiplier: '1',
+    order_type: 'standard', priority: '50', notes: '',
+  })
+
+  async function handleCreate() {
+    if (!form.recipe_id || !form.warehouse_id) return
+    try {
+      await create.mutateAsync({
+        recipe_id: form.recipe_id,
+        warehouse_id: form.warehouse_id,
+        output_warehouse_id: form.output_warehouse_id || undefined,
+        multiplier: form.multiplier,
+        order_type: form.order_type,
+        priority: Number(form.priority),
+        notes: form.notes || undefined,
+      })
+      toast.success('Orden de produccion creada')
+      onClose()
+    } catch (err: any) { toast.error(err.message) }
+  }
+
+  const inputCls = "w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gray-900/10"
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-semibold mb-4">Nueva orden de produccion</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2"><label className="text-xs text-gray-500">Receta *</label>
+            <select value={form.recipe_id} onChange={e => setForm(f => ({...f, recipe_id: e.target.value}))} className={inputCls}>
+              <option value="">Seleccionar...</option>
+              {recipes.filter(r => r.is_active).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+          </div>
+          <div><label className="text-xs text-gray-500">Bodega componentes *</label>
+            <select value={form.warehouse_id} onChange={e => setForm(f => ({...f, warehouse_id: e.target.value}))} className={inputCls}>
+              <option value="">Seleccionar...</option>
+              {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select>
+          </div>
+          <div><label className="text-xs text-gray-500">Bodega salida</label>
+            <select value={form.output_warehouse_id} onChange={e => setForm(f => ({...f, output_warehouse_id: e.target.value}))} className={inputCls}>
+              <option value="">Misma bodega</option>
+              {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select>
+          </div>
+          <div><label className="text-xs text-gray-500">Tipo</label>
+            <select value={form.order_type} onChange={e => setForm(f => ({...f, order_type: e.target.value}))} className={inputCls}>
+              <option value="standard">Estandar</option>
+              <option value="special">Especial</option>
+              <option value="disassembly">Desmontaje</option>
+            </select>
+          </div>
+          <div><label className="text-xs text-gray-500">Multiplicador</label>
+            <input type="number" min="1" value={form.multiplier} onChange={e => setForm(f => ({...f, multiplier: e.target.value}))} className={inputCls} />
+          </div>
+          <div><label className="text-xs text-gray-500">Prioridad (0-100)</label>
+            <input type="number" min="0" max="100" value={form.priority} onChange={e => setForm(f => ({...f, priority: e.target.value}))} className={inputCls} />
+          </div>
+          <div className="col-span-2"><label className="text-xs text-gray-500">Notas</label>
+            <textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className={inputCls} />
+          </div>
+        </div>
+        <div className="flex gap-3 mt-4">
+          <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-700 rounded-xl px-4 py-2.5 text-sm">Cancelar</button>
+          <button onClick={handleCreate} disabled={create.isPending || !form.recipe_id || !form.warehouse_id}
+            className="flex-1 bg-gray-900 text-white rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-50">
+            {create.isPending ? 'Creando...' : 'Crear'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Run Detail ──────────────────────────────────────────────────────────────
+
+function RunDetail({ runId, onClose }: { runId: string; onClose: () => void }) {
+  const { data: run, isLoading } = useProductionRun(runId)
+  const { data: emissions } = useProductionEmissions(runId)
+  const { data: receipts } = useProductionReceipts(runId)
+  const { data: recipesData } = useRecipes()
+  const { data: whData } = useWarehouses()
+  const toast = useToast()
+  const confirm = useConfirm()
+
+  const release = useReleaseProductionRun()
+  const cancel = useCancelProductionRun()
+  const close = useCloseProductionRun()
+  const del = useDeleteProductionRun()
+  const createEmission = useCreateProductionEmission()
+  const createReceipt = useCreateProductionReceipt()
+
+  const [tab, setTab] = useState<'general' | 'emissions' | 'receipts' | 'costs' | 'docs'>('general')
+
+  if (isLoading || !run) return null
+
+  const recipes = Array.isArray(recipesData) ? recipesData : recipesData?.items ?? []
+  const warehouses = Array.isArray(whData) ? whData : whData?.items ?? []
+  const recipe = recipes.find(r => r.id === run.recipe_id)
+  const whName = (id: string) => warehouses.find(w => w.id === id)?.name ?? id.slice(0, 8)
+  const Icon = STATUS_ICONS[run.status] ?? Clock
+
+  async function handleRelease() {
+    try { await release.mutateAsync(runId); toast.success('Orden liberada — componentes reservados') } catch (e: any) { toast.error(e.message) }
+  }
+  async function handleCancel() {
+    const ok = await confirm({ title: 'Cancelar orden', message: 'Se liberaran las reservas de stock. Continuar?', confirmLabel: 'Cancelar orden', destructive: true })
+    if (ok) { try { await cancel.mutateAsync(runId); toast.success('Orden cancelada') } catch (e: any) { toast.error(e.message) } }
+  }
+  async function handleEmit() {
+    try { await createEmission.mutateAsync({ runId }); toast.success('Emision creada — componentes sacados de inventario') } catch (e: any) { toast.error(e.message) }
+  }
+  async function handleReceive() {
+    try { await createReceipt.mutateAsync({ runId }); toast.success('Recibo creado — producto terminado en inventario') } catch (e: any) { toast.error(e.message) }
+  }
+  async function handleClose() {
+    try { await close.mutateAsync(runId); toast.success('Orden cerrada — variaciones calculadas') } catch (e: any) { toast.error(e.message) }
+  }
+  async function handleDelete() {
+    const ok = await confirm({ title: 'Eliminar orden', message: `Eliminar ${run.run_number}?`, confirmLabel: 'Eliminar', destructive: true })
+    if (ok) { try { await del.mutateAsync(runId); toast.success('Eliminada'); onClose() } catch (e: any) { toast.error(e.message) } }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={onClose}>
+      <div className="bg-white w-full max-w-2xl h-full overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b px-6 py-4 z-10">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold">{run.run_number}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold', STATUS_COLORS[run.status])}>
+                  <Icon className="h-3 w-3" /> {STATUS_LABELS[run.status]}
+                </span>
+                <span className="text-xs text-gray-400">{ORDER_TYPE_LABELS[run.order_type]}</span>
+                <span className="text-xs text-gray-400">Prioridad: {run.priority}</span>
+              </div>
+            </div>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2 mt-3 flex-wrap">
+            {run.status === 'planned' && <>
+              <button onClick={handleRelease} disabled={release.isPending}
+                className="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                {release.isPending ? 'Liberando...' : 'Liberar'}
+              </button>
+              <button onClick={handleCancel} className="px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50">Cancelar</button>
+              <button onClick={handleDelete} className="px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50">Eliminar</button>
+            </>}
+            {run.status === 'released' && <>
+              <button onClick={handleEmit} disabled={createEmission.isPending}
+                className="px-3 py-1.5 text-xs font-semibold bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50">
+                {createEmission.isPending ? 'Emitiendo...' : 'Emitir componentes'}
+              </button>
+              <button onClick={handleCancel} className="px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50">Cancelar</button>
+            </>}
+            {run.status === 'in_progress' && <>
+              <button onClick={handleReceive} disabled={createReceipt.isPending}
+                className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50">
+                {createReceipt.isPending ? 'Recibiendo...' : 'Recibir producto'}
+              </button>
+            </>}
+            {run.status === 'completed' && <>
+              <button onClick={handleClose} disabled={close.isPending}
+                className="px-3 py-1.5 text-xs font-semibold bg-gray-700 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50">
+                {close.isPending ? 'Cerrando...' : 'Cerrar orden'}
+              </button>
+            </>}
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-1 mt-3 border-b -mb-[1px]">
+            {(['general', 'emissions', 'receipts', 'costs', 'docs'] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className={cn('px-3 py-1.5 text-xs font-medium border-b-2 transition-colors',
+                  tab === t ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'
+                )}>
+                {t === 'general' ? 'General' : t === 'emissions' ? `Emisiones (${emissions?.length ?? 0})` : t === 'receipts' ? `Recibos (${receipts?.length ?? 0})` : t === 'costs' ? 'Costos' : 'Documentos'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 py-4">
+          {tab === 'general' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <InfoField label="Receta" value={recipe?.name ?? run.recipe_id.slice(0, 8)} />
+                <InfoField label="Multiplicador" value={`${run.multiplier}x`} />
+                <InfoField label="Bodega componentes" value={whName(run.warehouse_id)} />
+                <InfoField label="Bodega salida" value={run.output_warehouse_id ? whName(run.output_warehouse_id) : 'Misma bodega'} />
+                <InfoField label="Fecha inicio planificada" value={run.planned_start_date ? new Date(run.planned_start_date).toLocaleDateString('es-CO') : '—'} />
+                <InfoField label="Fecha fin planificada" value={run.planned_end_date ? new Date(run.planned_end_date).toLocaleDateString('es-CO') : '—'} />
+                <InfoField label="Inicio real" value={run.actual_start_date ? new Date(run.actual_start_date).toLocaleString('es-CO') : '—'} />
+                <InfoField label="Fin real" value={run.actual_end_date ? new Date(run.actual_end_date).toLocaleString('es-CO') : '—'} />
+              </div>
+              {run.notes && <div className="bg-gray-50 rounded-xl p-3"><p className="text-xs text-gray-400 uppercase font-bold mb-1">Notas</p><p className="text-sm text-gray-700">{run.notes}</p></div>}
+
+              {/* Components from recipe */}
+              {recipe && recipe.components.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase mb-2">Componentes (BOM)</p>
+                  <div className="bg-white border rounded-xl overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead><tr className="bg-gray-50 text-gray-500">
+                        <th className="p-2 text-left">Componente</th>
+                        <th className="p-2 text-right">Cant. base</th>
+                        <th className="p-2 text-right">x{run.multiplier}</th>
+                        <th className="p-2 text-right">Merma %</th>
+                      </tr></thead>
+                      <tbody>
+                        {recipe.components.map(c => (
+                          <tr key={c.id} className="border-t border-gray-50">
+                            <td className="p-2 font-medium">{c.component_entity_id.slice(0, 12)}...</td>
+                            <td className="p-2 text-right font-mono">{c.quantity_required}</td>
+                            <td className="p-2 text-right font-mono font-bold">{(Number(c.quantity_required) * Number(run.multiplier)).toFixed(2)}</td>
+                            <td className="p-2 text-right">{c.scrap_percentage ?? '0'}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'emissions' && (
+            <div className="space-y-3">
+              {!emissions || emissions.length === 0 ? (
+                <div className="text-center py-10 text-gray-400 text-sm">Sin emisiones registradas</div>
+              ) : emissions.map(em => (
+                <div key={em.id} className="bg-white border rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-mono text-xs font-bold">{em.emission_number}</span>
+                    <span className="text-xs text-gray-400">{new Date(em.emission_date).toLocaleString('es-CO')}</span>
+                  </div>
+                  <table className="w-full text-xs">
+                    <thead><tr className="text-gray-400">
+                      <th className="text-left pb-1">Componente</th>
+                      <th className="text-right pb-1">Planificado</th>
+                      <th className="text-right pb-1">Emitido</th>
+                      <th className="text-right pb-1">Costo</th>
+                    </tr></thead>
+                    <tbody>
+                      {em.lines.map(l => (
+                        <tr key={l.id} className="border-t border-gray-50">
+                          <td className="py-1">{l.component_entity_id.slice(0, 12)}...</td>
+                          <td className="py-1 text-right font-mono">{l.planned_quantity}</td>
+                          <td className="py-1 text-right font-mono font-bold">{l.actual_quantity}</td>
+                          <td className="py-1 text-right font-mono">${Number(l.total_cost).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === 'receipts' && (
+            <div className="space-y-3">
+              {!receipts || receipts.length === 0 ? (
+                <div className="text-center py-10 text-gray-400 text-sm">Sin recibos registrados</div>
+              ) : receipts.map(rc => (
+                <div key={rc.id} className="bg-white border rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-mono text-xs font-bold">{rc.receipt_number}</span>
+                    <span className="text-xs text-gray-400">{new Date(rc.receipt_date).toLocaleString('es-CO')}</span>
+                  </div>
+                  <table className="w-full text-xs">
+                    <thead><tr className="text-gray-400">
+                      <th className="text-left pb-1">Producto</th>
+                      <th className="text-right pb-1">Planificado</th>
+                      <th className="text-right pb-1">Recibido</th>
+                      <th className="text-right pb-1">Costo unit.</th>
+                      <th className="text-right pb-1">Total</th>
+                    </tr></thead>
+                    <tbody>
+                      {rc.lines.map(l => (
+                        <tr key={l.id} className="border-t border-gray-50">
+                          <td className="py-1">{l.entity_id.slice(0, 12)}...</td>
+                          <td className="py-1 text-right font-mono">{l.planned_quantity}</td>
+                          <td className="py-1 text-right font-mono font-bold">{l.received_quantity}</td>
+                          <td className="py-1 text-right font-mono">${Number(l.unit_cost).toFixed(4)}</td>
+                          <td className="py-1 text-right font-mono">${Number(l.total_cost).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === 'costs' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white border rounded-xl p-4">
+                  <p className="text-xs text-gray-400 mb-1">Costo componentes</p>
+                  <p className="text-xl font-bold">${Number(run.total_component_cost ?? 0).toLocaleString()}</p>
+                </div>
+                <div className="bg-white border rounded-xl p-4">
+                  <p className="text-xs text-gray-400 mb-1">Costo produccion total</p>
+                  <p className="text-xl font-bold">${Number(run.total_production_cost ?? 0).toLocaleString()}</p>
+                </div>
+                <div className="bg-white border rounded-xl p-4">
+                  <p className="text-xs text-gray-400 mb-1">Costo unitario</p>
+                  <p className="text-xl font-bold">${Number(run.unit_production_cost ?? 0).toFixed(4)}</p>
+                </div>
+                <div className="bg-white border rounded-xl p-4">
+                  <p className="text-xs text-gray-400 mb-1">Cantidad producida</p>
+                  <p className="text-xl font-bold">{run.actual_output_quantity ?? '—'}</p>
+                </div>
+              </div>
+              {run.status === 'closed' && (
+                <div className={cn('border rounded-xl p-4', Number(run.variance_amount ?? 0) === 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200')}>
+                  <p className="text-xs text-gray-500 mb-1">Variacion (costo real vs estandar)</p>
+                  <p className="text-2xl font-bold">${Number(run.variance_amount ?? 0).toLocaleString()}</p>
+                  {Number(run.variance_amount ?? 0) === 0 && <p className="text-xs text-emerald-600 mt-1">Sin variacion — produccion conforme al estandar</p>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'docs' && (
+            <DocsTab runId={runId} />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DocsTab({ runId }: { runId: string }) {
+  const [showPicker, setShowPicker] = useState(false)
+  const [docs, setDocs] = useState<Array<{ media_file_id: string; url: string; name: string }>>([])
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-gray-700">Documentos adjuntos</p>
+        <button onClick={() => setShowPicker(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary text-white rounded-lg hover:bg-primary/90">
+          <FolderOpen className="h-3.5 w-3.5" /> Adjuntar desde Media
+        </button>
+      </div>
+      {docs.length === 0 ? (
+        <button onClick={() => setShowPicker(true)}
+          className="w-full rounded-xl border-2 border-dashed border-gray-200 p-8 text-center hover:border-primary/30 hover:bg-primary/5 transition-colors group">
+          <FolderOpen className="h-8 w-8 text-gray-200 mx-auto mb-2 group-hover:text-primary/40" />
+          <p className="text-sm text-gray-500">Sin documentos adjuntos</p>
+          <p className="text-xs text-gray-400">Adjunta instrucciones, fotos de QC, reportes de produccion</p>
+        </button>
+      ) : (
+        <div className="space-y-2">
+          {docs.map((d, i) => (
+            <div key={i} className="flex items-center gap-3 bg-white border rounded-xl px-4 py-3">
+              <FileText className="h-4 w-4 text-gray-400" />
+              <span className="text-sm font-medium flex-1">{d.name}</span>
+              <a href={mediaFileUrl(d.url)} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">Abrir</a>
+              <button onClick={() => setDocs(ds => ds.filter((_, j) => j !== i))} className="text-xs text-red-500 hover:underline">Quitar</button>
+            </div>
+          ))}
+        </div>
       )}
-      {rejectRunId && (
-        <RejectModal
-          onClose={() => setRejectRunId(null)}
-          onConfirm={(notes) => handleReject(rejectRunId, notes)}
-          isPending={reject.isPending}
-        />
-      )}
+      <MediaPickerModal
+        open={showPicker}
+        onClose={() => setShowPicker(false)}
+        onSelect={async (mid: string) => {
+          const file = await mediaApi.get(mid)
+          setDocs(ds => [...ds, { media_file_id: file.id, url: file.url, name: file.original_filename }])
+          setShowPicker(false)
+        }}
+      />
+    </div>
+  )
+}
+
+function InfoField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-gray-400">{label}</p>
+      <p className="text-sm font-medium text-gray-800">{value}</p>
     </div>
   )
 }

@@ -8,6 +8,7 @@ from fastapi import Depends, Header, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import NotFoundError, UnauthorizedError
+from app.core.settings import get_settings
 from app.db.session import get_db_session
 
 
@@ -52,3 +53,13 @@ async def get_tenant_id(
 
     request.state._tenant_id = tenant.id
     return tenant.id
+
+
+async def verify_service_token(
+    x_service_token: str = Header(..., alias="X-Service-Token"),
+) -> str:
+    """Validate inter-service shared secret. Returns the token on success."""
+    settings = get_settings()
+    if x_service_token != settings.S2S_SERVICE_TOKEN:
+        raise UnauthorizedError("Invalid service token")
+    return x_service_token

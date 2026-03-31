@@ -112,7 +112,7 @@ class StatusUpdate(BaseModel):
 # ─── Trade Document Schemas ──────────────────────────────────────────────────
 
 class TradeDocCreate(BaseModel):
-    document_type: str = Field(..., description="cert_origen | fitosanitario | invima | dex | dim | factura_comercial | packing_list | insurance_cert")
+    document_type: str = Field(..., description="packing_list | commercial_invoice | bill_of_lading")
     document_number: str | None = None
     purchase_order_id: str | None = None
     sales_order_id: str | None = None

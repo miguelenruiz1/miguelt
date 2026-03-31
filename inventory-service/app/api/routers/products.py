@@ -149,7 +149,8 @@ async def upload_product_image(
     _: Annotated[dict, Depends(require_permission("inventory.manage"))],
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
-    settings = get_settings()
+    """Upload product image via media-service and store reference."""
+    from app.clients.media_client import upload_file as media_upload
 
     if file.content_type not in ("image/jpeg", "image/png", "image/webp", "image/gif"):
         raise HTTPException(
@@ -158,24 +159,63 @@ async def upload_product_image(
         )
 
     content = await file.read()
+    settings = get_settings()
     if len(content) > settings.MAX_IMAGE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"La imagen excede el límite de {settings.MAX_IMAGE_SIZE // (1024*1024)} MB.",
         )
 
-    ext = file.content_type.split("/")[-1].replace("jpeg", "jpg")
-    filename = f"{product_id}_{uuid.uuid4().hex[:8]}.{ext}"
-    images_dir = Path(settings.UPLOAD_DIR) / "products"
-    images_dir.mkdir(parents=True, exist_ok=True)
-    (images_dir / filename).write_bytes(content)
+    media_file = await media_upload(
+        tenant_id=current_user["tenant_id"],
+        file_bytes=content,
+        filename=file.filename or f"{product_id}.{file.content_type.split('/')[-1]}",
+        content_type=file.content_type,
+        category="general",
+        document_type="product_image",
+        title=f"Imagen producto {product_id}",
+        uploaded_by=current_user.get("user_id"),
+    )
+    if not media_file:
+        raise HTTPException(status_code=502, detail="Error al subir imagen a media-service")
 
-    image_url = f"/uploads/products/{filename}"
+    # Store media_file_id + url in product images array
+    image_entry = {"media_file_id": media_file["id"], "url": media_file["url"]}
 
     svc = ProductService(db)
     product = await svc.get(product_id, current_user["tenant_id"])
     current_images: list = list(product.images or [])
-    current_images.append(image_url)
+    current_images.append(image_entry)
+    product = await svc.update(product_id, current_user["tenant_id"], {"images": current_images})
+    hm = await svc.has_movements(product.id, current_user["tenant_id"])
+    return ORJSONResponse(_build_product_out(product, has_movements=hm))
+
+
+@router.post("/{product_id}/images/from-media", response_model=ProductOut)
+async def add_product_image_from_media(
+    product_id: str,
+    body: dict,
+    current_user: ModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    """Add product image by referencing an existing media-service file."""
+    from app.clients.media_client import get_file as media_get
+
+    media_file_id = body.get("media_file_id")
+    if not media_file_id:
+        raise HTTPException(status_code=400, detail="media_file_id requerido")
+
+    media_file = await media_get(current_user["tenant_id"], media_file_id)
+    if not media_file:
+        raise HTTPException(status_code=404, detail="Archivo no encontrado en media-service")
+
+    image_entry = {"media_file_id": media_file["id"], "url": media_file["url"]}
+
+    svc = ProductService(db)
+    product = await svc.get(product_id, current_user["tenant_id"])
+    current_images: list = list(product.images or [])
+    current_images.append(image_entry)
     product = await svc.update(product_id, current_user["tenant_id"], {"images": current_images})
     hm = await svc.has_movements(product.id, current_user["tenant_id"])
     return ORJSONResponse(_build_product_out(product, has_movements=hm))
@@ -187,23 +227,36 @@ async def delete_product_image(
     current_user: ModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.manage"))],
     db: AsyncSession = Depends(get_db_session),
-    image_url: str = Query(...),
+    image_url: str = Query(None),
+    media_file_id: str = Query(None),
 ) -> ORJSONResponse:
-    settings = get_settings()
-
-    # Remove file from disk
-    if "/products/" in image_url:
-        fname = image_url.split("/products/")[-1]
-        if not re.match(r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(_[a-f0-9]+)?\.\w{2,5}$", fname):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="URL de imagen inválida.")
-        fpath = Path(settings.UPLOAD_DIR) / "products" / fname
-        if fpath.exists():
-            fpath.unlink()
+    """Remove product image reference. Optionally delete from media-service."""
+    from app.clients.media_client import delete_file as media_delete
 
     svc = ProductService(db)
     product = await svc.get(product_id, current_user["tenant_id"])
-    current_images: list = [img for img in (product.images or []) if img != image_url]
-    product = await svc.update(product_id, current_user["tenant_id"], {"images": current_images})
+    current_images: list = list(product.images or [])
+
+    # Support both old format (string URL) and new format (dict with media_file_id)
+    new_images = []
+    removed_media_id = None
+    for img in current_images:
+        if isinstance(img, dict):
+            if media_file_id and img.get("media_file_id") == media_file_id:
+                removed_media_id = media_file_id
+                continue
+            if image_url and img.get("url") == image_url:
+                removed_media_id = img.get("media_file_id")
+                continue
+        elif isinstance(img, str) and img == image_url:
+            continue
+        new_images.append(img)
+
+    # Delete from media-service if we have a media_file_id
+    if removed_media_id:
+        await media_delete(current_user["tenant_id"], removed_media_id)
+
+    product = await svc.update(product_id, current_user["tenant_id"], {"images": new_images})
     hm = await svc.has_movements(product.id, current_user["tenant_id"])
     return ORJSONResponse(_build_product_out(product, has_movements=hm))
 

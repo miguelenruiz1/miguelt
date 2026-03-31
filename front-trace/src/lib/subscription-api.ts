@@ -98,7 +98,7 @@ export const subscriptionApi = {
         }
       }
       const q = qs.toString()
-      return get<PaginatedResponse<Subscription>>(`/api/v1/subscriptions${q ? `?${q}` : ''}`)
+      return get<PaginatedResponse<Subscription>>(`/api/v1/subscriptions/${q ? `?${q}` : ''}`)
     },
     get: (tenantId: string) => get<Subscription>(`/api/v1/subscriptions/${tenantId}`),
     create: (data: SubscriptionCreate) => post<Subscription>('/api/v1/subscriptions/', data),
@@ -132,5 +132,17 @@ export const subscriptionApi = {
 
   admin: {
     getMetrics: () => get<OverviewMetrics>('/api/v1/admin/metrics/overview'),
+  },
+
+  modules: {
+    catalog: () => get<Array<{
+      slug: string
+      name: string
+      description: string
+      icon?: string
+      category?: string
+      requires?: string
+      dependencies?: string[]
+    }>>('/api/v1/modules/'),
   },
 }

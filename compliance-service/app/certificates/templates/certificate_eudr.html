@@ -560,8 +560,9 @@
                 <thead>
                     <tr>
                         <th>Código</th>
+                        <th>Cultivo</th>
+                        <th>Establecido</th>
                         <th>Municipio</th>
-                        <th>Región</th>
                         <th>Latitud</th>
                         <th>Longitud</th>
                         <th>Área (ha)</th>
@@ -575,8 +576,9 @@
                     {% for plot in plots %}
                     <tr>
                         <td>{{ plot.plot_code | default('—', true) }}</td>
+                        <td>{{ plot.crop_type | default('—', true) }}</td>
+                        <td>{{ plot.establishment_date | default('—', true) }}</td>
                         <td>{{ plot.municipality | default('—', true) }}</td>
-                        <td>{{ plot.region | default('—', true) }}</td>
                         <td>{{ plot.lat_formatted | default('—', true) }}</td>
                         <td>{{ plot.lng_formatted | default('—', true) }}</td>
                         <td>{{ "%.2f"|format(plot.plot_area_ha) if plot.plot_area_ha else '—' }}</td>
@@ -623,6 +625,29 @@
             {% else %}
             <p style="color: #94a3b8; font-style: italic;">No hay parcelas vinculadas a este registro.</p>
             {% endif %}
+        </div>
+    </div>
+
+    <!-- ── 4b. Tipo de actividad — Anexo II #2 ─────────────────────────────── -->
+    <div class="section">
+        <div class="section-title">4b. Tipo de actividad — Anexo II, punto 2</div>
+        <div class="section-body">
+            <div class="field-grid">
+                <div class="field">
+                    <div class="label">Tipo de operación</div>
+                    <div class="value">
+                        {% if record.activity_type == 'export' %}
+                        <span class="badge badge-blue">Exportación</span>
+                        {% elif record.activity_type == 'import' %}
+                        <span class="badge badge-purple">Importación</span>
+                        {% elif record.activity_type == 'domestic_production' %}
+                        <span class="badge badge-green">Producción doméstica</span>
+                        {% else %}
+                        <span class="badge badge-gray">{{ record.activity_type | default('—', true) }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -739,9 +764,239 @@
     </div>
     {% endif %}
 
-    <!-- ── 8. Verificación Blockchain ─────────────────────────────────────── -->
+    <!-- ── 8. Cadena de Suministro Completa — Art. 9(1)(e)(f) ────────────── -->
+    {% if supply_chain and supply_chain|length > 0 %}
+    <div class="section">
+        <div class="section-title">8. Cadena de suministro completa — Art. 9(1)(e)(f)</div>
+        <div class="section-body">
+            <table class="plots-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Rol</th>
+                        <th>Nombre</th>
+                        <th>País</th>
+                        <th>NIT / Tax ID</th>
+                        <th>EORI</th>
+                        <th>Fecha handoff</th>
+                        <th>Cantidad (kg)</th>
+                        <th>Verificación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for node in supply_chain %}
+                    <tr>
+                        <td>{{ node.sequence_order }}</td>
+                        <td><span class="badge badge-blue">{{ node.role_label }}</span></td>
+                        <td><strong>{{ node.actor_name }}</strong></td>
+                        <td>{{ node.actor_country_label | default(node.actor_country, true) | default('—', true) }}</td>
+                        <td>{{ node.actor_tax_id | default('—', true) }}</td>
+                        <td>{{ node.actor_eori | default('—', true) }}</td>
+                        <td>{{ node.handoff_date | default('—', true) }}</td>
+                        <td>{% if node.quantity_kg %}{{ "%.2f"|format(node.quantity_kg) }}{% else %}—{% endif %}</td>
+                        <td>
+                            {% if node.verification_status == 'verified' %}
+                            <span class="badge badge-green">Verificado</span>
+                            {% elif node.verification_status == 'flagged' %}
+                            <span class="badge badge-red">Marcado</span>
+                            {% else %}
+                            <span class="badge badge-gray">Sin verificar</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="plots-summary">
+                Total actores en la cadena: <strong>{{ supply_chain|length }}</strong>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── 9. Evaluación de Riesgo — Art. 10-11 ────────────────────────────── -->
+    {% if risk_assessment %}
+    <div class="section">
+        <div class="section-title">9. Evaluación de riesgo — Art. 10-11</div>
+        <div class="section-body">
+            <div class="field-grid">
+                <div class="field">
+                    <div class="label">Riesgo país (Art. 29)</div>
+                    <div class="value">
+                        {% if risk_assessment.country_risk_level == 'low' %}
+                        <span class="badge badge-green">{{ risk_assessment.country_risk_label }}</span>
+                        {% elif risk_assessment.country_risk_level == 'high' %}
+                        <span class="badge badge-red">{{ risk_assessment.country_risk_label }}</span>
+                        {% else %}
+                        <span class="badge badge-amber">{{ risk_assessment.country_risk_label }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="label">Riesgo cadena de suministro</div>
+                    <div class="value">
+                        {% if risk_assessment.supply_chain_risk_level == 'low' %}
+                        <span class="badge badge-green">{{ risk_assessment.supply_chain_risk_label }}</span>
+                        {% elif risk_assessment.supply_chain_risk_level == 'high' %}
+                        <span class="badge badge-red">{{ risk_assessment.supply_chain_risk_label }}</span>
+                        {% else %}
+                        <span class="badge badge-amber">{{ risk_assessment.supply_chain_risk_label }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="label">Riesgo regional</div>
+                    <div class="value">
+                        {% if risk_assessment.regional_risk_level == 'low' %}
+                        <span class="badge badge-green">{{ risk_assessment.regional_risk_label }}</span>
+                        {% elif risk_assessment.regional_risk_level == 'high' %}
+                        <span class="badge badge-red">{{ risk_assessment.regional_risk_label }}</span>
+                        {% else %}
+                        <span class="badge badge-amber">{{ risk_assessment.regional_risk_label }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <hr class="sep">
+            <div class="field-grid">
+                <div class="field">
+                    <div class="label">Verificación de proveedores</div>
+                    <div class="value">{{ risk_assessment.supplier_verification_status | default('—', true) }}</div>
+                </div>
+                <div class="field">
+                    <div class="label">Confianza en trazabilidad</div>
+                    <div class="value">{{ risk_assessment.traceability_confidence | default('—', true) }}</div>
+                </div>
+                <div class="field">
+                    <div class="label">Prevalencia de deforestación</div>
+                    <div class="value">{{ risk_assessment.deforestation_prevalence | default('—', true) }}</div>
+                </div>
+            </div>
+            {% if risk_assessment.country_benchmarking_source %}
+            <hr class="sep">
+            <div class="field-grid">
+                <div class="field full">
+                    <div class="label">Fuente de clasificación</div>
+                    <div class="value">{{ risk_assessment.country_benchmarking_source }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if risk_assessment.mitigation_measures and risk_assessment.mitigation_measures|length > 0 %}
+            <hr class="sep">
+            <div class="section-subtitle">Medidas de mitigación (Art. 11)</div>
+            <table class="plots-table">
+                <thead>
+                    <tr>
+                        <th>Medida</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in risk_assessment.mitigation_measures %}
+                    <tr>
+                        <td>{{ m.measure | default('—', true) }}</td>
+                        <td>
+                            {% if m.status == 'completed' %}
+                            <span class="badge badge-green">Completada</span>
+                            {% elif m.status == 'in_progress' %}
+                            <span class="badge badge-amber">En progreso</span>
+                            {% else %}
+                            <span class="badge badge-gray">Pendiente</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+            <hr class="sep">
+            <div class="field-grid">
+                <div class="field half">
+                    <div class="label">Nivel de riesgo global</div>
+                    <div class="value">
+                        {% if risk_assessment.overall_risk_level == 'negligible' %}
+                        <span class="badge badge-green">NEGLIGIBLE</span>
+                        {% elif risk_assessment.overall_risk_level == 'low' %}
+                        <span class="badge badge-green">{{ risk_assessment.overall_risk_label }}</span>
+                        {% elif risk_assessment.overall_risk_level == 'high' %}
+                        <span class="badge badge-red">{{ risk_assessment.overall_risk_label }}</span>
+                        {% else %}
+                        <span class="badge badge-amber">{{ risk_assessment.overall_risk_label }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="field half">
+                    <div class="label">Dictamen</div>
+                    <div class="value">
+                        {% if risk_assessment.conclusion == 'approved' %}
+                        <span class="check-icon check-yes">&#10003;</span>
+                        <span class="check-yes">APROBADO</span>
+                        {% elif risk_assessment.conclusion == 'conditional' %}
+                        <span class="badge badge-amber">CONDICIONAL</span>
+                        {% else %}
+                        <span class="check-icon check-no">&#10007;</span>
+                        <span class="check-no">RECHAZADO</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% if risk_assessment.conclusion_notes %}
+            <div class="field-grid">
+                <div class="field full">
+                    <div class="label">Notas del dictamen</div>
+                    <div class="value">{{ risk_assessment.conclusion_notes }}</div>
+                </div>
+            </div>
+            {% endif %}
+            <div class="plots-summary">
+                Evaluación realizada: {{ risk_assessment.assessed_at | default('—', true) }}
+                &nbsp;&bull;&nbsp; Estado: <strong>{{ risk_assessment.status }}</strong>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── 10. Documentos de Evidencia ───────────────────────────────────────── -->
+    {% if documents and documents|length > 0 %}
+    <div class="section">
+        <div class="section-title">10. Documentos de evidencia</div>
+        <div class="section-body">
+            <table class="plots-table">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Archivo</th>
+                        <th>Hash SHA-256</th>
+                        <th>Descripción</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in documents %}
+                    <tr>
+                        <td><span class="badge badge-blue">{{ doc.type_label }}</span></td>
+                        <td>{{ doc.filename | default('—', true) }}</td>
+                        <td style="font-family: 'Courier New', monospace; font-size: 6.5pt;">
+                            {{ doc.file_hash[:16] if doc.file_hash else '—' }}{% if doc.file_hash and doc.file_hash|length > 16 %}...{% endif %}
+                        </td>
+                        <td>{{ doc.description | default('—', true) }}</td>
+                        <td>{{ doc.uploaded_at | default('—', true) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="plots-summary">
+                Total documentos: <strong>{{ documents|length }}</strong>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── 11. Verificación Blockchain ────────────────────────────────────── -->
     <div class="blockchain-section">
-        <div class="bc-title">Verificación Blockchain</div>
+        <div class="bc-title">11. Verificación Blockchain</div>
         <div class="bc-row">
             <div class="bc-label">Red</div>
             <div class="bc-value">
@@ -774,7 +1029,7 @@
         {% endif %}
     </div>
 
-    <!-- ── 9. QR + Verificación ───────────────────────────────────────────── -->
+    <!-- ── 12. QR + Verificación ──────────────────────────────────────────── -->
     <div class="qr-verify">
         {% if certificate.qr_code_base64 %}
         <img src="{{ certificate.qr_code_base64 }}" alt="Código QR — Verificar certificado">
@@ -786,7 +1041,7 @@
         </div>
     </div>
 
-    <!-- ── 10. Anexo II punto 5 — Texto legal ────────────────────────────── -->
+    <!-- ── 13. Anexo II punto 5 — Texto legal ────────────────────────────── -->
     <div class="annex-text">
         <strong>Anexo II, punto 5 — Reglamento (UE) 2023/1115:</strong>
         El operador o comerciante deberá conservar la documentación e información que respalda las declaraciones
@@ -796,13 +1051,33 @@
         competentes previa solicitud.
     </div>
 
-    <!-- ── 11. Firma ──────────────────────────────────────────────────────── -->
+    <!-- ── 14. Firma del operador — Anexo II, punto 10 ────────────────────── -->
+    <div class="section">
+        <div class="section-title">14. Firma del operador — Anexo II, punto 10</div>
+        <div class="section-body">
+            <div class="field-grid">
+                <div class="field">
+                    <div class="label">Nombre del firmante</div>
+                    <div class="value">{{ record.signatory_name | default(record.buyer_name, true) | default('—', true) }}</div>
+                </div>
+                <div class="field">
+                    <div class="label">Cargo / función</div>
+                    <div class="value">{{ record.signatory_role | default('Operador', true) }}</div>
+                </div>
+                <div class="field">
+                    <div class="label">Fecha de firma</div>
+                    <div class="value">{{ record.signatory_date | default(certificate.valid_from, true) }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="firma-section">
         <div class="firma-grid">
             <div class="firma-block">
                 <div class="firma-line">
                     <div class="firma-label">Firma del operador</div>
-                    <div class="firma-sub">{{ record.buyer_name | default('Operador', true) }}</div>
+                    <div class="firma-sub">{{ record.signatory_name | default(record.buyer_name, true) | default('Operador', true) }} — {{ record.signatory_role | default('Responsable', true) }}</div>
                 </div>
             </div>
             <div class="firma-block">
@@ -814,24 +1089,29 @@
         </div>
     </div>
 
-    <!-- ── Footer ─────────────────────────────────────────────────────────── -->
+    <!-- ── Footer — Disclaimer legal ────────────────────────────────────── -->
     <div class="footer">
         <p>
-            Este certificado fue generado por <strong>{{ tenant.name | default('TraceLog', true) }}</strong> —
-            Plataforma de Cumplimiento Normativo
-        </p>
-        <p>
-            Certificado: {{ certificate.number }}
+            Certificado: <strong>{{ certificate.number }}</strong>
             &nbsp;&bull;&nbsp;
             Generado: {{ certificate.generated_at | default('', true) }}
         </p>
-        <p style="margin-top: 3px;">
-            Reglamento (UE) 2023/1115 del Parlamento Europeo y del Consejo, de 31 de mayo de 2023,
-            relativo a la comercialización en el mercado de la Unión y a la exportación desde la Unión
-            de determinados productos básicos y derivados asociados a la deforestación y la degradación forestal.
+        <p style="margin-top: 6px;">
+            Este documento es generado automaticamente por <strong>{{ tenant.name | default('TraceLog', true) }}</strong>
+            — Plataforma de Gestion de Trazabilidad y Cumplimiento Normativo.
         </p>
-        <p style="margin-top: 3px;">
-            Este documento es generado automáticamente. Verifique su autenticidad en la URL indicada.
+        <p style="margin-top: 4px;">
+            {{ tenant.name | default('TraceLog', true) }} no actua como organismo de certificacion ni garantiza
+            el cumplimiento del Reglamento (UE) 2023/1115. La responsabilidad de la veracidad de los datos declarados,
+            la diligencia debida y el cumplimiento normativo recae exclusivamente en el operador firmante, conforme
+            al Articulo 4 del Reglamento (UE) 2023/1115.
+        </p>
+        <p style="margin-top: 4px;">
+            Este documento no sustituye la Declaracion de Diligencia Debida (DDS) que debe presentarse en el sistema
+            TRACES de la Comision Europea antes de introducir el producto en el mercado de la UE.
+        </p>
+        <p style="margin-top: 4px;">
+            Verifique la autenticidad de este certificado en la URL indicada.
         </p>
     </div>
 

@@ -328,6 +328,20 @@ async def receive_po(
         new_data={"order_number": po.po_number, **body.model_dump(mode="json")},
         ip_address=_ip(request),
     )
+
+    # Fire-and-forget: notify trace-service about received items
+    from app.clients import trace_client
+    for lr in body.lines:
+        if lr.received_quantity and lr.received_quantity > 0:
+            await trace_client.notify_po_received_background(
+                tenant_id=current_user["tenant_id"],
+                po_id=po.id,
+                entity_id=lr.entity_id,
+                warehouse_id=po.warehouse_id,
+                quantity=int(lr.received_quantity),
+                batch_id=getattr(lr, "batch_id", None),
+            )
+
     return ORJSONResponse(POOut.model_validate(po).model_dump(mode="json"))
 
 
@@ -437,32 +451,35 @@ async def upload_po_attachment(
     db: AsyncSession = Depends(get_db_session),
     classification: str = Query("other"),
 ) -> ORJSONResponse:
-    """Upload a file attachment to a PO (invoice, remission, photo, etc.)."""
-    from app.core.settings import get_settings
-    settings = get_settings()
+    """Upload a file attachment to a PO via media-service."""
+    from app.clients.media_client import upload_file as media_upload
 
     allowed_types = {"application/pdf", "image/jpeg", "image/png", "image/webp"}
     if file.content_type not in allowed_types:
-        from fastapi import HTTPException, status as http_status
-        raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail="Tipo de archivo no permitido. Use PDF, JPG, PNG o WEBP.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tipo de archivo no permitido. Use PDF, JPG, PNG o WEBP.")
 
     content = await file.read()
     max_size = 10 * 1024 * 1024  # 10MB
     if len(content) > max_size:
-        from fastapi import HTTPException, status as http_status
-        raise HTTPException(status_code=http_status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="El archivo excede el límite de 10 MB.")
+        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="El archivo excede el límite de 10 MB.")
 
-    ext = file.content_type.split("/")[-1].replace("jpeg", "jpg")
-    filename = f"{po_id}_{uuid.uuid4().hex[:8]}.{ext}"
-    docs_dir = Path(settings.UPLOAD_DIR) / "po-documents"
-    docs_dir.mkdir(parents=True, exist_ok=True)
-    (docs_dir / filename).write_bytes(content)
-
-    file_url = f"/uploads/po-documents/{filename}"
+    media_file = await media_upload(
+        tenant_id=current_user["tenant_id"],
+        file_bytes=content,
+        filename=file.filename or f"po-{po_id}.{file.content_type.split('/')[-1]}",
+        content_type=file.content_type,
+        category="general",
+        document_type=classification,
+        title=f"Adjunto OC {po_id} — {classification}",
+        uploaded_by=current_user.get("user_id"),
+    )
+    if not media_file:
+        raise HTTPException(status_code=502, detail="Error al subir archivo a media-service")
 
     attachment = {
-        "url": file_url,
-        "name": file.filename or filename,
+        "media_file_id": media_file["id"],
+        "url": media_file["url"],
+        "name": file.filename or media_file["filename"],
         "type": file.content_type,
         "classification": classification,
     }

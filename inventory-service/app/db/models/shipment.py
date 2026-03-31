@@ -97,7 +97,7 @@ class ShipmentDocument(Base):
 
 
 class TradeDocument(Base):
-    """Trade/compliance documents: cert origen, fitosanitario, INVIMA, DEX, DIM, packing list."""
+    """Commercial documents tied to purchase/sales orders: packing_list, commercial_invoice, bill_of_lading."""
     __tablename__ = "trade_documents"
 
     id:               Mapped[str]            = mapped_column(String(36), primary_key=True)

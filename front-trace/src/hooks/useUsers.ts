@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { userApi } from '@/lib/user-api'
-import type { EmailConfig, InviteUserRequest } from '@/types/auth'
+import type { InviteUserRequest } from '@/types/auth'
 
 export function useUsers(params?: { offset?: number; limit?: number }) {
   return useQuery({
@@ -99,25 +99,3 @@ export function useTestEmailTemplate() {
   })
 }
 
-// ─── Email Config ────────────────────────────────────────────────────────────
-
-export function useEmailConfig() {
-  return useQuery({
-    queryKey: ['admin', 'email-config'],
-    queryFn: () => userApi.emailConfig.get(),
-  })
-}
-
-export function useUpdateEmailConfig() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (data: Partial<EmailConfig>) => userApi.emailConfig.update(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'email-config'] }),
-  })
-}
-
-export function useTestSmtpConnection() {
-  return useMutation({
-    mutationFn: () => userApi.emailConfig.testConnection(),
-  })
-}

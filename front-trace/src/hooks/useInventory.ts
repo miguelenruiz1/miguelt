@@ -14,6 +14,7 @@ import {
   inventoryMovementsApi,
   inventoryPOApi,
   inventoryProductionApi,
+  inventoryResourcesApi,
   inventoryProductsApi,
   inventoryRecipesApi,
   inventoryReportsApi,
@@ -162,8 +163,11 @@ export function useDeleteProduct() {
 export function useUploadProductImage() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ productId, file }: { productId: string; file: File }) =>
-      inventoryProductsApi.uploadImage(productId, file),
+    mutationFn: ({ productId, file, mediaFileId }: { productId: string; file?: File; mediaFileId?: string }) => {
+      if (mediaFileId) return inventoryProductsApi.addImageFromMedia(productId, mediaFileId)
+      if (file) return inventoryProductsApi.uploadImage(productId, file)
+      throw new Error('Debe proporcionar file o mediaFileId')
+    },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['inventory', 'products'] })
       qc.invalidateQueries({ queryKey: ['inventory', 'products', vars.productId] })
@@ -174,8 +178,8 @@ export function useUploadProductImage() {
 export function useDeleteProductImage() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ productId, imageUrl }: { productId: string; imageUrl: string }) =>
-      inventoryProductsApi.deleteImage(productId, imageUrl),
+    mutationFn: ({ productId, imageUrl, mediaFileId }: { productId: string; imageUrl: string; mediaFileId?: string }) =>
+      inventoryProductsApi.deleteImage(productId, imageUrl, mediaFileId),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['inventory', 'products'] })
       qc.invalidateQueries({ queryKey: ['inventory', 'products', vars.productId] })
@@ -1357,6 +1361,17 @@ export function useDeleteRecipe() {
 
 // ─── Production Runs ─────────────────────────────────────────────────────────
 
+const PROD_KEY = ['inventory', 'production']
+const INV_KEYS = [['inventory', 'stock'], ['inventory', 'movements'], ['inventory', 'analytics']]
+
+function invalidateProd(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: PROD_KEY })
+}
+function invalidateProdAndStock(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: PROD_KEY })
+  for (const k of INV_KEYS) qc.invalidateQueries({ queryKey: k })
+}
+
 export function useProductionRuns(params?: Parameters<typeof inventoryProductionApi.list>[0]) {
   return useQuery({
     queryKey: ['inventory', 'production', params],
@@ -1375,53 +1390,41 @@ export function useProductionRun(id: string) {
 export function useCreateProductionRun() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: Parameters<typeof inventoryProductionApi.create>[0]) =>
-      inventoryProductionApi.create(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'production'] }),
+    mutationFn: (data: Record<string, unknown>) => inventoryProductionApi.create(data),
+    onSuccess: () => invalidateProd(qc),
   })
 }
 
-export function useExecuteProductionRun() {
+export function useUpdateProductionRun() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => inventoryProductionApi.execute(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['inventory', 'production'] })
-    },
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      inventoryProductionApi.update(id, data),
+    onSuccess: () => invalidateProd(qc),
   })
 }
 
-export function useFinishProductionRun() {
+export function useReleaseProductionRun() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => inventoryProductionApi.finish(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['inventory', 'production'] })
-    },
+    mutationFn: (id: string) => inventoryProductionApi.release(id),
+    onSuccess: () => invalidateProdAndStock(qc),
   })
 }
 
-export function useApproveProductionRun() {
+export function useCancelProductionRun() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => inventoryProductionApi.approve(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['inventory', 'production'] })
-      qc.invalidateQueries({ queryKey: ['inventory', 'stock'] })
-      qc.invalidateQueries({ queryKey: ['inventory', 'movements'] })
-      qc.invalidateQueries({ queryKey: ['inventory', 'analytics'] })
-    },
+    mutationFn: (id: string) => inventoryProductionApi.cancel(id),
+    onSuccess: () => invalidateProdAndStock(qc),
   })
 }
 
-export function useRejectProductionRun() {
+export function useCloseProductionRun() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, rejection_notes }: { id: string; rejection_notes: string }) =>
-      inventoryProductionApi.reject(id, rejection_notes),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['inventory', 'production'] })
-    },
+    mutationFn: (id: string) => inventoryProductionApi.close(id),
+    onSuccess: () => invalidateProd(qc),
   })
 }
 
@@ -1429,7 +1432,94 @@ export function useDeleteProductionRun() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => inventoryProductionApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'production'] }),
+    onSuccess: () => invalidateProd(qc),
+  })
+}
+
+// Emissions
+export function useProductionEmissions(runId: string) {
+  return useQuery({
+    queryKey: ['inventory', 'production', runId, 'emissions'],
+    queryFn: () => inventoryProductionApi.listEmissions(runId),
+    enabled: !!runId,
+  })
+}
+
+export function useCreateProductionEmission() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ runId, data }: { runId: string; data?: Record<string, unknown> }) =>
+      inventoryProductionApi.createEmission(runId, data),
+    onSuccess: (_d, vars) => {
+      invalidateProdAndStock(qc)
+      qc.invalidateQueries({ queryKey: ['inventory', 'production', vars.runId, 'emissions'] })
+    },
+  })
+}
+
+// Receipts
+export function useProductionReceipts(runId: string) {
+  return useQuery({
+    queryKey: ['inventory', 'production', runId, 'receipts'],
+    queryFn: () => inventoryProductionApi.listReceipts(runId),
+    enabled: !!runId,
+  })
+}
+
+export function useMRPExplode() {
+  return useMutation({
+    mutationFn: (data: Record<string, unknown>) => inventoryProductionApi.mrpExplode(data),
+  })
+}
+
+export function useCheckCapacity() {
+  return useMutation({
+    mutationFn: (runId: string) => inventoryProductionApi.checkCapacity(runId),
+  })
+}
+
+// Resources
+export function useProductionResources() {
+  return useQuery({
+    queryKey: ['inventory', 'resources'],
+    queryFn: () => inventoryResourcesApi.list(),
+  })
+}
+
+export function useCreateProductionResource() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Record<string, unknown>) => inventoryResourcesApi.create(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'resources'] }),
+  })
+}
+
+export function useUpdateProductionResource() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      inventoryResourcesApi.update(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'resources'] }),
+  })
+}
+
+export function useDeleteProductionResource() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => inventoryResourcesApi.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'resources'] }),
+  })
+}
+
+export function useCreateProductionReceipt() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ runId, data }: { runId: string; data?: Record<string, unknown> }) =>
+      inventoryProductionApi.createReceipt(runId, data),
+    onSuccess: (_d, vars) => {
+      invalidateProdAndStock(qc)
+      qc.invalidateQueries({ queryKey: ['inventory', 'production', vars.runId, 'receipts'] })
+    },
   })
 }
 

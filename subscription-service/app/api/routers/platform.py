@@ -39,6 +39,10 @@ def _svc(
 
 class OnboardTenantRequest(BaseModel):
     tenant_id: str = Field(..., min_length=1, max_length=255)
+    company_name: str = Field(..., min_length=1, max_length=255)
+    admin_email: str = Field(..., min_length=5, max_length=255)
+    admin_password: str = Field(..., min_length=6, max_length=128)
+    admin_name: str = Field(..., min_length=1, max_length=255)
     plan_slug: str = Field(default="free")
     billing_cycle: str = Field(default="monthly")
     modules: list[str] = Field(default_factory=list)
@@ -124,15 +128,21 @@ async def onboard_tenant(
     body: OnboardTenantRequest,
     current_user: SuperUser,
     svc: PlatformService = Depends(_svc),
+    http_client: httpx.AsyncClient = Depends(get_http_client),
 ):
     try:
         return await svc.onboard_tenant(
             tenant_id=body.tenant_id,
+            company_name=body.company_name,
+            admin_email=body.admin_email,
+            admin_password=body.admin_password,
+            admin_name=body.admin_name,
             plan_slug=body.plan_slug,
             billing_cycle=body.billing_cycle,
             modules=body.modules,
             notes=body.notes,
             performed_by=current_user.get("id") or current_user.get("email"),
+            http_client=http_client,
         )
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))

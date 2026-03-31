@@ -672,6 +672,9 @@ export interface RecipeComponent {
   component_entity_id: string
   quantity_required: string
   notes: string | null
+  issue_method: string
+  scrap_percentage: string
+  lead_time_offset_days: number
 }
 
 export interface EntityRecipe {
@@ -682,11 +685,19 @@ export interface EntityRecipe {
   output_quantity: string
   description: string | null
   is_active: boolean
+  bom_type: string
+  standard_cost: string
+  planned_production_size: number
+  version: string
+  is_default: boolean
   created_by?: string | null
   updated_by?: string | null
   created_at: string
   components: RecipeComponent[]
 }
+
+export type ProductionRunStatus = 'planned' | 'released' | 'in_progress' | 'completed' | 'closed' | 'canceled' | 'rejected'
+export type ProductionOrderType = 'standard' | 'special' | 'disassembly'
 
 export interface ProductionRun {
   id: string
@@ -696,7 +707,20 @@ export interface ProductionRun {
   warehouse_id: string
   output_warehouse_id: string | null
   multiplier: string
-  status: 'pending' | 'in_progress' | 'awaiting_approval' | 'completed' | 'rejected' | 'canceled'
+  status: ProductionRunStatus
+  order_type: ProductionOrderType
+  priority: number
+  planned_start_date: string | null
+  planned_end_date: string | null
+  actual_start_date: string | null
+  actual_end_date: string | null
+  actual_output_quantity: string | null
+  total_component_cost: string | null
+  total_production_cost: string | null
+  unit_production_cost: string | null
+  variance_amount: string | null
+  linked_sales_order_id: string | null
+  linked_customer_id: string | null
   started_at: string | null
   completed_at: string | null
   performed_by: string | null
@@ -706,6 +730,124 @@ export interface ProductionRun {
   approved_at: string | null
   rejection_notes: string | null
   created_at: string
+}
+
+export interface ProductionEmissionLine {
+  id: string
+  emission_id: string
+  component_entity_id: string
+  planned_quantity: string
+  actual_quantity: string
+  unit_cost: string
+  total_cost: string
+  batch_id: string | null
+  warehouse_id: string | null
+  variance_quantity: string
+}
+
+export interface ProductionEmission {
+  id: string
+  tenant_id: string
+  production_run_id: string
+  emission_number: string
+  status: string
+  emission_date: string
+  warehouse_id: string | null
+  notes: string | null
+  performed_by: string | null
+  created_at: string
+  lines: ProductionEmissionLine[]
+}
+
+export interface ProductionResource {
+  id: string
+  tenant_id: string
+  name: string
+  resource_type: 'labor' | 'machine' | 'overhead'
+  cost_per_hour: string
+  cost_per_unit: string
+  capacity_hours_per_day: string
+  efficiency_pct: string
+  shifts_per_day: number
+  available_hours_override: string | null
+  is_active: boolean
+  notes: string | null
+  created_at: string
+}
+
+export interface RecipeResource {
+  id: string
+  recipe_id: string
+  resource_id: string
+  hours_per_unit: string
+  setup_time_hours: string
+  notes: string | null
+}
+
+export interface MRPLine {
+  component_entity_id: string
+  component_name: string | null
+  required_qty: string
+  available_qty: string
+  shortage: string
+  suggested_order_qty: string
+  preferred_supplier_id: string | null
+  lead_time_offset_days: number
+  estimated_unit_cost: string
+  action: 'buy' | 'make'
+  sub_recipe_id: string | null
+  sub_recipe_name: string | null
+}
+
+export interface MRPResult {
+  recipe_id: string
+  recipe_name: string
+  output_quantity: string
+  lines: MRPLine[]
+  make_suggestions: MRPLine[]
+  total_estimated_cost: string
+  purchase_orders_created: string[]
+}
+
+export interface CapacityLine {
+  resource_id: string
+  resource_name: string
+  required_hours: string
+  available_hours: string
+  committed_hours: string
+  utilization_pct: string
+  has_capacity: boolean
+}
+
+export interface CapacityResult {
+  lines: CapacityLine[]
+  all_have_capacity: boolean
+}
+
+export interface ProductionReceiptLine {
+  id: string
+  receipt_id: string
+  entity_id: string
+  planned_quantity: string
+  received_quantity: string
+  unit_cost: string
+  total_cost: string
+  batch_id: string | null
+  is_complete: boolean
+}
+
+export interface ProductionReceipt {
+  id: string
+  tenant_id: string
+  production_run_id: string
+  receipt_number: string
+  status: string
+  receipt_date: string
+  output_warehouse_id: string | null
+  notes: string | null
+  performed_by: string | null
+  created_at: string
+  lines: ProductionReceiptLine[]
 }
 
 export interface StockLayer {

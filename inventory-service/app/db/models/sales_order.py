@@ -77,6 +77,14 @@ class SalesOrder(Base):
     credit_note_status:    Mapped[str | None]    = mapped_column(String(50), nullable=True)
     returned_at:           Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Debit note (DIAN — issued for price adjustments)
+    debit_note_cufe:       Mapped[str | None]   = mapped_column(String(255), nullable=True)
+    debit_note_number:     Mapped[str | None]   = mapped_column(String(50), nullable=True)
+    debit_note_remote_id:  Mapped[str | None]   = mapped_column(String(255), nullable=True)
+    debit_note_status:     Mapped[str | None]   = mapped_column(String(50), nullable=True)
+    debit_note_reason:     Mapped[str | None]   = mapped_column(Text, nullable=True)
+    debit_note_amount:     Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+
     # Backorder support
     is_backorder:     Mapped[bool]             = mapped_column(Boolean, nullable=False, server_default="false")
     parent_so_id:     Mapped[str | None]       = mapped_column(

@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { MapPin, Plus, Check, X, Pencil, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { MapPin, Plus, Check, X, Pencil, Trash2, Satellite, Loader2, FileText } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { usePlots, useCreatePlot, useDeletePlot } from '@/hooks/useCompliance'
+import { usePlots, useCreatePlot, useDeletePlot, useScreenDeforestation, usePlotDocuments } from '@/hooks/useCompliance'
 import { useOrganizations } from '@/hooks/useTaxonomy'
 import { useConfirm } from '@/store/confirm'
 import { useToast } from '@/store/toast'
@@ -11,6 +12,7 @@ import { DataTable, type Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
+import { PlotMap } from '@/components/compliance/PlotMap'
 import type { CompliancePlot, RiskLevel } from '@/types/compliance'
 
 // ─── Risk badge ──────────────────────────────────────────────────────────────
@@ -71,6 +73,25 @@ function ComplianceBadges({ plot }: { plot: CompliancePlot }) {
   )
 }
 
+// ─── Doc count badge (fetches docs for a single plot) ───────────────────────
+
+function PlotDocBadge({ plotId }: { plotId: string }) {
+  const { data: docs } = usePlotDocuments(plotId)
+  const count = docs?.length ?? 0
+  if (count === 0) {
+    return (
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-500 border border-red-100">
+        <FileText className="h-2.5 w-2.5" /> 0
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-100">
+      <FileText className="h-2.5 w-2.5" /> {count}
+    </span>
+  )
+}
+
 // ─── Create Plot Schema ──────────────────────────────────────────────────────
 
 const plotSchema = z.object({
@@ -87,6 +108,10 @@ const plotSchema = z.object({
   cutoff_date_compliant: z.boolean().default(true),
   legal_land_use: z.boolean().default(true),
   risk_level: z.enum(['low', 'standard', 'high']).default('low'),
+  establishment_date: z.string().optional().nullable(),
+  crop_type: z.string().optional().nullable(),
+  renovation_date: z.string().optional().nullable(),
+  renovation_type: z.string().optional().nullable(),
 })
 
 type PlotFormValues = z.infer<typeof plotSchema>
@@ -120,6 +145,10 @@ function CreatePlotModal({ onClose }: { onClose: () => void }) {
       cutoff_date_compliant: true,
       legal_land_use: true,
       risk_level: 'low',
+      establishment_date: null,
+      crop_type: null,
+      renovation_date: null,
+      renovation_type: null,
     },
   })
 
@@ -139,6 +168,10 @@ function CreatePlotModal({ onClose }: { onClose: () => void }) {
         cutoff_date_compliant: values.cutoff_date_compliant,
         legal_land_use: values.legal_land_use,
         risk_level: values.risk_level,
+        establishment_date: values.establishment_date || null,
+        crop_type: values.crop_type || null,
+        renovation_date: values.renovation_date || null,
+        renovation_type: values.renovation_type || null,
       })
       toast.success('Parcela creada')
       onClose()
@@ -262,7 +295,41 @@ function CreatePlotModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        {/* Row 5: Compliance checkboxes */}
+        {/* Row 5: Crop establishment (EUDR Colombia gap) */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>Tipo de cultivo</label>
+            <select {...register('crop_type')} className={inputCls}>
+              <option value="">— Seleccionar —</option>
+              <option value="cafe">Cafe</option>
+              <option value="cacao">Cacao</option>
+              <option value="palma">Palma de aceite</option>
+              <option value="caucho">Caucho</option>
+              <option value="soya">Soya</option>
+              <option value="madera">Madera</option>
+              <option value="ganado">Ganado bovino</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Fecha de establecimiento</label>
+            <input type="date" {...register('establishment_date')} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Fecha de renovacion/soca</label>
+            <input type="date" {...register('renovation_date')} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Tipo de renovacion</label>
+            <select {...register('renovation_type')} className={inputCls}>
+              <option value="">— Sin renovacion —</option>
+              <option value="renovacion">Renovacion</option>
+              <option value="soca">Soca (corte para rebrote)</option>
+              <option value="resiembra">Resiembra</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Row 6: Compliance checkboxes */}
         <div className="rounded-lg border border-gray-200 p-4 space-y-3">
           <p className="text-sm font-medium text-gray-700">Declaraciones de cumplimiento</p>
           <label className="flex items-center gap-2 text-sm text-gray-600">
@@ -290,9 +357,12 @@ export default function PlotsPage() {
   const { data: orgsData } = useOrganizations()
   const orgs = orgsData?.items ?? []
   const deletePlot = useDeletePlot()
+  const screenDeforestation = useScreenDeforestation()
   const confirm = useConfirm()
   const toast = useToast()
+  const navigate = useNavigate()
   const [showCreate, setShowCreate] = useState(false)
+  const [selectedPlotId, setSelectedPlotId] = useState<string | undefined>()
 
   const orgMap = Object.fromEntries(orgs.map((o) => [o.id, o.name]))
 
@@ -316,7 +386,11 @@ export default function PlotsPage() {
       key: 'plot_code',
       header: 'Codigo',
       sortable: true,
-      render: (row) => <span className="font-medium text-gray-900">{row.plot_code}</span>,
+      render: (row) => (
+        <button onClick={() => navigate(`/cumplimiento/parcelas/${row.id}`)} className="font-medium text-primary hover:underline">
+          {row.plot_code}
+        </button>
+      ),
     },
     {
       key: 'organization',
@@ -371,10 +445,40 @@ export default function PlotsPage() {
       render: (row) => <ComplianceBadges plot={row} />,
     },
     {
+      key: 'docs',
+      header: 'Docs',
+      render: (row) => (
+        <button onClick={() => navigate(`/cumplimiento/parcelas/${row.id}`)} title="Ver documentos">
+          <PlotDocBadge plotId={row.id} />
+        </button>
+      ),
+    },
+    {
       key: 'actions',
       header: '',
       render: (row) => (
         <div className="flex items-center gap-1 justify-end">
+          <button
+            onClick={async () => {
+              try {
+                const result = await screenDeforestation.mutateAsync(row.id)
+                if (result.deforestation_free === true) {
+                  toast.success(`${row.plot_code}: Libre de deforestacion (0 alertas)`)
+                } else if (result.deforestation_free === false) {
+                  toast.error(`${row.plot_code}: ${result.alerts_count} alertas de deforestacion detectadas`)
+                } else {
+                  toast.error(result.error || 'No se pudo verificar')
+                }
+              } catch (e: any) {
+                toast.error(e.message ?? 'Error al verificar')
+              }
+            }}
+            disabled={screenDeforestation.isPending}
+            className="rounded-lg p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+            title="Verificar deforestacion (Global Forest Watch)"
+          >
+            {screenDeforestation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Satellite className="h-3.5 w-3.5" />}
+          </button>
           <button
             onClick={() => handleDelete(row.id)}
             className="rounded-lg p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
@@ -405,6 +509,19 @@ export default function PlotsPage() {
           Nueva Parcela
         </Button>
       </div>
+
+      {/* Map */}
+      {plots.length > 0 && (
+        <PlotMap
+          plots={plots}
+          height="350px"
+          selectedPlotId={selectedPlotId}
+          onPlotClick={(plot) => {
+            setSelectedPlotId(plot.id)
+            navigate(`/cumplimiento/parcelas/${plot.id}`)
+          }}
+        />
+      )}
 
       {/* Table */}
       <DataTable

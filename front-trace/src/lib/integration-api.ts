@@ -68,6 +68,44 @@ export const integrationInvoiceApi = {
   },
 }
 
+// ── Webhook Subscriptions ────────────────────────────────────────────────────
+
+export interface WebhookSubscription {
+  id: string; tenant_id: string; name: string; target_url: string; secret: string | null
+  events: string[]; headers: Record<string, string>; is_active: boolean
+  retry_policy: string; max_retries: number; last_triggered_at: string | null; created_at: string
+}
+
+export interface WebhookDelivery {
+  id: string; subscription_id: string; event_type: string
+  status: 'pending' | 'delivered' | 'failed'; http_status: number | null
+  response_body: string | null; attempts: number; next_retry_at: string | null
+  created_at: string; delivered_at: string | null
+}
+
+export interface EventCatalogItem { event: string; label: string; source: string }
+
+export const webhookApi = {
+  eventsCatalog: () => request<EventCatalogItem[]>('/api/v1/webhooks/subscriptions/events-catalog'),
+  list: () => request<WebhookSubscription[]>('/api/v1/webhooks/subscriptions'),
+  get: (id: string) => request<WebhookSubscription>(`/api/v1/webhooks/subscriptions/${id}`),
+  create: (data: Record<string, unknown>) =>
+    request<WebhookSubscription>('/api/v1/webhooks/subscriptions', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Record<string, unknown>) =>
+    request<WebhookSubscription>(`/api/v1/webhooks/subscriptions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: async (id: string) => { await authFetch(`${BASE}/api/v1/webhooks/subscriptions/${id}`, { method: 'DELETE' }) },
+  test: (id: string) =>
+    request<{ delivery_id: string; success: boolean; http_status: number | null; response: string | null }>(
+      `/api/v1/webhooks/subscriptions/${id}/test`, { method: 'POST' }),
+  deliveries: (subId: string, params?: { status?: string; offset?: number; limit?: number }) => {
+    const qs = new URLSearchParams()
+    if (params?.status) qs.set('status', params.status)
+    if (params?.offset !== undefined) qs.set('offset', String(params.offset))
+    if (params?.limit !== undefined) qs.set('limit', String(params.limit))
+    return request<WebhookDelivery[]>(`/api/v1/webhooks/subscriptions/${subId}/deliveries?${qs}`)
+  },
+}
+
 export const resolutionApi = {
   get: (provider: string) =>
     request<InvoiceResolution>(`/api/v1/resolutions/${provider}`),

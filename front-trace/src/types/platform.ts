@@ -195,6 +195,10 @@ export interface SalesMetrics {
 
 export interface OnboardRequest {
   tenant_id: string
+  company_name: string
+  admin_email: string
+  admin_password: string
+  admin_name: string
   plan_slug: string
   billing_cycle: string
   modules: string[]

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
@@ -30,6 +30,10 @@ class PlotCreate(BaseModel):
     cutoff_date_compliant: bool = False
     legal_land_use: bool = False
     risk_level: str = "standard"
+    establishment_date: date | None = None
+    crop_type: str | None = None
+    renovation_date: date | None = None
+    renovation_type: str | None = None
     satellite_report_url: str | None = None
     satellite_report_hash: str | None = None
     metadata: dict | None = None
@@ -53,6 +57,10 @@ class PlotUpdate(BaseModel):
     cutoff_date_compliant: bool | None = None
     legal_land_use: bool | None = None
     risk_level: str | None = None
+    establishment_date: date | None = None
+    crop_type: str | None = None
+    renovation_date: date | None = None
+    renovation_type: str | None = None
     satellite_report_url: str | None = None
     satellite_report_hash: str | None = None
     metadata: dict | None = None
@@ -78,6 +86,10 @@ class PlotResponse(OrmBase):
     cutoff_date_compliant: bool
     legal_land_use: bool
     risk_level: str
+    establishment_date: date | None = None
+    crop_type: str | None = None
+    renovation_date: date | None = None
+    renovation_type: str | None = None
     satellite_report_url: str | None
     satellite_report_hash: str | None
     satellite_verified_at: datetime | None

@@ -11,8 +11,11 @@ services:
     env_file: .env
     environment:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      MEDIA_SERVICE_URL: http://media-api:8007
     ports:
       - "8000:8000"
+    volumes:
+      - trace-uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,6 +51,8 @@ services:
         condition: service_healthy
       api:
         condition: service_healthy
+    volumes:
+      - trace-uploads:/app/uploads
     networks:
       - trace-net
     restart: unless-stopped
@@ -145,6 +150,9 @@ services:
       SMTP_PORT: 1025
       SMTP_USER: ""
       SMTP_PASSWORD: ""
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MEDIA_SERVICE_URL: http://media-api:8007
+      S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN:-s2s-change-me-in-production}
       SMTP_FROM: noreply@trace.app
       SMTP_USE_TLS: "false"
       FRONTEND_URL: http://localhost:5173
@@ -207,6 +215,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://sub_svc:subpass@subscription-postgres:5432/subdb
       REDIS_URL: redis://redis:6379/3
       USER_SERVICE_URL: http://user-api:8001
+      INTEGRATION_SERVICE_URL: http://integration-api:8004
       JWT_SECRET: ${JWT_SECRET:-super-secret-dev-key-change-in-prod}
       LOG_LEVEL: INFO
     ports:
@@ -265,6 +274,7 @@ services:
       USER_SERVICE_URL: http://user-api:8001
       SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
       AI_SERVICE_URL: http://ai-api:8006
+      MEDIA_SERVICE_URL: http://media-api:8007
       JWT_SECRET: ${JWT_SECRET:-super-secret-dev-key-change-in-prod}
       LOG_LEVEL: INFO
     ports:
@@ -387,7 +397,11 @@ services:
       USER_SERVICE_URL: http://user-api:8001
       SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
       TRACE_SERVICE_URL: http://trace-api:8000
+      MEDIA_SERVICE_URL: http://media-api:8007
       JWT_SECRET: ${JWT_SECRET:-super-secret-dev-key-change-in-prod}
+      S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN:-s2s-change-me-in-production}
+      GFW_API_KEY: ${GFW_API_KEY:-}
+      SOLANA_NETWORK: ${SOLANA_NETWORK:-devnet}
       LOG_LEVEL: INFO
     ports:
       - "9005:8005"
@@ -483,12 +497,76 @@ services:
       retries: 5
       start_period: 20s
 
+  # ─── Media Service ────────────────────────────────────────────────────────
+
+  media-postgres:
+    image: postgres:16-alpine
+    container_name: media-postgres
+    environment:
+      POSTGRES_USER: media_svc
+      POSTGRES_PASSWORD: mediapass
+      POSTGRES_DB: mediadb
+    volumes:
+      - media-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5478:5432"
+    networks:
+      - trace-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U media_svc -d mediadb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  media-api:
+    build:
+      context: ./media-service
+      dockerfile: Dockerfile
+    image: media-service:latest
+    container_name: media-api
+    environment:
+      DATABASE_URL: postgresql+asyncpg://media_svc:mediapass@media-postgres:5432/mediadb
+      REDIS_URL: redis://redis:6379/8
+      S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN:-s2s-change-me-in-production}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_S3_REGION: ${AWS_S3_REGION:-us-east-1}
+      AWS_S3_ENDPOINT: ${AWS_S3_ENDPOINT:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      LOG_LEVEL: INFO
+    ports:
+      - "9007:8007"
+    volumes:
+      - media-uploads:/app/uploads
+    depends_on:
+      media-postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - trace-net
+    restart: unless-stopped
+    command: >
+      sh -c "
+        alembic upgrade head &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8007 --workers 2
+      "
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8007/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
 networks:
   trace-net:
     driver: bridge
 
 volumes:
   postgres-data:
+  trace-uploads:
   redis-data:
   user-postgres-data:
   user-uploads:
@@ -498,3 +576,5 @@ volumes:
   integration-postgres-data:
   compliance-postgres-data:
   ai-postgres-data:
+  media-postgres-data:
+  media-uploads:

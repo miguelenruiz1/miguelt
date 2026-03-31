@@ -58,8 +58,24 @@ async def get_tenant_id(request: Request) -> uuid.UUID:
 # ─── JWT auth (same pattern as inventory-service) ─────────────────────────────
 
 async def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> dict:
+    # Allow S2S calls with X-Service-Token (bypass JWT)
+    service_token = request.headers.get("X-Service-Token")
+    if service_token:
+        settings = get_settings()
+        if service_token == settings.S2S_SERVICE_TOKEN:
+            tenant_id = request.headers.get("X-Tenant-Id", "default")
+            return {
+                "id": "system",
+                "tenant_id": tenant_id,
+                "is_superuser": True,
+                "permissions": [],
+                "email": "system@trace.internal",
+            }
+        raise UnauthorizedError("Invalid service token")
+
     if credentials is None:
         raise UnauthorizedError("Missing authorization header")
 

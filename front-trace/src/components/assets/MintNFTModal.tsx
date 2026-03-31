@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, FolderOpen, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useMintAsset } from '@/hooks/useAssets'
 import { useOrganizations, useOrgWallets } from '@/hooks/useTaxonomy'
@@ -8,6 +8,8 @@ import { useToast } from '@/store/toast'
 import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import MediaPickerModal from '@/components/compliance/MediaPickerModal'
+import { mediaFileUrl } from '@/lib/media-api'
 
 // ─── Product type catalog ──────────────────────────────────────────────────────
 
@@ -50,6 +52,8 @@ export function MintNFTModal({ open, onClose, preSelectedOrgId }: Props) {
   const [qualityGrade,      setQualityGrade]      = useState('')
   const [origin,            setOrigin]            = useState('')
   const [description,       setDescription]       = useState('')
+  const [imageUrl,          setImageUrl]          = useState('')
+  const [showImagePicker,   setShowImagePicker]   = useState(false)
   const [errs,              setErrs]              = useState<Record<string, string>>({})
   const [isSubmitting,      setIsSubmitting]      = useState(false)
 
@@ -90,6 +94,7 @@ export function MintNFTModal({ open, onClose, preSelectedOrgId }: Props) {
     if (qualityGrade) metadata.quality_grade = qualityGrade
     if (origin)       metadata.origin        = origin
     if (description)  metadata.description   = description
+    if (imageUrl)     metadata.image_url     = imageUrl.trim()
 
     try {
       const res = await mintAsset.mutateAsync({
@@ -111,7 +116,7 @@ export function MintNFTModal({ open, onClose, preSelectedOrgId }: Props) {
     setProductType(''); setCustomProductType(''); setCargoName('')
     setOrgId(preSelectedOrgId ?? ''); setWalletPubkey('')
     setWeight(''); setWeightUnit('kg'); setQualityGrade('')
-    setOrigin(''); setDescription(''); setErrs({})
+    setOrigin(''); setDescription(''); setImageUrl(''); setErrs({})
     onClose()
   }
 
@@ -246,6 +251,50 @@ export function MintNFTModal({ open, onClose, preSelectedOrgId }: Props) {
             placeholder="Huila, Colombia"
             value={origin}
             onChange={(e) => setOrigin(e.target.value)}
+          />
+        </div>
+
+        {/* 6 — Image from Media */}
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1.5">Imagen de la carga</label>
+          {imageUrl ? (
+            <div className="flex items-center gap-3">
+              <img
+                src={imageUrl.startsWith('http') ? imageUrl : mediaFileUrl(imageUrl)}
+                alt="Preview"
+                className="h-20 w-20 rounded-xl object-cover border border-slate-200"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-slate-500 truncate">{imageUrl}</p>
+                <div className="flex gap-2 mt-1.5">
+                  <button type="button" onClick={() => setShowImagePicker(true)}
+                    className="text-xs text-primary hover:underline">Cambiar</button>
+                  <button type="button" onClick={() => setImageUrl('')}
+                    className="text-xs text-red-500 hover:underline">Quitar</button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowImagePicker(true)}
+              className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-4 text-sm text-slate-500 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
+            >
+              <FolderOpen className="h-4 w-4" />
+              Seleccionar desde Media
+            </button>
+          )}
+          <p className="text-[11px] text-slate-400 mt-1">Se registra en el NFT on-chain. Si no provees una, se genera automaticamente.</p>
+          <MediaPickerModal
+            open={showImagePicker}
+            onClose={() => setShowImagePicker(false)}
+            onSelect={async (mediaFileId, _docType, _desc) => {
+              const { mediaApi } = await import('@/lib/media-api')
+              const file = await mediaApi.get(mediaFileId)
+              setImageUrl(file.url)
+              setShowImagePicker(false)
+            }}
           />
         </div>
 

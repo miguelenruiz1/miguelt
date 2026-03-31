@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useParams, Link, Navigate } from 'react-router-dom'
+import { authFetch } from '@/lib/auth-fetch'
 import {
   ChevronRight, Package, MapPin, ShieldCheck, FileText, Award,
   CheckCircle2, XCircle, AlertTriangle, Plus, Trash2, Download,
-  Copy, ExternalLink, RefreshCw, Loader2,
+  Copy, ExternalLink, RefreshCw, Loader2, ShieldAlert, Link2, Paperclip,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Tabs } from '@/components/ui/tabs'
@@ -11,12 +12,19 @@ import {
   useRecord, useUpdateRecord, useRecordPlots, usePlots, useLinkPlot,
   useUnlinkPlot, useValidateRecord, useUpdateDeclaration,
   useRecordCertificate, useGenerateCertificate, useRegenerateCertificate,
-  useFramework,
+  useFramework, useExportDds, useSubmitTraces,
+  useRecordDocuments, useAttachRecordDocument, useDetachRecordDocument,
+  useRiskAssessment, useSupplyChain,
 } from '@/hooks/useCompliance'
+import DocumentUploader from '@/components/compliance/DocumentUploader'
+import RiskAssessmentForm from '@/components/compliance/RiskAssessmentForm'
+import SupplyChainEditor from '@/components/compliance/SupplyChainEditor'
+import ComplianceProgressTracker from '@/components/compliance/ComplianceProgressTracker'
 import type {
   ComplianceRecord, UpdateRecordInput, ValidationResult,
   CompliancePlot, DeclarationUpdate, ComplianceCertificate,
 } from '@/types/compliance'
+import { useToast } from '@/store/toast'
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 
@@ -87,8 +95,12 @@ function ProductTab({ record }: { record: ComplianceRecord }) {
     buyer_address: record.buyer_address ?? '',
     buyer_email: record.buyer_email ?? '',
     operator_eori: record.operator_eori ?? '',
+    activity_type: (record as any).activity_type ?? 'export',
     deforestation_free_declaration: record.deforestation_free_declaration,
     legal_compliance_declaration: record.legal_compliance_declaration,
+    signatory_name: (record as any).signatory_name ?? '',
+    signatory_role: (record as any).signatory_role ?? '',
+    signatory_date: (record as any).signatory_date?.slice(0, 10) ?? '',
   })
 
   const set = (key: string, value: unknown) => setForm(f => ({ ...f, [key]: value }))
@@ -113,6 +125,10 @@ function ProductTab({ record }: { record: ComplianceRecord }) {
       buyer_address: (form.buyer_address as string) || null,
       buyer_email: (form.buyer_email as string) || null,
       operator_eori: (form.operator_eori as string) || null,
+      activity_type: (form.activity_type as string) || 'export',
+      signatory_name: (form.signatory_name as string) || null,
+      signatory_role: (form.signatory_role as string) || null,
+      signatory_date: (form.signatory_date as string) || null,
     }
     await update.mutateAsync(data)
     setSaved(true)
@@ -168,9 +184,28 @@ function ProductTab({ record }: { record: ComplianceRecord }) {
 
       {/* Exportacion UE */}
       <section>
-        <h3 className="text-sm font-bold text-slate-700 mb-3">Exportacion UE</h3>
+        <h3 className="text-sm font-bold text-slate-700 mb-3">Exportacion UE — Anexo II</h3>
         <div className="grid grid-cols-2 gap-4">
           <Field label="EORI del operador" value={form.operator_eori as string} onChange={v => set('operator_eori', v)} placeholder="DE123456789012345" />
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">Tipo de actividad</label>
+            <select value={form.activity_type as string} onChange={e => set('activity_type', e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-ring outline-none">
+              <option value="export">Exportacion</option>
+              <option value="import">Importacion</option>
+              <option value="domestic_production">Produccion domestica</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      {/* Firma del operador — Anexo II #10 */}
+      <section>
+        <h3 className="text-sm font-bold text-slate-700 mb-3">Firma del operador — Anexo II, punto 10</h3>
+        <div className="grid grid-cols-3 gap-4">
+          <Field label="Nombre del firmante" value={form.signatory_name as string} onChange={v => set('signatory_name', v)} placeholder="Juan Perez" />
+          <Field label="Cargo / funcion" value={form.signatory_role as string} onChange={v => set('signatory_role', v)} placeholder="Director de Exportaciones" />
+          <Field label="Fecha de firma" type="date" value={form.signatory_date as string} onChange={v => set('signatory_date', v)} />
         </div>
       </section>
 
@@ -260,6 +295,21 @@ function PlotsTab({ recordId, frameworkSlug }: { recordId: string; frameworkSlug
           <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
           <p className="text-xs text-amber-700">
             Este framework requiere geolocalizacion. Vincula al menos una parcela con coordenadas.
+          </p>
+        </div>
+      )}
+
+      {/* Warning: parcelas >= 4 ha sin poligono */}
+      {linkedPlots.some(lp => {
+        const plot = allPlots.find(p => p.id === lp.plot_id)
+        return plot && plot.plot_area_ha && Number(plot.plot_area_ha) >= 4 && !plot.geojson_arweave_url && plot.geolocation_type !== 'polygon'
+      }) && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-3 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+          <p className="text-xs text-red-700">
+            <strong>Una o mas parcelas &ge; 4 ha requieren poligono GeoJSON</strong> (EUDR Art. 9.1.c / Art. 2.28).
+            No se podra generar el certificado hasta que se proporcione el poligono completo (geojson_arweave_url)
+            para todas las parcelas de 4 hectareas o mas.
           </p>
         </div>
       )}
@@ -542,7 +592,90 @@ function DeclarationTab({ record }: { record: ComplianceRecord }) {
         </button>
         {saved && <span className="text-xs font-medium text-emerald-600">Guardado</span>}
       </div>
+
+      {/* TRACES NT — DDS Export & Submit */}
+      <div className="mt-8 rounded-xl border border-blue-200 bg-blue-50/50 p-5 space-y-4">
+        <div>
+          <h4 className="text-sm font-bold text-blue-900">TRACES NT — Sistema de Informacion UE</h4>
+          <p className="text-xs text-blue-700 mt-1">
+            Exporta o envia la Declaracion de Diligencia Debida (DDS) al sistema TRACES de la Comision Europea.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <DdsExportButton recordId={record.id} />
+          <DdsSubmitButton recordId={record.id} status={record.compliance_status} />
+        </div>
+      </div>
     </form>
+  )
+}
+
+function DdsExportButton({ recordId }: { recordId: string }) {
+  const exportDds = useExportDds()
+  const toast = useToast()
+
+  return (
+    <button
+      onClick={async () => {
+        try {
+          const result = await exportDds.mutateAsync(recordId)
+          const json = JSON.stringify(result.dds_payload, null, 2)
+          const blob = new Blob([json], { type: 'application/json' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `DDS-${recordId.slice(0, 8)}.json`
+          a.click()
+          URL.revokeObjectURL(url)
+          toast.success('DDS exportado como JSON')
+        } catch (e: any) {
+          toast.error(e.message ?? 'Error al exportar DDS')
+        }
+      }}
+      disabled={exportDds.isPending}
+      className="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50 transition-colors"
+    >
+      {exportDds.isPending ? 'Exportando...' : 'Exportar DDS (JSON)'}
+    </button>
+  )
+}
+
+function DdsSubmitButton({ recordId, status }: { recordId: string; status: string }) {
+  const submitTraces = useSubmitTraces()
+  const toast = useToast()
+  const canSubmit = ['ready', 'declared', 'compliant'].includes(status)
+
+  return (
+    <button
+      onClick={async () => {
+        try {
+          const result = await submitTraces.mutateAsync(recordId)
+          if (result.submitted) {
+            toast.success(`DDS enviado a TRACES NT — Ref: ${result.reference_number}`)
+          } else if (result.dds_payload) {
+            // Not configured — download for manual upload
+            const json = JSON.stringify(result.dds_payload, null, 2)
+            const blob = new Blob([json], { type: 'application/json' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `DDS-TRACES-${recordId.slice(0, 8)}.json`
+            a.click()
+            URL.revokeObjectURL(url)
+            toast.success('Credenciales TRACES NT no configuradas. DDS descargado para upload manual.')
+          } else {
+            toast.error(result.error || 'Error al enviar a TRACES NT')
+          }
+        } catch (e: any) {
+          toast.error(e.message ?? 'Error al enviar')
+        }
+      }}
+      disabled={submitTraces.isPending || !canSubmit}
+      title={!canSubmit ? 'El registro debe estar en estado "listo" o "cumple" para enviar a TRACES NT' : undefined}
+      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+    >
+      {submitTraces.isPending ? 'Enviando...' : 'Enviar a TRACES NT'}
+    </button>
   )
 }
 
@@ -552,8 +685,17 @@ function CertificateTab({ recordId, record }: { recordId: string; record: Compli
   const { data: certificate, isLoading, isError } = useRecordCertificate(recordId)
   const generate = useGenerateCertificate(recordId)
   const regenerate = useRegenerateCertificate()
+  const { data: linkedPlots = [] } = useRecordPlots(recordId)
+  const { data: allPlots = [] } = usePlots()
 
   const isIncomplete = record.compliance_status === 'incomplete' || record.compliance_status === 'non_compliant'
+
+  // Check if any linked plot >= 4 ha lacks polygon
+  const hasPolygonViolation = linkedPlots.some(lp => {
+    const plot = allPlots.find(p => p.id === lp.plot_id)
+    return plot && plot.plot_area_ha && Number(plot.plot_area_ha) >= 4 && !plot.geojson_arweave_url && plot.geolocation_type !== 'polygon'
+  })
+  const isBlocked = isIncomplete || hasPolygonViolation
 
   if (isLoading) {
     return <div className="text-sm text-slate-400 py-6 text-center">Cargando...</div>
@@ -568,9 +710,12 @@ function CertificateTab({ recordId, record }: { recordId: string; record: Compli
         <p className="text-xs text-slate-400 mb-5">
           {isIncomplete
             ? 'Completa todos los campos requeridos y valida el registro antes de generar un certificado.'
+            : hasPolygonViolation
+            ? 'Una o mas parcelas >= 4 ha requieren poligono GeoJSON (EUDR Art. 9.1.c). Corrige las parcelas antes de generar.'
             : 'Genera un certificado de cumplimiento para este registro.'}
         </p>
-        <button onClick={() => generate.mutate()} disabled={isIncomplete || generate.isPending}
+        <button onClick={() => generate.mutate()} disabled={isBlocked || generate.isPending}
+          title={hasPolygonViolation ? 'Una o mas parcelas >= 4 ha requieren poligono GeoJSON (EUDR Art. 9.1.c)' : undefined}
           className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">
           {generate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Award className="h-4 w-4" />}
           {generate.isPending ? 'Generando...' : 'Generar Certificado'}
@@ -641,12 +786,21 @@ function CertificateTab({ recordId, record }: { recordId: string; record: Compli
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3">
-        {certificate.pdf_url && (
-          <a href={certificate.pdf_url} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors">
-            <Download className="h-4 w-4" /> Descargar PDF
-          </a>
-        )}
+        <button onClick={async () => {
+          const base = import.meta.env.VITE_COMPLIANCE_API_URL ?? ''
+          const res = await authFetch(`${base}/api/v1/compliance/certificates/${certificate.id}/download`)
+          if (!res.ok) return
+          const blob = await res.blob()
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `${certificate.certificate_number}.pdf`
+          a.click()
+          URL.revokeObjectURL(url)
+        }}
+          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors">
+          <Download className="h-4 w-4" /> Descargar PDF
+        </button>
         <button onClick={() => {
           navigator.clipboard.writeText(certificate.verify_url)
         }}
@@ -672,11 +826,32 @@ function CertificateTab({ recordId, record }: { recordId: string; record: Compli
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
+// ─── Tab: Documentos de Evidencia ───────────────────────────────────────────
+
+function DocumentsTab({ recordId }: { recordId: string }) {
+  const { data: docs = [], isLoading } = useRecordDocuments(recordId)
+  const attach = useAttachRecordDocument(recordId)
+  const detach = useDetachRecordDocument(recordId)
+
+  return (
+    <DocumentUploader
+      documents={docs}
+      isLoading={isLoading}
+      onAttach={async (data) => { await attach.mutateAsync(data) }}
+      onDetach={async (docId) => { await detach.mutateAsync(docId) }}
+      isPending={detach.isPending}
+    />
+  )
+}
+
 const TABS_DEF = [
   { key: 'product', label: 'Producto', icon: Package },
   { key: 'plots', label: 'Parcelas', icon: MapPin },
+  { key: 'supply_chain', label: 'Cadena', icon: Link2 },
+  { key: 'documents', label: 'Documentos', icon: Paperclip },
+  { key: 'risk', label: 'Riesgo', icon: ShieldAlert },
   { key: 'validation', label: 'Validacion', icon: ShieldCheck },
-  { key: 'declaration', label: 'Declaracion DDS', icon: FileText },
+  { key: 'declaration', label: 'DDS', icon: FileText },
   { key: 'certificate', label: 'Certificado', icon: Award },
 ]
 
@@ -684,6 +859,12 @@ export default function RecordDetailPage() {
   const { id = '' } = useParams<{ id: string }>()
   const { data: record, isLoading } = useRecord(id)
   const [activeTab, setActiveTab] = useState('product')
+
+  // Data for progress tracker
+  const { data: linkedPlots = [] } = useRecordPlots(id)
+  const { data: recordDocs = [] } = useRecordDocuments(id)
+  const { data: riskAssessment = null } = useRiskAssessment(id)
+  const { data: supplyChainNodes = [] } = useSupplyChain(id)
 
   if (isLoading) {
     return (
@@ -722,6 +903,17 @@ export default function RecordDetailPage() {
         <ComplianceStatusBadge status={record.compliance_status} size="lg" />
       </div>
 
+      {/* EUDR Progress Tracker */}
+      <ComplianceProgressTracker
+        record={record}
+        plots={linkedPlots}
+        supplyChain={supplyChainNodes}
+        documents={recordDocs}
+        riskAssessment={riskAssessment}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
+
       {/* Tabs */}
       <Tabs tabs={TABS_DEF} value={activeTab} onChange={setActiveTab} />
 
@@ -729,6 +921,9 @@ export default function RecordDetailPage() {
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
         {activeTab === 'product' && <ProductTab record={record} />}
         {activeTab === 'plots' && <PlotsTab recordId={record.id} frameworkSlug={record.framework_slug} />}
+        {activeTab === 'supply_chain' && <SupplyChainEditor recordId={record.id} />}
+        {activeTab === 'documents' && <DocumentsTab recordId={record.id} />}
+        {activeTab === 'risk' && <RiskAssessmentForm recordId={record.id} />}
         {activeTab === 'validation' && <ValidationTab recordId={record.id} record={record} />}
         {activeTab === 'declaration' && <DeclarationTab record={record} />}
         {activeTab === 'certificate' && <CertificateTab recordId={record.id} record={record} />}

@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.db.models import EntityRecipe, RecipeComponent
+from app.db.models import EntityRecipe, RecipeComponent, RecipeResource
 
 
 class RecipeRepository:
@@ -30,6 +30,8 @@ class RecipeRepository:
             .options(
                 selectinload(EntityRecipe.components)
                 .selectinload(RecipeComponent.component_entity),
+                selectinload(EntityRecipe.resources)
+                .selectinload(RecipeResource.resource),
             )
             .order_by(EntityRecipe.name)
             .offset(offset)
@@ -44,6 +46,8 @@ class RecipeRepository:
             .options(
                 selectinload(EntityRecipe.components)
                 .selectinload(RecipeComponent.component_entity),
+                selectinload(EntityRecipe.resources)
+                .selectinload(RecipeResource.resource),
             )
             .where(EntityRecipe.tenant_id == tenant_id, EntityRecipe.id == recipe_id)
         )
@@ -56,8 +60,7 @@ class RecipeRepository:
         for comp in components:
             self.db.add(RecipeComponent(id=str(uuid.uuid4()), tenant_id=tenant_id, recipe_id=recipe_id, **comp))
         await self.db.flush()
-        await self.db.refresh(recipe, attribute_names=["components"])
-        return recipe
+        return await self.get(tenant_id, recipe_id)  # re-fetch with eager loading
 
     async def update(self, recipe: EntityRecipe, data: dict, components: list[dict] | None = None) -> EntityRecipe:
         for k, v in data.items():

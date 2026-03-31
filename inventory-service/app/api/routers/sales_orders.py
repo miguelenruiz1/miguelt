@@ -285,6 +285,25 @@ async def ship_order(
         new_data={"order_number": order.order_number, "status": "shipped"},
         ip_address=_ip(request),
     )
+
+    # Fire-and-forget: notify trace-service about shipped SO
+    # Only if there are trace assets linked (via metadata.trace_asset_ids on SO)
+    from app.clients import trace_client
+    trace_asset_ids = getattr(order, "trace_asset_ids", None) or []
+    if trace_asset_ids:
+        tracking_number = (
+            body.shipping_info.tracking_number
+            if body and body.shipping_info and hasattr(body.shipping_info, "tracking_number")
+            else None
+        )
+        await trace_client.notify_so_shipped_background(
+            tenant_id=user["tenant_id"],
+            so_id=order_id,
+            asset_ids=trace_asset_ids,
+            to_wallet_id=getattr(order, "customer_wallet_id", ""),
+            tracking_number=tracking_number,
+        )
+
     return result
 
 
@@ -382,6 +401,33 @@ async def retry_credit_note(
     """Retry credit note issuance for a returned order that failed."""
     svc = SalesOrderService(db)
     return await svc.retry_credit_note(order_id, user["tenant_id"])
+
+
+@router.post("/{order_id}/debit-note", response_model=SOOut)
+async def issue_debit_note(
+    order_id: str,
+    body: dict,
+    _module: ModuleUser,
+    user: Editor,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Issue a DIAN debit note for a price adjustment on an invoiced order."""
+    svc = SalesOrderService(db)
+    reason = body.get("reason", "Ajuste de precio")
+    amount = body.get("amount", 0)
+    return await svc.issue_debit_note(order_id, user["tenant_id"], reason, amount)
+
+
+@router.post("/{order_id}/retry-debit-note", response_model=SOOut)
+async def retry_debit_note(
+    order_id: str,
+    _module: ModuleUser,
+    user: Editor,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Retry a failed debit note issuance."""
+    svc = SalesOrderService(db)
+    return await svc.retry_debit_note(order_id, user["tenant_id"])
 
 
 @router.get("/{order_id}/stock-check", response_model=StockCheckResult)

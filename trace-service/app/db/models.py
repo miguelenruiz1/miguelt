@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Numeric,
     Text,
     UniqueConstraint,
     func,
@@ -183,10 +184,10 @@ class ShipmentDocument(Base):
     seal_number: Mapped[str | None] = mapped_column(Text, nullable=True)
     flight_number: Mapped[str | None] = mapped_column(Text, nullable=True)
     total_packages: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    total_weight_kg: Mapped[float | None] = mapped_column(Text, nullable=True)
-    total_volume_m3: Mapped[float | None] = mapped_column(Text, nullable=True)
+    total_weight_kg: Mapped[float | None] = mapped_column(Numeric(12, 4), nullable=True)
+    total_volume_m3: Mapped[float | None] = mapped_column(Numeric(12, 4), nullable=True)
     cargo_description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    declared_value: Mapped[float | None] = mapped_column(Text, nullable=True)
+    declared_value: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     declared_currency: Mapped[str | None] = mapped_column(Text, nullable=True)
     issued_date: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     shipped_date: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
@@ -203,6 +204,14 @@ class ShipmentDocument(Base):
     file_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     reference_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     reference_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Freight costs
+    freight_cost: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    insurance_cost: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    handling_cost: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    customs_cost: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    other_costs: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    total_logistics_cost: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    cost_currency: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow)
@@ -232,8 +241,8 @@ class TradeDocument(Base):
     file_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     file_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     hs_code: Mapped[str | None] = mapped_column(Text, nullable=True)
-    fob_value: Mapped[float | None] = mapped_column(Text, nullable=True)
-    cif_value: Mapped[float | None] = mapped_column(Text, nullable=True)
+    fob_value: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    cif_value: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     currency: Mapped[str | None] = mapped_column(Text, nullable=True)
     anchor_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     anchor_status: Mapped[str] = mapped_column(Text, nullable=False, default="none")
@@ -401,6 +410,11 @@ class Asset(Base):
     state: Mapped[str] = mapped_column(Text, nullable=False)
     last_event_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Workflow engine FK — links to tenant-scoped WorkflowState
+    workflow_state_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("workflow_states.id", ondelete="SET NULL"), nullable=True
+    )
+
     # Blockchain / cNFT fields
     blockchain_asset_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     blockchain_tree_address: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -426,10 +440,14 @@ class CustodyEvent(Base):
         UniqueConstraint("event_hash", name="uq_custody_events_hash"),
         Index("ix_custody_events_asset_timestamp", "asset_id", "timestamp"),
         Index("ix_custody_events_anchored", "anchored"),
+        Index("ix_custody_events_tenant", "tenant_id"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="RESTRICT"), nullable=False
     )
     asset_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("assets.id", ondelete="RESTRICT"), nullable=False
@@ -451,11 +469,178 @@ class CustodyEvent(Base):
     shipment_leg_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), nullable=True
     )
+    # Proof of Delivery evidence
+    evidence_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    evidence_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    evidence_type: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=_utcnow
     )
 
     asset: Mapped["Asset"] = relationship("Asset", back_populates="events", lazy="noload")
+    document_links: Mapped[list["EventDocumentLink"]] = relationship(
+        "EventDocumentLink", back_populates="event", lazy="noload"
+    )
+
+
+# ─── Media Module (centralized file library) ────────────────────────────────
+
+class MediaFile(Base):
+    """Centralized file storage — the media library."""
+    __tablename__ = "media_files"
+    __table_args__ = (
+        Index("ix_media_files_tenant", "tenant_id"),
+        Index("ix_media_files_category", "category"),
+        Index("ix_media_files_document_type", "document_type"),
+        Index("ix_media_files_hash", "file_hash"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="RESTRICT"), nullable=False
+    )
+    filename: Mapped[str] = mapped_column(Text, nullable=False)
+    original_filename: Mapped[str] = mapped_column(Text, nullable=False)
+    content_type: Mapped[str] = mapped_column(Text, nullable=False)
+    file_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    file_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    storage_backend: Mapped[str] = mapped_column(Text, nullable=False, default="local")
+    storage_key: Mapped[str] = mapped_column(Text, nullable=False)
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[str] = mapped_column(Text, nullable=False, default="general")
+    document_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    title: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tags: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, server_default="{}")
+    metadata_: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
+    uploaded_by: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow)
+
+    event_links: Mapped[list["EventDocumentLink"]] = relationship(
+        "EventDocumentLink", back_populates="media_file", lazy="noload"
+    )
+
+
+class EventDocumentLink(Base):
+    """N:M link between custody events and media files."""
+    __tablename__ = "event_document_links"
+    __table_args__ = (
+        UniqueConstraint("event_id", "media_file_id", name="uq_event_doc_links_event_media"),
+        Index("ix_event_doc_links_event", "event_id"),
+        Index("ix_event_doc_links_asset", "asset_id"),
+        Index("ix_event_doc_links_media", "media_file_id"),
+        Index("ix_event_doc_links_tenant", "tenant_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="RESTRICT"), nullable=False
+    )
+    event_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("custody_events.id", ondelete="CASCADE"), nullable=False
+    )
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("assets.id", ondelete="CASCADE"), nullable=False
+    )
+    media_file_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("media_files.id", ondelete="CASCADE"), nullable=False
+    )
+    document_type: Mapped[str] = mapped_column(Text, nullable=False)
+    is_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    compliance_source: Mapped[str | None] = mapped_column(Text, nullable=True)
+    linked_by: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow)
+
+    event: Mapped["CustodyEvent"] = relationship("CustodyEvent", back_populates="document_links", lazy="noload")
+    media_file: Mapped["MediaFile"] = relationship("MediaFile", back_populates="event_links", lazy="joined")
+
+
+# ─── Workflow Engine (per-tenant configurable state machine) ──────────────────
+
+class WorkflowState(Base):
+    """Tenant-scoped asset states. Replaces hardcoded AssetState enum."""
+    __tablename__ = "workflow_states"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "slug", name="uq_workflow_states_tenant_slug"),
+        Index("ix_workflow_states_tenant", "tenant_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    slug: Mapped[str] = mapped_column(Text, nullable=False)
+    label: Mapped[str] = mapped_column(Text, nullable=False)
+    color: Mapped[str] = mapped_column(Text, nullable=False, default="#6366f1")
+    icon: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_initial: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_terminal: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow)
+
+
+class WorkflowTransition(Base):
+    """Allowed state transitions per tenant. from_state_id=NULL means wildcard (any state)."""
+    __tablename__ = "workflow_transitions"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "from_state_id", "to_state_id", name="uq_workflow_transitions_pair"),
+        Index("ix_workflow_transitions_tenant", "tenant_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    from_state_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("workflow_states.id", ondelete="CASCADE"), nullable=True
+    )
+    to_state_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("workflow_states.id", ondelete="CASCADE"), nullable=False
+    )
+    event_type_slug: Mapped[str | None] = mapped_column(Text, nullable=True)
+    label: Mapped[str | None] = mapped_column(Text, nullable=True)
+    requires_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow)
+
+    from_state: Mapped["WorkflowState | None"] = relationship(
+        "WorkflowState", foreign_keys=[from_state_id], lazy="joined"
+    )
+    to_state: Mapped["WorkflowState"] = relationship(
+        "WorkflowState", foreign_keys=[to_state_id], lazy="joined"
+    )
+
+
+class WorkflowEventType(Base):
+    """Tenant-scoped event types. Replaces hardcoded EventType enum."""
+    __tablename__ = "workflow_event_types"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "slug", name="uq_workflow_event_types_tenant_slug"),
+        Index("ix_workflow_event_types_tenant", "tenant_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    slug: Mapped[str] = mapped_column(Text, nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    icon: Mapped[str] = mapped_column(Text, nullable=False, default="circle")
+    color: Mapped[str] = mapped_column(Text, nullable=False, default="#6366f1")
+    is_informational: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    requires_wallet: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    requires_notes: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    requires_reason: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    requires_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    data_schema: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    required_documents: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    compliance_required_documents: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow)
 
 
 # ─── Event Type Configuration (admin-managed) ─────────────────────────────────

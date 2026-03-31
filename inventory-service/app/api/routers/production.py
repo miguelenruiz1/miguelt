@@ -1,4 +1,4 @@
-"""Production run endpoints."""
+"""Production v2 endpoints — runs, emissions, receipts."""
 from __future__ import annotations
 
 from typing import Annotated
@@ -8,7 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import ProductionModuleUser, require_permission
 from app.db.session import get_db_session
-from app.domain.schemas import PaginatedProductionRuns, ProductionRunCreate, ProductionRunOut, ProductionRunReject
+from app.domain.schemas import (
+    PaginatedProductionRuns, ProductionRunCreate, ProductionRunOut, ProductionRunUpdate,
+    EmissionCreate, EmissionOut,
+    ReceiptCreate, ReceiptOut,
+    MRPRequest, MRPResult, CapacityResult,
+)
 from app.services.production_service import ProductionService
 from app.services.audit_service import InventoryAuditService
 
@@ -24,11 +29,14 @@ def _svc(db: AsyncSession = Depends(get_db_session)) -> ProductionService:
     return ProductionService(db)
 
 
+# ── Runs CRUD ────────────────────────────────────────────────────────────────
+
 @router.get("", response_model=PaginatedProductionRuns)
 async def list_runs(
     current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.view"))],
     status: str | None = None,
+    order_type: str | None = None,
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     svc: ProductionService = Depends(_svc),
@@ -48,10 +56,9 @@ async def create_run(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
     performed_by = current_user.get("id")
     run = await svc.create_run(tenant_id, body.model_dump(), performed_by)
-    await audit.log(
+    await InventoryAuditService(db).log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.production.create", resource_type="production_run",
         resource_id=run.id, new_data=body.model_dump(mode="json"), ip_address=_ip(request),
@@ -66,13 +73,13 @@ async def get_run(
     _: Annotated[dict, Depends(require_permission("inventory.view"))],
     svc: ProductionService = Depends(_svc),
 ):
-    tenant_id = current_user.get("tenant_id", "default")
-    return await svc.get_run(tenant_id, run_id)
+    return await svc.get_run(current_user.get("tenant_id", "default"), run_id)
 
 
-@router.post("/{run_id}/execute", response_model=ProductionRunOut)
-async def execute_run(
+@router.patch("/{run_id}", response_model=ProductionRunOut)
+async def update_run(
     run_id: str,
+    body: ProductionRunUpdate,
     current_user: ProductionModuleUser,
     _: Annotated[dict, Depends(require_permission("inventory.manage"))],
     request: Request,
@@ -80,78 +87,11 @@ async def execute_run(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
-    performed_by = current_user.get("id")
-    run = await svc.execute_run(tenant_id, run_id, performed_by)
-    await audit.log(
+    run = await svc.update_run(tenant_id, run_id, body.model_dump(exclude_none=True))
+    await InventoryAuditService(db).log(
         tenant_id=tenant_id, user=current_user,
-        action="inventory.production.execute", resource_type="production_run",
-        resource_id=run_id, new_data={"status": "in_progress"}, ip_address=_ip(request),
-    )
-    return run
-
-
-@router.post("/{run_id}/finish", response_model=ProductionRunOut)
-async def finish_run(
-    run_id: str,
-    current_user: ProductionModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
-    request: Request,
-    svc: ProductionService = Depends(_svc),
-    db: AsyncSession = Depends(get_db_session),
-):
-    tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
-    run = await svc.finish_run(tenant_id, run_id)
-    await audit.log(
-        tenant_id=tenant_id, user=current_user,
-        action="inventory.production.finish", resource_type="production_run",
-        resource_id=run_id, new_data={"status": "awaiting_approval"}, ip_address=_ip(request),
-    )
-    return run
-
-
-@router.post("/{run_id}/approve", response_model=ProductionRunOut)
-async def approve_run(
-    run_id: str,
-    current_user: ProductionModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
-    request: Request,
-    svc: ProductionService = Depends(_svc),
-    db: AsyncSession = Depends(get_db_session),
-):
-    tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
-    approved_by = current_user.get("id")
-    run = await svc.approve_run(tenant_id, run_id, approved_by)
-    await audit.log(
-        tenant_id=tenant_id, user=current_user,
-        action="inventory.production.approve", resource_type="production_run",
-        resource_id=run_id, new_data={"status": "completed", "approved_by": approved_by},
-        ip_address=_ip(request),
-    )
-    return run
-
-
-@router.post("/{run_id}/reject", response_model=ProductionRunOut)
-async def reject_run(
-    run_id: str,
-    body: ProductionRunReject,
-    current_user: ProductionModuleUser,
-    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
-    request: Request,
-    svc: ProductionService = Depends(_svc),
-    db: AsyncSession = Depends(get_db_session),
-):
-    tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
-    rejected_by = current_user.get("id")
-    run = await svc.reject_run(tenant_id, run_id, body.rejection_notes, rejected_by)
-    await audit.log(
-        tenant_id=tenant_id, user=current_user,
-        action="inventory.production.reject", resource_type="production_run",
-        resource_id=run_id, new_data={"status": "rejected", "rejection_notes": body.rejection_notes},
-        ip_address=_ip(request),
+        action="inventory.production.update", resource_type="production_run",
+        resource_id=run_id, new_data=body.model_dump(mode="json", exclude_none=True), ip_address=_ip(request),
     )
     return run
 
@@ -166,11 +106,159 @@ async def delete_run(
     db: AsyncSession = Depends(get_db_session),
 ) -> Response:
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
     await svc.delete_run(tenant_id, run_id)
-    await audit.log(
+    await InventoryAuditService(db).log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.production.delete", resource_type="production_run",
         resource_id=run_id, ip_address=_ip(request),
     )
     return Response(status_code=204)
+
+
+# ── Status Transitions ───────────────────────────────────────────────────────
+
+@router.post("/{run_id}/release", response_model=ProductionRunOut)
+async def release_run(
+    run_id: str,
+    current_user: ProductionModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    svc: ProductionService = Depends(_svc),
+    db: AsyncSession = Depends(get_db_session),
+):
+    tenant_id = current_user.get("tenant_id", "default")
+    run = await svc.release_run(tenant_id, run_id, current_user.get("id"))
+    await InventoryAuditService(db).log(
+        tenant_id=tenant_id, user=current_user,
+        action="inventory.production.release", resource_type="production_run",
+        resource_id=run_id, new_data={"status": "released"}, ip_address=_ip(request),
+    )
+    return run
+
+
+@router.post("/{run_id}/cancel", response_model=ProductionRunOut)
+async def cancel_run(
+    run_id: str,
+    current_user: ProductionModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    svc: ProductionService = Depends(_svc),
+    db: AsyncSession = Depends(get_db_session),
+):
+    tenant_id = current_user.get("tenant_id", "default")
+    run = await svc.cancel_run(tenant_id, run_id)
+    await InventoryAuditService(db).log(
+        tenant_id=tenant_id, user=current_user,
+        action="inventory.production.cancel", resource_type="production_run",
+        resource_id=run_id, new_data={"status": "canceled"}, ip_address=_ip(request),
+    )
+    return run
+
+
+@router.post("/{run_id}/close", response_model=ProductionRunOut)
+async def close_run(
+    run_id: str,
+    current_user: ProductionModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    svc: ProductionService = Depends(_svc),
+    db: AsyncSession = Depends(get_db_session),
+):
+    tenant_id = current_user.get("tenant_id", "default")
+    run = await svc.close_run(tenant_id, run_id)
+    await InventoryAuditService(db).log(
+        tenant_id=tenant_id, user=current_user,
+        action="inventory.production.close", resource_type="production_run",
+        resource_id=run_id, new_data={"status": "closed"}, ip_address=_ip(request),
+    )
+    return run
+
+
+# ── Emissions (Material Issue) ───────────────────────────────────────────────
+
+@router.post("/{run_id}/emissions", response_model=EmissionOut, status_code=201)
+async def create_emission(
+    run_id: str,
+    body: EmissionCreate,
+    current_user: ProductionModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    svc: ProductionService = Depends(_svc),
+    db: AsyncSession = Depends(get_db_session),
+):
+    tenant_id = current_user.get("tenant_id", "default")
+    performed_by = current_user.get("id")
+    emission = await svc.create_emission(tenant_id, run_id, body.model_dump(), performed_by)
+    await InventoryAuditService(db).log(
+        tenant_id=tenant_id, user=current_user,
+        action="inventory.production.emission", resource_type="production_emission",
+        resource_id=emission.id, new_data={"run_id": run_id}, ip_address=_ip(request),
+    )
+    return emission
+
+
+@router.get("/{run_id}/emissions", response_model=list[EmissionOut])
+async def list_emissions(
+    run_id: str,
+    current_user: ProductionModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.view"))],
+    svc: ProductionService = Depends(_svc),
+):
+    return await svc.list_emissions(current_user.get("tenant_id", "default"), run_id)
+
+
+# ── Receipts (Finished Goods) ────────────────────────────────────────────────
+
+@router.post("/{run_id}/receipts", response_model=ReceiptOut, status_code=201)
+async def create_receipt(
+    run_id: str,
+    body: ReceiptCreate,
+    current_user: ProductionModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.manage"))],
+    request: Request,
+    svc: ProductionService = Depends(_svc),
+    db: AsyncSession = Depends(get_db_session),
+):
+    tenant_id = current_user.get("tenant_id", "default")
+    performed_by = current_user.get("id")
+    receipt = await svc.create_receipt(tenant_id, run_id, body.model_dump(), performed_by)
+    await InventoryAuditService(db).log(
+        tenant_id=tenant_id, user=current_user,
+        action="inventory.production.receipt", resource_type="production_receipt",
+        resource_id=receipt.id, new_data={"run_id": run_id}, ip_address=_ip(request),
+    )
+    return receipt
+
+
+@router.get("/{run_id}/receipts", response_model=list[ReceiptOut])
+async def list_receipts(
+    run_id: str,
+    current_user: ProductionModuleUser,
+    _: Annotated[dict, Depends(require_permission("inventory.view"))],
+    svc: ProductionService = Depends(_svc),
+):
+    return await svc.list_receipts(current_user.get("tenant_id", "default"), run_id)
+
+
+# ── MRP ──────────────────────────────────────────────────────────────────────
+
+@router.post("/mrp/explode", response_model=MRPResult)
+async def mrp_explode(
+    body: MRPRequest,
+    current_user: ProductionModuleUser,
+    _: Annotated[dict, Depends(require_permission("production.manage"))],
+    svc: ProductionService = Depends(_svc),
+):
+    return await svc.mrp_explode(current_user.get("tenant_id", "default"), body.model_dump())
+
+
+# ── Capacity Check ───────────────────────────────────────────────────────────
+
+@router.post("/{run_id}/check-capacity", response_model=CapacityResult)
+async def check_capacity(
+    run_id: str,
+    current_user: ProductionModuleUser,
+    _: Annotated[dict, Depends(require_permission("production.view"))],
+    svc: ProductionService = Depends(_svc),
+):
+    return await svc.check_capacity(current_user.get("tenant_id", "default"), run_id)

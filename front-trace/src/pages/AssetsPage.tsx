@@ -1,29 +1,18 @@
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { Plus, Search, RefreshCw, Package, Sparkles } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { Plus, Search, RefreshCw, Package, Sparkles, ExternalLink, ChevronRight } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/button'
 import { Spinner, EmptyState } from '@/components/ui/Misc'
-import { AssetCard } from '@/components/assets/AssetCard'
+import { StateBadge, BlockchainStatusBadge } from '@/components/domain-badges'
 import { CreateAssetModal } from '@/components/assets/CreateAssetModal'
 import { MintNFTModal } from '@/components/assets/MintNFTModal'
 import { useAssetList } from '@/hooks/useAssets'
-import type { AssetState } from '@/types/api'
-
-const STATE_OPTIONS: { value: AssetState | ''; label: string }[] = [
-  { value: '',              label: 'Todos los estados' },
-  { value: 'in_custody',    label: 'En Custodia' },
-  { value: 'in_transit',    label: 'En Tránsito' },
-  { value: 'loaded',        label: 'Cargado' },
-  { value: 'sealed',        label: 'Sellado' },
-  { value: 'customs_hold',  label: 'Aduana' },
-  { value: 'qc_passed',     label: 'QC Aprobado' },
-  { value: 'qc_failed',     label: 'QC Rechazado' },
-  { value: 'damaged',       label: 'Dañado' },
-  { value: 'delivered',     label: 'Entregado' },
-  { value: 'released',      label: 'Liberado' },
-  { value: 'burned',        label: 'Completado' },
-]
+import { useOrganizations } from '@/hooks/useTaxonomy'
+import { useWalletList } from '@/hooks/useWallets'
+import { useWorkflowStates } from '@/hooks/useWorkflow'
+import { shortPubkey, fmtDateShort } from '@/lib/utils'
+import type { Asset, AssetState } from '@/types/api'
 
 const fieldCls = 'rounded-xl border border-white/60 bg-white/50 backdrop-blur-md px-4 py-2.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 hover:bg-white/70 hover:border-primary/50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-ring/20 focus:outline-none transition-all shadow-sm'
 
@@ -41,10 +30,49 @@ export function AssetsPage() {
     limit: 100,
   })
 
+  // Load workflow states for dynamic filter dropdown
+  const { data: workflowStates } = useWorkflowStates()
+
+  // Load wallets + orgs to resolve custodian names
+  const { data: walletsData } = useWalletList({ limit: 200 })
+  const { data: orgsData } = useOrganizations()
+  const wallets = walletsData?.items ?? []
+  const orgs = orgsData?.items ?? []
+
+  const walletMap = new Map(wallets.map(w => [w.wallet_pubkey, w]))
+  const orgMap = new Map(orgs.map(o => [o.id, o]))
+
+  const getCustodianLabel = (pubkey: string) => {
+    const w = walletMap.get(pubkey)
+    if (!w) return shortPubkey(pubkey)
+    if (w.name) return w.name
+    if (w.organization_id) {
+      const org = orgMap.get(w.organization_id)
+      if (org) return org.name
+    }
+    return shortPubkey(pubkey)
+  }
+
+  const getCargoName = (asset: Asset) => {
+    const meta = asset.metadata as Record<string, unknown> | undefined
+    if (meta?.name && typeof meta.name === 'string') return meta.name
+    return null
+  }
+
+  const getWeight = (asset: Asset) => {
+    const meta = asset.metadata as Record<string, unknown> | undefined
+    if (meta?.weight && meta?.weightUnit) return `${meta.weight} ${meta.weightUnit}`
+    if (meta?.weight) return `${meta.weight} kg`
+    if (meta?.peso_total_kg) return `${meta.peso_total_kg} kg`
+    return null
+  }
+
   const assets = (data?.items ?? []).filter((a) =>
     !search ||
     a.asset_mint.toLowerCase().includes(search.toLowerCase()) ||
-    a.current_custodian_wallet.toLowerCase().includes(search.toLowerCase())
+    a.current_custodian_wallet.toLowerCase().includes(search.toLowerCase()) ||
+    a.product_type.toLowerCase().includes(search.toLowerCase()) ||
+    (getCargoName(a) || '').toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -71,7 +99,7 @@ export function AssetsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Buscar carga o custodio…"
+              placeholder="Buscar por nombre, producto o custodio…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={`${fieldCls} pl-9 w-full`}
@@ -82,23 +110,24 @@ export function AssetsPage() {
             placeholder="Tipo de producto…"
             value={productType}
             onChange={(e) => setProductType(e.target.value)}
-            className={`${fieldCls} w-36`}
+            className={`${fieldCls} w-40`}
           />
           <select
             value={state}
             onChange={(e) => setState(e.target.value as AssetState | '')}
             className={fieldCls}
           >
-            {STATE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+            <option value="">Todos los estados</option>
+            {(workflowStates ?? []).map((s) => (
+              <option key={s.slug} value={s.slug}>{s.label}</option>
             ))}
           </select>
-          <Button variant="ghost" size="icon" onClick={() => refetch()} title="Refresh">
+          <Button variant="ghost" size="icon" onClick={() => refetch()} title="Actualizar">
             <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
           </Button>
         </div>
 
-        {/* Grid */}
+        {/* Table */}
         {isLoading ? (
           <div className="flex justify-center py-20"><Spinner /></div>
         ) : assets.length === 0 ? (
@@ -113,8 +142,68 @@ export function AssetsPage() {
             }
           />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {assets.map((asset) => <AssetCard key={asset.id} asset={asset} />)}
+          <div className="bg-white rounded-xl border overflow-hidden shadow-sm">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Carga</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cantidad</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Custodio</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Blockchain</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {assets.map((asset) => {
+                  const cargoName = getCargoName(asset)
+                  const weight = getWeight(asset)
+
+                  return (
+                    <tr key={asset.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <Link to={`/assets/${asset.id}`} className="flex items-center gap-3 group">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+                            <Package className="h-4 w-4 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate max-w-48 group-hover:text-primary transition-colors">
+                              {cargoName || shortPubkey(asset.asset_mint)}
+                            </p>
+                            <p className="text-xs text-gray-400 font-mono">{shortPubkey(asset.asset_mint)}</p>
+                          </div>
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-gray-700 font-medium">{asset.product_type}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-gray-600">{weight || '—'}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-gray-700">{getCustodianLabel(asset.current_custodian_wallet)}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <StateBadge state={asset.state} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <BlockchainStatusBadge status={asset.blockchain_status} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs text-gray-500">{fmtDateShort(asset.updated_at)}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Link to={`/assets/${asset.id}`} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                          <ChevronRight className="h-4 w-4 text-gray-400" />
+                        </Link>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

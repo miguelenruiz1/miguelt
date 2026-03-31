@@ -136,6 +136,13 @@ class Invoice(Base):
     gateway_tx_id:   Mapped[str | None] = mapped_column(String(255), nullable=True)
     gateway_slug:    Mapped[str | None] = mapped_column(String(50), nullable=True)
     notes:           Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Electronic invoicing (DIAN)
+    cufe:                Mapped[str | None] = mapped_column(String(255), nullable=True)
+    einvoice_number:     Mapped[str | None] = mapped_column(String(50), nullable=True)
+    einvoice_pdf_url:    Mapped[str | None] = mapped_column(String(500), nullable=True)
+    einvoice_status:     Mapped[str | None] = mapped_column(String(50), nullable=True)
+    einvoice_remote_id:  Mapped[str | None] = mapped_column(String(255), nullable=True)
+    einvoice_provider:   Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at:      Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at:      Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

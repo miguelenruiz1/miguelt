@@ -5,6 +5,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import ORJSONResponse
+from starlette.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_tenant_id
@@ -113,7 +114,7 @@ async def update_event_type(
     "/{config_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete custom event type (system types cannot be deleted)",
-    response_class=ORJSONResponse,
+    response_class=Response,
 )
 async def delete_event_type(
     config_id: uuid.UUID,
@@ -130,3 +131,4 @@ async def delete_event_type(
     await repo.delete(row)
     await db.commit()
     log.info("event_type_deleted", slug=row.slug, config_id=str(config_id))
+    return Response(status_code=204)

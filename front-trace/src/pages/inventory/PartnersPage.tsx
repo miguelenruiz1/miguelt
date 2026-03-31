@@ -55,11 +55,16 @@ export function PartnersPage() {
   const { data: supplierTypes } = useSupplierTypes()
   const { data: customerTypes } = useCustomerTypes()
 
+  const emptyAddress = { line1: '', line2: '', city: '', state: '', zip: '', country: '' }
+
   const [form, setForm] = useState({
     name: '', code: '', is_supplier: false, is_customer: false,
     supplier_type_id: '', customer_type_id: '', tax_id: '', contact_name: '',
     email: '', phone: '', payment_terms_days: '30', lead_time_days: '7',
     credit_limit: '0', discount_percent: '0', notes: '',
+    address: { ...emptyAddress },
+    shipping_address: { ...emptyAddress },
+    differentShippingAddress: false,
   })
 
   const resetForm = () => setForm({
@@ -67,9 +72,15 @@ export function PartnersPage() {
     supplier_type_id: '', customer_type_id: '', tax_id: '', contact_name: '',
     email: '', phone: '', payment_terms_days: '30', lead_time_days: '7',
     credit_limit: '0', discount_percent: '0', notes: '',
+    address: { ...emptyAddress },
+    shipping_address: { ...emptyAddress },
+    differentShippingAddress: false,
   })
 
   const openEdit = (p: BusinessPartner) => {
+    const addr = (p as any).address ?? emptyAddress
+    const shipAddr = (p as any).shipping_address ?? emptyAddress
+    const hasDifferentShipping = Object.values(shipAddr).some((v: any) => v && String(v).trim() !== '')
     setForm({
       name: p.name, code: p.code, is_supplier: p.is_supplier, is_customer: p.is_customer,
       supplier_type_id: p.supplier_type_id || '', customer_type_id: p.customer_type_id || '',
@@ -78,9 +89,15 @@ export function PartnersPage() {
       payment_terms_days: String(p.payment_terms_days), lead_time_days: String(p.lead_time_days),
       credit_limit: String(p.credit_limit), discount_percent: String(p.discount_percent),
       notes: p.notes || '',
+      address: { line1: addr.line1 || '', line2: addr.line2 || '', city: addr.city || '', state: addr.state || '', zip: addr.zip || '', country: addr.country || '' },
+      shipping_address: { line1: shipAddr.line1 || '', line2: shipAddr.line2 || '', city: shipAddr.city || '', state: shipAddr.state || '', zip: shipAddr.zip || '', country: shipAddr.country || '' },
+      differentShippingAddress: hasDifferentShipping,
     })
     setEditPartner(p)
   }
+
+  const inputCls = "w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none"
+  const hasAddress = (a: typeof emptyAddress) => Object.values(a).some(v => v.trim() !== '')
 
   async function doSubmit() {
     const payload: Record<string, unknown> = {
@@ -96,6 +113,8 @@ export function PartnersPage() {
       credit_limit: Number(form.credit_limit),
       discount_percent: Number(form.discount_percent),
       notes: form.notes || null,
+      address: hasAddress(form.address) ? form.address : null,
+      shipping_address: form.differentShippingAddress && hasAddress(form.shipping_address) ? form.shipping_address : null,
     }
     if (editPartner) {
       await updateMut.mutateAsync({ id: editPartner.id, data: payload })
@@ -162,7 +181,7 @@ export function PartnersPage() {
             </tr></thead>
             <tbody>
               {filtered.map(p => (
-                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50 cursor-pointer transition-colors" onClick={() => navigate(`/inventario/clientes/${p.id}`)}>
+                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50 cursor-pointer transition-colors" onClick={() => navigate(`/inventario/socios/${p.id}`)}>
                   <td className="p-3 font-medium">{p.name}</td>
                   <td className="p-3 font-mono text-xs text-gray-500">{p.code}</td>
                   <td className="p-3">{roleBadge(p)}</td>
@@ -202,40 +221,69 @@ export function PartnersPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2"><label className="text-xs text-gray-500">Nombre *</label><input required value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
-              <div><label className="text-xs text-gray-500">Codigo *</label><input required value={form.code} onChange={e => setForm(f => ({...f, code: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
-              <div><label className="text-xs text-gray-500">NIT / RUT</label><input value={form.tax_id} onChange={e => setForm(f => ({...f, tax_id: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
-              <div><label className="text-xs text-gray-500">Contacto</label><input value={form.contact_name} onChange={e => setForm(f => ({...f, contact_name: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
-              <div><label className="text-xs text-gray-500">Email</label><input type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
-              <div><label className="text-xs text-gray-500">Telefono</label><input value={form.phone} onChange={e => setForm(f => ({...f, phone: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
-              <div><label className="text-xs text-gray-500">Plazo pago (dias)</label><input type="number" value={form.payment_terms_days} onChange={e => setForm(f => ({...f, payment_terms_days: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
+              {/* ── Identificacion ── */}
+              <div className="col-span-2"><label className="text-xs text-gray-500">Nombre *</label><input required value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} className={inputCls} /></div>
+              <div><label className="text-xs text-gray-500">Codigo *</label><input required value={form.code} onChange={e => setForm(f => ({...f, code: e.target.value}))} className={inputCls} /></div>
+              <div><label className="text-xs text-gray-500">NIT / RUT</label><input value={form.tax_id} onChange={e => setForm(f => ({...f, tax_id: e.target.value}))} className={inputCls} /></div>
 
-              {form.is_supplier && (
-                <>
-                  <div><label className="text-xs text-gray-500">Tipo proveedor</label>
-                    <select value={form.supplier_type_id} onChange={e => setForm(f => ({...f, supplier_type_id: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none">
-                      <option value="">Sin tipo</option>
-                      {(supplierTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                  </div>
-                  <div><label className="text-xs text-gray-500">Lead time (dias)</label><input type="number" value={form.lead_time_days} onChange={e => setForm(f => ({...f, lead_time_days: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
-                </>
-              )}
+              {/* ── Contacto ── */}
+              <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Contacto</p></div>
+              <div><label className="text-xs text-gray-500">Nombre contacto</label><input value={form.contact_name} onChange={e => setForm(f => ({...f, contact_name: e.target.value}))} className={inputCls} /></div>
+              <div><label className="text-xs text-gray-500">Email</label><input type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} className={inputCls} /></div>
+              <div><label className="text-xs text-gray-500">Telefono</label><input value={form.phone} onChange={e => setForm(f => ({...f, phone: e.target.value}))} className={inputCls} /></div>
+              <div><label className="text-xs text-gray-500">Plazo pago (dias)</label><input type="number" value={form.payment_terms_days} onChange={e => setForm(f => ({...f, payment_terms_days: e.target.value}))} className={inputCls} /></div>
 
+              {/* ── Direccion ── */}
+              <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Direccion</p></div>
+              <div className="col-span-2"><input value={form.address.line1} onChange={e => setForm(f => ({...f, address: {...f.address, line1: e.target.value}}))} placeholder="Calle, carrera, numero" className={inputCls} /></div>
+              <div><input value={form.address.city} onChange={e => setForm(f => ({...f, address: {...f.address, city: e.target.value}}))} placeholder="Ciudad" className={inputCls} /></div>
+              <div><input value={form.address.state} onChange={e => setForm(f => ({...f, address: {...f.address, state: e.target.value}}))} placeholder="Departamento / Estado" className={inputCls} /></div>
+              <div><input value={form.address.country} onChange={e => setForm(f => ({...f, address: {...f.address, country: e.target.value}}))} placeholder="Pais (CO, DE...)" className={inputCls} /></div>
+              <div><input value={form.address.zip} onChange={e => setForm(f => ({...f, address: {...f.address, zip: e.target.value}}))} placeholder="Codigo postal" className={inputCls} /></div>
+
+              {/* Shipping address toggle (customer only) */}
               {form.is_customer && (
-                <>
-                  <div><label className="text-xs text-gray-500">Tipo cliente</label>
-                    <select value={form.customer_type_id} onChange={e => setForm(f => ({...f, customer_type_id: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none">
-                      <option value="">Sin tipo</option>
-                      {(customerTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                  </div>
-                  <div><label className="text-xs text-gray-500">Limite credito</label><input type="number" value={form.credit_limit} onChange={e => setForm(f => ({...f, credit_limit: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
-                  <div><label className="text-xs text-gray-500">Descuento %</label><input type="number" min="0" max="100" value={form.discount_percent} onChange={e => setForm(f => ({...f, discount_percent: e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
-                </>
+                <div className="col-span-2 pt-1">
+                  <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+                    <input type="checkbox" checked={form.differentShippingAddress} onChange={e => setForm(f => ({...f, differentShippingAddress: e.target.checked}))} className="rounded" />
+                    Direccion de envio diferente
+                  </label>
+                </div>
               )}
+              {form.is_customer && form.differentShippingAddress && (<>
+                <div className="col-span-2"><input value={form.shipping_address.line1} onChange={e => setForm(f => ({...f, shipping_address: {...f.shipping_address, line1: e.target.value}}))} placeholder="Calle, carrera, numero (envio)" className={inputCls} /></div>
+                <div><input value={form.shipping_address.city} onChange={e => setForm(f => ({...f, shipping_address: {...f.shipping_address, city: e.target.value}}))} placeholder="Ciudad" className={inputCls} /></div>
+                <div><input value={form.shipping_address.state} onChange={e => setForm(f => ({...f, shipping_address: {...f.shipping_address, state: e.target.value}}))} placeholder="Depto / Estado" className={inputCls} /></div>
+                <div><input value={form.shipping_address.country} onChange={e => setForm(f => ({...f, shipping_address: {...f.shipping_address, country: e.target.value}}))} placeholder="Pais" className={inputCls} /></div>
+                <div><input value={form.shipping_address.zip} onChange={e => setForm(f => ({...f, shipping_address: {...f.shipping_address, zip: e.target.value}}))} placeholder="Codigo postal" className={inputCls} /></div>
+              </>)}
 
-              <div className="col-span-2"><label className="text-xs text-gray-500">Notas</label><textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none" /></div>
+              {/* ── Proveedor ── */}
+              {form.is_supplier && (<>
+                <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Proveedor</p></div>
+                <div><label className="text-xs text-gray-500">Tipo</label>
+                  <select value={form.supplier_type_id} onChange={e => setForm(f => ({...f, supplier_type_id: e.target.value}))} className={inputCls}>
+                    <option value="">Sin tipo</option>
+                    {(supplierTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                </div>
+                <div><label className="text-xs text-gray-500">Lead time (dias)</label><input type="number" value={form.lead_time_days} onChange={e => setForm(f => ({...f, lead_time_days: e.target.value}))} className={inputCls} /></div>
+              </>)}
+
+              {/* ── Cliente ── */}
+              {form.is_customer && (<>
+                <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-green-400 uppercase tracking-wider">Cliente</p></div>
+                <div><label className="text-xs text-gray-500">Tipo</label>
+                  <select value={form.customer_type_id} onChange={e => setForm(f => ({...f, customer_type_id: e.target.value}))} className={inputCls}>
+                    <option value="">Sin tipo</option>
+                    {(customerTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                </div>
+                <div><label className="text-xs text-gray-500">Limite credito</label><input type="number" value={form.credit_limit} onChange={e => setForm(f => ({...f, credit_limit: e.target.value}))} className={inputCls} /></div>
+                <div><label className="text-xs text-gray-500">Descuento %</label><input type="number" min="0" max="100" value={form.discount_percent} onChange={e => setForm(f => ({...f, discount_percent: e.target.value}))} className={inputCls} /></div>
+              </>)}
+
+              <div className="col-span-2"><label className="text-xs text-gray-500">Notas</label><textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className={inputCls} /></div>
             </div>
 
             <div className="flex gap-3 mt-4">

@@ -50,7 +50,13 @@ from app.domain.schemas.tracking import (
 from app.domain.schemas.production import (
     RecipeComponentCreate, RecipeCreate, RecipeUpdate,
     RecipeComponentOut, RecipeOut,
-    ProductionRunCreate, ProductionRunOut, ProductionRunReject, PaginatedProductionRuns,
+    ProductionRunCreate, ProductionRunUpdate, ProductionRunOut, ProductionRunReject, PaginatedProductionRuns,
+    EmissionLineCreate, EmissionCreate, EmissionLineOut, EmissionOut,
+    ReceiptLineCreate, ReceiptCreate, ReceiptLineOut, ReceiptOut,
+    ProductionResourceCreate, ProductionResourceUpdate, ProductionResourceOut,
+    RecipeResourceCreate, RecipeResourceOut, RunResourceCostOut,
+    MRPRequest, MRPLine, MRPResult,
+    CapacityLine, CapacityResult,
     StockLayerOut,
 )
 from app.domain.schemas.cycle_count import (
@@ -130,7 +136,9 @@ __all__ = [
     # Production
     "RecipeComponentCreate", "RecipeCreate", "RecipeUpdate",
     "RecipeComponentOut", "RecipeOut",
-    "ProductionRunCreate", "ProductionRunOut", "ProductionRunReject", "PaginatedProductionRuns",
+    "ProductionRunCreate", "ProductionRunUpdate", "ProductionRunOut", "ProductionRunReject", "PaginatedProductionRuns",
+    "EmissionLineCreate", "EmissionCreate", "EmissionLineOut", "EmissionOut",
+    "ReceiptLineCreate", "ReceiptCreate", "ReceiptLineOut", "ReceiptOut",
     "StockLayerOut",
     # Cycle Count
     "CycleCountCreate", "RecordCountIn", "RecountIn",

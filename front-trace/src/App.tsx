@@ -12,7 +12,6 @@ import { OrganizationDetailPage } from '@/pages/OrganizationDetailPage'
 import { TrackingBoardPage } from '@/pages/TrackingBoardPage'
 import { WalletDetailPage } from '@/pages/WalletDetailPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { HelpPage } from '@/pages/HelpPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { ProfilePage } from '@/pages/ProfilePage'
@@ -29,7 +28,6 @@ import { CheckoutResultPage } from '@/pages/CheckoutResultPage'
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage'
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
-import { EmailTemplatesPage } from '@/pages/EmailTemplatesPage'
 import { EmailProvidersPage } from '@/pages/EmailProvidersPage'
 import { InventoryDashboardPage } from '@/pages/inventory/InventoryDashboardPage'
 import { ProductsPage } from '@/pages/inventory/ProductsPage'
@@ -53,6 +51,12 @@ import { SerialsPage } from '@/pages/inventory/SerialsPage'
 import { BatchesPage } from '@/pages/inventory/BatchesPage'
 import { RecipesPage } from '@/pages/inventory/RecipesPage'
 import { ProductionPage } from '@/pages/inventory/ProductionPage'
+import ProductionDashboardPage from '@/pages/production/ProductionDashboardPage'
+import EmissionsPage from '@/pages/production/EmissionsPage'
+import ReceiptsPage from '@/pages/production/ReceiptsPage'
+import ProductionReportsPage from '@/pages/production/ProductionReportsPage'
+import ResourcesPage from '@/pages/production/ResourcesPage'
+import MRPPage from '@/pages/production/MRPPage'
 import { PurchaseOrderDetailPage } from '@/pages/inventory/PurchaseOrderDetailPage'
 import { CycleCountsPage } from '@/pages/inventory/CycleCountsPage'
 import { CycleCountDetailPage } from '@/pages/inventory/CycleCountDetailPage'
@@ -66,9 +70,7 @@ import { KardexPage } from '@/pages/inventory/KardexPage'
 import { VariantsPage } from '@/pages/inventory/VariantsPage'
 import { ScannerPage } from '@/pages/inventory/ScannerPage'
 import { PickingPage } from '@/pages/inventory/PickingPage'
-import ShipmentsPage from '@/pages/inventory/ShipmentsPage'
-import TradeDocumentsPage from '@/pages/inventory/TradeDocumentsPage'
-import AnchorRulesPage from '@/pages/inventory/AnchorRulesPage'
+import TransportAnalyticsPage from '@/pages/logistics/TransportAnalyticsPage'
 import PublicVerifyPage from '@/pages/PublicVerifyPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { CustomerDetailPage } from '@/pages/inventory/CustomerDetailPage'
@@ -83,7 +85,11 @@ import { CustomerPricesPage } from '@/pages/inventory/CustomerPricesPage'
 import { PnLPage } from '@/pages/inventory/PnLPage'
 import { UoMPage } from '@/pages/inventory/UoMPage'
 import { PartnersPage } from '@/pages/inventory/PartnersPage'
+import { PartnerDetailPage } from '@/pages/inventory/PartnerDetailPage'
 import { OnboardingPage } from '@/pages/OnboardingPage'
+import { WorkflowBuilderPage } from '@/pages/WorkflowBuilderPage'
+const MediaPage = React.lazy(() => import('@/pages/MediaPage'))
+const WebhooksPage = React.lazy(() => import('@/pages/WebhooksPage'))
 import { ModuleGuard } from '@/components/inventory/ModuleGuard'
 import { ComplianceGuard } from '@/components/compliance/ComplianceGuard'
 
@@ -91,6 +97,7 @@ import { ComplianceGuard } from '@/components/compliance/ComplianceGuard'
 const FrameworksPage = React.lazy(() => import('@/pages/compliance/FrameworksPage'))
 const ActivationsPage = React.lazy(() => import('@/pages/compliance/ActivationsPage'))
 const PlotsPage = React.lazy(() => import('@/pages/compliance/PlotsPage'))
+const PlotDetailPage = React.lazy(() => import('@/pages/compliance/PlotDetailPage').then(m => ({ default: m.PlotDetailPage })))
 const RecordsPage = React.lazy(() => import('@/pages/compliance/RecordsPage'))
 const RecordDetailPage = React.lazy(() => import('@/pages/compliance/RecordDetailPage'))
 const CertificatesPage = React.lazy(() => import('@/pages/compliance/CertificatesPage'))
@@ -100,7 +107,6 @@ import { PlatformDashboardPage } from '@/pages/platform/PlatformDashboardPage'
 import { PlatformTenantsPage } from '@/pages/platform/PlatformTenantsPage'
 import { PlatformTenantDetailPage } from '@/pages/platform/PlatformTenantDetailPage'
 import { PlatformAnalyticsPage } from '@/pages/platform/PlatformAnalyticsPage'
-import { PlatformMarketplacePage } from '@/pages/platform/PlatformMarketplacePage'
 import { PlatformSalesPage } from '@/pages/platform/PlatformSalesPage'
 import { PlatformTeamPage } from '@/pages/platform/PlatformTeamPage'
 import { PlatformOnboardPage } from '@/pages/platform/PlatformOnboardPage'
@@ -136,6 +142,7 @@ const router = createBrowserRouter([
       { path: 'organizations',        element: <TaxonomyPage /> },
       { path: 'organizations/:id',    element: <OrganizationDetailPage /> },
       { path: 'tracking',             element: <TrackingBoardPage /> },
+      { path: 'media',                 element: <React.Suspense fallback={null}><MediaPage /></React.Suspense> },
       {
         path: 'system',
         element: (
@@ -144,9 +151,7 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      { path: 'settings',             element: <Navigate to="/platform/blockchain" replace /> },
-      { path: 'help',                 element: <HelpPage /> },
-      { path: 'help/:section',        element: <HelpPage /> },
+      { path: 'settings',             element: <Navigate to="/dashboard" replace /> },
       { path: 'profile',              element: <ProfilePage /> },
 
       // ── Mi Equipo (tenant team admin) ──────────────────────────────────────
@@ -185,14 +190,6 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'empresa/plantillas',
-        element: (
-          <ProtectedRoute permission="email.view">
-            <EmailTemplatesPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
         path: 'empresa/correo',
         element: (
           <ProtectedRoute permission="email.manage">
@@ -211,6 +208,15 @@ const router = createBrowserRouter([
         ),
       },
 
+      {
+        path: 'empresa/webhooks',
+        element: (
+          <ProtectedRoute permission="subscription.view">
+            <WebhooksPage />
+          </ProtectedRoute>
+        ),
+      },
+
       // ── Backward-compat redirects ──────────────────────────────────────────
       { path: 'admin/users',            element: <Navigate to="/equipo/usuarios" replace /> },
       { path: 'admin/roles',            element: <Navigate to="/equipo/roles" replace /> },
@@ -218,7 +224,7 @@ const router = createBrowserRouter([
       { path: 'admin/subscriptions',    element: <Navigate to="/empresa/suscripcion" replace /> },
       { path: 'admin/subscriptions/:tenantId', element: <Navigate to="/empresa/suscripcion" replace /> },
       { path: 'admin/plans',            element: <Navigate to="/platform/plans" replace /> },
-      { path: 'admin/email-templates',  element: <Navigate to="/empresa/plantillas" replace /> },
+      { path: 'admin/email-templates',  element: <Navigate to="/empresa/correo" replace /> },
       { path: 'admin/email-providers',  element: <Navigate to="/empresa/correo" replace /> },
       { path: 'pagos',                  element: <Navigate to="/platform/payments" replace /> },
 
@@ -287,14 +293,6 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'platform/marketplace',
-        element: (
-          <ProtectedRoute superuserOnly>
-            <PlatformMarketplacePage />
-          </ProtectedRoute>
-        ),
-      },
-      {
         path: 'platform/sales',
         element: (
           <ProtectedRoute superuserOnly>
@@ -359,19 +357,18 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'platform/blockchain',
-        element: (
-          <ProtectedRoute superuserOnly>
-            <SettingsPage />
-          </ProtectedRoute>
-        ),
-      },
-
-      {
         path: 'platform/ai',
         element: (
           <ProtectedRoute superuserOnly>
             <PlatformAiSettingsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'platform/blockchain',
+        element: (
+          <ProtectedRoute superuserOnly>
+            <SettingsPage />
           </ProtectedRoute>
         ),
       },
@@ -570,18 +567,66 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'inventario/recetas',
+        path: 'produccion',
         element: (
           <ProtectedRoute permission="production.view">
-            <ModuleGuard><RecipesPage /></ModuleGuard>
+            <ModuleGuard module="production"><ProductionDashboardPage /></ModuleGuard>
           </ProtectedRoute>
         ),
       },
       {
-        path: 'inventario/produccion',
+        path: 'produccion/ordenes',
         element: (
           <ProtectedRoute permission="production.view">
-            <ModuleGuard><ProductionPage /></ModuleGuard>
+            <ModuleGuard module="production"><ProductionPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'produccion/recetas',
+        element: (
+          <ProtectedRoute permission="production.view">
+            <ModuleGuard module="production"><RecipesPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'produccion/recursos',
+        element: (
+          <ProtectedRoute permission="production.view">
+            <ModuleGuard module="production"><ResourcesPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'produccion/mrp',
+        element: (
+          <ProtectedRoute permission="production.manage">
+            <ModuleGuard module="production"><MRPPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'produccion/emisiones',
+        element: (
+          <ProtectedRoute permission="production.view">
+            <ModuleGuard module="production"><EmissionsPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'produccion/recibos',
+        element: (
+          <ProtectedRoute permission="production.view">
+            <ModuleGuard module="production"><ReceiptsPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'produccion/reportes',
+        element: (
+          <ProtectedRoute permission="production.view">
+            <ModuleGuard module="production"><ProductionReportsPage /></ModuleGuard>
           </ProtectedRoute>
         ),
       },
@@ -606,6 +651,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute permission="inventory.view">
             <ModuleGuard><PartnersPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inventario/socios/:id',
+        element: (
+          <ProtectedRoute permission="inventory.view">
+            <ModuleGuard><PartnerDetailPage /></ModuleGuard>
           </ProtectedRoute>
         ),
       },
@@ -739,16 +792,12 @@ const router = createBrowserRouter([
       },
       // ── Logistica (trace-service) ────────────────────────────────────────────
       {
-        path: 'logistica/envios',
-        element: <ProtectedRoute><ShipmentsPage /></ProtectedRoute>,
+        path: 'logistica/analiticas',
+        element: <ProtectedRoute><TransportAnalyticsPage /></ProtectedRoute>,
       },
       {
-        path: 'logistica/documentos-comex',
-        element: <ProtectedRoute><TradeDocumentsPage /></ProtectedRoute>,
-      },
-      {
-        path: 'logistica/blockchain',
-        element: <ProtectedRoute><AnchorRulesPage /></ProtectedRoute>,
+        path: 'configuracion/flujo-de-trabajo',
+        element: <ProtectedRoute><WorkflowBuilderPage /></ProtectedRoute>,
       },
       // ── Cumplimiento (compliance module-gated) ──────────────────────────────
       {
@@ -772,6 +821,14 @@ const router = createBrowserRouter([
         element: (
           <React.Suspense fallback={null}>
             <ComplianceGuard><PlotsPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+      {
+        path: 'cumplimiento/parcelas/:plotId',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><PlotDetailPage /></ComplianceGuard>
           </React.Suspense>
         ),
       },

@@ -34,14 +34,28 @@ class BlockchainService:
         self._asset_repo = AssetRepository(session)
         self._tenant_repo = TenantRepository(session)
 
-    def _build_metadata(self, product_type: str, metadata: dict[str, Any]) -> dict[str, Any]:
-        """Return normalized metadata dict for a logistics cNFT."""
-        return {
+    def _build_metadata(
+        self, product_type: str, metadata: dict[str, Any], asset_id: uuid.UUID
+    ) -> dict[str, Any]:
+        """Return normalized metadata dict for a logistics cNFT.
+
+        Helius auto-hosts the metadata JSON — we just pass the fields
+        and Helius generates a URI that explorers can fetch.
+        imageUrl must be publicly accessible (not localhost).
+        """
+        result = {
             "name": metadata.get("name", product_type),
             "product_type": product_type,
             "symbol": "TRC",
             **{k: v for k, v in metadata.items() if k not in ("name",)},
         }
+        # Image: user-provided or DiceBear (publicly accessible, no localhost)
+        if not result.get("image_url"):
+            result["image_url"] = (
+                f"https://api.dicebear.com/9.x/shapes/svg"
+                f"?seed={asset_id}&backgroundColor=6366f1,3b82f6,22c55e,f59e0b,ef4444"
+            )
+        return result
 
     def _compute_metadata_hash(self, metadata: dict[str, Any]) -> str:
         """SHA256 of attributes sorted alphabetically (deterministic)."""
@@ -73,7 +87,7 @@ class BlockchainService:
                     hint="Using Helius shared tree or simulation",
                 )
 
-            normalized_meta = self._build_metadata(product_type, metadata)
+            normalized_meta = self._build_metadata(product_type, metadata, asset_id)
             normalized_meta["metadata_hash"] = self._compute_metadata_hash(normalized_meta)
 
             result = await self._provider.mint_cnft(

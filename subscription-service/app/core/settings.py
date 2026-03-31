@@ -34,6 +34,7 @@ class Settings(BaseSettings):
 
     # ─── Auth delegation ──────────────────────────────────────────────────────
     USER_SERVICE_URL: str = "http://user-api:8001"
+    INTEGRATION_SERVICE_URL: str = "http://integration-api:8004"
     JWT_SECRET: str = "change-me-in-production-min-32-chars!!"
     JWT_ALGORITHM: str = "HS256"
     USER_CACHE_TTL: int = 60  # seconds

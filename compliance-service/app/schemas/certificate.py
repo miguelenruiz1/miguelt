@@ -33,7 +33,7 @@ class CertificateResponse(OrmBase):
     solana_tx_sig: str | None
     metadata: dict = Field(
         default_factory=dict,
-        validation_alias=AliasChoices("metadata", "metadata_"),
+        validation_alias=AliasChoices("metadata_", "metadata"),
     )
     created_at: datetime
     updated_at: datetime

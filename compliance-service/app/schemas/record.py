@@ -31,8 +31,13 @@ class RecordCreate(BaseModel):
     buyer_address: str | None = None
     buyer_email: str | None = None
     operator_eori: str | None = None
+    activity_type: str = "export"
     deforestation_free_declaration: bool = False
     legal_compliance_declaration: bool = False
+    signatory_name: str | None = None
+    signatory_role: str | None = None
+    signatory_date: date | None = None
+    prior_dds_references: list[str] | None = None
     metadata: dict | None = None
 
 
@@ -53,8 +58,13 @@ class RecordUpdate(BaseModel):
     buyer_address: str | None = None
     buyer_email: str | None = None
     operator_eori: str | None = None
+    activity_type: str | None = None
     deforestation_free_declaration: bool | None = None
     legal_compliance_declaration: bool | None = None
+    signatory_name: str | None = None
+    signatory_role: str | None = None
+    signatory_date: date | None = None
+    prior_dds_references: list[str] | None = None
     metadata: dict | None = None
 
 
@@ -80,6 +90,7 @@ class RecordResponse(OrmBase):
     buyer_address: str | None
     buyer_email: str | None
     operator_eori: str | None
+    activity_type: str = "export"
     deforestation_free_declaration: bool
     legal_compliance_declaration: bool
     legal_cert_hash: str | None
@@ -88,6 +99,10 @@ class RecordResponse(OrmBase):
     declaration_submission_date: date | None
     declaration_status: str
     declaration_url: str | None
+    signatory_name: str | None = None
+    signatory_role: str | None = None
+    signatory_date: date | None = None
+    prior_dds_references: list | None = None
     compliance_status: str
     last_validated_at: datetime | None
     validation_result: dict | None

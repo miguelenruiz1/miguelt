@@ -6,6 +6,7 @@ import {
   useRecipes, useRecipe, useCreateRecipe, useUpdateRecipe, useDeleteRecipe, useProducts,
   useStockLevels, useWarehouses,
 } from '@/hooks/useInventory'
+import { useToast } from '@/store/toast'
 import type { StockLevel, EntityRecipe } from '@/types/inventory'
 
 type StockByProduct = Record<string, { total: number; byWarehouse: Record<string, number> }>
@@ -181,8 +182,8 @@ function EditRecipeModal({ recipeId, onClose }: { recipeId: string; onClose: () 
   const { data: productsData } = useProducts()
   const update = useUpdateRecipe()
 
-  const [form, setForm] = useState({ name: '', description: '', output_entity_id: '', output_quantity: '1' })
-  const [components, setComponents] = useState<Array<{ component_entity_id: string; quantity_required: string }>>([])
+  const [form, setForm] = useState({ name: '', description: '', output_entity_id: '', output_quantity: '1', bom_type: 'production', standard_cost: '0', planned_production_size: '1' })
+  const [components, setComponents] = useState<Array<{ component_entity_id: string; quantity_required: string; scrap_percentage: string }>>([])
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
@@ -192,11 +193,15 @@ function EditRecipeModal({ recipeId, onClose }: { recipeId: string; onClose: () 
         description: recipe.description ?? '',
         output_entity_id: recipe.output_entity_id,
         output_quantity: String(recipe.output_quantity),
+        bom_type: recipe.bom_type ?? 'production',
+        standard_cost: String(recipe.standard_cost ?? '0'),
+        planned_production_size: String(recipe.planned_production_size ?? '1'),
       })
       setComponents(
         (recipe.components ?? []).map(c => ({
           component_entity_id: c.component_entity_id,
           quantity_required: String(c.quantity_required),
+          scrap_percentage: String(c.scrap_percentage ?? '0'),
         }))
       )
       setLoaded(true)
@@ -204,7 +209,7 @@ function EditRecipeModal({ recipeId, onClose }: { recipeId: string; onClose: () 
   }, [recipe, loaded])
 
   function addComponent() {
-    setComponents(c => [...c, { component_entity_id: '', quantity_required: '1' }])
+    setComponents(c => [...c, { component_entity_id: '', quantity_required: '1', scrap_percentage: '0' }])
   }
 
   function removeComponent(idx: number) {
@@ -215,9 +220,16 @@ function EditRecipeModal({ recipeId, onClose }: { recipeId: string; onClose: () 
     setComponents(c => c.map((comp, i) => i === idx ? { ...comp, [key]: val } : comp))
   }
 
+  const toast = useToast()
+
   async function doSubmitEdit() {
-    await update.mutateAsync({ id: recipeId, data: { ...form, components } })
-    onClose()
+    try {
+      await update.mutateAsync({ id: recipeId, data: { ...form, components } })
+      toast.success('Receta actualizada')
+      onClose()
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Error al actualizar receta')
+    }
   }
 
   const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmitEdit)
@@ -241,6 +253,30 @@ function EditRecipeModal({ recipeId, onClose }: { recipeId: string; onClose: () 
               onChange={e => setForm(f => ({ ...f, output_quantity: e.target.value }))}
               placeholder="Cantidad salida *" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] text-slate-400 uppercase">Tipo BOM</label>
+              <select value={form.bom_type} onChange={e => setForm(f => ({ ...f, bom_type: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="production">Produccion</option>
+                <option value="assembly">Conjunto (Kit)</option>
+                <option value="sales">Ventas</option>
+                <option value="model">Modelo</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-400 uppercase">Costo estandar</label>
+              <input type="number" step="0.01" min="0" value={form.standard_cost}
+                onChange={e => setForm(f => ({ ...f, standard_cost: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-400 uppercase">Tam. lote plan.</label>
+              <input type="number" min="1" value={form.planned_production_size}
+                onChange={e => setForm(f => ({ ...f, planned_production_size: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            </div>
+          </div>
           <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             placeholder="Descripcion" rows={2}
             className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
@@ -261,7 +297,10 @@ function EditRecipeModal({ recipeId, onClose }: { recipeId: string; onClose: () 
                 </select>
                 <input required type="number" step="0.01" min="0.01" value={c.quantity_required}
                   onChange={e => updateComponent(i, 'quantity_required', e.target.value)}
-                  placeholder="Cant." className="w-24 rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
+                  placeholder="Cant." className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
+                <input type="number" step="0.1" min="0" max="100" value={c.scrap_percentage ?? '0'}
+                  onChange={e => updateComponent(i, 'scrap_percentage', e.target.value)}
+                  placeholder="Merma%" className="w-16 rounded-lg border border-slate-200 px-2 py-1.5 text-sm" title="Merma %" />
                 <button type="button" onClick={() => removeComponent(i)} className="text-slate-400 hover:text-red-500">
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -290,11 +329,12 @@ function CreateRecipeModal({ onClose }: { onClose: () => void }) {
 
   const [form, setForm] = useState({
     name: '', description: '', output_entity_id: '', output_quantity: '1',
+    bom_type: 'production', standard_cost: '0', planned_production_size: '1',
   })
-  const [components, setComponents] = useState<Array<{ component_entity_id: string; quantity_required: string }>>([])
+  const [components, setComponents] = useState<Array<{ component_entity_id: string; quantity_required: string; scrap_percentage: string }>>([])
 
   function addComponent() {
-    setComponents(c => [...c, { component_entity_id: '', quantity_required: '1' }])
+    setComponents(c => [...c, { component_entity_id: '', quantity_required: '1', scrap_percentage: '0' }])
   }
 
   function removeComponent(idx: number) {
@@ -305,9 +345,16 @@ function CreateRecipeModal({ onClose }: { onClose: () => void }) {
     setComponents(c => c.map((comp, i) => i === idx ? { ...comp, [key]: val } : comp))
   }
 
+  const toast = useToast()
+
   async function doSubmitCreate() {
-    await create.mutateAsync({ ...form, components })
-    onClose()
+    try {
+      await create.mutateAsync({ ...form, components })
+      toast.success('Receta creada')
+      onClose()
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Error al crear receta')
+    }
   }
 
   const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmitCreate)
@@ -329,6 +376,30 @@ function CreateRecipeModal({ onClose }: { onClose: () => void }) {
               onChange={e => setForm(f => ({ ...f, output_quantity: e.target.value }))}
               placeholder="Cantidad salida *" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] text-slate-400 uppercase">Tipo BOM</label>
+              <select value={form.bom_type} onChange={e => setForm(f => ({ ...f, bom_type: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="production">Produccion</option>
+                <option value="assembly">Conjunto (Kit)</option>
+                <option value="sales">Ventas</option>
+                <option value="model">Modelo</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-400 uppercase">Costo estandar</label>
+              <input type="number" step="0.01" min="0" value={form.standard_cost}
+                onChange={e => setForm(f => ({ ...f, standard_cost: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-400 uppercase">Tam. lote plan.</label>
+              <input type="number" min="1" value={form.planned_production_size}
+                onChange={e => setForm(f => ({ ...f, planned_production_size: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            </div>
+          </div>
           <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             placeholder="Descripcion" rows={2}
             className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
@@ -349,7 +420,10 @@ function CreateRecipeModal({ onClose }: { onClose: () => void }) {
                 </select>
                 <input required type="number" step="0.01" min="0.01" value={c.quantity_required}
                   onChange={e => updateComponent(i, 'quantity_required', e.target.value)}
-                  placeholder="Cant." className="w-24 rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
+                  placeholder="Cant." className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
+                <input type="number" step="0.1" min="0" max="100" value={c.scrap_percentage ?? '0'}
+                  onChange={e => updateComponent(i, 'scrap_percentage', e.target.value)}
+                  placeholder="Merma%" className="w-16 rounded-lg border border-slate-200 px-2 py-1.5 text-sm" title="Merma %" />
                 <button type="button" onClick={() => removeComponent(i)} className="text-slate-400 hover:text-red-500">
                   <Trash2 className="h-4 w-4" />
                 </button>

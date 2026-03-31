@@ -22,10 +22,11 @@ class AssetRepository:
         product_type: str,
         metadata: dict[str, Any],
         initial_custodian_wallet: str,
-        state: AssetState,
+        state: AssetState | str,
         last_event_hash: str | None = None,
         tenant_id: uuid.UUID | None = None,
         blockchain_status: str = "SKIPPED",
+        workflow_state_id: uuid.UUID | None = None,
     ) -> Asset:
         now = datetime.now(tz=timezone.utc)
         asset = Asset(
@@ -39,6 +40,7 @@ class AssetRepository:
             tenant_id=tenant_id or uuid.UUID("00000000-0000-0000-0000-000000000001"),
             blockchain_status=blockchain_status,
             is_compressed=False,
+            workflow_state_id=workflow_state_id,
             created_at=now,
             updated_at=now,
         )
@@ -108,6 +110,8 @@ class AssetRepository:
         updates: dict[str, Any] = {}
         if blockchain_asset_id is not None:
             updates["blockchain_asset_id"] = blockchain_asset_id
+            # Also update asset_mint from placeholder to real blockchain address
+            updates["asset_mint"] = blockchain_asset_id
         if blockchain_tree_address is not None:
             updates["blockchain_tree_address"] = blockchain_tree_address
         if blockchain_tx_signature is not None:
@@ -126,9 +130,10 @@ class AssetRepository:
     async def update_after_event(
         self,
         asset_id: uuid.UUID,
-        new_state: AssetState,
+        new_state: AssetState | str,
         new_custodian: str | None,
         last_event_hash: str,
+        workflow_state_id: uuid.UUID | None = None,
     ) -> None:
         values: dict = {
             "state": new_state,
@@ -137,6 +142,8 @@ class AssetRepository:
         }
         if new_custodian is not None:
             values["current_custodian_wallet"] = new_custodian
+        if workflow_state_id is not None:
+            values["workflow_state_id"] = workflow_state_id
         await self._db.execute(
             update(Asset).where(Asset.id == asset_id).values(**values)
         )
@@ -158,10 +165,12 @@ class CustodyEventRepository:
         data: dict[str, Any],
         prev_event_hash: str | None,
         event_hash: str,
+        tenant_id: uuid.UUID | None = None,
     ) -> CustodyEvent:
         now = datetime.now(tz=timezone.utc)
         event = CustodyEvent(
             id=uuid.uuid4(),
+            tenant_id=tenant_id,
             asset_id=asset_id,
             event_type=event_type,
             from_wallet=from_wallet,

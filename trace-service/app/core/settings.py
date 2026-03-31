@@ -75,11 +75,25 @@ class Settings(BaseSettings):
 
     # ─── Security ─────────────────────────────────────────────────────────────
     TRACE_ADMIN_KEY: str = "change-me-in-production"
+    S2S_SERVICE_TOKEN: str = "s2s-change-me-in-production"  # shared secret for inter-service calls
 
     # ─── Subscription / Module gating ──────────────────────────────────────────
+    PUBLIC_BASE_URL: str = "http://localhost:8000"  # public-facing URL for metadata URIs
     SUBSCRIPTION_SERVICE_URL: str = "http://subscription-api:8002"
+    COMPLIANCE_SERVICE_URL: str = "http://compliance-api:8005"
+    MEDIA_SERVICE_URL: str = "http://media-api:8007"
     MODULE_CACHE_TTL: int = 300  # 5 minutes
     MODULE_SLUG: str = "logistics"
+
+    # ─── Media / Storage ─────────────────────────────────────────────────────
+    UPLOADS_BASE_PATH: str = "/app/uploads"
+    DOCUMENT_MAX_SIZE_MB: int = 20
+    STORAGE_BACKEND: str = "local"  # "local" or "s3"
+    AWS_S3_BUCKET: str = ""
+    AWS_S3_REGION: str = "us-east-1"
+    AWS_S3_ENDPOINT: str = ""  # for MinIO or S3-compatible
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
 
     # ─── Worker / Anchor ──────────────────────────────────────────────────────
     ANCHOR_MAX_RETRIES: int = 5

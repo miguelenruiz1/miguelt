@@ -24,7 +24,7 @@ MODULE_CATALOG: list[dict] = [
     {
         "slug": "electronic-invoicing",
         "name": "Facturación Electrónica",
-        "description": "Emite facturas electrónicas válidas ante la DIAN desde tus Sales Orders. Powered by MATIAS API.",
+        "description": "Emite facturas, notas credito y notas debito ante la DIAN. Soporta modo produccion y modo sandbox (pruebas).",
         "category": "compliance",
         "requires": "inventory",
     },
@@ -35,14 +35,6 @@ MODULE_CATALOG: list[dict] = [
         "icon": "factory",
         "category": "operations",
         "dependencies": ["inventory"],
-    },
-    {
-        "slug": "electronic-invoicing-sandbox",
-        "name": "Facturación Electrónica — Sandbox",
-        "description": "Simula el flujo completo de facturación electrónica sin conexión a la DIAN. Ideal para demos y onboarding.",
-        "category": "compliance",
-        "dependencies": ["inventory"],
-        "icon": "FlaskConical",
     },
     {
         "slug": "compliance",

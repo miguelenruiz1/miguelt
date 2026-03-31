@@ -1,11 +1,15 @@
 import type {
-  ApiErrorBody, Asset, AssetCreate, AssetMintRequest, AssetState, CustodyEvent,
+  ApiErrorBody, Asset, AssetCreate, AssetMintRequest, CustodyEvent,
   CustodianType, CustodianTypeCreate, CustodianTypeUpdate,
   Organization, OrganizationCreate, OrganizationUpdate,
-  EventActionResponse, GenericEventRequest, HandoffRequest, ArrivedRequest, LoadedRequest,
-  QCRequest, ReleaseRequest, BurnRequest, HealthResponse, PaginatedResponse, ReadyResponse,
+  EventActionResponse, GenericEventRequest, HealthResponse, PaginatedResponse, ReadyResponse,
   SolanaAccountResponse, SolanaTxResponse, Tenant, TenantCreate, MerkleTree,
   Wallet, WalletCreate, WalletGenerateRequest, WalletUpdate,
+  WorkflowState, WorkflowStateCreate, WorkflowStateUpdate,
+  WorkflowTransition, WorkflowTransitionCreate,
+  WorkflowEventType, WorkflowEventTypeCreate, WorkflowEventTypeUpdate,
+  IndustryPresetInfo, SeedResult, AvailableAction,
+  EventDocumentsResponse, DocumentRequirementsResponse, MediaFile, PaginatedResponse as PaginatedResp,
 } from '@/types/api'
 import { useAuthStore } from '@/store/auth'
 import { usePlanLimitStore } from '@/store/planLimit'
@@ -92,6 +96,39 @@ const post = <T>(path: string, body: unknown, opts?: RequestOptions) => request<
 const patch = <T>(path: string, body: unknown, opts?: RequestOptions) => request<T>('PATCH', path, body, opts)
 const del = <T>(path: string, opts?: RequestOptions) => request<T>('DELETE', path, undefined, opts)
 
+async function requestMultipart<T>(
+  method: string,
+  path: string,
+  formData: FormData,
+  options: RequestOptions = {},
+): Promise<T> {
+  const headers: Record<string, string> = {
+    'X-User-Id': useAuthStore.getState().user?.id ?? '1',
+    'X-Tenant-Id': options.tenantId ?? useAuthStore.getState().user?.tenant_id ?? 'default',
+  }
+  if (options.idempotencyKey) headers['Idempotency-Key'] = options.idempotencyKey
+
+  let url = `${BASE}${path}`
+  if (options.params) {
+    const qs = new URLSearchParams()
+    for (const [k, v] of Object.entries(options.params)) {
+      if (v !== undefined && v !== '') qs.set(k, String(v))
+    }
+    const s = qs.toString()
+    if (s) url += `?${s}`
+  }
+
+  const res = await fetch(url, { method, headers, body: formData })
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({
+      error: { code: 'UNKNOWN', message: res.statusText },
+    }))
+    throw new ApiError(res.status, errBody)
+  }
+  if (res.status === 204) return undefined as T
+  return res.json() as Promise<T>
+}
+
 // ─── Structured API ───────────────────────────────────────────────────────────
 
 export const api = {
@@ -114,7 +151,7 @@ export const api = {
   },
 
   assets: {
-    list: (p?: { product_type?: string; custodian?: string; state?: AssetState | ''; offset?: number; limit?: number }) =>
+    list: (p?: { product_type?: string; custodian?: string; state?: string; offset?: number; limit?: number }) =>
       get<PaginatedResponse<Asset>>('/api/v1/assets', { params: p }),
     get: (id: string) =>
       get<Asset>(`/api/v1/assets/${id}`),
@@ -124,20 +161,6 @@ export const api = {
       post<EventActionResponse>('/api/v1/assets/mint', data, { idempotencyKey }),
     events: (id: string, p?: { offset?: number; limit?: number }) =>
       get<PaginatedResponse<CustodyEvent>>(`/api/v1/assets/${id}/events`, { params: p }),
-
-    // Custody events
-    handoff: (id: string, data: HandoffRequest, idempotencyKey?: string) =>
-      post<EventActionResponse>(`/api/v1/assets/${id}/events/handoff`, data, { idempotencyKey }),
-    arrived: (id: string, data: ArrivedRequest) =>
-      post<EventActionResponse>(`/api/v1/assets/${id}/events/arrived`, data),
-    loaded: (id: string, data: LoadedRequest) =>
-      post<EventActionResponse>(`/api/v1/assets/${id}/events/loaded`, data),
-    qc: (id: string, data: QCRequest) =>
-      post<EventActionResponse>(`/api/v1/assets/${id}/events/qc`, data),
-    release: (id: string, data: ReleaseRequest, adminKey: string, idempotencyKey?: string) =>
-      post<EventActionResponse>(`/api/v1/assets/${id}/events/release`, data, { adminKey, idempotencyKey }),
-    burn: (id: string, data: BurnRequest, idempotencyKey?: string) =>
-      post<EventActionResponse>(`/api/v1/assets/${id}/events/burn`, data, { idempotencyKey }),
     recordEvent: (id: string, data: GenericEventRequest, idempotencyKey?: string) =>
       post<EventActionResponse>(`/api/v1/assets/${id}/events`, data, { idempotencyKey }),
     anchor: (assetId: string, eventId: string) =>
@@ -184,5 +207,97 @@ export const api = {
       get<PaginatedResponse<Wallet>>(`/api/v1/taxonomy/organizations/${id}/wallets`, { params: p }),
     getOrgAssets: (id: string, p?: { offset?: number; limit?: number }) =>
       get<PaginatedResponse<Asset>>(`/api/v1/taxonomy/organizations/${id}/assets`, { params: p }),
+  },
+
+  workflow: {
+    // States
+    listStates: () =>
+      get<WorkflowState[]>('/api/v1/config/workflow/states'),
+    createState: (data: WorkflowStateCreate) =>
+      post<WorkflowState>('/api/v1/config/workflow/states', data),
+    updateState: (id: string, data: WorkflowStateUpdate) =>
+      patch<WorkflowState>(`/api/v1/config/workflow/states/${id}`, data),
+    deleteState: (id: string) =>
+      del<void>(`/api/v1/config/workflow/states/${id}`),
+    reorderStates: (stateIds: string[]) =>
+      post<WorkflowState[]>('/api/v1/config/workflow/states/reorder', { state_ids: stateIds }),
+
+    // Transitions
+    listTransitions: () =>
+      get<WorkflowTransition[]>('/api/v1/config/workflow/transitions'),
+    createTransition: (data: WorkflowTransitionCreate) =>
+      post<WorkflowTransition>('/api/v1/config/workflow/transitions', data),
+    deleteTransition: (id: string) =>
+      del<void>(`/api/v1/config/workflow/transitions/${id}`),
+
+    // Event types
+    listEventTypes: (p?: { active_only?: boolean }) =>
+      get<WorkflowEventType[]>('/api/v1/config/workflow/event-types', { params: p }),
+    createEventType: (data: WorkflowEventTypeCreate) =>
+      post<WorkflowEventType>('/api/v1/config/workflow/event-types', data),
+    updateEventType: (id: string, data: WorkflowEventTypeUpdate) =>
+      patch<WorkflowEventType>(`/api/v1/config/workflow/event-types/${id}`, data),
+    deleteEventType: (id: string) =>
+      del<void>(`/api/v1/config/workflow/event-types/${id}`),
+
+    // Available actions (from a specific state)
+    getAvailableActions: (stateSlug: string) =>
+      get<AvailableAction[]>(`/api/v1/config/workflow/states/${stateSlug}/actions`),
+
+    // Presets
+    listPresets: () =>
+      get<Record<string, IndustryPresetInfo>>('/api/v1/config/workflow/presets'),
+    seedPreset: (presetName: string) =>
+      post<SeedResult>(`/api/v1/config/workflow/seed/${presetName}`, {}),
+  },
+
+  documents: {
+    upload: (assetId: string, eventId: string, files: File[], documentType: string, title?: string) => {
+      const form = new FormData()
+      for (const f of files) form.append('files', f)
+      return requestMultipart<EventDocumentsResponse>(
+        'POST',
+        `/api/v1/assets/${assetId}/events/${eventId}/documents`,
+        form,
+        { params: { document_type: documentType, title } },
+      )
+    },
+    linkExisting: (assetId: string, eventId: string, mediaFileId: string, documentType: string) =>
+      post<unknown>(`/api/v1/assets/${assetId}/events/${eventId}/documents/link`, {}, {
+        params: { media_file_id: mediaFileId, document_type: documentType },
+      }),
+    list: (assetId: string, eventId: string) =>
+      get<EventDocumentsResponse>(`/api/v1/assets/${assetId}/events/${eventId}/documents`),
+    unlink: (assetId: string, eventId: string, linkId: string) =>
+      del<void>(`/api/v1/assets/${assetId}/events/${eventId}/documents/${linkId}`),
+    requirements: (assetId: string, eventType: string) =>
+      get<DocumentRequirementsResponse>(`/api/v1/assets/${assetId}/document-requirements`, { params: { event_type: eventType } }),
+  },
+
+  media: {
+    upload: (file: File, opts?: { category?: string; document_type?: string; title?: string; description?: string; tags?: string }) => {
+      const form = new FormData()
+      form.append('file', file)
+      return requestMultipart<MediaFile>(
+        'POST', '/api/v1/media/files', form,
+        { params: { category: opts?.category, document_type: opts?.document_type, title: opts?.title, description: opts?.description, tags: opts?.tags } },
+      )
+    },
+    uploadBatch: (files: File[], opts?: { category?: string; document_type?: string }) => {
+      const form = new FormData()
+      for (const f of files) form.append('files', f)
+      return requestMultipart<{ files: MediaFile[] }>(
+        'POST', '/api/v1/media/files/batch', form,
+        { params: { category: opts?.category, document_type: opts?.document_type } },
+      )
+    },
+    list: (p?: { category?: string; document_type?: string; search?: string; offset?: number; limit?: number }) =>
+      get<PaginatedResp<MediaFile>>('/api/v1/media/files', { params: p }),
+    get: (id: string) =>
+      get<MediaFile>(`/api/v1/media/files/${id}`),
+    update: (id: string, data: { title?: string; description?: string; category?: string; document_type?: string; tags?: string }) =>
+      patch<MediaFile>(`/api/v1/media/files/${id}`, {}, { params: data }),
+    delete: (id: string) =>
+      del<void>(`/api/v1/media/files/${id}`),
   },
 }

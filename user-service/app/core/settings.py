@@ -42,9 +42,13 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = "noreply@trace.app"
     SMTP_USE_TLS: bool = False
+    # Platform-level email provider (overrides tenant config)
+    RESEND_API_KEY: str = ""  # If set, all emails go via Resend. Empty = use SMTP/Mailhog
 
     # ─── Uploads ───────────────────────────────────────────────────────────────
     UPLOAD_DIR: str = "/app/uploads"
+    MEDIA_SERVICE_URL: str = "http://media-api:8007"
+    S2S_SERVICE_TOKEN: str = "s2s-change-me-in-production"
     MAX_AVATAR_SIZE: int = 2 * 1024 * 1024  # 2 MB
 
     # ─── Inter-service ─────────────────────────────────────────────────────────

@@ -6,8 +6,8 @@ Revises: 062_blockchain_anchor_fields
 from alembic import op
 import sqlalchemy as sa
 
-revision = "063_blockchain_tracking"
-down_revision = "062_blockchain_anchor_fields"
+revision = "063"
+down_revision = "062"
 branch_labels = None
 depends_on = None
 

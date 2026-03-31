@@ -464,7 +464,16 @@ class SalesOrderService:
         order.remission_number = remission_number
         order.remission_generated_at = datetime.now(timezone.utc)
 
-        return await self.repo.set_status(order, SalesOrderStatus.shipped)
+        result = await self.repo.set_status(order, SalesOrderStatus.shipped)
+
+        # Emit webhook event
+        from app.clients.webhook_client import emit_event
+        await emit_event("inventory.so.shipped", tenant_id, {
+            "order_id": order.id, "order_number": order.order_number,
+            "customer_id": order.customer_id, "total": float(order.total or 0),
+        })
+
+        return result
 
     async def deliver(self, order_id: str, tenant_id: str, user_id: str | None = None):
         """shipped → delivered: deducts physical stock, consumes reservations, creates sale movements."""
@@ -537,7 +546,15 @@ class SalesOrderService:
         # else: old order without reservations — stock was already deducted at ship time
 
         order.updated_by = user_id
-        return await self.repo.set_status(order, SalesOrderStatus.delivered)
+        result = await self.repo.set_status(order, SalesOrderStatus.delivered)
+
+        from app.clients.webhook_client import emit_event
+        await emit_event("inventory.so.delivered", tenant_id, {
+            "order_id": order.id, "order_number": order.order_number,
+            "customer_id": order.customer_id, "total": float(order.total or 0),
+        })
+
+        return result
 
     async def retry_einvoice(self, order_id: str, tenant_id: str):
         """Retry electronic invoicing for a failed order."""
@@ -560,14 +577,11 @@ class SalesOrderService:
         import logging
         log = logging.getLogger("inventory.einvoice")
         try:
-            from app.api.deps import is_einvoicing_active, is_einvoicing_sandbox_active
+            from app.api.deps import is_einvoicing_active
 
-            # Determine which provider to use
             provider_slug: str | None = None
             if await is_einvoicing_active(tenant_id):
                 provider_slug = "matias"
-            elif await is_einvoicing_sandbox_active(tenant_id):
-                provider_slug = "sandbox"
 
             if not provider_slug:
                 return
@@ -602,7 +616,7 @@ class SalesOrderService:
                     "description": product_name,
                     "sku": getattr(line, "product_sku", "") or (line.product.sku if hasattr(line, "product") and line.product else ""),
                     "product_name": product_name,
-                    "quantity": float(line.qty_shipped),
+                    "quantity": float(line.qty_shipped if line.qty_shipped and line.qty_shipped > 0 else line.qty_ordered),
                     "unit_price": float(line.unit_price),
                     "discount_rate": float(line.discount_pct) / 100 if line.discount_pct else 0,
                     "discount_amount": float(line.discount_amount or 0),
@@ -630,10 +644,7 @@ class SalesOrderService:
                 order.invoice_pdf_url = data.get("pdf_url") or None
                 order.invoice_remote_id = data.get("remote_id", "")
                 order.invoice_provider = provider_slug
-                if provider_slug == "sandbox":
-                    order.invoice_status = "simulated"
-                else:
-                    order.invoice_status = data.get("status", "issued")
+                order.invoice_status = data.get("status", "issued")
             else:
                 order.invoice_status = "failed"
                 order.invoice_provider = provider_slug
@@ -695,7 +706,7 @@ class SalesOrderService:
                     "description": product_name,
                     "sku": getattr(line, "product_sku", "") or (line.product.sku if hasattr(line, "product") and line.product else ""),
                     "product_name": product_name,
-                    "quantity": float(line.qty_shipped),
+                    "quantity": float(line.qty_shipped if line.qty_shipped and line.qty_shipped > 0 else line.qty_ordered),
                     "unit_price": float(line.unit_price),
                     "discount_rate": float(line.discount_pct) / 100 if line.discount_pct else 0,
                     "discount_amount": float(line.discount_amount or 0),
@@ -721,10 +732,7 @@ class SalesOrderService:
                 order.credit_note_cufe = data.get("cufe", "")
                 order.credit_note_number = data.get("credit_note_number") or None
                 order.credit_note_remote_id = data.get("remote_id", "")
-                if provider_slug == "sandbox":
-                    order.credit_note_status = "simulated"
-                else:
-                    order.credit_note_status = data.get("status", "issued")
+                order.credit_note_status = data.get("status", "issued")
             else:
                 order.credit_note_status = "failed"
                 log.warning("credit_note_failed order=%s provider=%s status=%s body=%s", order.id, provider_slug, resp.status_code, resp.text[:500])
@@ -751,6 +759,110 @@ class SalesOrderService:
         if not order.cufe:
             raise ValidationError("Order has no invoice CUFE — cannot issue credit note")
         await self._try_credit_note(order, tenant_id)
+        return await self.get(order_id, tenant_id)
+
+    # ── Debit Note (DIAN — price adjustment) ────────────────────────────────
+
+    async def issue_debit_note(self, order_id: str, tenant_id: str, reason: str, amount: float):
+        """Issue a debit note for a price adjustment on an invoiced SO."""
+        from decimal import Decimal as D
+        order = await self.get(order_id, tenant_id)
+        if not order.cufe:
+            raise ValidationError("La orden no tiene factura — no se puede emitir nota debito")
+        if order.debit_note_cufe:
+            raise ValidationError("La orden ya tiene una nota debito emitida")
+
+        order.debit_note_reason = reason
+        order.debit_note_amount = D(str(amount))
+        await self.db.flush()
+
+        await self._try_debit_note(order, tenant_id, reason, amount)
+        return await self.get(order_id, tenant_id)
+
+    async def _try_debit_note(self, order, tenant_id: str, reason: str, amount: float):
+        """Attempt to issue a debit note via integration-service. Never raises."""
+        import logging
+        log = logging.getLogger("inventory.debit_note")
+        try:
+            from app.api.deps import is_einvoicing_active, is_einvoicing_sandbox_active
+
+            provider_slug: str | None = None
+            if await is_einvoicing_active(tenant_id):
+                provider_slug = "matias"
+            elif await is_einvoicing_sandbox_active(tenant_id):
+                provider_slug = "sandbox"
+
+            if not provider_slug:
+                return
+
+            order.debit_note_status = "pending"
+            await self.db.flush()
+
+            customer = await self.customer_repo.get_by_id(order.customer_id, tenant_id)
+            payload = {
+                "type": "debit_note",
+                "invoice_cufe": order.cufe,
+                "invoice_number": order.invoice_number or order.order_number,
+                "order_number": order.order_number,
+                "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                "currency": order.currency,
+                "reason": reason,
+                "adjustment_amount": amount,
+                "customer": {
+                    "nit": getattr(customer, "tax_id", "") or "222222222",
+                    "name": customer.name if customer else "",
+                    "email": getattr(customer, "email", "") or "",
+                },
+                "subtotal": amount,
+                "tax_amount": 0,
+                "total": amount,
+            }
+
+            from app.api.deps import get_http_client
+            from app.core.settings import get_settings
+            settings = get_settings()
+            http = get_http_client()
+
+            # Use credit-notes endpoint (DIAN treats debit notes similarly)
+            resp = await http.post(
+                f"{settings.INTEGRATION_SERVICE_URL}/api/v1/internal/credit-notes/{provider_slug}",
+                json=payload,
+                headers={"X-Tenant-Id": tenant_id},
+                timeout=15.0,
+            )
+
+            if resp.status_code < 300:
+                data = resp.json()
+                order.debit_note_cufe = data.get("cufe", "")
+                order.debit_note_number = data.get("credit_note_number") or None
+                order.debit_note_remote_id = data.get("remote_id", "")
+                order.debit_note_status = data.get("status", "issued")
+            else:
+                order.debit_note_status = "failed"
+                log.warning("debit_note_failed order=%s status=%s", order.id, resp.status_code)
+
+            await self.db.flush()
+
+        except Exception:
+            log.exception("debit_note_error order=%s", getattr(order, "id", "?"))
+            try:
+                order.debit_note_status = "failed"
+                await self.db.flush()
+            except Exception:
+                pass
+
+    async def retry_debit_note(self, order_id: str, tenant_id: str):
+        """Retry a failed debit note."""
+        order = await self.get(order_id, tenant_id)
+        if not order.cufe:
+            raise ValidationError("La orden no tiene factura")
+        if order.debit_note_status not in (None, "failed"):
+            raise ValidationError("Solo se puede reintentar notas debito fallidas")
+        if order.debit_note_cufe:
+            raise ValidationError("Ya existe una nota debito emitida")
+        if not order.debit_note_reason or not order.debit_note_amount:
+            raise ValidationError("Falta razon o monto de la nota debito")
+        await self._try_debit_note(order, tenant_id, order.debit_note_reason, float(order.debit_note_amount))
         return await self.get(order_id, tenant_id)
 
     async def return_order(self, order_id: str, tenant_id: str, user_id: str | None = None):

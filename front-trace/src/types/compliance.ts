@@ -321,3 +321,186 @@ export interface PlotLinkInput {
   quantity_from_plot_kg?: number | null
   percentage_from_plot?: number | null
 }
+
+// ─── Document Links ─────────────────────────────────────────────────────────
+
+export type EvidenceDocumentType =
+  | 'land_title'
+  | 'legal_cert'
+  | 'deforestation_report'
+  | 'satellite_image'
+  | 'supplier_declaration'
+  | 'transport_doc'
+  | 'geojson_boundary'
+  | 'other'
+  | string
+
+export interface DocumentLink {
+  id: string
+  tenant_id: string
+  record_id?: string | null
+  plot_id?: string | null
+  media_file_id: string
+  document_type: EvidenceDocumentType
+  file_hash: string | null
+  filename: string | null
+  description: string | null
+  uploaded_at: string
+  metadata_: Record<string, unknown>
+  url?: string | null
+}
+
+export interface DocumentLinkInput {
+  media_file_id: string
+  document_type: EvidenceDocumentType
+  description?: string | null
+}
+
+// ─── Risk Assessment (EUDR Art. 10-11) ──────────────────────────────────────
+
+export type OverallRiskLevel = 'negligible' | 'low' | 'standard' | 'high' | string
+export type RiskConclusion = 'approved' | 'conditional' | 'rejected' | string
+export type VerificationStatus = 'not_started' | 'in_progress' | 'verified' | 'failed' | string
+export type TraceabilityConfidence = 'full' | 'partial' | 'none' | string
+export type RiskAssessmentStatus = 'draft' | 'completed' | string
+
+export interface MitigationMeasure {
+  measure: string
+  status: string
+  evidence_doc_id?: string | null
+}
+
+export interface RiskAssessment {
+  id: string
+  tenant_id: string
+  record_id: string
+  assessed_by: string | null
+  assessed_at: string | null
+  country_risk_level: RiskLevel | null
+  country_risk_notes: string | null
+  country_benchmarking_source: string | null
+  supply_chain_risk_level: RiskLevel | null
+  supply_chain_notes: string | null
+  supplier_verification_status: VerificationStatus
+  traceability_confidence: TraceabilityConfidence
+  regional_risk_level: RiskLevel | null
+  deforestation_prevalence: string | null
+  indigenous_rights_risk: boolean
+  corruption_index_note: string | null
+  mitigation_measures: MitigationMeasure[] | null
+  additional_info_requested: boolean
+  independent_audit_required: boolean
+  overall_risk_level: OverallRiskLevel | null
+  conclusion: RiskConclusion | null
+  conclusion_notes: string | null
+  status: RiskAssessmentStatus
+  metadata_: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateRiskAssessmentInput {
+  record_id: string
+  country_risk_level?: string | null
+  country_risk_notes?: string | null
+  country_benchmarking_source?: string | null
+  supply_chain_risk_level?: string | null
+  supply_chain_notes?: string | null
+  supplier_verification_status?: string
+  traceability_confidence?: string
+  regional_risk_level?: string | null
+  deforestation_prevalence?: string | null
+  indigenous_rights_risk?: boolean
+  corruption_index_note?: string | null
+  mitigation_measures?: MitigationMeasure[] | null
+  additional_info_requested?: boolean
+  independent_audit_required?: boolean
+  overall_risk_level?: string | null
+  conclusion?: string | null
+  conclusion_notes?: string | null
+}
+
+export interface UpdateRiskAssessmentInput {
+  country_risk_level?: string | null
+  country_risk_notes?: string | null
+  country_benchmarking_source?: string | null
+  supply_chain_risk_level?: string | null
+  supply_chain_notes?: string | null
+  supplier_verification_status?: string | null
+  traceability_confidence?: string | null
+  regional_risk_level?: string | null
+  deforestation_prevalence?: string | null
+  indigenous_rights_risk?: boolean | null
+  corruption_index_note?: string | null
+  mitigation_measures?: MitigationMeasure[] | null
+  additional_info_requested?: boolean | null
+  independent_audit_required?: boolean | null
+  overall_risk_level?: string | null
+  conclusion?: string | null
+  conclusion_notes?: string | null
+}
+
+// ─── Supply Chain Nodes (EUDR Art. 9.1.e-f) ────────────────────────────────
+
+export type SupplyChainRole =
+  | 'producer'
+  | 'collector'
+  | 'processor'
+  | 'exporter'
+  | 'importer'
+  | 'trader'
+  | string
+
+export type NodeVerificationStatus = 'unverified' | 'verified' | 'flagged' | string
+
+export interface SupplyChainNode {
+  id: string
+  tenant_id: string
+  record_id: string
+  sequence_order: number
+  role: SupplyChainRole
+  actor_name: string
+  actor_address: string | null
+  actor_country: string | null
+  actor_tax_id: string | null
+  actor_eori: string | null
+  handoff_date: string | null
+  quantity_kg: number | null
+  verification_status: NodeVerificationStatus
+  notes: string | null
+  metadata_: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateSupplyChainNodeInput {
+  sequence_order: number
+  role: string
+  actor_name: string
+  actor_address?: string | null
+  actor_country?: string | null
+  actor_tax_id?: string | null
+  actor_eori?: string | null
+  handoff_date?: string | null
+  quantity_kg?: number | null
+  verification_status?: string
+  notes?: string | null
+}
+
+export interface UpdateSupplyChainNodeInput {
+  sequence_order?: number | null
+  role?: string | null
+  actor_name?: string | null
+  actor_address?: string | null
+  actor_country?: string | null
+  actor_tax_id?: string | null
+  actor_eori?: string | null
+  handoff_date?: string | null
+  quantity_kg?: number | null
+  verification_status?: string | null
+  notes?: string | null
+}
+
+export interface ReorderNodesInput {
+  order: { node_id: string; sequence_order: number }[]
+}

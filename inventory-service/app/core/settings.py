@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     SUBSCRIPTION_SERVICE_URL: str = "http://subscription-api:8002"
     INTEGRATION_SERVICE_URL: str = "http://integration-api:8004"
     JWT_SECRET: str = "change-me-in-production-min-32-chars!!"
+    S2S_SERVICE_TOKEN: str = "s2s-change-me-in-production"  # shared secret for inter-service calls
+    TRACE_SERVICE_URL: str = "http://trace-api:8000"
+    MEDIA_SERVICE_URL: str = "http://media-api:8007"
+    INTEGRATION_SERVICE_URL: str = "http://integration-api:8004"
     JWT_ALGORITHM: str = "HS256"
     USER_CACHE_TTL: int = 60
     MODULE_CACHE_TTL: int = 300

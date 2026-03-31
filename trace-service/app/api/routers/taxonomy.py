@@ -4,8 +4,8 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status
-
 from fastapi.responses import ORJSONResponse
+from starlette.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_tenant_id
@@ -118,18 +118,19 @@ async def update_custodian_type(
 
 @router.delete(
     "/custodian-types/{type_id}",
-    response_model=None,
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a custodian type (only if no organizations are linked)",
+    response_class=Response,
 )
 async def delete_custodian_type(
     type_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
     tenant_id: uuid.UUID = Depends(get_tenant_id),
-) -> None:
+):
     svc = TaxonomyService(db, tenant_id=tenant_id)
     await svc.delete_type(type_id)
     await db.commit()
+    return Response(status_code=204)
 
 
 # ─── Organizations ────────────────────────────────────────────────────────────
@@ -218,18 +219,19 @@ async def update_organization(
 
 @router.delete(
     "/organizations/{org_id}",
-    response_model=None,
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete an organization (only if no wallets are linked)",
+    response_class=Response,
 )
 async def delete_organization(
     org_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
     tenant_id: uuid.UUID = Depends(get_tenant_id),
-) -> None:
+):
     svc = TaxonomyService(db, tenant_id=tenant_id)
     await svc.delete_org(org_id)
     await db.commit()
+    return Response(status_code=204)
 
 
 @router.get(

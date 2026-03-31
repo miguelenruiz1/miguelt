@@ -6,8 +6,8 @@ Revises: 061_product_weight_volume
 from alembic import op
 import sqlalchemy as sa
 
-revision = "062_blockchain_anchor_fields"
-down_revision = "061_product_weight_volume"
+revision = "062"
+down_revision = "061"
 branch_labels = None
 depends_on = None
 
