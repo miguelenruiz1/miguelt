@@ -51,4 +51,3 @@ coverage.xml
 
 # Claude
 .claude/
-.github/workflows/deploy.yml
