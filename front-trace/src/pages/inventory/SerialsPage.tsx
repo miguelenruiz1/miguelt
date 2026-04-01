@@ -40,33 +40,33 @@ export function SerialsPage() {
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Seriales</h1>
+        <h1 className="text-2xl font-bold text-foreground">Seriales</h1>
         <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm">
+          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 ">
           <Plus className="h-4 w-4" /> Nuevo serial
         </button>
       </div>
 
       <div className="flex gap-3">
         <select value={filterEntity} onChange={e => setFilterEntity(e.target.value)}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+          className="rounded-2xl border border-border bg-card px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Todos los productos</option>
           {(productsData?.items ?? []).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+          className="rounded-2xl border border-border bg-card px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Todos los estados</option>
           {serialStatuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border  overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-slate-400">Cargando...</div>
+          <div className="p-8 text-center text-muted-foreground">Cargando...</div>
         ) : !data?.items?.length ? (
           <div className="p-8 text-center">
             <Hash className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-            <p className="text-sm text-slate-400">Sin seriales registrados</p>
+            <p className="text-sm text-muted-foreground">Sin seriales registrados</p>
           </div>
         ) : (<>
           {/* Mobile cards */}
@@ -74,27 +74,27 @@ export function SerialsPage() {
             {data.items.map(s => {
               const st = statusMap[s.status_id]
               return (
-                <div key={s.id} className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+                <div key={s.id} className="rounded-xl border border-border bg-card p-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs text-slate-700 font-semibold">{s.serial_number}</span>
-                    <span className="text-xs text-slate-400">{new Date(s.created_at).toLocaleDateString('es')}</span>
+                    <span className="font-mono text-xs text-foreground font-semibold">{s.serial_number}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleDateString('es')}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-slate-700">{productMap[s.entity_id] ?? s.entity_id.slice(0, 8)}</span>
+                    <span className="text-sm font-medium text-foreground">{productMap[s.entity_id] ?? s.entity_id.slice(0, 8)}</span>
                     <select value={s.status_id}
                       onChange={async e => { await updateSerial.mutateAsync({ id: s.id, data: { status_id: e.target.value } }) }}
-                      className="rounded-full border-0 bg-slate-50 px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="rounded-full border-0 bg-muted px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-ring"
                       style={{ color: st?.color ?? '#6366f1' }}
                     >
                       {serialStatuses.map(ss => <option key={ss.id} value={ss.id}>{ss.name}</option>)}
                     </select>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>Bodega: {s.warehouse_id ? whMap[s.warehouse_id] ?? '—' : '—'}</span>
                     <span className="flex items-center gap-2">
                       <span>{resolve(s.created_by)}</span>
                       <button onClick={async () => { if (confirm('¿Eliminar serial ' + s.serial_number + '?')) await deleteSerial.mutateAsync(s.id) }}
-                        className="p-1 text-slate-400 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
+                        className="p-1 text-muted-foreground hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
                     </span>
                   </div>
                 </div>
@@ -104,10 +104,10 @@ export function SerialsPage() {
           {/* Desktop table */}
           <div className="hidden md:block">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-100">
+            <thead className="bg-muted border-b border-border">
               <tr>
                 {['Serial', 'Producto', 'Estado', 'Bodega', 'Fecha', 'Creado por', 'Acciones'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -115,24 +115,24 @@ export function SerialsPage() {
               {data.items.map(s => {
                 const st = statusMap[s.status_id]
                 return (
-                  <tr key={s.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-mono text-xs text-slate-700 font-semibold">{s.serial_number}</td>
-                    <td className="px-4 py-3 font-medium text-slate-700">{productMap[s.entity_id] ?? s.entity_id.slice(0, 8)}</td>
+                  <tr key={s.id} className="hover:bg-muted">
+                    <td className="px-4 py-3 font-mono text-xs text-foreground font-semibold">{s.serial_number}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">{productMap[s.entity_id] ?? s.entity_id.slice(0, 8)}</td>
                     <td className="px-4 py-3">
                       <select value={s.status_id}
                         onChange={async e => { await updateSerial.mutateAsync({ id: s.id, data: { status_id: e.target.value } }) }}
-                        className="rounded-full border-0 bg-slate-50 px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="rounded-full border-0 bg-muted px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-ring"
                         style={{ color: st?.color ?? '#6366f1' }}
                       >
                         {serialStatuses.map(ss => <option key={ss.id} value={ss.id}>{ss.name}</option>)}
                       </select>
                     </td>
-                    <td className="px-4 py-3 text-slate-500 text-xs">{s.warehouse_id ? whMap[s.warehouse_id] ?? '—' : '—'}</td>
-                    <td className="px-4 py-3 text-slate-400 text-xs">{new Date(s.created_at).toLocaleDateString('es')}</td>
-                    <td className="px-4 py-3 text-slate-400 text-xs">{resolve(s.created_by)}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{s.warehouse_id ? whMap[s.warehouse_id] ?? '—' : '—'}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(s.created_at).toLocaleDateString('es')}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{resolve(s.created_by)}</td>
                     <td className="px-4 py-3 text-right">
                       <button onClick={async () => { if (confirm('¿Eliminar serial ' + s.serial_number + '?')) await deleteSerial.mutateAsync(s.id) }}
-                        className="p-1 text-slate-400 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
+                        className="p-1 text-muted-foreground hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
                     </td>
                   </tr>
                 )
@@ -175,32 +175,32 @@ function CreateSerialModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
-        <h2 className="text-lg font-bold text-slate-900 mb-4">Nuevo Serial</h2>
+      <div className="w-full max-w-md bg-card rounded-3xl shadow-2xl p-6">
+        <h2 className="text-lg font-bold text-foreground mb-4">Nuevo Serial</h2>
         <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
           <select required value={form.entity_id} onChange={e => setForm(f => ({ ...f, entity_id: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+            className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="">Producto *</option>
             {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <input required value={form.serial_number} onChange={e => setForm(f => ({ ...f, serial_number: e.target.value }))}
-            placeholder="Número de serial *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring" />
+            placeholder="Número de serial *" className="w-full rounded-xl border border-border px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring" />
           <div className="grid grid-cols-2 gap-3">
             <select required value={form.status_id} onChange={e => setForm(f => ({ ...f, status_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Estado *</option>
               {statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             <select value={form.warehouse_id} onChange={e => setForm(f => ({ ...f, warehouse_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Bodega</option>
               {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
           </div>
           <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-            placeholder="Notas (opcional)" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            placeholder="Notas (opcional)" className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-muted">Cancelar</button>
             <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {create.isPending ? 'Guardando...' : 'Crear serial'}
             </button>

@@ -42,13 +42,13 @@ export function AlertsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Bell className="h-6 w-6 text-amber-500" /> Alertas de Stock
             {(unread?.count ?? 0) > 0 && (
               <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">{unread?.count}</span>
             )}
           </h1>
-          <p className="text-sm text-slate-500 mt-1">Monitorea niveles criticos de inventario</p>
+          <p className="text-sm text-muted-foreground mt-1">Monitorea niveles criticos de inventario</p>
         </div>
         <button onClick={() => scan.mutate()} disabled={scan.isPending} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl transition disabled:opacity-50">
           <RefreshCw className={cn('h-4 w-4', scan.isPending && 'animate-spin')} /> Escanear
@@ -64,10 +64,10 @@ export function AlertsPage() {
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-2">
           {FILTER_OPTIONS.map(f => (
-            <button key={f.value} onClick={() => setTypeFilter(f.value)} className={cn('px-3 py-1.5 text-xs font-medium rounded-lg transition', typeFilter === f.value ? 'bg-primary/15 text-primary' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')}>{f.label}</button>
+            <button key={f.value} onClick={() => setTypeFilter(f.value)} className={cn('px-3 py-1.5 text-xs font-medium rounded-lg transition', typeFilter === f.value ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground hover:bg-slate-200')}>{f.label}</button>
           ))}
         </div>
-        <label className="flex items-center gap-2 text-xs text-slate-500 ml-auto">
+        <label className="flex items-center gap-2 text-xs text-muted-foreground ml-auto">
           <input type="checkbox" checked={showResolved} onChange={e => setShowResolved(e.target.checked)} className="rounded" />
           Mostrar resueltas
         </label>
@@ -78,57 +78,57 @@ export function AlertsPage() {
       ) : (
         <div className="space-y-3">
           {alerts.map(a => (
-            <div key={a.id} className={cn('bg-white rounded-xl border border-slate-200/60 shadow-sm p-4 flex items-start gap-4', !a.is_read && 'ring-2 ring-ring/30')}>
-              <div className={cn('shrink-0 h-10 w-10 rounded-full flex items-center justify-center mt-0.5', ALERT_TYPE_CONFIG[a.alert_type]?.color ?? 'bg-slate-100')}>
+            <div key={a.id} className={cn('bg-card rounded-xl border border-border/60  p-4 flex items-start gap-4', !a.is_read && 'ring-2 ring-ring/30')}>
+              <div className={cn('shrink-0 h-10 w-10 rounded-full flex items-center justify-center mt-0.5', ALERT_TYPE_CONFIG[a.alert_type]?.color ?? 'bg-secondary')}>
                 {a.alert_type === 'out_of_stock' ? <BellOff className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={cn('px-1.5 py-0.5 rounded text-xs font-semibold', ALERT_TYPE_CONFIG[a.alert_type]?.color)}>{ALERT_TYPE_CONFIG[a.alert_type]?.label}</span>
                   {a.product_name && (
-                    <span className="flex items-center gap-1 text-sm font-semibold text-slate-900">
-                      <Package className="h-3.5 w-3.5 text-slate-400" />
+                    <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                      <Package className="h-3.5 w-3.5 text-muted-foreground" />
                       {a.product_name}
-                      {a.product_sku && <span className="text-xs font-normal text-slate-400">({a.product_sku})</span>}
+                      {a.product_sku && <span className="text-xs font-normal text-muted-foreground">({a.product_sku})</span>}
                     </span>
                   )}
                   {a.is_resolved && <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded text-xs font-semibold">Resuelta</span>}
                 </div>
-                <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-500">
+                <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                   {a.warehouse_name && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 bg-slate-100 rounded-md font-medium">
+                    <span className="flex items-center gap-1 px-2 py-0.5 bg-secondary rounded-md font-medium">
                       <Warehouse className="h-3 w-3" />
                       {a.warehouse_name}
                     </span>
                   )}
                   {!a.warehouse_name && a.warehouse_id == null && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 bg-slate-100 rounded-md font-medium">
+                    <span className="flex items-center gap-1 px-2 py-0.5 bg-secondary rounded-md font-medium">
                       <Warehouse className="h-3 w-3" />
                       Todas las bodegas
                     </span>
                   )}
                   <span className="font-mono">
                     Actual: <strong className={a.current_qty === 0 ? 'text-red-600' : 'text-amber-600'}>{a.current_qty}</strong>
-                    {a.uom && <span className="text-slate-400 ml-0.5">{a.uom}</span>}
+                    {a.uom && <span className="text-muted-foreground ml-0.5">{a.uom}</span>}
                     {' '} · Umbral: <strong>{a.threshold_qty}</strong>
-                    {a.uom && <span className="text-slate-400 ml-0.5">{a.uom}</span>}
+                    {a.uom && <span className="text-muted-foreground ml-0.5">{a.uom}</span>}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                   {a.created_at && <span>{new Date(a.created_at).toLocaleString()}</span>}
                 </div>
               </div>
               <div className="flex gap-1 shrink-0">
                 {!a.is_read && (
-                  <button onClick={() => markRead.mutate(a.id)} title="Marcar leida" className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg"><Eye className="h-4 w-4" /></button>
+                  <button onClick={() => markRead.mutate(a.id)} title="Marcar leida" className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg"><Eye className="h-4 w-4" /></button>
                 )}
                 {!a.is_resolved && (
-                  <button onClick={() => resolve.mutate(a.id)} title="Resolver" className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg"><CheckCircle2 className="h-4 w-4" /></button>
+                  <button onClick={() => resolve.mutate(a.id)} title="Resolver" className="p-2 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 rounded-lg"><CheckCircle2 className="h-4 w-4" /></button>
                 )}
               </div>
             </div>
           ))}
-          {alerts.length === 0 && <p className="text-center text-slate-400 py-12">Sin alertas</p>}
+          {alerts.length === 0 && <p className="text-center text-muted-foreground py-12">Sin alertas</p>}
         </div>
       )}
     </div>

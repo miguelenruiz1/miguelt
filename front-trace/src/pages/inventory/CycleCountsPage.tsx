@@ -15,7 +15,7 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
 ]
 
 const statusColors: Record<string, string> = {
-  draft: 'bg-slate-100 text-slate-700',
+  draft: 'bg-secondary text-foreground',
   in_progress: 'bg-blue-100 text-blue-700',
   completed: 'bg-amber-100 text-amber-700',
   approved: 'bg-green-100 text-green-700',
@@ -49,13 +49,13 @@ export function CycleCountsPage() {
             <ClipboardCheck className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Conteo Ciclico</h1>
-            <p className="text-sm text-slate-500">Verificacion de inventario fisico vs sistema</p>
+            <h1 className="text-2xl font-bold text-foreground">Conteo Ciclico</h1>
+            <p className="text-sm text-muted-foreground">Verificacion de inventario fisico vs sistema</p>
           </div>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm"
+          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 "
         >
           <Plus className="h-4 w-4" /> Nuevo conteo
         </button>
@@ -70,7 +70,7 @@ export function CycleCountsPage() {
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
               statusFilter === opt.value
                 ? 'bg-primary text-white'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                : 'bg-secondary text-muted-foreground hover:bg-slate-200'
             }`}
           >
             {opt.label}
@@ -79,28 +79,28 @@ export function CycleCountsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border  overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-slate-400">Cargando...</div>
+          <div className="p-8 text-center text-muted-foreground">Cargando...</div>
         ) : !data?.items?.length ? (
-          <div className="p-8 text-center text-slate-400">Sin conteos registrados</div>
+          <div className="p-8 text-center text-muted-foreground">Sin conteos registrados</div>
         ) : (
           <>
           {/* Mobile cards */}
           <div className="space-y-3 p-4 md:hidden">
             {data.items.map((cc) => (
-              <Link key={cc.id} to={`/inventario/conteos/${cc.id}`} className="block rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
+              <Link key={cc.id} to={`/inventario/conteos/${cc.id}`} className="block rounded-xl border border-border bg-card p-4  space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-primary">{cc.count_number}</span>
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[cc.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[cc.status] ?? 'bg-secondary text-muted-foreground'}`}>
                     {statusLabels[cc.status] ?? cc.status}
                   </span>
                 </div>
                 <div className="space-y-1 text-sm">
-                  <div className="flex justify-between"><span className="text-slate-400">Bodega</span><span className="text-slate-600">{cc.warehouse_name ?? '-'}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Fecha</span><span className="text-slate-600">{cc.scheduled_date ? new Date(cc.scheduled_date).toLocaleDateString() : '-'}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Creado</span><span className="text-slate-600">{new Date(cc.created_at).toLocaleDateString()}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Creado por</span><span className="text-slate-500 text-xs">{resolve(cc.created_by)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Bodega</span><span className="text-muted-foreground">{cc.warehouse_name ?? '-'}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Fecha</span><span className="text-muted-foreground">{cc.scheduled_date ? new Date(cc.scheduled_date).toLocaleDateString() : '-'}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Creado</span><span className="text-muted-foreground">{new Date(cc.created_at).toLocaleDateString()}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Creado por</span><span className="text-muted-foreground text-xs">{resolve(cc.created_by)}</span></div>
                 </div>
               </Link>
             ))}
@@ -110,40 +110,40 @@ export function CycleCountsPage() {
           <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm min-w-[600px]">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Numero</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Bodega</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Estado</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Fecha</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Creado</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Creado por</th>
+              <tr className="bg-muted border-b border-border">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Numero</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bodega</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Estado</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Fecha</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Creado</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Creado por</th>
                 <th className="w-10" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {data.items.map((cc) => (
-                <tr key={cc.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-900">
+                <tr key={cc.id} className="hover:bg-muted">
+                  <td className="px-4 py-3 font-medium text-foreground">
                     <Link to={`/inventario/conteos/${cc.id}`} className="text-primary hover:underline">
                       {cc.count_number}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{cc.warehouse_name ?? '-'}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{cc.warehouse_name ?? '-'}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[cc.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[cc.status] ?? 'bg-secondary text-muted-foreground'}`}>
                       {statusLabels[cc.status] ?? cc.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-500">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {cc.scheduled_date ? new Date(cc.scheduled_date).toLocaleDateString() : '-'}
                   </td>
-                  <td className="px-4 py-3 text-slate-500">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {new Date(cc.created_at).toLocaleDateString()}
                   </td>
-                  <td className="px-4 py-3 text-slate-400 text-xs">{resolve(cc.created_by)}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{resolve(cc.created_by)}</td>
                   <td className="px-4 py-3">
                     <Link to={`/inventario/conteos/${cc.id}`}>
-                      <ChevronRight className="h-4 w-4 text-slate-400" />
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </Link>
                   </td>
                 </tr>
@@ -204,18 +204,18 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
         ref={formRef}
         onSubmit={validateAndSubmit}
         noValidate
-        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 space-y-5 max-h-[80vh] overflow-y-auto"
+        className="w-full max-w-lg bg-card rounded-3xl shadow-2xl p-6 space-y-5 max-h-[80vh] overflow-y-auto"
       >
-        <h2 className="text-lg font-bold text-slate-900">Nuevo Conteo Ciclico</h2>
+        <h2 className="text-lg font-bold text-foreground">Nuevo Conteo Ciclico</h2>
 
         {/* Warehouse */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Bodega *</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Bodega *</label>
           <select
             value={warehouseId}
             onChange={(e) => setWarehouseId(e.target.value)}
             required
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:border-primary"
+            className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:border-primary"
           >
             <option value="">Seleccionar bodega</option>
             {warehouses?.map((w) => (
@@ -226,34 +226,34 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
 
         {/* Products (optional multiselect) */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Productos <span className="text-slate-400 text-xs">(vacio = todos con stock)</span>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Productos <span className="text-muted-foreground text-xs">(vacio = todos con stock)</span>
           </label>
-          <div className="border border-slate-200 rounded-xl max-h-40 overflow-y-auto p-2 space-y-1">
+          <div className="border border-border rounded-xl max-h-40 overflow-y-auto p-2 space-y-1">
             {productsData?.items?.map((p) => (
-              <label key={p.id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-50 cursor-pointer">
+              <label key={p.id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-muted cursor-pointer">
                 <input
                   type="checkbox"
                   checked={selectedProducts.includes(p.id)}
                   onChange={() => toggleProduct(p.id)}
                   className="rounded text-primary"
                 />
-                <span className="text-sm text-slate-700">{p.sku} — {p.name}</span>
+                <span className="text-sm text-foreground">{p.sku} — {p.name}</span>
               </label>
             ))}
             {!productsData?.items?.length && (
-              <p className="text-xs text-slate-400 px-2">Sin productos</p>
+              <p className="text-xs text-muted-foreground px-2">Sin productos</p>
             )}
           </div>
         </div>
 
         {/* Methodology */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Metodologia</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Metodologia</label>
           <select
             value={methodology}
             onChange={(e) => setMethodology(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:border-primary"
+            className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:border-primary"
           >
             <option value="">Sin metodologia especifica</option>
             <option value="control_group">Grupo de control</option>
@@ -268,46 +268,46 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
         {/* Personnel */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Contadores asignados</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Contadores asignados</label>
             <input
               type="number"
               min={1}
               value={assignedCounters}
               onChange={(e) => setAssignedCounters(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Min/conteo</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Min/conteo</label>
             <input
               type="number"
               min={1}
               value={minutesPerCount}
               onChange={(e) => setMinutesPerCount(Math.max(1, parseInt(e.target.value) || 2))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
             />
           </div>
         </div>
 
         {/* Scheduled date */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Fecha programada</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Fecha programada</label>
           <input
             type="date"
             value={scheduledDate}
             onChange={(e) => setScheduledDate(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
+            className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
           />
         </div>
 
         {/* Notes */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Notas</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Notas</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
+            className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -316,7 +316,7 @@ function CreateCycleCountModal({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900"
+            className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             Cancelar
           </button>

@@ -24,7 +24,7 @@ const CATEGORIES = [
 ]
 
 const CATEGORY_COLORS: Record<string, string> = {
-  general: 'bg-slate-100 text-slate-600',
+  general: 'bg-secondary text-muted-foreground',
   compliance: 'bg-emerald-50 text-emerald-700',
   custody_proof: 'bg-blue-50 text-blue-700',
   customs: 'bg-orange-50 text-orange-700',
@@ -105,8 +105,8 @@ export default function MediaPage() {
             <FolderOpen className="h-5 w-5 text-indigo-600" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Biblioteca de Media</h1>
-            <p className="text-sm text-slate-500">{total} archivo{total !== 1 ? 's' : ''} en el sistema</p>
+            <h1 className="text-xl font-bold text-foreground">Biblioteca de Media</h1>
+            <p className="text-sm text-muted-foreground">{total} archivo{total !== 1 ? 's' : ''} en el sistema</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -121,22 +121,22 @@ export default function MediaPage() {
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input type="text" placeholder="Buscar archivos..." value={search}
             onChange={(e) => { setSearch(e.target.value); setOffset(0) }}
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground">
               <X className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <Filter className="h-4 w-4 text-slate-400" />
+          <Filter className="h-4 w-4 text-muted-foreground" />
           {CATEGORIES.map(c => (
             <button key={c.value} onClick={() => { setCategory(c.value); setOffset(0) }}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                category === c.value ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                category === c.value ? 'bg-primary text-white' : 'bg-secondary text-muted-foreground hover:bg-slate-200'
               }`}>
               {c.label}
             </button>
@@ -149,16 +149,16 @@ export default function MediaPage() {
         <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
       ) : files.length === 0 ? (
         <button onClick={() => inputRef.current?.click()}
-          className="w-full flex flex-col items-center justify-center py-20 text-slate-400 hover:text-primary/60 transition-colors group">
+          className="w-full flex flex-col items-center justify-center py-20 text-muted-foreground hover:text-primary/60 transition-colors group">
           <Upload className="h-12 w-12 mb-3 group-hover:text-primary/40" />
-          <p className="font-medium text-slate-500">No hay archivos</p>
+          <p className="font-medium text-muted-foreground">No hay archivos</p>
           <p className="text-sm mt-1">Haz click para subir desde tu PC</p>
         </button>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase">
+              <tr className="bg-muted text-left text-xs font-semibold text-muted-foreground uppercase">
                 <th className="px-4 py-3 w-12"></th>
                 <th className="px-4 py-3">Nombre</th>
                 <th className="px-4 py-3">Categoria</th>
@@ -199,7 +199,7 @@ export default function MediaPage() {
           <Button variant="ghost" size="sm" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - limit))}>
             Anterior
           </Button>
-          <span className="text-xs text-slate-500">{offset + 1}–{Math.min(offset + limit, total)} de {total}</span>
+          <span className="text-xs text-muted-foreground">{offset + 1}–{Math.min(offset + limit, total)} de {total}</span>
           <Button variant="ghost" size="sm" disabled={offset + limit >= total} onClick={() => setOffset(offset + limit)}>
             Siguiente
           </Button>
@@ -234,27 +234,27 @@ function FileRow({ file, refCount, isEditing, onEdit, onCancelEdit, onSave, onDe
     return (
       <tr className="bg-primary/[0.02]">
         <td className="px-4 py-2">
-          <div className="h-8 w-8 rounded-lg overflow-hidden bg-slate-50 flex items-center justify-center">
+          <div className="h-8 w-8 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
             {isImg ? <img src={fullUrl} alt="" className="h-full w-full object-cover" /> : <Icon className="h-4 w-4 text-slate-300" />}
           </div>
         </td>
         <td className="px-4 py-2">
           <input value={title} onChange={e => setTitle(e.target.value)}
-            className="w-full px-2 py-1 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" />
+            className="w-full px-2 py-1 text-sm border border-border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none" />
           <input value={desc} onChange={e => setDesc(e.target.value)} placeholder="Descripcion..."
-            className="w-full px-2 py-1 mt-1 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 outline-none text-slate-500" />
+            className="w-full px-2 py-1 mt-1 text-xs border border-border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none text-muted-foreground" />
         </td>
         <td className="px-4 py-2">
           <select value={cat} onChange={e => setCat(e.target.value)}
-            className="text-xs border border-slate-200 rounded-lg px-2 py-1 outline-none">
+            className="text-xs border border-border rounded-lg px-2 py-1 outline-none">
             {CATEGORIES.filter(c => c.value).map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
         </td>
         <td className="px-4 py-2">
           <input value={docType} onChange={e => setDocType(e.target.value)} placeholder="Tipo..."
-            className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg outline-none" />
+            className="w-full px-2 py-1 text-xs border border-border rounded-lg outline-none" />
         </td>
-        <td className="px-4 py-2 text-right text-xs text-slate-400">{fmtSize(file.file_size)}</td>
+        <td className="px-4 py-2 text-right text-xs text-muted-foreground">{fmtSize(file.file_size)}</td>
         <td className="px-4 py-2"></td>
         <td className="px-4 py-2"></td>
         <td className="px-4 py-2"></td>
@@ -265,7 +265,7 @@ function FileRow({ file, refCount, isEditing, onEdit, onCancelEdit, onSave, onDe
               className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg">
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
             </button>
-            <button onClick={onCancelEdit} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg">
+            <button onClick={onCancelEdit} className="p-1.5 text-muted-foreground hover:bg-secondary rounded-lg">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -275,17 +275,17 @@ function FileRow({ file, refCount, isEditing, onEdit, onCancelEdit, onSave, onDe
   }
 
   return (
-    <tr className="hover:bg-slate-50/50 transition-colors">
+    <tr className="hover:bg-muted/50 transition-colors">
       {/* Thumbnail */}
       <td className="px-4 py-2.5">
-        <div className="h-8 w-8 rounded-lg overflow-hidden bg-slate-50 flex items-center justify-center">
+        <div className="h-8 w-8 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
           {isImg ? <img src={fullUrl} alt="" className="h-full w-full object-cover" /> : <Icon className="h-4 w-4 text-slate-300" />}
         </div>
       </td>
       {/* Name + description */}
       <td className="px-4 py-2.5">
-        <p className="text-sm font-medium text-slate-800 truncate max-w-[250px]">{file.title || file.original_filename}</p>
-        {file.description && <p className="text-[11px] text-slate-400 truncate max-w-[250px]">{file.description}</p>}
+        <p className="text-sm font-medium text-foreground truncate max-w-[250px]">{file.title || file.original_filename}</p>
+        {file.description && <p className="text-[11px] text-muted-foreground truncate max-w-[250px]">{file.description}</p>}
         <p className="text-[10px] text-slate-300 font-mono">{file.original_filename}</p>
       </td>
       {/* Category */}
@@ -297,18 +297,18 @@ function FileRow({ file, refCount, isEditing, onEdit, onCancelEdit, onSave, onDe
       {/* Document type */}
       <td className="px-4 py-2.5">
         {file.document_type ? (
-          <span className="text-xs text-slate-500">{file.document_type}</span>
+          <span className="text-xs text-muted-foreground">{file.document_type}</span>
         ) : (
           <span className="text-xs text-slate-300">—</span>
         )}
       </td>
       {/* Size */}
       <td className="px-4 py-2.5 text-right">
-        <span className="text-xs text-slate-500 tabular-nums">{fmtSize(file.file_size)}</span>
+        <span className="text-xs text-muted-foreground tabular-nums">{fmtSize(file.file_size)}</span>
       </td>
       {/* Hash */}
       <td className="px-4 py-2.5">
-        <span className="text-[10px] font-mono text-slate-400" title={file.file_hash}>{file.file_hash.slice(0, 10)}...</span>
+        <span className="text-[10px] font-mono text-muted-foreground" title={file.file_hash}>{file.file_hash.slice(0, 10)}...</span>
       </td>
       {/* Reference count */}
       <td className="px-4 py-2.5 text-center">
@@ -322,19 +322,19 @@ function FileRow({ file, refCount, isEditing, onEdit, onCancelEdit, onSave, onDe
       </td>
       {/* Date */}
       <td className="px-4 py-2.5">
-        <span className="text-xs text-slate-400">{fmtDate(file.created_at)}</span>
+        <span className="text-xs text-muted-foreground">{fmtDate(file.created_at)}</span>
       </td>
       {/* Actions */}
       <td className="px-4 py-2.5 text-right">
         <div className="flex items-center gap-0.5 justify-end">
           <a href={fullUrl} target="_blank" rel="noopener noreferrer"
-            className="p-1.5 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg" title="Abrir">
+            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg" title="Abrir">
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
-          <button onClick={onEdit} className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg" title="Editar">
+          <button onClick={onEdit} className="p-1.5 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 rounded-lg" title="Editar">
             <Pencil className="h-3.5 w-3.5" />
           </button>
-          <button onClick={onDelete} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Eliminar">
+          <button onClick={onDelete} className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg" title="Eliminar">
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>

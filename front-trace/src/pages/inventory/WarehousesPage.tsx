@@ -61,36 +61,36 @@ function WarehouseModal({
   const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
 
   const isPending = create.isPending || update.isPending
-  const inputCls = 'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20'
+  const inputCls = 'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-foreground  placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-gray-900/50" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-xl max-h-[90vh] overflow-y-auto">
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800">
+      <div className="relative w-full max-w-md bg-card rounded-2xl border border-border shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="px-6 pt-6 pb-4 border-b border-border">
+          <h2 className="text-lg font-semibold text-foreground">
             {warehouse ? 'Editar Bodega' : 'Nueva Bodega'}
           </h2>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             {warehouse ? 'Modifica la configuración de la bodega' : 'Agrega una nueva bodega a tu inventario'}
           </p>
         </div>
 
         <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="px-6 py-5 space-y-4">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">Nombre *</label>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">Nombre *</label>
             <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               placeholder="Ej: Bodega Central"
               className={inputCls} />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">Código *</label>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">Código *</label>
             <input required value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
               placeholder="Ej: MAIN"
               className={cn(inputCls, 'font-mono')} />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">Tipo de bodega</label>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">Tipo de bodega</label>
             <select value={form.warehouse_type_id} onChange={e => setForm(f => ({ ...f, warehouse_type_id: e.target.value }))}
               className={inputCls}>
               <option value="">Sin tipo</option>
@@ -99,14 +99,14 @@ function WarehouseModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">Costo por m²</label>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Costo por m²</label>
               <input type="number" min={0} step="0.01" placeholder="Ej: 8.00"
                 className={inputCls}
                 value={form.cost_per_sqm ?? ''}
                 onChange={e => setForm(f => ({ ...f, cost_per_sqm: e.target.value ? Number(e.target.value) : null }))} />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">Área total (m²)</label>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Área total (m²)</label>
               <input type="number" min={0} step="0.01" placeholder="Ej: 500"
                 className={inputCls}
                 value={form.total_area_sqm ?? ''}
@@ -114,20 +114,20 @@ function WarehouseModal({
             </div>
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">Stock maximo (opcional)</label>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">Stock maximo (opcional)</label>
             <input type="number" min={1} step="1" placeholder="Ej: 500 — dejar vacio si no tiene tope"
               className={inputCls}
               value={form.max_stock_capacity ?? ''}
               onChange={e => setForm(f => ({ ...f, max_stock_capacity: e.target.value ? Number(e.target.value) : null }))} />
-            <p className="mt-1 text-xs text-gray-400">Capacidad maxima de productos. Se usa para calcular % de ocupacion en el dashboard.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Capacidad maxima de productos. Se usa para calcular % de ocupacion en el dashboard.</p>
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
             <input type="checkbox" checked={form.is_default} onChange={e => setForm(f => ({ ...f, is_default: e.target.checked }))}
               className="rounded" />
             Bodega predeterminada
           </label>
           {warehouse && (
-            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
               <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))}
                 className="rounded" />
               Activa
@@ -141,7 +141,7 @@ function WarehouseModal({
               <p className="text-xs text-red-500">No se puede eliminar si tiene órdenes de producción activas.</p>
               <div className="flex gap-2">
                 <button type="button" onClick={() => setConfirmDelete(false)}
-                  className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-600 hover:bg-white">
+                  className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-muted-foreground hover:bg-card">
                   No, cancelar
                 </button>
                 <button type="button" disabled={remove.isPending}
@@ -161,7 +161,7 @@ function WarehouseModal({
           )}
         </form>
 
-        <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
+        <div className="flex gap-3 px-6 py-4 border-t border-border">
           {warehouse && !confirmDelete && (
             <button type="button" onClick={() => setConfirmDelete(true)}
               className="rounded-lg border border-red-200 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 hover:text-red-700 transition"
@@ -170,7 +170,7 @@ function WarehouseModal({
             </button>
           )}
           <button type="button" onClick={onClose}
-            className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+            className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition">
             Cancelar
           </button>
           <button type="submit" form="" disabled={isPending}
@@ -179,7 +179,7 @@ function WarehouseModal({
               const formEl = document.querySelector<HTMLFormElement>('form')
               formEl?.requestSubmit()
             }}
-            className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary disabled:opacity-60 shadow-sm transition">
+            className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary disabled:opacity-60  transition">
             {isPending ? 'Guardando…' : warehouse ? 'Guardar' : 'Crear bodega'}
           </button>
         </div>
@@ -210,8 +210,8 @@ export function WarehousesPage() {
       {/* Breadcrumb */}
       <nav className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
-          <li className="text-gray-500">Inventario</li>
-          <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
+          <li className="text-muted-foreground">Inventario</li>
+          <li><ChevronRight className="h-4 w-4 text-muted-foreground" /></li>
           <li className="text-primary">Bodegas</li>
         </ol>
       </nav>
@@ -219,12 +219,12 @@ export function WarehousesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Bodegas</h1>
-          <p className="text-sm text-gray-500 mt-1">Administra las ubicaciones de almacenamiento</p>
+          <h1 className="text-2xl font-semibold text-foreground">Bodegas</h1>
+          <p className="text-sm text-muted-foreground mt-1">Administra las ubicaciones de almacenamiento</p>
         </div>
         <button
           onClick={() => setModal('new')}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary shadow-sm transition"
+          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary  transition"
         >
           <Plus className="h-4 w-4" /> Nueva bodega
         </button>
@@ -234,13 +234,13 @@ export function WarehousesPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-52 rounded-2xl border border-gray-200 bg-gray-50 animate-pulse" />
+            <div key={i} className="h-52 rounded-2xl border border-border bg-muted animate-pulse" />
           ))}
         </div>
       ) : warehouses.length === 0 ? (
         <div className="py-16 text-center">
           <WarehouseIcon className="h-12 w-12 text-gray-200 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Sin bodegas. Crea la primera.</p>
+          <p className="text-sm text-muted-foreground">Sin bodegas. Crea la primera.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -251,7 +251,7 @@ export function WarehousesPage() {
             if (!a.is_active && b.is_active) return 1
             return 0
           }).map((wh) => {
-            const colors = WAREHOUSE_COLORS[wh.type] ?? { bg: 'bg-gray-50', text: 'text-gray-600' }
+            const colors = WAREHOUSE_COLORS[wh.type] ?? { bg: 'bg-muted', text: 'text-muted-foreground' }
             const whType = wh.warehouse_type_id ? whTypeMap[wh.warehouse_type_id] : null
             const skuCount = stockByWarehouse[wh.id] ?? 0
 
@@ -259,10 +259,10 @@ export function WarehousesPage() {
               <div
                 key={wh.id}
                 className={cn(
-                  'rounded-2xl border p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer',
+                  'rounded-2xl border p-5  hover:shadow-md transition-shadow cursor-pointer',
                   wh.is_active
-                    ? 'border-gray-200 bg-white'
-                    : 'border-gray-200/60 bg-gray-50 opacity-70',
+                    ? 'border-border bg-card'
+                    : 'border-border/60 bg-muted opacity-70',
                 )}
                 onClick={() => navigate(`/inventario/bodegas/${wh.id}`)}
               >
@@ -273,7 +273,7 @@ export function WarehousesPage() {
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); setModal(wh) }}
-                    className="rounded-lg p-2 text-gray-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                    className="rounded-lg p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                     title="Editar bodega"
                   >
                     <Pencil className="h-4 w-4" />
@@ -282,38 +282,38 @@ export function WarehousesPage() {
 
                 {/* Title + badges */}
                 <div className="mt-4 flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-gray-800">{wh.name}</h3>
+                  <h3 className="text-sm font-semibold text-foreground">{wh.name}</h3>
                   {wh.is_active ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
                       <CheckCircle2 className="h-3 w-3" /> Activa
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                       Inactiva
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5 font-mono">{wh.code}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 font-mono">{wh.code}</p>
 
                 {/* Description / type */}
-                <p className="mt-2 text-sm text-gray-500 leading-relaxed">
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
                   {whType ? whType.name : wh.type.charAt(0).toUpperCase() + wh.type.slice(1)}
                   {wh.is_default && <span className="text-primary font-medium"> · Predeterminada</span>}
                 </p>
 
                 {/* Feature tags */}
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-600">
-                    <MapPin className="h-3 w-3 text-gray-400" /> {skuCount} SKUs
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3 text-muted-foreground" /> {skuCount} SKUs
                   </span>
                   {wh.total_area_sqm != null && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-600">
-                      <Ruler className="h-3 w-3 text-gray-400" /> {wh.total_area_sqm} m²
+                    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                      <Ruler className="h-3 w-3 text-muted-foreground" /> {wh.total_area_sqm} m²
                     </span>
                   )}
                   {wh.cost_per_sqm != null && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-600">
-                      <DollarSign className="h-3 w-3 text-gray-400" /> ${wh.cost_per_sqm}/m²
+                    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                      <DollarSign className="h-3 w-3 text-muted-foreground" /> ${wh.cost_per_sqm}/m²
                     </span>
                   )}
                   {wh.max_stock_capacity != null && (
@@ -324,8 +324,8 @@ export function WarehousesPage() {
                 </div>
 
                 {/* Footer: created by + ID */}
-                <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
-                  <span className="text-xs text-gray-400 truncate">Creado por: {resolve(wh.created_by)}</span>
+                <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+                  <span className="text-xs text-muted-foreground truncate">Creado por: {resolve(wh.created_by)}</span>
                   <CopyableId id={wh.id} />
                 </div>
               </div>

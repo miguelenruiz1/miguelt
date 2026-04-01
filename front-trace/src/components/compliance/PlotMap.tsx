@@ -44,7 +44,7 @@ export function PlotMap({ plots, height = '400px', onPlotClick, selectedPlotId }
 
   if (validPlots.length === 0) {
     return (
-      <div className="rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-400 text-sm" style={{ height }}>
+      <div className="rounded-xl border-2 border-dashed border-border flex items-center justify-center text-muted-foreground text-sm" style={{ height }}>
         Sin parcelas con coordenadas para mostrar en el mapa
       </div>
     )
@@ -56,7 +56,7 @@ export function PlotMap({ plots, height = '400px', onPlotClick, selectedPlotId }
   ]
 
   return (
-    <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm relative z-0" style={{ height }}>
+    <div className="rounded-xl overflow-hidden border border-border  relative z-0" style={{ height }}>
       <MapContainer center={center} zoom={10} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
@@ -97,7 +97,7 @@ export function PlotMap({ plots, height = '400px', onPlotClick, selectedPlotId }
                     </span>
                   </p>
                   <p>Riesgo: <span style={{ color }}>{plot.risk_level}</span></p>
-                  <p className="text-gray-400">{lat.toFixed(6)}, {lng.toFixed(6)}</p>
+                  <p className="text-muted-foreground">{lat.toFixed(6)}, {lng.toFixed(6)}</p>
                 </div>
               </Popup>
             </CircleMarker>
@@ -133,7 +133,7 @@ function FitGeoJSON({ geojson }: { geojson: GeoJSON.GeoJsonObject }) {
 export function SinglePlotMap({ plot, height = '300px', geojsonData }: SinglePlotMapProps) {
   if (plot.lat == null || plot.lng == null) {
     return (
-      <div className="rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-400 text-sm" style={{ height }}>
+      <div className="rounded-xl border-2 border-dashed border-border flex items-center justify-center text-muted-foreground text-sm" style={{ height }}>
         Sin coordenadas
       </div>
     )
@@ -144,7 +144,7 @@ export function SinglePlotMap({ plot, height = '300px', geojsonData }: SinglePlo
   const color = RISK_COLORS[plot.risk_level] || RISK_COLORS.standard
 
   return (
-    <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm relative z-0" style={{ height }}>
+    <div className="rounded-xl overflow-hidden border border-border  relative z-0" style={{ height }}>
       <MapContainer center={[lat, lng]} zoom={15} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'

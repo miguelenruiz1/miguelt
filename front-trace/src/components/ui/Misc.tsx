@@ -20,7 +20,7 @@ interface CardProps { className?: string; children: React.ReactNode }
 
 export function Card({ className, children }: CardProps) {
   return (
-    <div className={cn('rounded-md border border-border bg-card shadow-sm p-6', className)}>
+    <div className={cn('rounded-md border border-border bg-card  p-6', className)}>
       {children}
     </div>
   )
@@ -115,7 +115,7 @@ const statIconBg = {
 
 export function StatCard({ label, value, icon, variant = 'default', sub }: StatCardProps) {
   return (
-    <div className={cn('rounded-md border border-border bg-card shadow-sm py-6 px-7 transition-all', statBorder[variant])}>
+    <div className={cn('rounded-md border border-border bg-card  py-6 px-7 transition-all', statBorder[variant])}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-sm font-medium text-muted-foreground">{label}</p>

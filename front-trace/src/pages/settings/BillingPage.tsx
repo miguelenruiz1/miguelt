@@ -64,8 +64,8 @@ function UsageBar({ counter, label, icon: Icon }: { counter?: UsageCounter; labe
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Icon className="h-4 w-4 text-gray-400" />
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Icon className="h-4 w-4 text-muted-foreground" />
           <span>{counter.label ?? label}</span>
         </div>
         <span className={cn('text-sm font-semibold', usageTextColor(pct))}>
@@ -90,46 +90,46 @@ function CurrentPlanSection({ tenantId }: { tenantId: string }) {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 animate-pulse">
+      <div className="rounded-2xl border border-border bg-card p-6 animate-pulse">
         <div className="h-6 w-48 bg-gray-200 rounded mb-4" />
-        <div className="h-4 w-72 bg-gray-100 rounded" />
+        <div className="h-4 w-72 bg-secondary rounded" />
       </div>
     )
   }
 
   if (!usage) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6">
-        <p className="text-sm text-gray-500">No se encontro informacion de uso para este tenant.</p>
+      <div className="rounded-2xl border border-border bg-card p-6">
+        <p className="text-sm text-muted-foreground">No se encontro informacion de uso para este tenant.</p>
       </div>
     )
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-muted/50">
         <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
           <CreditCard className="h-4 w-4" />
         </div>
-        <h2 className="text-sm font-bold text-gray-800">Plan Actual</h2>
+        <h2 className="text-sm font-bold text-foreground">Plan Actual</h2>
       </div>
       <div className="px-6 py-5 space-y-5">
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-xl font-bold text-gray-900">{usage.plan_name}</h3>
+              <h3 className="text-xl font-bold text-foreground">{usage.plan_name}</h3>
               <Badge variant="info">Activo</Badge>
             </div>
             {sub?.plan && (
-              <p className="text-2xl font-extrabold text-gray-900 mt-1">
+              <p className="text-2xl font-extrabold text-foreground mt-1">
                 {fmtCurrency(Number(sub.plan.price_monthly ?? 0), sub.plan.currency ?? 'USD')}
-                <span className="text-sm font-normal text-gray-500"> / mes</span>
+                <span className="text-sm font-normal text-muted-foreground"> / mes</span>
               </p>
             )}
           </div>
           <div className="text-right">
-            <p className="text-xs text-gray-500">Proximo cobro</p>
-            <p className="text-sm font-semibold text-gray-800">
+            <p className="text-xs text-muted-foreground">Proximo cobro</p>
+            <p className="text-sm font-semibold text-foreground">
               {sub?.current_period_end ? fmtDate(sub.current_period_end) : '-'}
             </p>
           </div>
@@ -164,7 +164,7 @@ const planIcons: Record<string, React.ElementType> = {
 }
 
 const planGradients: Record<string, string> = {
-  free: 'from-gray-50 to-white border-gray-200',
+  free: 'from-gray-50 to-white border-border',
   starter: 'from-blue-50 to-white border-blue-200',
   professional: 'from-primary/10 to-white border-primary/30',
   enterprise: 'from-violet-50 to-white border-violet-200',
@@ -187,7 +187,7 @@ function PlanCard({
     <div
       className={cn(
         'relative rounded-2xl border bg-gradient-to-b p-5 flex flex-col transition-all',
-        planGradients[plan.slug] ?? 'from-gray-50 to-white border-gray-200',
+        planGradients[plan.slug] ?? 'from-gray-50 to-white border-border',
         isCurrent && 'ring-2 ring-ring',
       )}
     >
@@ -198,20 +198,20 @@ function PlanCard({
       )}
 
       <div className="flex items-center gap-2 mb-3">
-        <div className="h-8 w-8 rounded-lg bg-white shadow-sm flex items-center justify-center">
+        <div className="h-8 w-8 rounded-lg bg-card  flex items-center justify-center">
           <Icon className="h-4 w-4 text-primary" />
         </div>
-        <h3 className="text-base font-bold text-gray-900">{plan.name}</h3>
+        <h3 className="text-base font-bold text-foreground">{plan.name}</h3>
       </div>
 
-      <p className="text-2xl font-extrabold text-gray-900 mb-1">
+      <p className="text-2xl font-extrabold text-foreground mb-1">
         {plan.price_monthly < 0 ? 'Custom' : fmtCurrency(plan.price_monthly, plan.currency)}
-        {plan.price_monthly >= 0 && <span className="text-sm font-normal text-gray-500"> /mes</span>}
+        {plan.price_monthly >= 0 && <span className="text-sm font-normal text-muted-foreground"> /mes</span>}
       </p>
 
-      <p className="text-xs text-gray-500 mb-4">{plan.description ?? ''}</p>
+      <p className="text-xs text-muted-foreground mb-4">{plan.description ?? ''}</p>
 
-      <ul className="space-y-2 text-sm text-gray-600 flex-1 mb-4">
+      <ul className="space-y-2 text-sm text-muted-foreground flex-1 mb-4">
         <li className="flex items-center gap-2">
           <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
           {plan.max_users < 0 ? 'Usuarios ilimitados' : `Hasta ${plan.max_users} usuarios`}
@@ -270,11 +270,11 @@ function PlanComparisonSection({ tenantId, currentPlanSlug }: { tenantId: string
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 animate-pulse">
+      <div className="rounded-2xl border border-border bg-card p-6 animate-pulse">
         <div className="h-6 w-48 bg-gray-200 rounded mb-4" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-64 bg-gray-100 rounded-xl" />
+            <div key={i} className="h-64 bg-secondary rounded-xl" />
           ))}
         </div>
       </div>
@@ -282,12 +282,12 @@ function PlanComparisonSection({ tenantId, currentPlanSlug }: { tenantId: string
   }
 
   return (
-    <div id="plans" className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+    <div id="plans" className="rounded-2xl border border-border bg-card overflow-hidden">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-muted/50">
         <div className="h-8 w-8 rounded-xl bg-violet-50 flex items-center justify-center text-violet-500 shrink-0">
           <Crown className="h-4 w-4" />
         </div>
-        <h2 className="text-sm font-bold text-gray-800">Comparar Planes</h2>
+        <h2 className="text-sm font-bold text-foreground">Comparar Planes</h2>
       </div>
       <div className="px-6 py-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -312,42 +312,42 @@ function InvoiceHistorySection({ tenantId }: { tenantId: string }) {
   const { data: invoices, isLoading } = useTenantInvoices(tenantId)
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-muted/50">
         <div className="h-8 w-8 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0">
           <Receipt className="h-4 w-4" />
         </div>
-        <h2 className="text-sm font-bold text-gray-800">Historial de Facturas</h2>
+        <h2 className="text-sm font-bold text-foreground">Historial de Facturas</h2>
       </div>
       <div className="px-6 py-5">
         {isLoading ? (
           <div className="animate-pulse space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-10 bg-gray-100 rounded" />
+              <div key={i} className="h-10 bg-secondary rounded" />
             ))}
           </div>
         ) : !invoices || invoices.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-6">No hay facturas registradas.</p>
+          <p className="text-sm text-muted-foreground text-center py-6">No hay facturas registradas.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Numero</th>
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Periodo</th>
-                  <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Monto</th>
-                  <th className="text-center py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha pago</th>
+                <tr className="border-b border-border">
+                  <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Numero</th>
+                  <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Periodo</th>
+                  <th className="text-right py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Monto</th>
+                  <th className="text-center py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
+                  <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fecha pago</th>
                 </tr>
               </thead>
               <tbody>
                 {invoices.map((inv) => (
-                  <tr key={inv.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                    <td className="py-2.5 px-3 font-mono text-xs text-gray-700">{inv.invoice_number}</td>
-                    <td className="py-2.5 px-3 text-gray-600">
+                  <tr key={inv.id} className="border-b border-gray-50 hover:bg-muted/50 transition-colors">
+                    <td className="py-2.5 px-3 font-mono text-xs text-foreground">{inv.invoice_number}</td>
+                    <td className="py-2.5 px-3 text-muted-foreground">
                       {fmtDate(inv.period_start)} - {fmtDate(inv.period_end)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-semibold text-gray-800">
+                    <td className="py-2.5 px-3 text-right font-semibold text-foreground">
                       {fmtCurrency(inv.amount, inv.currency)}
                     </td>
                     <td className="py-2.5 px-3 text-center">
@@ -355,7 +355,7 @@ function InvoiceHistorySection({ tenantId }: { tenantId: string }) {
                         {invoiceStatusLabel[inv.status] ?? inv.status}
                       </Badge>
                     </td>
-                    <td className="py-2.5 px-3 text-gray-500">
+                    <td className="py-2.5 px-3 text-muted-foreground">
                       {inv.paid_at ? fmtDate(inv.paid_at) : '-'}
                     </td>
                   </tr>

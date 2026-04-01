@@ -5,7 +5,7 @@ import { useOrganization, useOrgAssets, useOrgWallets, useCustodianTypes } from 
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/button'
 import { StateBadge, WalletStatusBadge } from '@/components/domain-badges'
-import { Spinner, EmptyState } from '@/components/ui/Misc'
+import { Spinner, EmptyState } from '@/components/ui/misc'
 import { MintNFTModal } from '@/components/assets/MintNFTModal'
 import { GenerateWalletModal } from '@/components/wallets/GenerateWalletModal'
 import { fmtDateShort, shortPubkey } from '@/lib/utils'
@@ -37,20 +37,20 @@ function AssetCard({ asset, onClick }: { asset: Asset; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="text-left rounded-2xl border border-slate-200 bg-white hover:border-primary/50 hover:shadow-md transition-all duration-200 p-4 group"
+      className="text-left rounded-2xl border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200 p-4 group"
     >
       <div className="flex items-center justify-between gap-2 mb-2">
         <span className="text-2xl">{productEmoji(asset.product_type)}</span>
         <StateBadge state={asset.state} />
       </div>
-      <p className="font-semibold text-slate-800 text-sm truncate group-hover:text-primary transition-colors">
+      <p className="font-semibold text-foreground text-sm truncate group-hover:text-primary transition-colors">
         {name ?? asset.product_type}
       </p>
       {name && (
-        <p className="text-xs text-slate-400 truncate">{asset.product_type}</p>
+        <p className="text-xs text-muted-foreground truncate">{asset.product_type}</p>
       )}
       {weight && (
-        <p className="text-xs text-slate-500 mt-1">{String(weight)} {unit ?? ''}</p>
+        <p className="text-xs text-muted-foreground mt-1">{String(weight)} {unit ?? ''}</p>
       )}
       <p className="text-[10px] text-slate-300 mt-2 font-mono">
         {shortPubkey(asset.asset_mint)}
@@ -70,7 +70,7 @@ function WalletsTab({ orgId, onAddWallet }: { orgId: string; onAddWallet: () => 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-slate-600">{wallets.length} wallet{wallets.length !== 1 ? 's' : ''}</p>
+        <p className="text-sm font-semibold text-muted-foreground">{wallets.length} wallet{wallets.length !== 1 ? 's' : ''}</p>
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" onClick={() => refetch()} title="Actualizar">
             <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
@@ -96,19 +96,19 @@ function WalletsTab({ orgId, onAddWallet }: { orgId: string; onAddWallet: () => 
             <button
               key={w.id}
               onClick={() => navigate(`/wallets/${w.id}`)}
-              className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-white hover:border-primary/50 hover:shadow-sm transition-all text-left group"
+              className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/50 hover: transition-all text-left group"
             >
               <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                 <Wallet className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-800 group-hover:text-primary transition-colors truncate">
+                <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                   {w.name ?? shortPubkey(w.wallet_pubkey)}
                 </p>
-                <p className="text-xs text-slate-400 font-mono">{shortPubkey(w.wallet_pubkey)}</p>
+                <p className="text-xs text-muted-foreground font-mono">{shortPubkey(w.wallet_pubkey)}</p>
               </div>
               <WalletStatusBadge status={w.status} />
-              <p className="text-xs text-slate-400 whitespace-nowrap tabular-nums hidden sm:block">
+              <p className="text-xs text-muted-foreground whitespace-nowrap tabular-nums hidden sm:block">
                 {fmtDateShort(w.created_at)}
               </p>
             </button>
@@ -129,7 +129,7 @@ function AssetsTab({ orgId, onMintNFT }: { orgId: string; onMintNFT: () => void 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-slate-600">{assets.length} activo{assets.length !== 1 ? 's' : ''}</p>
+        <p className="text-sm font-semibold text-muted-foreground">{assets.length} activo{assets.length !== 1 ? 's' : ''}</p>
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" onClick={() => refetch()} title="Actualizar">
             <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
@@ -211,17 +211,17 @@ export function OrganizationDetailPage() {
         {/* Back */}
         <Link
           to="/organizations"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-primary transition-colors group"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors group"
         >
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           Volver a Organizaciones
         </Link>
 
         {/* Org header card */}
-        <div className="rounded-2xl border border-white bg-white shadow-sm p-5 flex items-start gap-4">
+        <div className="rounded-2xl border border-white bg-card  p-5 flex items-start gap-4">
           {type && (
             <div
-              className="h-12 w-12 rounded-2xl shrink-0 flex items-center justify-center text-white text-xl font-bold shadow-sm"
+              className="h-12 w-12 rounded-2xl shrink-0 flex items-center justify-center text-white text-xl font-bold "
               style={{ backgroundColor: type.color }}
             >
               {org.name[0].toUpperCase()}
@@ -229,7 +229,7 @@ export function OrganizationDetailPage() {
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-xl font-bold text-slate-900">{org.name}</h1>
+              <h1 className="text-xl font-bold text-foreground">{org.name}</h1>
               {type && (
                 <span
                   className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
@@ -239,22 +239,22 @@ export function OrganizationDetailPage() {
                 </span>
               )}
               <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                org.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                org.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-secondary text-muted-foreground'
               }`}>
                 {org.status}
               </span>
             </div>
             {org.description && (
-              <p className="text-sm text-slate-500 mt-1">{org.description}</p>
+              <p className="text-sm text-muted-foreground mt-1">{org.description}</p>
             )}
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {org.wallet_count} wallet{org.wallet_count !== 1 ? 's' : ''} · Creada {fmtDateShort(org.created_at)}
             </p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+        <div className="flex gap-1 p-1 bg-secondary rounded-xl w-fit">
           {([
             { key: 'assets',  label: 'Colección NFT', icon: <Package className="h-4 w-4" /> },
             { key: 'wallets', label: 'Wallets',        icon: <Wallet className="h-4 w-4" /> },
@@ -264,8 +264,8 @@ export function OrganizationDetailPage() {
               onClick={() => setTab(key)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === key
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                  ? 'bg-card text-foreground '
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {icon}

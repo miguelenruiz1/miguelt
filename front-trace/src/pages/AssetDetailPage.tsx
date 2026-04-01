@@ -16,7 +16,7 @@ import { useWorkflowStates, useWorkflowEventTypes, useAvailableActions } from '@
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/button'
 import { StateBadge } from '@/components/domain-badges'
-import { HashChip, Spinner, Card, EmptyState } from '@/components/ui/Misc'
+import { HashChip, Spinner, Card, EmptyState } from '@/components/ui/misc'
 import { EventTimeline } from '@/components/events/EventTimeline'
 import { WorkflowEventModal } from '@/components/events/WorkflowEventModal'
 import { fmtDate, shortPubkey } from '@/lib/utils'
@@ -127,7 +127,7 @@ export function AssetDetailPage() {
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {/* Back */}
-        <Link to="/assets" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-primary transition-colors group">
+        <Link to="/assets" className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors group">
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           Volver a Cargas
         </Link>
@@ -171,7 +171,7 @@ export function AssetDetailPage() {
                   {i < progressSteps.length - 1 && (
                     <div className={[
                       'flex-1 h-0.5 rounded-full min-w-4',
-                      isDone ? 'bg-emerald-300' : 'bg-slate-100',
+                      isDone ? 'bg-emerald-300' : 'bg-secondary',
                     ].join(' ')} />
                   )}
                 </div>
@@ -205,7 +205,7 @@ export function AssetDetailPage() {
             <Card>
               {/* NFT Image */}
               {nftImageUrl && (
-                <div className="mb-4 rounded-xl overflow-hidden border border-slate-100">
+                <div className="mb-4 rounded-xl overflow-hidden border border-border">
                   <img
                     src={nftImageUrl}
                     alt={cargoName || asset.product_type}
@@ -217,57 +217,57 @@ export function AssetDetailPage() {
 
               <div className="flex items-start gap-4 mb-5">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 shadow-inner shrink-0">
-                  <Package className="h-6 w-6 text-primary drop-shadow-sm" />
+                  <Package className="h-6 w-6 text-primary drop-" />
                 </div>
                 <div className="min-w-0 flex-1">
                   {cargoName && (
-                    <p className="text-sm font-bold text-slate-900">{cargoName}</p>
+                    <p className="text-sm font-bold text-foreground">{cargoName}</p>
                   )}
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{asset.product_type}</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{asset.product_type}</p>
                 </div>
                 <StateBadge state={asset.state} />
               </div>
 
               {/* State description (from workflow label) */}
               {currentWfState && (
-                <p className="text-xs text-slate-500 leading-relaxed mb-4 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-100">
+                <p className="text-xs text-muted-foreground leading-relaxed mb-4 bg-muted rounded-xl px-3 py-2.5 border border-border">
                   Estado actual: <span className="font-semibold" style={{ color: currentWfState.color }}>{currentWfState.label}</span>
                 </p>
               )}
 
               <dl className="space-y-3">
                 <InfoRow icon={User} label="Responsable actual">
-                  <span className="font-medium text-slate-700 text-xs">{custodianName}</span>
+                  <span className="font-medium text-foreground text-xs">{custodianName}</span>
                 </InfoRow>
                 <InfoRow icon={Hash} label="Eventos registrados">
-                  <span className="text-slate-700 text-xs font-medium tabular-nums">{eventsData?.total ?? '0'}</span>
+                  <span className="text-foreground text-xs font-medium tabular-nums">{eventsData?.total ?? '0'}</span>
                 </InfoRow>
                 <InfoRow icon={Clock} label="Registrado">
-                  <span className="text-slate-500 text-xs tabular-nums">{fmtDate(asset.created_at)}</span>
+                  <span className="text-muted-foreground text-xs tabular-nums">{fmtDate(asset.created_at)}</span>
                 </InfoRow>
                 <InfoRow icon={Clock} label="Ultima actualizacion">
-                  <span className="text-slate-500 text-xs tabular-nums">{fmtDate(asset.updated_at)}</span>
+                  <span className="text-muted-foreground text-xs tabular-nums">{fmtDate(asset.updated_at)}</span>
                 </InfoRow>
               </dl>
 
               {/* Blockchain section — collapsible */}
-              <div className="mt-4 pt-4 border-t border-slate-100">
+              <div className="mt-4 pt-4 border-t border-border">
                 <button
                   onClick={() => setShowBlockchainDetails(!showBlockchainDetails)}
                   className="flex items-center justify-between w-full text-left"
                 >
                   <div className="flex items-center gap-2">
-                    <Anchor className="h-3.5 w-3.5 text-slate-400" />
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Blockchain</span>
+                    <Anchor className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Blockchain</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <BlockchainBadge status={asset.blockchain_status ?? 'SKIPPED'} />
-                    {showBlockchainDetails ? <ChevronUp className="h-3.5 w-3.5 text-slate-400" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
+                    {showBlockchainDetails ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
                   </div>
                 </button>
 
                 {showBlockchainDetails && (
-                  <div className="mt-3 space-y-2 bg-slate-50/80 rounded-xl border border-slate-100 p-3">
+                  <div className="mt-3 space-y-2 bg-muted/80 rounded-xl border border-border p-3">
                     {isSimulated(asset.asset_mint) ? (
                       <p className="text-xs text-amber-600 flex items-center gap-1.5">
                         <FlaskConical className="h-3.5 w-3.5" />
@@ -312,11 +312,11 @@ export function AssetDetailPage() {
                     )}
                     {asset.last_event_hash && (
                       <div className="flex items-center gap-2 text-xs">
-                        <span className="text-slate-400 font-medium shrink-0">Ultimo hash:</span>
+                        <span className="text-muted-foreground font-medium shrink-0">Ultimo hash:</span>
                         <HashChip hash={asset.last_event_hash} />
                       </div>
                     )}
-                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                    <p className="text-[10px] text-muted-foreground leading-relaxed">
                       Cada evento de custodia genera un hash criptografico encadenado al anterior, garantizando que la historia no puede ser alterada.
                     </p>
                   </div>
@@ -325,8 +325,8 @@ export function AssetDetailPage() {
 
               {/* NFT Attributes — shown like a real NFT marketplace */}
               {Object.keys(asset.metadata).length > 0 && (
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Atributos NFT</p>
+                <div className="mt-4 pt-4 border-t border-border">
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Atributos NFT</p>
                   <div className="grid grid-cols-2 gap-2">
                     <NftAttribute label="Tipo de Producto" value={asset.product_type} />
                     {Object.entries(meta).filter(([k]) => !['name', 'description', 'image_url', 'symbol', 'external_url'].includes(k)).map(([key, val]) => (
@@ -338,7 +338,7 @@ export function AssetDetailPage() {
                     ))}
                   </div>
                   {meta.description && (
-                    <p className="mt-3 text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                    <p className="mt-3 text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2 border border-border">
                       {String(meta.description)}
                     </p>
                   )}
@@ -349,10 +349,10 @@ export function AssetDetailPage() {
             {/* ─── Actions card (workflow-driven) ──────────────────────── */}
             {!isInactive && (availableActions?.length ?? 0) > 0 && (
               <Card>
-                <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
                   Siguiente paso
                 </h3>
-                <p className="text-xs text-slate-500 mb-4">
+                <p className="text-xs text-muted-foreground mb-4">
                   Acciones disponibles desde el estado actual.
                 </p>
                 <div className="flex flex-col gap-2">
@@ -362,7 +362,7 @@ export function AssetDetailPage() {
                       <button
                         key={action.transition_id}
                         onClick={() => setActiveAction(action)}
-                        className="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all hover:shadow-sm"
+                        className="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all hover:"
                         style={colorStyle(action.event_type?.color || action.to_state?.color || '#6366f1')}
                       >
                         <Icon className="h-4.5 w-4.5 shrink-0" />
@@ -377,7 +377,7 @@ export function AssetDetailPage() {
                   })}
 
                   {terminalActions.length > 0 && regularActions.length > 0 && (
-                    <div className="border-t border-slate-100 my-2" />
+                    <div className="border-t border-border my-2" />
                   )}
 
                   {terminalActions.map(action => {
@@ -390,7 +390,7 @@ export function AssetDetailPage() {
                         className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all ${
                           isRelease
                             ? 'text-red-600 hover:bg-red-50'
-                            : 'border hover:shadow-sm'
+                            : 'border hover:'
                         }`}
                         style={isRelease ? undefined : colorStyle(action.event_type?.color || action.to_state?.color || '#6366f1')}
                       >
@@ -416,10 +416,10 @@ export function AssetDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <div className="flex items-center justify-between mb-5">
-                <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   Historial de Movimientos
                   {eventsData && (
-                    <span className="text-xs text-slate-400 font-normal">({eventsData.total} eventos)</span>
+                    <span className="text-xs text-muted-foreground font-normal">({eventsData.total} eventos)</span>
                   )}
                 </h3>
               </div>
@@ -502,9 +502,9 @@ function CertificateDownloadButton({ assetId }: { assetId: string }) {
 
 function NftAttribute({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2">
-      <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{label}</p>
-      <p className="text-xs font-medium text-slate-700 mt-0.5 truncate" title={value}>{value}</p>
+    <div className="rounded-lg bg-muted border border-border px-3 py-2">
+      <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">{label}</p>
+      <p className="text-xs font-medium text-foreground mt-0.5 truncate" title={value}>{value}</p>
     </div>
   )
 }
@@ -512,7 +512,7 @@ function NftAttribute({ label, value }: { label: string; value: string }) {
 function InfoRow({ icon: Icon, label, children }: { icon: typeof Package; label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 py-1">
-      <dt className="flex items-center gap-2 text-xs text-slate-400 shrink-0">
+      <dt className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
         <Icon className="h-3.5 w-3.5" />
         <span className="font-medium">{label}</span>
       </dt>
@@ -547,13 +547,13 @@ function BlockchainBadge({ status }: { status: BlockchainStatus }) {
   }
   if (status === 'SIMULATED') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-50 text-slate-500 border border-slate-200">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
         <FlaskConical className="h-3 w-3" /> Simulado
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-50 text-slate-400 border border-slate-200">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
       Sin anclar
     </span>
   )
@@ -592,8 +592,8 @@ function ComplianceSection({ assetId }: { assetId: string }) {
             <ShieldCheck className="h-4.5 w-4.5 text-emerald-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-700">Exportas a Europa?</p>
-            <p className="text-xs text-slate-500 mt-0.5">Activa Cumplimiento Normativo para certificar tus cargas bajo EUDR.</p>
+            <p className="text-sm font-semibold text-foreground">Exportas a Europa?</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Activa Cumplimiento Normativo para certificar tus cargas bajo EUDR.</p>
           </div>
           <Link to="/marketplace"
             className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors shrink-0">
@@ -614,8 +614,8 @@ function ComplianceSection({ assetId }: { assetId: string }) {
             <ShieldCheck className="h-4.5 w-4.5 text-emerald-500" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-700">Cumplimiento Normativo</p>
-            <p className="text-xs text-slate-500 mt-0.5">Crea un registro EUDR para esta carga.</p>
+            <p className="text-sm font-semibold text-foreground">Cumplimiento Normativo</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Crea un registro EUDR para esta carga.</p>
           </div>
           <button onClick={() => navigate(`/cumplimiento/registros?create=${assetId}`)}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 transition-colors shrink-0">
@@ -628,10 +628,10 @@ function ComplianceSection({ assetId }: { assetId: string }) {
 
   return (
     <Card>
-      <h3 className="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
+      <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
         <ShieldCheck className="h-4 w-4 text-emerald-500" />
         Cumplimiento Normativo
-        <span className="text-xs text-slate-400 font-normal">({records.length})</span>
+        <span className="text-xs text-muted-foreground font-normal">({records.length})</span>
       </h3>
       <div className="space-y-3">
         {records.map(r => (
@@ -650,12 +650,12 @@ function ComplianceRecordCard({ record: r }: { record: { id: string; framework_s
   const canGenerate = ['ready', 'declared', 'compliant'].includes(r.compliance_status)
 
   return (
-    <div className="rounded-xl border border-slate-100 px-4 py-3 space-y-2">
+    <div className="rounded-xl border border-border px-4 py-3 space-y-2">
       <Link to={`/cumplimiento/registros/${r.id}`}
         className="flex items-center gap-3 hover:opacity-80 transition-opacity">
         <span className="text-sm">{FRAMEWORK_FLAGS[r.framework_slug] ?? ''}</span>
-        <span className="text-sm font-medium text-slate-900 flex-1">{r.framework_slug.toUpperCase()}</span>
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${COMPLIANCE_STATUS_COLORS[r.compliance_status] ?? 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+        <span className="text-sm font-medium text-foreground flex-1">{r.framework_slug.toUpperCase()}</span>
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${COMPLIANCE_STATUS_COLORS[r.compliance_status] ?? 'bg-muted text-muted-foreground border-border'}`}>
           {COMPLIANCE_STATUS_LABELS[r.compliance_status] ?? r.compliance_status}
         </span>
       </Link>
@@ -693,7 +693,7 @@ function ComplianceRecordCard({ record: r }: { record: { id: string; framework_s
         ) : (
           <button
             onClick={() => navigate(`/cumplimiento/registros/${r.id}`)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-semibold text-muted-foreground hover:bg-muted transition-colors"
           >
             Completar registro
           </button>

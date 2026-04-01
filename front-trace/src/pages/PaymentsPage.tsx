@@ -70,15 +70,15 @@ export function PaymentsPage() {
     }
   }
 
-  const inputCls = 'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-[#5C2D91]/50 focus:outline-none focus:ring-3 focus:ring-[#5C2D91]/20'
+  const inputCls = 'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-foreground  placeholder:text-muted-foreground focus:border-[#5C2D91]/50 focus:outline-none focus:ring-3 focus:ring-[#5C2D91]/20'
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
       {/* Breadcrumb */}
       <nav className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
-          <li className="text-gray-500">Plataforma</li>
-          <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
+          <li className="text-muted-foreground">Plataforma</li>
+          <li><ChevronRight className="h-4 w-4 text-muted-foreground" /></li>
           <li className="text-[#5C2D91]">Pasarela de Cobro</li>
         </ol>
       </nav>
@@ -89,8 +89,8 @@ export function PaymentsPage() {
           W
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-gray-800">Wompi</h1>
-          <p className="text-sm text-gray-500">Configura las llaves de Wompi para cobrar suscripciones</p>
+          <h1 className="text-xl font-semibold text-foreground">Wompi</h1>
+          <p className="text-sm text-muted-foreground">Configura las llaves de Wompi para cobrar suscripciones</p>
         </div>
       </div>
 
@@ -106,7 +106,7 @@ export function PaymentsPage() {
         <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <XCircle className="h-4 w-4 shrink-0" />
           {error}
-          <button onClick={() => setError(null)} className="ml-auto text-gray-400 hover:text-gray-600">
+          <button onClick={() => setError(null)} className="ml-auto text-muted-foreground hover:text-muted-foreground">
             <XCircle className="h-4 w-4" />
           </button>
         </div>
@@ -121,14 +121,14 @@ export function PaymentsPage() {
 
       {/* Config */}
       {isLoading ? (
-        <div className="h-64 rounded-2xl border border-gray-200 bg-gray-50 animate-pulse" />
+        <div className="h-64 rounded-2xl border border-border bg-muted animate-pulse" />
       ) : (
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
+        <div className="rounded-2xl border border-border bg-card p-6  space-y-5">
           {/* Mode toggle */}
-          <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
+          <div className="flex items-center justify-between rounded-xl bg-muted px-4 py-3">
             <div>
-              <p className="text-sm font-medium text-gray-700">Modo</p>
-              <p className="text-xs text-gray-400">
+              <p className="text-sm font-medium text-foreground">Modo</p>
+              <p className="text-xs text-muted-foreground">
                 {isTestMode ? 'Sandbox — no se cobran transacciones reales' : 'Producción — cobros reales activos'}
               </p>
             </div>
@@ -140,7 +140,7 @@ export function PaymentsPage() {
               )}
             >
               <span className={cn(
-                'absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
+                'absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-card shadow transition-transform',
                 isTestMode ? 'translate-x-0' : 'translate-x-5',
               )} />
             </button>
@@ -160,7 +160,7 @@ export function PaymentsPage() {
               const visible = showFields[field.key]
               return (
                 <div key={field.key}>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  <label className="mb-1.5 block text-sm font-medium text-foreground">
                     {field.label}
                     {field.required && <span className="text-red-500 ml-0.5">*</span>}
                   </label>
@@ -176,7 +176,7 @@ export function PaymentsPage() {
                       <button
                         type="button"
                         onClick={() => setShowFields(prev => ({ ...prev, [field.key]: !prev[field.key] }))}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground"
                       >
                         {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -187,7 +187,7 @@ export function PaymentsPage() {
             })}
           </div>
 
-          <p className="text-xs text-gray-400 text-center">
+          <p className="text-xs text-muted-foreground text-center">
             Obtén tus llaves en{' '}
             <a href="https://comercios.wompi.co/developers" target="_blank" rel="noopener noreferrer" className="text-[#5C2D91] font-medium hover:underline">
               comercios.wompi.co/developers <ExternalLink className="h-3 w-3 inline" />
@@ -198,7 +198,7 @@ export function PaymentsPage() {
           <button
             onClick={handleSave}
             disabled={saveMut.isPending || activateMut.isPending}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#5C2D91] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#5C2D91]/90 transition disabled:opacity-50 shadow-sm"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#5C2D91] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#5C2D91]/90 transition disabled:opacity-50 "
           >
             <Save className="h-4 w-4" />
             {saveMut.isPending || activateMut.isPending ? 'Guardando...' : 'Guardar configuración'}
@@ -208,18 +208,18 @@ export function PaymentsPage() {
 
       {/* Configured keys preview */}
       {isConfigured && wompi?.credentials_masked && Object.keys(wompi.credentials_masked).length > 0 && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-3">
-          <h3 className="text-sm font-semibold text-gray-800">Llaves configuradas</h3>
-          <div className="rounded-xl bg-gray-50 border border-gray-200 divide-y divide-gray-200">
+        <div className="rounded-2xl border border-border bg-card p-6  space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">Llaves configuradas</h3>
+          <div className="rounded-xl bg-muted border border-border divide-y divide-gray-200">
             {Object.entries(wompi.credentials_masked).map(([key, value]) => (
               <div key={key} className="flex items-center justify-between px-4 py-2.5">
-                <span className="text-xs font-medium text-gray-500">{key}</span>
-                <span className="text-xs font-mono text-gray-400">{value as string}</span>
+                <span className="text-xs font-medium text-muted-foreground">{key}</span>
+                <span className="text-xs font-mono text-muted-foreground">{value as string}</span>
               </div>
             ))}
           </div>
           {wompi.updated_at && (
-            <p className="text-[10px] text-gray-400">
+            <p className="text-[10px] text-muted-foreground">
               Última actualización: {new Date(wompi.updated_at).toLocaleString()}
             </p>
           )}
@@ -227,7 +227,7 @@ export function PaymentsPage() {
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between text-xs text-gray-400">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <ShieldCheck className="h-3.5 w-3.5" />
           Las credenciales se almacenan cifradas

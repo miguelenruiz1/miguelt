@@ -364,7 +364,7 @@ function AiInsightsPanelInner({ dateFrom, dateTo }: { dateFrom: string; dateTo: 
         className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-muted/30 transition-colors"
       >
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 ">
             <Sparkles className="h-4 w-4 text-white" />
           </div>
           <div className="text-left">
@@ -420,22 +420,22 @@ function AiInsightsPanelInner({ dateFrom, dateTo }: { dateFrom: string; dateTo: 
               {/* Resumen */}
               {analysis.resumen && (
                 <div className="rounded-lg bg-violet-50/60 border border-violet-200/50 px-4 py-3">
-                  <p className="text-sm text-slate-700 leading-relaxed">{analysis.resumen}</p>
+                  <p className="text-sm text-foreground leading-relaxed">{analysis.resumen}</p>
                 </div>
               )}
 
               {/* Alertas */}
               {(analysis.alertas?.length ?? 0) > 0 && (
                 <div>
-                  <h4 className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  <h4 className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
                     <Bell className="h-3.5 w-3.5" /> Alertas
                   </h4>
                   <div className="space-y-2">
                     {(analysis.alertas ?? []).map((a, i) => (
                       <div key={i} className={cn('rounded-lg border-l-4 px-4 py-2.5', SEVERITY_STYLES[a.severidad])}>
-                        <p className="text-sm font-semibold text-slate-800">{a.titulo}</p>
-                        <p className="text-xs text-slate-600 mt-0.5">{a.detalle}</p>
-                        {a.producto_sku && <span className="inline-block mt-1 text-[10px] font-mono bg-white/80 rounded px-1.5 py-0.5 text-slate-500">{a.producto_sku}</span>}
+                        <p className="text-sm font-semibold text-foreground">{a.titulo}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{a.detalle}</p>
+                        {a.producto_sku && <span className="inline-block mt-1 text-[10px] font-mono bg-card/80 rounded px-1.5 py-0.5 text-muted-foreground">{a.producto_sku}</span>}
                       </div>
                     ))}
                   </div>
@@ -445,7 +445,7 @@ function AiInsightsPanelInner({ dateFrom, dateTo }: { dateFrom: string; dateTo: 
               {/* Oportunidades */}
               {(analysis.oportunidades?.length ?? 0) > 0 && (
                 <div>
-                  <h4 className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  <h4 className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
                     <Lightbulb className="h-3.5 w-3.5" /> Oportunidades
                   </h4>
                   <div className="space-y-2">
@@ -453,12 +453,12 @@ function AiInsightsPanelInner({ dateFrom, dateTo }: { dateFrom: string; dateTo: 
                       <div key={i} className="rounded-lg border-l-4 border-l-emerald-500 bg-emerald-50/50 px-4 py-2.5">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <p className="text-sm font-semibold text-slate-800">{o.titulo}</p>
-                            <p className="text-xs text-slate-600 mt-0.5">{o.detalle}</p>
+                            <p className="text-sm font-semibold text-foreground">{o.titulo}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{o.detalle}</p>
                           </div>
                           <span className="shrink-0 rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[10px] font-bold">{o.impacto_estimado}</span>
                         </div>
-                        {o.producto_sku && <span className="inline-block mt-1 text-[10px] font-mono bg-white/80 rounded px-1.5 py-0.5 text-slate-500">{o.producto_sku}</span>}
+                        {o.producto_sku && <span className="inline-block mt-1 text-[10px] font-mono bg-card/80 rounded px-1.5 py-0.5 text-muted-foreground">{o.producto_sku}</span>}
                       </div>
                     ))}
                   </div>
@@ -468,7 +468,7 @@ function AiInsightsPanelInner({ dateFrom, dateTo }: { dateFrom: string; dateTo: 
               {/* Productos Estrella */}
               {(analysis.productos_estrella?.length ?? 0) > 0 && (
                 <div>
-                  <h4 className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  <h4 className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
                     <Star className="h-3.5 w-3.5" /> Productos Estrella
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -476,8 +476,8 @@ function AiInsightsPanelInner({ dateFrom, dateTo }: { dateFrom: string; dateTo: 
                       <div key={i} className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200/60 px-3 py-2">
                         <Star className="h-4 w-4 text-amber-500 fill-amber-400 shrink-0" />
                         <div>
-                          <p className="text-xs font-bold text-slate-800">{p.nombre} <span className="font-mono font-normal text-slate-400">({p.sku})</span></p>
-                          <p className="text-[10px] text-slate-500">{p.razon}</p>
+                          <p className="text-xs font-bold text-foreground">{p.nombre} <span className="font-mono font-normal text-muted-foreground">({p.sku})</span></p>
+                          <p className="text-[10px] text-muted-foreground">{p.razon}</p>
                         </div>
                       </div>
                     ))}
@@ -488,17 +488,17 @@ function AiInsightsPanelInner({ dateFrom, dateTo }: { dateFrom: string; dateTo: 
               {/* Recomendaciones */}
               {(analysis.recomendaciones?.length ?? 0) > 0 && (
                 <div>
-                  <h4 className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  <h4 className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
                     <Target className="h-3.5 w-3.5" /> Recomendaciones
                   </h4>
                   <ol className="space-y-1.5">
                     {(analysis.recomendaciones ?? []).map((r, i) => (
-                      <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700">
-                        <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-600">{i + 1}</span>
+                      <li key={i} className="flex items-start gap-2.5 text-sm text-foreground">
+                        <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-muted-foreground">{i + 1}</span>
                         <div className="flex-1">
                           <span>{r.accion}</span>
                           <span className={cn('ml-2 inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-bold', PRIORITY_BADGE[r.prioridad])}>{r.prioridad}</span>
-                          {r.plazo && <span className="ml-1 inline-flex rounded-full bg-slate-100 text-slate-500 px-1.5 py-0.5 text-[9px] font-medium">{r.plazo.replace('_', ' ')}</span>}
+                          {r.plazo && <span className="ml-1 inline-flex rounded-full bg-secondary text-muted-foreground px-1.5 py-0.5 text-[9px] font-medium">{r.plazo.replace('_', ' ')}</span>}
                         </div>
                       </li>
                     ))}

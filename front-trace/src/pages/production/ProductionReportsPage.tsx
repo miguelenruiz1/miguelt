@@ -23,7 +23,7 @@ export default function ProductionReportsPage() {
         <BarChart3 className="h-6 w-6 text-indigo-600" />
         <div>
           <h1 className="text-2xl font-bold">Reportes de Produccion</h1>
-          <p className="text-sm text-gray-500">Ordenes abiertas, costos y variaciones</p>
+          <p className="text-sm text-muted-foreground">Ordenes abiertas, costos y variaciones</p>
         </div>
       </div>
 
@@ -31,7 +31,7 @@ export default function ProductionReportsPage() {
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={cn('inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg border transition-colors',
-              tab === t.key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+              tab === t.key ? 'bg-gray-900 text-white border-gray-900' : 'bg-card text-muted-foreground border-border hover:border-gray-400'
             )}>
             <t.icon className="h-4 w-4" /> {t.label}
           </button>
@@ -40,9 +40,9 @@ export default function ProductionReportsPage() {
 
       {/* Open Orders */}
       {tab === 'open' && (
-        <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="bg-card rounded-xl border overflow-hidden">
           <table className="w-full text-sm">
-            <thead><tr className="bg-gray-50 border-b text-xs text-gray-500 uppercase">
+            <thead><tr className="bg-muted border-b text-xs text-muted-foreground uppercase">
               <th className="px-4 py-3 text-left"># Orden</th>
               <th className="px-4 py-3 text-left">Receta</th>
               <th className="px-4 py-3 text-left">Estado</th>
@@ -53,18 +53,18 @@ export default function ProductionReportsPage() {
             </tr></thead>
             <tbody>
               {runs.filter(r => ['planned', 'released', 'in_progress'].includes(r.status)).map(run => (
-                <tr key={run.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                <tr key={run.id} className="border-b border-gray-50 hover:bg-muted/50">
                   <td className="px-4 py-2 font-mono text-xs font-medium">{run.run_number}</td>
                   <td className="px-4 py-2 text-xs">{recipeMap.get(run.recipe_id)?.name ?? run.recipe_id.slice(0, 8)}</td>
                   <td className="px-4 py-2"><StatusBadge status={run.status} /></td>
-                  <td className="px-4 py-2 text-xs text-gray-500">{run.order_type}</td>
+                  <td className="px-4 py-2 text-xs text-muted-foreground">{run.order_type}</td>
                   <td className="px-4 py-2 text-right font-mono">{run.multiplier}x</td>
                   <td className="px-4 py-2 text-right">{run.priority}</td>
-                  <td className="px-4 py-2 text-xs text-gray-400">{new Date(run.created_at).toLocaleDateString('es-CO')}</td>
+                  <td className="px-4 py-2 text-xs text-muted-foreground">{new Date(run.created_at).toLocaleDateString('es-CO')}</td>
                 </tr>
               ))}
               {runs.filter(r => ['planned', 'released', 'in_progress'].includes(r.status)).length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">Sin ordenes abiertas</td></tr>
+                <tr><td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">Sin ordenes abiertas</td></tr>
               )}
             </tbody>
           </table>
@@ -73,9 +73,9 @@ export default function ProductionReportsPage() {
 
       {/* Cost by Recipe */}
       {tab === 'cost' && (
-        <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="bg-card rounded-xl border overflow-hidden">
           <table className="w-full text-sm">
-            <thead><tr className="bg-gray-50 border-b text-xs text-gray-500 uppercase">
+            <thead><tr className="bg-muted border-b text-xs text-muted-foreground uppercase">
               <th className="px-4 py-3 text-left">Receta</th>
               <th className="px-4 py-3 text-right">Ordenes</th>
               <th className="px-4 py-3 text-right">Unidades producidas</th>
@@ -90,18 +90,18 @@ export default function ProductionReportsPage() {
                 const totalCost = recipeRuns.reduce((s, r) => s + Number(r.total_production_cost ?? 0), 0)
                 const avgCost = totalOutput > 0 ? totalCost / totalOutput : 0
                 return (
-                  <tr key={recipe.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                  <tr key={recipe.id} className="border-b border-gray-50 hover:bg-muted/50">
                     <td className="px-4 py-2 font-medium">{recipe.name}</td>
                     <td className="px-4 py-2 text-right">{recipeRuns.length}</td>
                     <td className="px-4 py-2 text-right font-mono">{totalOutput.toLocaleString('es-CO')}</td>
                     <td className="px-4 py-2 text-right font-mono">${totalCost.toLocaleString('es-CO')}</td>
                     <td className="px-4 py-2 text-right font-mono font-bold">${avgCost.toFixed(2)}</td>
-                    <td className="px-4 py-2 text-right font-mono text-gray-400">${Number(recipe.standard_cost).toFixed(2)}</td>
+                    <td className="px-4 py-2 text-right font-mono text-muted-foreground">${Number(recipe.standard_cost).toFixed(2)}</td>
                   </tr>
                 )
               })}
               {recipes.filter(r => r.is_active && r.bom_type === 'production').length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-400">Sin recetas de produccion</td></tr>
+                <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">Sin recetas de produccion</td></tr>
               )}
             </tbody>
           </table>
@@ -110,9 +110,9 @@ export default function ProductionReportsPage() {
 
       {/* Variance */}
       {tab === 'variance' && (
-        <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="bg-card rounded-xl border overflow-hidden">
           <table className="w-full text-sm">
-            <thead><tr className="bg-gray-50 border-b text-xs text-gray-500 uppercase">
+            <thead><tr className="bg-muted border-b text-xs text-muted-foreground uppercase">
               <th className="px-4 py-3 text-left"># Orden</th>
               <th className="px-4 py-3 text-left">Receta</th>
               <th className="px-4 py-3 text-right">Producido</th>
@@ -126,12 +126,12 @@ export default function ProductionReportsPage() {
                 const standardTotal = Number(recipe?.standard_cost ?? 0) * Number(run.actual_output_quantity ?? 0)
                 const variance = Number(run.variance_amount ?? 0)
                 return (
-                  <tr key={run.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                  <tr key={run.id} className="border-b border-gray-50 hover:bg-muted/50">
                     <td className="px-4 py-2 font-mono text-xs font-medium">{run.run_number}</td>
                     <td className="px-4 py-2 text-xs">{recipe?.name ?? '—'}</td>
                     <td className="px-4 py-2 text-right font-mono">{run.actual_output_quantity ?? '—'}</td>
                     <td className="px-4 py-2 text-right font-mono">${Number(run.total_production_cost ?? 0).toLocaleString('es-CO')}</td>
-                    <td className="px-4 py-2 text-right font-mono text-gray-400">${standardTotal.toLocaleString('es-CO')}</td>
+                    <td className="px-4 py-2 text-right font-mono text-muted-foreground">${standardTotal.toLocaleString('es-CO')}</td>
                     <td className={cn('px-4 py-2 text-right font-mono font-bold',
                       variance === 0 ? 'text-emerald-600' : variance > 0 ? 'text-red-600' : 'text-blue-600'
                     )}>
@@ -141,7 +141,7 @@ export default function ProductionReportsPage() {
                 )
               })}
               {runs.filter(r => r.status === 'closed').length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-400">Sin ordenes cerradas con variaciones</td></tr>
+                <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">Sin ordenes cerradas con variaciones</td></tr>
               )}
             </tbody>
           </table>
@@ -153,7 +153,7 @@ export default function ProductionReportsPage() {
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    planned: 'bg-slate-100 text-slate-600',
+    planned: 'bg-secondary text-muted-foreground',
     released: 'bg-blue-100 text-blue-700',
     in_progress: 'bg-amber-100 text-amber-700',
   }
@@ -163,7 +163,7 @@ function StatusBadge({ status }: { status: string }) {
     in_progress: 'En produccion',
   }
   return (
-    <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold', colors[status] ?? 'bg-gray-100 text-gray-600')}>
+    <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold', colors[status] ?? 'bg-secondary text-muted-foreground')}>
       {labels[status] ?? status}
     </span>
   )

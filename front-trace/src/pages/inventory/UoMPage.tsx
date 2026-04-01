@@ -46,11 +46,11 @@ export function UoMPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Ruler className="h-6 w-6 text-gray-700" />
+          <Ruler className="h-6 w-6 text-foreground" />
           <h1 className="text-2xl font-bold">Unidades de Medida</h1>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => initMut.mutate()} disabled={initMut.isPending} className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors">
+          <button onClick={() => initMut.mutate()} disabled={initMut.isPending} className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium bg-secondary text-foreground rounded-xl hover:bg-gray-200 transition-colors">
             <RefreshCw className={`h-4 w-4 ${initMut.isPending ? 'animate-spin' : ''}`} />Inicializar Colombia
           </button>
           <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors">
@@ -59,15 +59,15 @@ export function UoMPage() {
         </div>
       </div>
 
-      {isLoading ? <div className="text-center py-10 text-gray-400">Cargando...</div> : (
+      {isLoading ? <div className="text-center py-10 text-muted-foreground">Cargando...</div> : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {categories.map(cat => grouped[cat]?.length > 0 && (
-            <div key={cat} className="bg-white rounded-xl border border-gray-100 p-5">
-              <h3 className="font-semibold text-sm text-gray-600 mb-3">{catLabels[cat]}</h3>
+            <div key={cat} className="bg-card rounded-xl border border-border p-5">
+              <h3 className="font-semibold text-sm text-muted-foreground mb-3">{catLabels[cat]}</h3>
               <div className="space-y-1">
                 {grouped[cat].map(u => (
-                  <div key={u.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50">
-                    <span>{u.name} <span className="text-gray-400 text-xs">({u.symbol})</span></span>
+                  <div key={u.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted">
+                    <span>{u.name} <span className="text-muted-foreground text-xs">({u.symbol})</span></span>
                     {u.is_base && <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">base</span>}
                   </div>
                 ))}
@@ -77,13 +77,13 @@ export function UoMPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
+      <div className="bg-card rounded-xl border border-border p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold">Conversiones</h3>
-          <button onClick={() => setShowConvCreate(true)} className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded hover:bg-gray-50"><Plus className="h-4 w-4" />Nueva conversión</button>
+          <button onClick={() => setShowConvCreate(true)} className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded hover:bg-muted"><Plus className="h-4 w-4" />Nueva conversión</button>
         </div>
         <table className="w-full text-sm">
-          <thead><tr className="bg-gray-50"><th className="p-2 text-left">De</th><th className="p-2 text-left">A</th><th className="p-2 text-right">Factor</th></tr></thead>
+          <thead><tr className="bg-muted"><th className="p-2 text-left">De</th><th className="p-2 text-left">A</th><th className="p-2 text-right">Factor</th></tr></thead>
           <tbody>
             {(conversions as UoMConversion[]).map(c => (
               <tr key={c.id} className="border-b">
@@ -98,7 +98,7 @@ export function UoMPage() {
 
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 w-96 shadow-2xl">
+          <div className="bg-card rounded-2xl p-6 w-96 shadow-2xl">
             <h3 className="font-semibold mb-4">Nueva Unidad de Medida</h3>
             <div className="space-y-3">
               <input placeholder="Nombre (ej: Kilogramo)" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full border rounded px-3 py-2 text-sm" />
@@ -118,7 +118,7 @@ export function UoMPage() {
 
       {showConvCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 w-96 shadow-2xl">
+          <div className="bg-card rounded-2xl p-6 w-96 shadow-2xl">
             <h3 className="font-semibold mb-4">Nueva Conversión</h3>
             <div className="space-y-3">
               <select value={convForm.from_uom_id} onChange={e => setConvForm({...convForm, from_uom_id: e.target.value})} className="w-full border rounded px-3 py-2 text-sm">

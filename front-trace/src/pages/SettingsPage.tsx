@@ -50,12 +50,12 @@ function CopyButton({ text, label = 'Copiar' }: { text: string; label?: string }
 
 function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-muted/50">
         <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
           {icon}
         </div>
-        <h2 className="text-sm font-bold text-slate-800">{title}</h2>
+        <h2 className="text-sm font-bold text-foreground">{title}</h2>
       </div>
       <div className="px-6 py-5">{children}</div>
     </div>
@@ -80,9 +80,9 @@ function AdminKeySection() {
 
   return (
     <Section icon={<KeyRound className="h-4 w-4" />} title="Clave de Administrador">
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         Requerida para operaciones de <strong>Release</strong> (liberar un activo del sistema).
-        Debe coincidir con <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono">TRACE_ADMIN_KEY</code> en el <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono">.env</code> del servidor.
+        Debe coincidir con <code className="bg-secondary px-1.5 py-0.5 rounded text-xs font-mono">TRACE_ADMIN_KEY</code> en el <code className="bg-secondary px-1.5 py-0.5 rounded text-xs font-mono">.env</code> del servidor.
       </p>
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
@@ -95,7 +95,7 @@ function AdminKeySection() {
 
       <div className="flex flex-col gap-3">
         <div>
-          <label className="text-xs font-semibold text-slate-600 block mb-1.5">TRACE_ADMIN_KEY</label>
+          <label className="text-xs font-semibold text-muted-foreground block mb-1.5">TRACE_ADMIN_KEY</label>
           <div className="relative">
             <input
               type={show ? 'text' : 'password'}
@@ -103,11 +103,11 @@ function AdminKeySection() {
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               placeholder="Ingresa la clave admin..."
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 pr-10 text-sm font-mono text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20 transition-colors"
+              className="w-full rounded-lg border border-slate-300 bg-card px-3 py-2 pr-10 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20 transition-colors"
             />
             <button
               type="button"
-              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 transition-colors"
+              className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setShow((s) => !s)}
             >
               {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -124,7 +124,7 @@ function AdminKeySection() {
             </span>
           )}
         </div>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-muted-foreground">
           Se guarda en <code className="font-mono">localStorage</code> del navegador. No se envía al servidor excepto cuando se usa en Release.
         </p>
       </div>
@@ -154,7 +154,7 @@ function EnvironmentSection() {
 
   return (
     <Section icon={<Globe className="h-4 w-4" />} title="Entorno de Solana">
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         Selecciona el cluster de Solana. Afecta los links del explorador en el detalle de cada NFT y en los eventos de la cadena de custodia.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -165,23 +165,23 @@ function EnvironmentSection() {
             className={`text-left p-4 rounded-xl border transition-all ${
               solanaCluster === opt.value
                 ? opt.color
-                : 'border-slate-200 bg-white hover:border-slate-300'
+                : 'border-border bg-card hover:border-slate-300'
             }`}
           >
             <div className="flex items-center gap-2 mb-1">
               <span className={`h-2 w-2 rounded-full ${opt.value === 'devnet' ? 'bg-primary' : 'bg-emerald-500'}`} />
-              <span className="text-sm font-bold text-slate-800">{opt.label}</span>
+              <span className="text-sm font-bold text-foreground">{opt.label}</span>
               {solanaCluster === opt.value && (
                 <span className="ml-auto">
-                  <Check className="h-4 w-4 text-slate-600" />
+                  <Check className="h-4 w-4 text-muted-foreground" />
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500">{opt.desc}</p>
+            <p className="text-xs text-muted-foreground">{opt.desc}</p>
           </button>
         ))}
       </div>
-      <p className="mt-3 text-xs text-slate-400">
+      <p className="mt-3 text-xs text-muted-foreground">
         Activo: <strong>{solanaCluster}</strong> — links apuntarán a{' '}
         <code className="font-mono text-xs">https://explorer.solana.com/?cluster={solanaCluster}</code>
       </p>
@@ -197,20 +197,20 @@ function KeypairSection() {
 
   return (
     <Section icon={<Settings className="h-4 w-4" />} title="Keypair del Servicio Solana">
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         Este es el keypair que el backend usa para <strong>firmar transacciones de anclaje</strong> (Memo Program) en Solana.
-        Se generó automáticamente para este entorno. Agrégalo al <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono">.env</code> y reinicia los contenedores.
+        Se generó automáticamente para este entorno. Agrégalo al <code className="bg-secondary px-1.5 py-0.5 rounded text-xs font-mono">.env</code> y reinicia los contenedores.
       </p>
 
       <div className="flex flex-col gap-3 mb-4">
         {/* Public key */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="rounded-xl border border-border bg-muted p-4">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Clave Pública</span>
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Clave Pública</span>
             <CopyButton text={GENERATED_KEYPAIR.pubkey} />
           </div>
-          <code className="text-sm font-mono text-slate-800 break-all">{GENERATED_KEYPAIR.pubkey}</code>
-          <p className="text-xs text-slate-400 mt-1">
+          <code className="text-sm font-mono text-foreground break-all">{GENERATED_KEYPAIR.pubkey}</code>
+          <p className="text-xs text-muted-foreground mt-1">
             Dirección en Solana donde se reciben fondos para pagar fees.{' '}
             <a
               href={`https://explorer.solana.com/address/${GENERATED_KEYPAIR.pubkey}?cluster=devnet`}
@@ -224,11 +224,11 @@ function KeypairSection() {
         </div>
 
         {/* Secret key */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="rounded-xl border border-border bg-muted p-4">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Clave Privada (base58)</span>
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Clave Privada (base58)</span>
             <div className="flex items-center gap-3">
-              <button onClick={() => setShowSecret((s) => !s)} className="text-xs text-slate-400 hover:text-slate-700 flex items-center gap-1">
+              <button onClick={() => setShowSecret((s) => !s)} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
                 {showSecret ? <><EyeOff className="h-3.5 w-3.5" /> Ocultar</> : <><Eye className="h-3.5 w-3.5" /> Mostrar</>}
               </button>
               <CopyButton text={GENERATED_KEYPAIR.secretB58} label="Copiar clave" />
@@ -237,7 +237,7 @@ function KeypairSection() {
           {showSecret ? (
             <code className="text-sm font-mono text-red-700 break-all">{GENERATED_KEYPAIR.secretB58}</code>
           ) : (
-            <div className="flex items-center gap-2 text-slate-400">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <span className="font-mono text-sm">{'•'.repeat(40)}</span>
             </div>
           )}
@@ -252,7 +252,7 @@ function KeypairSection() {
       <div>
         <button
           onClick={() => setExpanded((e) => !e)}
-          className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-primary transition-colors mb-2"
+          className="flex items-center gap-2 text-sm font-semibold text-foreground hover:text-primary transition-colors mb-2"
         >
           {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           Ver snippet para el .env
@@ -260,7 +260,7 @@ function KeypairSection() {
         {expanded && (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-slate-500">Copia esto en <code className="font-mono">C:\Users\me.ruiz42\Desktop\Trace\.env</code> y reinicia:</span>
+              <span className="text-xs text-muted-foreground">Copia esto en <code className="font-mono">C:\Users\me.ruiz42\Desktop\Trace\.env</code> y reinicia:</span>
               <CopyButton text={ENV_SNIPPET} label="Copiar todo" />
             </div>
             <pre className="rounded-xl bg-slate-900 text-slate-100 p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">
@@ -296,14 +296,14 @@ function BackendStatusSection() {
   return (
     <Section icon={<Server className="h-4 w-4" />} title="Estado del Backend">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-slate-500">Estado actual del servidor y sus conexiones.</p>
-        <button onClick={() => refetch()} className={`text-slate-400 hover:text-slate-600 transition-colors ${isFetching ? 'animate-spin' : ''}`}>
+        <p className="text-sm text-muted-foreground">Estado actual del servidor y sus conexiones.</p>
+        <button onClick={() => refetch()} className={`text-muted-foreground hover:text-muted-foreground transition-colors ${isFetching ? 'animate-spin' : ''}`}>
           <Settings className="h-4 w-4" />
         </button>
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-slate-400">Consultando...</p>
+        <p className="text-sm text-muted-foreground">Consultando...</p>
       ) : !ready ? (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           Backend no disponible. Verifica que el contenedor Docker esté corriendo.
@@ -330,16 +330,16 @@ function BackendStatusSection() {
           </div>
 
           {/* All checks */}
-          <div className="rounded-xl border border-slate-200 overflow-hidden">
+          <div className="rounded-xl border border-border overflow-hidden">
             {Object.entries(ready.checks).map(([key, val], i, arr) => (
-              <div key={key} className={`flex items-center justify-between px-4 py-2.5 text-sm ${i < arr.length - 1 ? 'border-b border-slate-100' : ''}`}>
-                <span className="text-slate-600 font-mono text-xs">{key}</span>
+              <div key={key} className={`flex items-center justify-between px-4 py-2.5 text-sm ${i < arr.length - 1 ? 'border-b border-border' : ''}`}>
+                <span className="text-muted-foreground font-mono text-xs">{key}</span>
                 <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                   String(val) === 'ok' || String(val) === 'true'
                     ? 'bg-emerald-100 text-emerald-700'
                     : String(val) === 'false'
                     ? 'bg-amber-100 text-amber-700'
-                    : 'bg-slate-100 text-slate-600'
+                    : 'bg-secondary text-muted-foreground'
                 }`}>
                   {String(val)}
                 </span>
@@ -367,7 +367,7 @@ function SolanaStatusWidget() {
   return (
     <Section icon={<Cpu className="h-4 w-4" />} title="Estado de Solana">
       {isLoading ? (
-        <p className="text-sm text-slate-400">Consultando...</p>
+        <p className="text-sm text-muted-foreground">Consultando...</p>
       ) : !ready ? (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           No se pudo obtener el estado del backend.
@@ -375,26 +375,26 @@ function SolanaStatusWidget() {
       ) : (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Modo</p>
+            <div className="rounded-xl border border-border bg-muted p-3">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Modo</p>
               <Badge variant={simMode ? 'warning' : 'success'} dot>
                 {simMode ? 'Simulacion' : 'Produccion'}
               </Badge>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Red</p>
-              <p className="text-sm font-semibold text-slate-700">{String(network)}</p>
+            <div className="rounded-xl border border-border bg-muted p-3">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Red</p>
+              <p className="text-sm font-semibold text-foreground">{String(network)}</p>
             </div>
           </div>
           {ready.checks?.solana_balance != null && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Balance</p>
-              <p className="text-sm font-semibold text-slate-700">{String(ready.checks.solana_balance)} SOL</p>
+            <div className="rounded-xl border border-border bg-muted p-3">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Balance</p>
+              <p className="text-sm font-semibold text-foreground">{String(ready.checks.solana_balance)} SOL</p>
             </div>
           )}
           {ready.checks?.circuit_breaker != null && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Circuit Breaker</p>
+            <div className="rounded-xl border border-border bg-muted p-3">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Circuit Breaker</p>
               <Badge variant={String(ready.checks.circuit_breaker) === 'closed' ? 'success' : 'danger'} dot>
                 {String(ready.checks.circuit_breaker)}
               </Badge>
@@ -420,30 +420,30 @@ function MerkleTreeWidget() {
   return (
     <Section icon={<GitBranch className="h-4 w-4" />} title="Merkle Tree">
       {isLoading ? (
-        <p className="text-sm text-slate-400">Consultando...</p>
+        <p className="text-sm text-muted-foreground">Consultando...</p>
       ) : !tree ? (
         <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
           No hay Merkle Tree provisionado para este tenant.
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Direccion</p>
-            <p className="text-sm font-mono text-slate-700 break-all">
+          <div className="rounded-xl border border-border bg-muted p-3">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Direccion</p>
+            <p className="text-sm font-mono text-foreground break-all">
               {(tree as any).address ? shortPubkey((tree as any).address) : 'N/A'}
             </p>
           </div>
           {(tree as any).max_depth != null && (
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Capacidad</p>
-                <p className="text-sm font-semibold text-slate-700">
+              <div className="rounded-xl border border-border bg-muted p-3">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Capacidad</p>
+                <p className="text-sm font-semibold text-foreground">
                   {((tree as any).total ?? Math.pow(2, (tree as any).max_depth ?? 0)).toLocaleString('es')} hojas
                 </p>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Usadas</p>
-                <p className="text-sm font-semibold text-slate-700">
+              <div className="rounded-xl border border-border bg-muted p-3">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Usadas</p>
+                <p className="text-sm font-semibold text-foreground">
                   {((tree as any).used ?? (tree as any).num_minted ?? 0).toLocaleString('es')}
                 </p>
               </div>
@@ -455,7 +455,7 @@ function MerkleTreeWidget() {
             const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0
             return (
               <div>
-                <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                   <span>Progreso</span>
                   <span className="font-semibold">{pct.toFixed(1)}%</span>
                 </div>

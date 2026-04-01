@@ -25,7 +25,7 @@ export function VariantPicker({ productId, value, onChange, className }: Variant
     <select
       value={value}
       onChange={e => handleChange(e.target.value)}
-      className={className ?? 'rounded-xl border border-slate-200 px-2 py-1.5 text-xs focus:ring-2 focus:ring-ring outline-none'}
+      className={className ?? 'rounded-xl border border-border px-2 py-1.5 text-xs focus:ring-2 focus:ring-ring outline-none'}
     >
       <option value="">— Sin variante —</option>
       {variants.map(v => {

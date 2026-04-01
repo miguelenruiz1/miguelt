@@ -14,13 +14,13 @@ import { Topbar } from '@/components/layout/Topbar'
 
 function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementType; title: string; subtitle: string }) {
   return (
-    <div className="flex items-start gap-4 mb-8 pb-6 border-b border-slate-100">
+    <div className="flex items-start gap-4 mb-8 pb-6 border-b border-border">
       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20/50 shrink-0">
         <Icon className="h-6 w-6 text-primary" />
       </div>
       <div>
-        <h1 className="text-xl font-bold text-slate-800">{title}</h1>
-        <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
+        <h1 className="text-xl font-bold text-foreground">{title}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
       </div>
     </div>
   )
@@ -46,7 +46,7 @@ function InfoBox({ type = 'info', children }: { type?: 'info' | 'warning' | 'suc
 }
 
 function H2({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-base font-bold text-slate-700 mt-7 mb-3 flex items-center gap-2">{children}</h2>
+  return <h2 className="text-base font-bold text-foreground mt-7 mb-3 flex items-center gap-2">{children}</h2>
 }
 
 function Pill({ children, color = 'slate' }: { children: React.ReactNode; color?: string }) {
@@ -57,7 +57,7 @@ function Pill({ children, color = 'slate' }: { children: React.ReactNode; color?
     red:     'bg-red-100 text-red-700',
     blue:    'bg-blue-100 text-blue-700',
     purple:  'bg-purple-100 text-purple-700',
-    slate:   'bg-slate-100 text-slate-600',
+    slate:   'bg-secondary text-muted-foreground',
   }
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${colors[color] ?? colors.slate}`}>
@@ -111,7 +111,7 @@ function OverviewSection() {
   return (
     <div>
       <SectionHeader icon={BookOpen} title="Ayuda del Modulo de Inventario" subtitle="Documentacion completa de todas las funcionalidades" />
-      <p className="text-sm text-slate-600 mb-6">
+      <p className="text-sm text-muted-foreground mb-6">
         El modulo de <strong>Inventario</strong> gestiona productos, bodegas, stock, movimientos, proveedores, ordenes de compra y venta,
         clientes, precios especiales, conteo ciclico, seriales, lotes, produccion, alertas y kardex. Selecciona una seccion para ver la documentacion detallada.
       </p>
@@ -120,14 +120,14 @@ function OverviewSection() {
           <NavLink
             key={to}
             to={to}
-            className="flex items-start gap-3 p-4 rounded-2xl border border-slate-200 bg-white hover:border-primary/50 hover:shadow-md transition-all group"
+            className="flex items-start gap-3 p-4 rounded-2xl border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all group"
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 shrink-0">
               <Icon className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-slate-700 group-hover:text-primary">{label}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{desc}</p>
+              <p className="text-sm font-bold text-foreground group-hover:text-primary">{label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
             </div>
             <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-primary/70 mt-1 shrink-0" />
           </NavLink>
@@ -157,7 +157,7 @@ function ProductosSection() {
           'Opcionalmente asignar tipo de producto, precio, codigo de barras y limites de stock',
           'Click en "Crear"',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -168,10 +168,10 @@ function ProductosSection() {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Campo</th>
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Tipo</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Campo</th>
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Tipo</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -191,9 +191,9 @@ function ProductosSection() {
               ['custom_attributes', 'JSONB', 'Campos personalizados segun tipo de producto'],
             ].map(([field, type, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-mono font-semibold text-slate-700">{field}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-foreground">{field}</td>
                 <td className="py-2 pr-4"><Pill>{type}</Pill></td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -201,7 +201,7 @@ function ProductosSection() {
       </div>
 
       <H2>Tipos de producto</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Los tipos de producto permiten categorizar productos y definir <strong>campos custom</strong> por tipo.
         Se configuran en <strong>Inventario &gt; Configuracion &gt; Tipos de producto</strong>.
       </p>
@@ -211,13 +211,13 @@ function ProductosSection() {
       </InfoBox>
 
       <H2>Variantes</H2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         Un producto puede tener <strong>variantes</strong> (talla, color, presentacion). Cada variante tiene su propio SKU,
         precio y stock independiente. Ver la seccion <strong>Variantes</strong> para mas detalles.
       </p>
 
       <H2>Unidades de medida</H2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         Las unidades de medida mas comunes son: <Pill>kg</Pill> <Pill>unidad</Pill> <Pill>litro</Pill> <Pill>caja</Pill> <Pill>metro</Pill> <Pill>par</Pill>.
         El campo es libre — puedes escribir cualquier unidad que necesites.
       </p>
@@ -246,7 +246,7 @@ function VariantesSection() {
           'Asignar SKU unico, precio y opcionalmente codigo de barras',
           'Click en "Crear"',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -257,9 +257,9 @@ function VariantesSection() {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Campo</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Campo</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -273,8 +273,8 @@ function VariantesSection() {
               ['is_active', 'Si la variante esta activa'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-mono font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -282,7 +282,7 @@ function VariantesSection() {
       </div>
 
       <H2>Stock por variante</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         El stock se gestiona <strong>a nivel de variante</strong>. Al recibir, despachar o transferir stock,
         puedes seleccionar la variante especifica. Esto permite saber exactamente cuantas unidades
         de cada variante hay en cada bodega.
@@ -300,9 +300,9 @@ function VariantesSection() {
           { module: 'Precios Especiales', desc: 'Los precios especiales por cliente pueden ser por variante, con precios diferenciados' },
           { module: 'Conteo Ciclico', desc: 'El conteo puede incluir variantes para verificar stock a nivel granular' },
         ].map(({ module, desc }) => (
-          <div key={module} className="rounded-xl border border-slate-100 p-3">
-            <p className="text-xs font-bold text-slate-700">{module}</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">{desc}</p>
+          <div key={module} className="rounded-xl border border-border p-3">
+            <p className="text-xs font-bold text-foreground">{module}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{desc}</p>
           </div>
         ))}
       </div>
@@ -330,10 +330,10 @@ function BodegasSection() {
           { type: 'virtual', label: 'Virtual', desc: 'Sin ubicacion fisica (ej: dropship)', color: 'purple' },
           { type: 'transit', label: 'Transito', desc: 'Productos en movimiento entre bodegas', color: 'amber' },
         ].map(({ type, label, desc, color }) => (
-          <div key={type} className="rounded-xl border border-slate-100 p-3">
+          <div key={type} className="rounded-xl border border-border p-3">
             <Pill color={color}>{type}</Pill>
-            <p className="text-xs font-bold text-slate-700 mt-1">{label}</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">{desc}</p>
+            <p className="text-xs font-bold text-foreground mt-1">{label}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{desc}</p>
           </div>
         ))}
       </div>
@@ -346,7 +346,7 @@ function BodegasSection() {
           'Ingresar nombre, tipo y direccion',
           'Click en "Crear"',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -354,7 +354,7 @@ function BodegasSection() {
       </div>
 
       <H2>Ubicaciones (zonas, pasillos, racks, bins)</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Dentro de cada bodega se pueden definir ubicaciones jerarquicas para localizar productos con mayor precision:
       </p>
       <div className="space-y-2">
@@ -364,18 +364,18 @@ function BodegasSection() {
           { level: 'Rack', desc: 'Estanteria dentro del pasillo', example: 'ZONA-A-P01-R03' },
           { level: 'Bin', desc: 'Posicion exacta dentro del rack', example: 'ZONA-A-P01-R03-B02' },
         ].map(({ level, desc, example }) => (
-          <div key={level} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={level} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color="indigo">{level}</Pill>
             <div>
-              <p className="text-xs text-slate-600">{desc}</p>
-              <p className="text-[11px] text-slate-400 font-mono mt-0.5">{example}</p>
+              <p className="text-xs text-muted-foreground">{desc}</p>
+              <p className="text-[11px] text-muted-foreground font-mono mt-0.5">{example}</p>
             </div>
           </div>
         ))}
       </div>
 
       <H2><Activity className="h-4 w-4 text-primary/70" /> Ocupacion de bodega</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         El dashboard muestra KPIs de ocupacion para cada bodega basados en las ubicaciones definidas
         y el stock almacenado en cada una:
       </p>
@@ -387,9 +387,9 @@ function BodegasSection() {
           { kpi: '% Ocupacion', desc: 'Porcentaje de ubicaciones ocupadas sobre el total. Se muestra como barra de progreso.', color: 'indigo' },
           { kpi: 'Stock estancado', desc: 'Ubicaciones con stock sin movimiento en los ultimos 90 dias.', color: 'amber' },
         ].map(({ kpi, desc, color }) => (
-          <div key={kpi} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={kpi} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{kpi}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -425,9 +425,9 @@ function StockSection() {
           { op: 'Devolucion', desc: 'Ingreso por devolucion de cliente o proveedor', pill: 'slate', movement: 'return' },
           { op: 'Desperdicio', desc: 'Baja de producto danado, vencido o inutilizable', pill: 'red', movement: 'waste' },
         ].map(({ op, desc, pill, movement }) => (
-          <div key={op} className="rounded-xl border border-slate-200 p-4">
-            <p className="text-sm font-bold text-slate-700 mb-1">{op} <Pill color={pill}>{movement}</Pill></p>
-            <p className="text-xs text-slate-500">{desc}</p>
+          <div key={op} className="rounded-xl border border-border p-4">
+            <p className="text-sm font-bold text-foreground mb-1">{op} <Pill color={pill}>{movement}</Pill></p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -441,9 +441,9 @@ function StockSection() {
           { level: 'Stock actual', desc: 'Cantidad real disponible en bodega.', color: 'emerald' },
           { level: 'Stock reservado', desc: 'Cantidad comprometida en ordenes de venta confirmadas.', color: 'purple' },
         ].map(({ level, desc, color }) => (
-          <div key={level} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={level} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{level}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -461,7 +461,7 @@ Rotacion          = Unidades vendidas / Stock promedio`}
       </InfoBox>
 
       <H2><ShieldCheck className="h-4 w-4 text-primary/70" /> Bloqueo por Control de Calidad (QC)</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Cuando un tipo de producto tiene activado <Pill color="indigo">requires_qc</Pill>, todo stock recibido
         entra automaticamente en estado <Pill color="amber">pending_qc</Pill> y no puede ser despachado hasta
         que un usuario lo apruebe o rechace.
@@ -472,9 +472,9 @@ Rotacion          = Unidades vendidas / Stock promedio`}
           { state: 'approved', desc: 'Stock aprobado y disponible para despacho normal.', color: 'emerald' },
           { state: 'rejected', desc: 'Stock rechazado. Se puede ajustar o dar de baja como desperdicio.', color: 'red' },
         ].map(({ state, desc, color }) => (
-          <div key={state} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={state} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{state}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -484,7 +484,7 @@ Rotacion          = Unidades vendidas / Stock promedio`}
       </InfoBox>
 
       <H2>Reglas de despacho (FIFO / FEFO / LIFO)</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Cada tipo de producto puede configurar una <strong>regla de despacho</strong> que determina
         el orden en que se consumen los lotes al despachar:
       </p>
@@ -494,9 +494,9 @@ Rotacion          = Unidades vendidas / Stock promedio`}
           { rule: 'FEFO', desc: 'First Expired, First Out — despacha primero el stock con fecha de vencimiento mas cercana. Ideal para perecederos, farmaceuticos y quimicos.', color: 'emerald' },
           { rule: 'LIFO', desc: 'Last In, First Out — despacha primero el stock mas reciente. Usado en materiales donde el orden inverso es preferible.', color: 'purple' },
         ].map(({ rule, desc, color }) => (
-          <div key={rule} className="rounded-xl border border-slate-200 p-4">
-            <p className="text-sm font-bold text-slate-700 mb-1"><Pill color={color}>{rule}</Pill></p>
-            <p className="text-xs text-slate-500">{desc}</p>
+          <div key={rule} className="rounded-xl border border-border p-4">
+            <p className="text-sm font-bold text-foreground mb-1"><Pill color={color}>{rule}</Pill></p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -515,7 +515,7 @@ function MovimientosSection() {
     <div>
       <SectionHeader icon={ArrowLeftRight} title="Movimientos" subtitle="Historial de todos los cambios de stock" />
 
-      <p className="text-sm text-slate-600 mb-5">
+      <p className="text-sm text-muted-foreground mb-5">
         Cada cambio de stock genera un <strong>movimiento</strong> que queda registrado permanentemente.
         Los movimientos son inmutables — no se pueden editar ni eliminar.
       </p>
@@ -531,16 +531,16 @@ function MovimientosSection() {
           { type: 'return', label: 'Devolucion', desc: 'Devolucion de cliente', color: 'slate' },
           { type: 'waste', label: 'Desperdicio', desc: 'Producto danado o vencido', color: 'red' },
         ].map(({ type, label, desc, color }) => (
-          <div key={type} className="rounded-lg border border-slate-100 p-3">
+          <div key={type} className="rounded-lg border border-border p-3">
             <Pill color={color}>{type}</Pill>
-            <p className="text-xs font-bold text-slate-700 mt-1">{label}</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">{desc}</p>
+            <p className="text-xs font-bold text-foreground mt-1">{label}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{desc}</p>
           </div>
         ))}
       </div>
 
       <H2><Search className="h-4 w-4 text-primary/70" /> Filtros</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         La tabla de movimientos permite filtrar por:
       </p>
       <div className="flex flex-wrap gap-2">
@@ -553,9 +553,9 @@ function MovimientosSection() {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Campo</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Campo</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -573,8 +573,8 @@ function MovimientosSection() {
               ['created_at', 'Fecha y hora del movimiento'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-mono font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -600,7 +600,7 @@ function ProveedoresSection() {
           'Opcionalmente asignar tipo de proveedor',
           'Click en "Crear"',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -611,9 +611,9 @@ function ProveedoresSection() {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Campo</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Campo</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -627,8 +627,8 @@ function ProveedoresSection() {
               ['custom_attributes', 'Campos personalizados segun tipo'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-mono font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -636,7 +636,7 @@ function ProveedoresSection() {
       </div>
 
       <H2>Tipos de proveedor</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Los tipos de proveedor se configuran en <strong>Inventario &gt; Configuracion &gt; Tipos de proveedor</strong>.
         Cada tipo puede tener <strong>campos custom</strong> propios que aparecen en el formulario del proveedor.
       </p>
@@ -680,9 +680,9 @@ draft ─┘`}
           { state: 'consolidated', desc: 'Consolidada — fusionada con otras OC del mismo proveedor', color: 'indigo' },
           { state: 'canceled', desc: 'Cancelada — sin efecto en stock', color: 'red' },
         ].map(({ state, desc, color }) => (
-          <div key={state} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={state} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{state}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -697,7 +697,7 @@ draft ─┘`}
           'Click en "Crear" (queda en estado draft)',
           'Enviar al proveedor cuando este lista',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -705,12 +705,12 @@ draft ─┘`}
       </div>
 
       <H2><RefreshCw className="h-4 w-4 text-primary/70" /> Recepcion parcial</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Si el proveedor envia la mercancia en multiples envios, puedes registrar cada recepcion parcial:
       </p>
       <div className="space-y-2">
-        <div className="rounded-xl border border-slate-200 p-4">
-          <p className="text-xs text-slate-600">
+        <div className="rounded-xl border border-border p-4">
+          <p className="text-xs text-muted-foreground">
             1. La OC pasa a estado <Pill color="purple">partial</Pill> al registrar la primera recepcion parcial.<br/>
             2. Cada recepcion genera un movimiento de stock tipo <Pill color="emerald">purchase</Pill>.<br/>
             3. Cuando todas las lineas esten completas, la OC pasa a <Pill color="emerald">received</Pill>.
@@ -719,13 +719,13 @@ draft ─┘`}
       </div>
 
       <H2><Merge className="h-4 w-4 text-primary/70" /> Consolidacion de OC</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Cuando tienes multiples OC en estado <Pill color="slate">draft</Pill> para el <strong>mismo proveedor</strong>,
         puedes fusionarlas en una sola OC consolidada:
       </p>
       <div className="space-y-2">
-        <div className="rounded-xl border border-slate-200 p-4">
-          <p className="text-xs text-slate-600">
+        <div className="rounded-xl border border-border p-4">
+          <p className="text-xs text-muted-foreground">
             1. Seleccionar 2 o mas OC borrador del mismo proveedor.<br/>
             2. Click en "Consolidar" — se crea una nueva OC con todas las lineas combinadas.<br/>
             3. Las OC originales pasan a estado <Pill color="indigo">consolidated</Pill> y quedan inactivas.<br/>
@@ -763,7 +763,7 @@ function ClientesSection() {
           'Opcionalmente seleccionar tipo de cliente',
           'Click en "Crear"',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -774,9 +774,9 @@ function ClientesSection() {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Campo</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Campo</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -794,8 +794,8 @@ function ClientesSection() {
               ['notes', 'Notas internas sobre el cliente'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-mono font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -803,19 +803,19 @@ function ClientesSection() {
       </div>
 
       <H2>Tipos de cliente</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Los tipos de cliente se configuran en <strong>Inventario &gt; Configuracion &gt; Tipos de cliente</strong>.
         Permiten segmentar clientes por naturaleza: mayorista, minorista, distribuidor, etc.
       </p>
 
       <H2>Precios por cliente</H2>
-      <p className="text-xs text-slate-500 mb-4">
+      <p className="text-xs text-muted-foreground mb-4">
         Cada cliente puede tener <strong>precios especiales</strong> asignados. Al crear una orden de venta para ese cliente,
         los precios se resuelven automaticamente. Ver la seccion <strong>Precios Especiales</strong>.
       </p>
 
       <H2><Eye className="h-4 w-4 text-primary/70" /> Portal de cliente</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Desde la pagina de detalle de un cliente, el boton <Pill color="indigo">Ver Portal</Pill> abre
         una vista de solo lectura con la informacion relevante para ese cliente:
       </p>
@@ -824,9 +824,9 @@ function ClientesSection() {
           { tab: 'Stock', desc: 'Stock disponible de los productos asociados al cliente, con cantidades y ubicaciones.' },
           { tab: 'Pedidos', desc: 'Listado de ordenes de venta del cliente con estado, fecha y total. Click para ver detalle.' },
         ].map(({ tab, desc }) => (
-          <div key={tab} className="rounded-xl border border-slate-200 p-4">
-            <p className="text-sm font-bold text-slate-700 mb-1">{tab}</p>
-            <p className="text-xs text-slate-500">{desc}</p>
+          <div key={tab} className="rounded-xl border border-border p-4">
+            <p className="text-sm font-bold text-foreground mb-1">{tab}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -870,9 +870,9 @@ function VentasSection() {
           { state: 'returned', desc: 'Devuelta — stock reingresado, nota credito emitida si aplica', color: 'slate' },
           { state: 'canceled', desc: 'Cancelada — stock liberado, sin efecto', color: 'red' },
         ].map(({ state, desc, color }) => (
-          <div key={state} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={state} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{state}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -889,7 +889,7 @@ function VentasSection() {
           'Click en "Crear" (queda en draft)',
           'Confirmar — si el total supera el umbral de aprobacion, va a pending_approval',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -897,13 +897,13 @@ function VentasSection() {
       </div>
 
       <H2><BadgeCheck className="h-4 w-4 text-primary/70" /> Aprobacion por monto</H2>
-      <p className="text-xs text-slate-500 mb-3">
-        Si el tenant configura un umbral de aprobacion (<code className="bg-slate-100 rounded px-1">so_approval_threshold</code>),
+      <p className="text-xs text-muted-foreground mb-3">
+        Si el tenant configura un umbral de aprobacion (<code className="bg-secondary rounded px-1">so_approval_threshold</code>),
         las OV cuyo total supere ese monto requieren aprobacion antes de confirmar:
       </p>
       <div className="space-y-2 mb-3">
-        <div className="rounded-xl border border-slate-200 p-4">
-          <p className="text-xs text-slate-600">
+        <div className="rounded-xl border border-border p-4">
+          <p className="text-xs text-muted-foreground">
             1. Al confirmar, si <strong>total &gt; umbral</strong>, la OV pasa a <Pill color="amber">pending_approval</Pill>.<br/>
             2. Un usuario diferente al creador aprueba o rechaza en <strong>Inventario &gt; Aprobaciones</strong>.<br/>
             3. El <strong>principio de 4 ojos</strong> impide que el creador apruebe su propia OV.<br/>
@@ -917,15 +917,15 @@ function VentasSection() {
       </InfoBox>
 
       <H2>Impuestos en la OV</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Cada linea de la OV puede tener una <strong>tarifa de IVA</strong> y una <strong>retención en la fuente</strong>:
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Campo</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Campo</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -939,8 +939,8 @@ function VentasSection() {
               ['discount_amount', 'Monto de descuento calculado'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-mono font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -964,12 +964,12 @@ total_payable    = total_with_tax - total_retention`}
       </InfoBox>
 
       <H2>Backorders</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Cuando al confirmar una OV no hay stock suficiente para alguna linea:
       </p>
       <div className="space-y-2 mb-3">
-        <div className="rounded-xl border border-slate-200 p-4">
-          <p className="text-xs text-slate-600">
+        <div className="rounded-xl border border-border p-4">
+          <p className="text-xs text-muted-foreground">
             1. La OV original se confirma solo con las cantidades disponibles.<br/>
             2. Se crea automaticamente una nueva OV hija (backorder) con las cantidades pendientes.<br/>
             3. El backorder queda en estado <Pill color="slate">draft</Pill> y referencia la OV padre.<br/>
@@ -979,21 +979,21 @@ total_payable    = total_with_tax - total_retention`}
       </div>
 
       <H2>Despacho y picking</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Al despachar, puedes especificar cantidades por linea (despacho parcial) o despachar la orden completa.
         Cada despacho genera movimientos de stock tipo <Pill color="red">sale</Pill>. La pagina de <strong>Picking</strong> permite
         verificar linea por linea desde bodega.
       </p>
 
       <H2><FileText className="h-4 w-4 text-primary/70" /> Remision de entrega</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Al despachar, se puede generar una <strong>remision</strong> (guia de despacho) en PDF que incluye:
         numero de remision, datos del cliente, productos, cantidades y firma de recibido.
         Se genera con <Pill color="indigo">POST /sales-orders/&#123;id&#125;/remission</Pill>.
       </p>
 
       <H2>Resumen y KPIs</H2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         El dashboard de ventas muestra un resumen de ordenes por estado (draft, pending_approval, confirmed, shipped, etc.)
         con conteo y totales. Accesible desde <strong>Inventario &gt; Ventas</strong>.
       </p>
@@ -1019,14 +1019,14 @@ function PreciosSection() {
           '1. Precio especial del cliente (customer_special) — si existe y esta vigente',
           '2. Precio base del producto (product_base) — precio de venta configurado en el producto',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
         ))}
       </div>
 
-      <p className="text-xs text-slate-500 mt-4">
+      <p className="text-xs text-muted-foreground mt-4">
         Para gestionar precios especiales, ve a <strong>Inventario &gt; Precios Especiales</strong>.
         Ahi puedes crear, editar y ver el historial de precios por cliente y producto.
       </p>
@@ -1070,9 +1070,9 @@ IRA Valor = (1 - |sumatoria(discrepancia x costo)| / sumatoria(sistema x costo))
           { range: '90% - 95%', label: 'Ambar (alerta)', color: 'amber' },
           { range: '< 90%', label: 'Rojo (critico)', color: 'red' },
         ].map(({ range, label, color }) => (
-          <div key={range} className="rounded-xl border border-slate-100 p-3 text-center">
+          <div key={range} className="rounded-xl border border-border p-3 text-center">
             <Pill color={color}>{range}</Pill>
-            <p className="text-[11px] text-slate-500 mt-1">{label}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{label}</p>
           </div>
         ))}
       </div>
@@ -1089,9 +1089,9 @@ Stock ajustado  = Stock actual + Discrepancia  (delta, no absoluto)`}
           { sign: 'Negativa', desc: 'Faltante — hay menos producto del que dice el sistema', color: 'red' },
           { sign: 'Cero', desc: 'Item exacto — el sistema y el fisico coinciden', color: 'emerald' },
         ].map(({ sign, desc, color }) => (
-          <div key={sign} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={sign} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{sign}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -1135,13 +1135,13 @@ Stock ajustado  = Stock actual + Discrepancia  (delta, no absoluto)`}
             when: 'Metodologia mas recomendada. Prioriza el esfuerzo en productos de mayor impacto.',
           },
         ].map(({ name, desc, when }, i) => (
-          <div key={name} className="rounded-xl border border-slate-200 p-4">
-            <p className="text-sm font-bold text-slate-700 mb-1">
+          <div key={name} className="rounded-xl border border-border p-4">
+            <p className="text-sm font-bold text-foreground mb-1">
               <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold text-[10px] mr-2">{i + 1}</span>
               {name}
             </p>
-            <p className="text-xs text-slate-500 mb-2">{desc}</p>
-            <p className="text-[11px] text-slate-400"><strong>Cuando usar:</strong> {when}</p>
+            <p className="text-xs text-muted-foreground mb-2">{desc}</p>
+            <p className="text-[11px] text-muted-foreground"><strong>Cuando usar:</strong> {when}</p>
           </div>
         ))}
       </div>
@@ -1161,8 +1161,8 @@ Stock ajustado  = Stock actual + Discrepancia  (delta, no absoluto)`}
           <div key={i} className="flex items-start gap-3">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             <div>
-              <p className="text-xs font-bold text-slate-700">{title}</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">{desc}</p>
+              <p className="text-xs font-bold text-foreground">{title}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{desc}</p>
             </div>
           </div>
         ))}
@@ -1192,10 +1192,10 @@ Stock ajustado  = Stock actual + Discrepancia  (delta, no absoluto)`}
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Estado</th>
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Descripcion</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Acciones</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Estado</th>
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Descripcion</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -1207,9 +1207,9 @@ Stock ajustado  = Stock actual + Discrepancia  (delta, no absoluto)`}
               ['Cancelado', 'Descartado, sin efecto', '(estado final)'],
             ].map(([state, desc, actions]) => (
               <tr key={state}>
-                <td className="py-2 pr-4 font-semibold text-slate-700">{state}</td>
-                <td className="py-2 pr-4 text-slate-500">{desc}</td>
-                <td className="py-2 text-slate-500">{actions}</td>
+                <td className="py-2 pr-4 font-semibold text-foreground">{state}</td>
+                <td className="py-2 pr-4 text-muted-foreground">{desc}</td>
+                <td className="py-2 text-muted-foreground">{actions}</td>
               </tr>
             ))}
           </tbody>
@@ -1221,9 +1221,9 @@ Stock ajustado  = Stock actual + Discrepancia  (delta, no absoluto)`}
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Accion</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Permiso</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Accion</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Permiso</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -1233,7 +1233,7 @@ Stock ajustado  = Stock actual + Discrepancia  (delta, no absoluto)`}
               ['Crear, aprobar, cancelar', 'inventory.admin'],
             ].map(([action, perm]) => (
               <tr key={action}>
-                <td className="py-2 pr-4 text-slate-700">{action}</td>
+                <td className="py-2 pr-4 text-foreground">{action}</td>
                 <td className="py-2"><Pill color="indigo">{perm}</Pill></td>
               </tr>
             ))}
@@ -1253,7 +1253,7 @@ Stock ajustado  = Stock actual + Discrepancia  (delta, no absoluto)`}
           'Metodologia ABC — contar productos A con mayor frecuencia',
           'Aprobar oportunamente — no dejar conteos completados sin aprobar',
         ].map((tip, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
             {tip}
           </div>
@@ -1270,7 +1270,7 @@ function EventosSection() {
     <div>
       <SectionHeader icon={AlertTriangle} title="Eventos" subtitle="Registro de incidencias y eventos operativos" />
 
-      <p className="text-sm text-slate-600 mb-5">
+      <p className="text-sm text-muted-foreground mb-5">
         Los eventos registran incidencias, alertas y sucesos relevantes que afectan al inventario.
         Cada evento queda asociado a un producto, bodega o movimiento.
       </p>
@@ -1284,7 +1284,7 @@ function EventosSection() {
           'Describir el evento en detalle',
           'Click en "Crear"',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -1299,9 +1299,9 @@ function EventosSection() {
           { level: 'high', desc: 'Importante — requiere accion pronta', color: 'red' },
           { level: 'critical', desc: 'Critico — requiere accion inmediata', color: 'red' },
         ].map(({ level, desc, color }) => (
-          <div key={level} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={level} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{level}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -1314,15 +1314,15 @@ function EventosSection() {
           { state: 'resolved', desc: 'Resuelto — accion correctiva aplicada', color: 'emerald' },
           { state: 'closed', desc: 'Cerrado — sin accion requerida', color: 'slate' },
         ].map(({ state, desc, color }) => (
-          <div key={state} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={state} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{state}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
 
       <H2>Impactos</H2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         Un evento puede tener multiples <strong>impactos</strong> que detallan las consecuencias sobre productos
         o bodegas especificas: cantidad afectada, costo estimado y descripcion del dano.
       </p>
@@ -1350,24 +1350,24 @@ function AlertasSection() {
           { type: 'Stock sobre maximo', desc: 'El stock supera el max_stock configurado. Hay riesgo de sobre-stock y costos de almacenaje.', color: 'purple', action: 'Evaluar transferencias o ajustar compras futuras' },
           { type: 'Sin stock', desc: 'El producto tiene stock cero en una o mas bodegas. Hay riesgo de no poder cumplir pedidos.', color: 'red', action: 'Accion urgente: recibir stock o redirigir pedidos' },
         ].map(({ type, desc, color, action }) => (
-          <div key={type} className="rounded-xl border border-slate-200 p-4">
-            <p className="text-sm font-bold text-slate-700 mb-1"><Pill color={color}>{type}</Pill></p>
-            <p className="text-xs text-slate-500 mb-2">{desc}</p>
-            <p className="text-[11px] text-slate-400"><strong>Accion sugerida:</strong> {action}</p>
+          <div key={type} className="rounded-xl border border-border p-4">
+            <p className="text-sm font-bold text-foreground mb-1"><Pill color={color}>{type}</Pill></p>
+            <p className="text-xs text-muted-foreground mb-2">{desc}</p>
+            <p className="text-[11px] text-muted-foreground"><strong>Accion sugerida:</strong> {action}</p>
           </div>
         ))}
       </div>
 
       <H2>Configurar umbrales</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Los umbrales de alerta se configuran en cada producto individual:
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Campo</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Campo</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -1377,8 +1377,8 @@ function AlertasSection() {
               ['reorder_point', 'Punto de reorden — sugerencia de reabastecimiento'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-mono font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -1406,15 +1406,15 @@ function KardexSection() {
       </InfoBox>
 
       <H2>Que muestra el Kardex</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Para cada producto, el Kardex presenta una tabla cronologica con:
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Columna</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Columna</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -1431,8 +1431,8 @@ function KardexSection() {
               ['Costo unitario', 'Costo promedio o FIFO segun metodo'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -1445,18 +1445,18 @@ function KardexSection() {
           { method: 'Costo promedio', desc: 'El costo unitario se recalcula con cada entrada como promedio ponderado de todas las unidades en inventario.' },
           { method: 'FIFO', desc: 'First In, First Out — las salidas se valoran al costo de las unidades mas antiguas. Usado en produccion para calcular costo de componentes.' },
         ].map(({ method, desc }) => (
-          <div key={method} className="rounded-xl border border-slate-200 p-4">
-            <p className="text-sm font-bold text-slate-700 mb-1">{method}</p>
-            <p className="text-xs text-slate-500">{desc}</p>
+          <div key={method} className="rounded-xl border border-border p-4">
+            <p className="text-sm font-bold text-foreground mb-1">{method}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
 
       <H2>Acceso al Kardex</H2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         El Kardex se accede desde el detalle de cada producto, en la pestana "Kardex".
         Tambien puedes filtrar por rango de fechas y bodega para ver movimientos especificos.
-        El endpoint es <code className="bg-slate-100 rounded px-1">GET /api/v1/products/&#123;id&#125;/kardex</code>.
+        El endpoint es <code className="bg-secondary rounded px-1">GET /api/v1/products/&#123;id&#125;/kardex</code>.
       </p>
 
       <InfoBox type="warning">
@@ -1489,7 +1489,7 @@ function SerialesSection() {
           'Opcionalmente asignar a una bodega',
           'Click en "Crear"',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -1506,15 +1506,15 @@ function SerialesSection() {
           { state: 'damaged', desc: 'Danado — no disponible para venta', color: 'red' },
           { state: 'returned', desc: 'Devuelto por el cliente', color: 'slate' },
         ].map(({ state, desc, color }) => (
-          <div key={state} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={state} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{state}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
 
       <H2>Trazabilidad</H2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         Cada serial mantiene un historial completo de movimientos: desde su creacion, pasando por transferencias
         entre bodegas, hasta su venta o baja. Esto permite rastrear la ubicacion y el estado de cada unidad
         individual en cualquier momento.
@@ -1551,7 +1551,7 @@ function LotesSection() {
           'Ingresar cantidad del lote',
           'Click en "Crear"',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -1562,9 +1562,9 @@ function LotesSection() {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Campo</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Campo</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -1577,8 +1577,8 @@ function LotesSection() {
               ['notes', 'Notas adicionales (proveedor, condiciones, etc.)'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-mono font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -1586,7 +1586,7 @@ function LotesSection() {
       </div>
 
       <H2><Calendar className="h-4 w-4 text-primary/70" /> Control de vencimiento</H2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         Los lotes con fecha de vencimiento permiten aplicar politicas <strong>FEFO</strong> (First Expired, First Out)
         para despachar primero los productos mas proximos a vencer. El sistema puede alertar sobre lotes
         proximos a vencimiento.
@@ -1603,13 +1603,13 @@ function ProduccionSection() {
       <SectionHeader icon={Factory} title="Produccion" subtitle="Recetas (BOM), corridas de produccion, aprobacion y costos FIFO" />
 
       <H2>Recetas (Bill of Materials)</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Una receta define los componentes necesarios para fabricar un producto terminado.
         Cada receta tiene un producto resultado, una cantidad de rendimiento y una lista de componentes.
       </p>
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
         <p className="text-sm font-bold text-primary mb-2">Ejemplo de receta</p>
-        <div className="text-xs text-slate-600 space-y-1">
+        <div className="text-xs text-muted-foreground space-y-1">
           <p><strong>Producto resultado:</strong> Caja de regalo premium (rinde 1 unidad)</p>
           <p><strong>Componentes:</strong></p>
           <div className="ml-4 space-y-0.5">
@@ -1631,7 +1631,7 @@ function ProduccionSection() {
           'Establecer la cantidad de producto resultante (yield)',
           'Click en "Crear"',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -1639,7 +1639,7 @@ function ProduccionSection() {
       </div>
 
       <H2><GitBranch className="h-4 w-4 text-primary/70" /> Corridas de produccion</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Una <strong>corrida de produccion</strong> es la ejecucion real de una receta. El flujo incluye aprobacion:
       </p>
 
@@ -1658,17 +1658,17 @@ function ProduccionSection() {
           { state: 'completed', desc: 'Aprobada y completada — stock de producto resultado incrementado.', color: 'emerald' },
           { state: 'rejected', desc: 'Rechazada — el supervisor no aprobo la corrida. Los componentes ya consumidos no se revierten automaticamente.', color: 'red' },
         ].map(({ state, desc, color }) => (
-          <div key={state} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={state} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{state}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
 
       <H2>Proceso de ejecucion</H2>
       <div className="space-y-2">
-        <div className="rounded-xl border border-slate-200 p-4">
-          <p className="text-xs text-slate-600">
+        <div className="rounded-xl border border-border p-4">
+          <p className="text-xs text-muted-foreground">
             1. Se verifica que haya stock suficiente de todos los componentes en la bodega.<br/>
             2. Se descuenta el stock de cada componente (movimientos <Pill color="red">adj_out</Pill>).<br/>
             3. El costo de produccion se calcula por capas <strong>FIFO</strong> (costo real de los componentes consumidos).<br/>
@@ -1696,7 +1696,7 @@ function ReportesSection() {
     <div>
       <SectionHeader icon={FileDown} title="Reportes" subtitle="Exportacion de datos en formato CSV" />
 
-      <p className="text-sm text-slate-600 mb-5">
+      <p className="text-sm text-muted-foreground mb-5">
         La seccion de reportes permite descargar datos del inventario en formato CSV para analisis externo
         en Excel, Google Sheets u otras herramientas.
       </p>
@@ -1713,15 +1713,15 @@ function ReportesSection() {
           { name: 'Lotes', desc: 'Lotes con fecha de fabricacion, vencimiento y cantidades.', endpoint: 'GET /api/v1/reports/batches' },
           { name: 'Ordenes de compra', desc: 'OC con estado, proveedor, total y fecha.', endpoint: 'GET /api/v1/reports/purchase-orders' },
         ].map(({ name, desc, endpoint }) => (
-          <div key={name} className="rounded-xl border border-slate-200 p-4">
-            <p className="text-sm font-bold text-slate-700 mb-1">{name} <Pill color="slate">{endpoint}</Pill></p>
-            <p className="text-xs text-slate-500">{desc}</p>
+          <div key={name} className="rounded-xl border border-border p-4">
+            <p className="text-sm font-bold text-foreground mb-1">{name} <Pill color="slate">{endpoint}</Pill></p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
 
       <H2>Filtros de fechas</H2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         El reporte de movimientos acepta <Pill>fecha_inicio</Pill> y <Pill>fecha_fin</Pill> como parametros
         opcionales para limitar el rango de datos exportados.
       </p>
@@ -1742,7 +1742,7 @@ function ImportacionSection() {
       <SectionHeader icon={Upload} title="Importacion y Datos Demo" subtitle="Carga masiva de productos y generacion de datos de prueba" />
 
       <H2>Importacion de productos</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Puedes importar productos de forma masiva via la API. El endpoint acepta un arreglo de productos
         y los crea en lote:
       </p>
@@ -1758,7 +1758,7 @@ Content-Type: application/json
       </div>
 
       <H2>Datos demo</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Para probar el sistema rapidamente, puedes generar datos de prueba que incluyen productos,
         bodegas, proveedores y movimientos de stock de ejemplo:
       </p>
@@ -1772,15 +1772,15 @@ Content-Type: application/json
       </InfoBox>
 
       <H2>Formato CSV para importacion</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Si prefieres preparar los datos en una hoja de calculo, el formato CSV esperado es:
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Columna</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Columna</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -1796,8 +1796,8 @@ Content-Type: application/json
               ['description', 'Descripcion del producto'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-mono font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -1832,16 +1832,16 @@ function ConfiguracionSection() {
           { name: 'Severidades de evento', desc: 'Niveles de urgencia: low, medium, high, critical.', path: 'Configuracion > Severidades' },
           { name: 'Estados de evento', desc: 'Flujo de estados de eventos: open, in_progress, resolved, closed.', path: 'Configuracion > Estados de evento' },
         ].map(({ name, desc, path }) => (
-          <div key={name} className="rounded-xl border border-slate-200 p-4">
-            <p className="text-sm font-bold text-slate-700 mb-1">{name}</p>
-            <p className="text-xs text-slate-500 mb-1">{desc}</p>
-            <p className="text-[11px] text-slate-400"><strong>Ruta:</strong> Inventario &gt; {path}</p>
+          <div key={name} className="rounded-xl border border-border p-4">
+            <p className="text-sm font-bold text-foreground mb-1">{name}</p>
+            <p className="text-xs text-muted-foreground mb-1">{desc}</p>
+            <p className="text-[11px] text-muted-foreground"><strong>Ruta:</strong> Inventario &gt; {path}</p>
           </div>
         ))}
       </div>
 
       <H2>Reglas de tipo de producto</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Cada tipo de producto puede configurar reglas avanzadas que automatizan el comportamiento del inventario:
       </p>
       <div className="space-y-3 mb-4">
@@ -1850,9 +1850,9 @@ function ConfiguracionSection() {
           { name: 'Regla de despacho', field: 'dispatch_rule', desc: 'Define el orden de consumo de lotes: FIFO (por defecto), FEFO (por vencimiento) o LIFO (ultimo en entrar, primero en salir).' },
           { name: 'Ubicacion de entrada', field: 'entry_rule_location_id', desc: 'Ubicacion predeterminada donde se almacena automaticamente el stock al recibirlo. Si se configura, no es necesario seleccionar ubicacion manualmente en cada recepcion.' },
         ].map(({ name, field, desc }) => (
-          <div key={field} className="rounded-xl border border-slate-200 p-4">
-            <p className="text-sm font-bold text-slate-700 mb-1">{name} <span className="text-xs font-mono text-slate-400 ml-1">{field}</span></p>
-            <p className="text-xs text-slate-500">{desc}</p>
+          <div key={field} className="rounded-xl border border-border p-4">
+            <p className="text-sm font-bold text-foreground mb-1">{name} <span className="text-xs font-mono text-muted-foreground ml-1">{field}</span></p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -1862,7 +1862,7 @@ function ConfiguracionSection() {
       </InfoBox>
 
       <H2>Campos custom</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Los campos custom permiten extender los formularios de productos, proveedores y bodegas con campos adicionales
         especificos del tipo. Tipos de campo disponibles:
       </p>
@@ -1878,7 +1878,7 @@ function ConfiguracionSection() {
       </InfoBox>
 
       <H2>Estados de serial</H2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         Los estados de serial son configurables por tenant. Los estados por defecto son:
         <Pill color="emerald">available</Pill> <Pill color="amber">reserved</Pill> <Pill color="blue">sold</Pill>{' '}
         <Pill color="purple">in_transit</Pill> <Pill color="red">damaged</Pill> <Pill color="slate">returned</Pill>.
@@ -1886,13 +1886,13 @@ function ConfiguracionSection() {
       </p>
 
       <H2>Configuracion de eventos</H2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         Los tipos de evento, severidades e impactos son configurables para adaptar el sistema de eventos
         a las necesidades de tu operacion. Los cambios se aplican en tiempo real.
       </p>
 
       <H2>Campos de bodega y movimiento</H2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         Tambien puedes definir campos custom para <strong>bodegas</strong> (ej: responsable, horario) y
         <strong> movimientos</strong> (ej: numero de guia, transportadora). Se configuran en las pestanas correspondientes.
       </p>
@@ -1907,7 +1907,7 @@ function ControlCalidadSection() {
     <div>
       <SectionHeader icon={ShieldCheck} title="Control de Calidad (QC)" subtitle="Bloqueo automatico, inspeccion y aprobacion de stock" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         El sistema de control de calidad permite bloquear automaticamente el stock recibido hasta que pase una inspeccion.
         Esto evita que productos no verificados sean despachados a clientes.
       </p>
@@ -1921,7 +1921,7 @@ function ControlCalidadSection() {
           'Un usuario con permisos aprueba o rechaza el stock desde los botones de accion',
           'Solo el stock aprobado queda disponible para despacho',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -1935,9 +1935,9 @@ function ControlCalidadSection() {
           { state: 'approved', desc: 'Stock inspeccionado y aprobado. Disponible para todas las operaciones.', color: 'emerald' },
           { state: 'rejected', desc: 'Stock rechazado por calidad. Se recomienda ajustar como desperdicio o devolucion.', color: 'red' },
         ].map(({ state, desc, color }) => (
-          <div key={state} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={state} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{state}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -1963,7 +1963,7 @@ function OcupacionSection() {
     <div>
       <SectionHeader icon={Activity} title="Ocupacion de Bodegas" subtitle="KPIs de capacidad, ocupacion y stock estancado" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         Los indicadores de ocupacion permiten monitorear el uso real de las bodegas y detectar
         problemas como sobre-almacenamiento o stock sin rotacion.
       </p>
@@ -1977,21 +1977,21 @@ function OcupacionSection() {
           { kpi: '% Ocupacion global', desc: 'Porcentaje de ocupacion total. Se muestra como barra de progreso en el dashboard.', color: 'indigo' },
           { kpi: 'Stock estancado', desc: 'Cantidad de ubicaciones con stock que no ha tenido movimiento en 90+ dias.', color: 'amber' },
         ].map(({ kpi, desc, color }) => (
-          <div key={kpi} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={kpi} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{kpi}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
 
       <H2>Desglose por bodega</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Ademas del KPI global, el dashboard muestra una barra de ocupacion individual para cada bodega,
         permitiendo identificar rapidamente cuales estan al limite y cuales tienen capacidad disponible.
       </p>
 
       <H2>Desglose por tipo de ubicacion</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         La ocupacion se desglosa por tipo de ubicacion (zona, pasillo, rack, bin) para entender
         en que nivel de la jerarquia se concentra el uso del espacio.
       </p>
@@ -2017,7 +2017,7 @@ function PortalClienteSection() {
     <div>
       <SectionHeader icon={Eye} title="Portal de Cliente" subtitle="Vista de solo lectura para clientes: stock y pedidos" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         El portal de cliente ofrece una vista de solo lectura donde los clientes pueden consultar
         el stock disponible de sus productos y el estado de sus pedidos.
       </p>
@@ -2029,7 +2029,7 @@ function PortalClienteSection() {
           'En la pagina de detalle del cliente, click en el boton "Ver Portal"',
           'Se abre la vista de portal con dos pestanas: Stock y Pedidos',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -2042,9 +2042,9 @@ function PortalClienteSection() {
           { tab: 'Stock', desc: 'Muestra los productos y cantidades disponibles asociados al cliente. Incluye SKU, nombre del producto, bodega y cantidad.' },
           { tab: 'Pedidos', desc: 'Lista las ordenes de venta del cliente con numero, fecha, estado y total. Click en una orden para ver el detalle con sus lineas.' },
         ].map(({ tab, desc }) => (
-          <div key={tab} className="rounded-xl border border-slate-200 p-4">
-            <p className="text-sm font-bold text-slate-700 mb-1">{tab}</p>
-            <p className="text-xs text-slate-500">{desc}</p>
+          <div key={tab} className="rounded-xl border border-border p-4">
+            <p className="text-sm font-bold text-foreground mb-1">{tab}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -2076,7 +2076,7 @@ function ClasificacionABCSection() {
     <div>
       <SectionHeader icon={BarChart3} title="Clasificacion ABC" subtitle="Analisis de Pareto: 80/15/5 por valor de movimiento" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         La clasificacion ABC agrupa automaticamente todos los productos con movimiento
         segun el valor total que representan. Se basa en el principio de Pareto: pocos productos
         concentran la mayor parte del valor.
@@ -2089,10 +2089,10 @@ function ClasificacionABCSection() {
           { cls: 'B', pct: '~15%', items: '~30%', desc: 'Valor intermedio. Control moderado, conteo trimestral.', color: 'amber' },
           { cls: 'C', pct: '~5%', items: '~50%', desc: 'Bajo valor unitario. Control ligero, conteo semestral. Muchos articulos pero poco impacto economico.', color: 'emerald' },
         ].map(({ cls, pct, items, desc, color }) => (
-          <div key={cls} className="rounded-xl border border-slate-200 p-4">
+          <div key={cls} className="rounded-xl border border-border p-4">
             <Pill color={color}>Clase {cls}</Pill>
-            <p className="text-xs text-slate-500 mt-2">{desc}</p>
-            <p className="text-[11px] text-slate-400 mt-1">{pct} del valor, {items} de los articulos</p>
+            <p className="text-xs text-muted-foreground mt-2">{desc}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{pct} del valor, {items} de los articulos</p>
           </div>
         ))}
       </div>
@@ -2105,7 +2105,7 @@ function ClasificacionABCSection() {
           'Se calcula el porcentaje acumulado del valor',
           'A = acumulado hasta 80%, B = 80-95%, C = 95-100%',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -2125,9 +2125,9 @@ function ClasificacionABCSection() {
           { use: 'Seguridad', desc: 'Productos A en areas de acceso restringido.' },
           { use: 'Reabastecimiento', desc: 'Pronosticos mas detallados para productos A.' },
         ].map(({ use, desc }) => (
-          <div key={use} className="rounded-xl border border-slate-100 p-3">
-            <p className="text-xs font-bold text-slate-700">{use}</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">{desc}</p>
+          <div key={use} className="rounded-xl border border-border p-3">
+            <p className="text-xs font-bold text-foreground">{use}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{desc}</p>
           </div>
         ))}
       </div>
@@ -2148,7 +2148,7 @@ function EOQSection() {
     <div>
       <SectionHeader icon={Calculator} title="EOQ — Cantidad Optima de Pedido" subtitle="Formula de Wilson para minimizar costos de inventario" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         El EOQ (Economic Order Quantity) calcula la cantidad optima a pedir de cada producto
         para minimizar la suma de costos de pedido y costos de almacenamiento.
       </p>
@@ -2168,23 +2168,23 @@ H = Costo de mantenimiento por unidad/año = Precio × (% costo mantenimiento)`}
           { param: 'Costo por pedido (S)', desc: 'Costo administrativo de generar una orden de compra: horas-hombre, comunicacion, recepcion. Por defecto $50.', color: 'blue' },
           { param: '% Costo mantenimiento (H%)', desc: 'Porcentaje anual del valor del producto que cuesta almacenarlo: espacio, seguros, obsolescencia. Por defecto 25%.', color: 'purple' },
         ].map(({ param, desc, color }) => (
-          <div key={param} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={param} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{param}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
 
       <H2>Resultados</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Para cada producto con historial de movimientos, el sistema calcula:
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Campo</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Campo</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -2196,8 +2196,8 @@ H = Costo de mantenimiento por unidad/año = Precio × (% costo mantenimiento)`}
               ['total_annual_cost', 'Costo total anual optimo (pedido + almacenamiento)'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-mono font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -2225,7 +2225,7 @@ function PoliticaStockSection() {
     <div>
       <SectionHeader icon={Target} title="Politica de Stock" subtitle="Control de meses de rotacion por tipo de producto" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         Cada tipo de producto puede tener un <strong>objetivo de meses de rotacion</strong> que define
         cuantos meses de inventario es aceptable mantener. El sistema compara el stock actual contra
         el consumo mensual para detectar excesos.
@@ -2239,7 +2239,7 @@ function PoliticaStockSection() {
           'Establecer el campo "Meses de rotacion objetivo" (ej: 3)',
           'Los productos de ese tipo seran evaluados automaticamente',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -2263,9 +2263,9 @@ Estado:
           { status: 'excess', desc: 'Sobre-stock detectado. Barra roja con indicacion del exceso en meses.', color: 'red' },
           { status: 'no_data', desc: 'No hay consumo registrado para calcular. Revisar si hay movimientos de salida.', color: 'slate' },
         ].map(({ status, desc, color }) => (
-          <div key={status} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={status} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{status}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -2285,7 +2285,7 @@ function CostoAlmacenSection() {
     <div>
       <SectionHeader icon={Building} title="Costo de Almacenamiento" subtitle="Valuacion del costo de almacenar por bodega, m² y ubicacion" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         El modulo calcula el costo mensual de almacenamiento por bodega basado en el costo por metro cuadrado
         y el area total. Permite comparar el costo de almacenamiento contra el valor del inventario almacenado.
       </p>
@@ -2298,7 +2298,7 @@ function CostoAlmacenSection() {
           'Ingresar el "Area total (m²)" de la bodega',
           'El sistema calcula automaticamente el costo mensual y por ubicacion',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -2313,9 +2313,9 @@ function CostoAlmacenSection() {
           { kpi: 'Almacenamiento/Valor', desc: 'Porcentaje del costo mensual respecto al valor almacenado. Menor es mejor.', color: 'amber' },
           { kpi: 'Costo por ubicacion', desc: 'Costo mensual dividido entre el numero de ubicaciones de la bodega.', color: 'blue' },
         ].map(({ kpi, desc, color }) => (
-          <div key={kpi} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={kpi} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{kpi}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -2341,7 +2341,7 @@ function AuditoriaSection() {
     <div>
       <SectionHeader icon={ClipboardList} title="Auditoria" subtitle="Log de acciones, timeline de actividad y trazabilidad de usuario" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         El sistema de auditoria registra automaticamente cada accion de mutacion (crear, editar, eliminar)
         realizada en el modulo de inventario. Esto incluye quien realizo la accion, cuando, desde que IP
         y los datos anteriores y nuevos del recurso afectado.
@@ -2354,12 +2354,12 @@ function AuditoriaSection() {
       </InfoBox>
 
       <H2>Acciones auditadas</H2>
-      <div className="overflow-x-auto rounded-xl border border-slate-200">
+      <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full text-xs">
-          <thead className="bg-slate-50">
+          <thead className="bg-muted">
             <tr>
-              <th className="text-left px-3 py-2 font-semibold text-slate-600">Accion</th>
-              <th className="text-left px-3 py-2 font-semibold text-slate-600">Descripcion</th>
+              <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Accion</th>
+              <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -2381,8 +2381,8 @@ function AuditoriaSection() {
               ['inventory.config.*', 'Configuracion (tipos, campos, estados)'],
             ].map(([action, desc]) => (
               <tr key={action}>
-                <td className="px-3 py-2 font-mono text-slate-700">{action}</td>
-                <td className="px-3 py-2 text-slate-500">{desc}</td>
+                <td className="px-3 py-2 font-mono text-foreground">{action}</td>
+                <td className="px-3 py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -2390,7 +2390,7 @@ function AuditoriaSection() {
       </div>
 
       <H2>Descripciones legibles</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Cada registro de auditoria incluye una <strong>descripcion en espanol</strong> generada automaticamente
         con contexto relevante:
       </p>
@@ -2401,17 +2401,17 @@ function AuditoriaSection() {
           'Transfirio stock entre bodegas — 50 uds, de "Bodega A" a "Bodega B"',
           'Aprobo conteo ciclico',
         ].map((example, i) => (
-          <div key={i} className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 text-xs text-slate-600 font-mono">
+          <div key={i} className="rounded-xl bg-muted border border-border px-3 py-2 text-xs text-muted-foreground font-mono">
             {example}
           </div>
         ))}
       </div>
 
       <H2>Pagina de auditoria</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         La pagina principal de auditoria (<strong>Inventario &gt; Auditoria</strong>) permite:
       </p>
-      <ul className="list-disc list-inside text-xs text-slate-500 space-y-1 mb-4">
+      <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1 mb-4">
         <li>Buscar por accion (texto libre)</li>
         <li>Filtrar por tipo de recurso (producto, bodega, proveedor, stock, orden de compra, orden de venta, cliente, etc.)</li>
         <li>Filtrar por rango de fechas</li>
@@ -2420,16 +2420,16 @@ function AuditoriaSection() {
       </ul>
 
       <H2>Timeline de actividad</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Cada entidad del inventario tiene un timeline de actividad que muestra el historial completo
         de acciones realizadas sobre ella. Este timeline se encuentra disponible en las paginas de detalle
-        y se alimenta del endpoint <code className="bg-slate-100 rounded px-1">GET /api/v1/audit/entity/&#123;tipo&#125;/&#123;id&#125;</code>.
+        y se alimenta del endpoint <code className="bg-secondary rounded px-1">GET /api/v1/audit/entity/&#123;tipo&#125;/&#123;id&#125;</code>.
       </p>
 
       <H2>Campos created_by / updated_by</H2>
-      <p className="text-xs text-slate-500 mb-3">
-        Todas las tablas principales del inventario incluyen los campos <code className="bg-slate-100 rounded px-1">created_by</code> y{' '}
-        <code className="bg-slate-100 rounded px-1">updated_by</code> que guardan el ID del usuario que realizo la accion.
+      <p className="text-xs text-muted-foreground mb-3">
+        Todas las tablas principales del inventario incluyen los campos <code className="bg-secondary rounded px-1">created_by</code> y{' '}
+        <code className="bg-secondary rounded px-1">updated_by</code> que guardan el ID del usuario que realizo la accion.
         Estos campos se muestran en las tablas de listado como columna "Creado por" con el nombre completo del usuario resuelto.
       </p>
 
@@ -2460,9 +2460,9 @@ function ImpuestosSection() {
           { type: 'Retención', desc: 'Retención en la fuente. Varía según actividad economica del proveedor/cliente.', color: 'purple' },
           { type: 'ICA', desc: 'Impuesto de Industria y Comercio. Tarifa municipal.', color: 'blue' },
         ].map(({ type, desc, color }) => (
-          <div key={type} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={type} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{type}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -2471,9 +2471,9 @@ function ImpuestosSection() {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Campo</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Campo</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -2486,8 +2486,8 @@ function ImpuestosSection() {
               ['description', 'Descripcion adicional'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-mono font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -2495,7 +2495,7 @@ function ImpuestosSection() {
       </div>
 
       <H2>Inicializar tarifas Colombia</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Si no hay tarifas configuradas, el boton <Pill color="emerald">Inicializar Colombia</Pill> crea las tarifas
         estandar colombianas: IVA 0%, 5%, 19% y retenciones comunes.
       </p>
@@ -2534,7 +2534,7 @@ function PreciosClientesSection() {
           'Establecer fechas de vigencia (válido desde / hasta)',
           'Click en "Crear"',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -2548,15 +2548,15 @@ function PreciosClientesSection() {
           { kpi: 'Clientes con precio', desc: 'Cantidad de clientes que tienen al menos un precio especial.', color: 'blue' },
           { kpi: 'Vence pronto', desc: 'Precios que vencen en los proximos 30 dias.', color: 'amber' },
         ].map(({ kpi, desc, color }) => (
-          <div key={kpi} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={kpi} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{kpi}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
 
       <H2>Renovar un precio</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Cuando un precio especial esta proximo a vencer, puedes <strong>renovarlo</strong> desde el icono de
         renovacion. Se crea un nuevo registro con el mismo precio y nuevas fechas de vigencia.
       </p>
@@ -2578,7 +2578,7 @@ function EscanerSection() {
     <div>
       <SectionHeader icon={ScanBarcode} title="Escáner" subtitle="Lectura de código de barras y acciones rápidas de stock" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         La pagina de escaner permite buscar productos por codigo de barras (o SKU) y ejecutar
         operaciones de stock de forma rapida sin navegar por multiples paginas.
       </p>
@@ -2593,7 +2593,7 @@ function EscanerSection() {
           'Elegir acción rápida: Recibir, Despachar o Transferir',
           'Completar cantidad y bodega, confirmar operación',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -2607,9 +2607,9 @@ function EscanerSection() {
           { action: 'Despachar', desc: 'Saca stock de la bodega (movimiento de salida).', color: 'red' },
           { action: 'Transferir', desc: 'Mueve stock entre dos bodegas.', color: 'blue' },
         ].map(({ action, desc, color }) => (
-          <div key={action} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={action} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{action}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -2621,7 +2621,7 @@ function EscanerSection() {
       </InfoBox>
 
       <H2>Historial de escaneos</H2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         Cada escaneo se registra en un historial en pantalla con timestamp, codigo y producto.
         El historial se mantiene durante la sesion y se reinicia al cambiar de pagina.
       </p>
@@ -2636,13 +2636,13 @@ function PickingSection() {
     <div>
       <SectionHeader icon={ListChecks} title="Picking" subtitle="Preparación de pedidos linea por linea desde bodega" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         La pagina de Picking es el centro de trabajo del operador de bodega. Muestra las ordenes
         de venta listas para preparar y permite verificar cada linea durante el alistamiento.
       </p>
 
       <H2>Cola de picking</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         La cola muestra las OV en estado <Pill color="blue">confirmed</Pill> y <Pill color="amber">picking</Pill>.
         Las que ya estan en picking se muestran primero.
       </p>
@@ -2657,7 +2657,7 @@ function PickingSection() {
           'Al completar todas las lineas, click en "Despachar"',
           'La OV pasa a shipped y el stock se descuenta de la bodega',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -2668,9 +2668,9 @@ function PickingSection() {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Dato</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Dato</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -2682,8 +2682,8 @@ function PickingSection() {
               ['Stock disponible', 'Stock actual vs cantidad solicitada'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -2705,7 +2705,7 @@ function AprobacionesSection() {
     <div>
       <SectionHeader icon={BadgeCheck} title="Aprobaciones Pendientes" subtitle="Aprobación de ordenes de venta por monto" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         Cuando una orden de venta supera el umbral de aprobacion configurado para el tenant,
         requiere aprobacion de un segundo usuario antes de poder confirmarla.
       </p>
@@ -2724,9 +2724,9 @@ function AprobacionesSection() {
           { kpi: 'Demoradas (1-4h)', desc: 'Llevan entre 1 y 4 horas esperando', color: 'amber' },
           { kpi: 'Recientes (<1h)', desc: 'Solicitudes recientes, aun dentro del tiempo normal', color: 'emerald' },
         ].map(({ kpi, desc, color }) => (
-          <div key={kpi} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={kpi} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{kpi}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -2740,7 +2740,7 @@ function AprobacionesSection() {
           'Para rechazar: click en el boton rojo, ingresar motivo de rechazo',
           'La OV aprobada pasa a confirmed; la rechazada pasa a rejected',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -2748,8 +2748,8 @@ function AprobacionesSection() {
       </div>
 
       <H2>Log de aprobaciones</H2>
-      <p className="text-xs text-slate-500">
-        Cada accion de aprobacion o rechazo queda registrada en la tabla <code className="bg-slate-100 rounded px-1">so_approval_logs</code>
+      <p className="text-xs text-muted-foreground">
+        Cada accion de aprobacion o rechazo queda registrada en la tabla <code className="bg-secondary rounded px-1">so_approval_logs</code>
         con quien la ejecuto, cuando, el motivo (si fue rechazo) y el total de la OV al momento de la accion.
       </p>
 
@@ -2770,14 +2770,14 @@ function ReordenSection() {
     <div>
       <SectionHeader icon={RefreshCw} title="Reorden Automático" subtitle="Generación automática de OC cuando el stock baja del punto de reorden" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         El modulo de reorden automatico monitorea los productos que tienen configurado un punto de reorden
         y un proveedor preferido. Cuando el stock disponible cae por debajo del punto de reorden,
         genera automaticamente una orden de compra borrador.
       </p>
 
       <H2>Requisitos del producto</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Para que un producto participe en el reorden automatico, debe tener configurados:
       </p>
       <div className="space-y-2 mb-4">
@@ -2786,9 +2786,9 @@ function ReordenSection() {
           { field: 'auto_reorder', desc: 'Flag activado (true) — habilita el reorden automatico', color: 'emerald' },
           { field: 'preferred_supplier_id', desc: 'Proveedor preferido al que se enviara la OC', color: 'blue' },
         ].map(({ field, desc, color }) => (
-          <div key={field} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={field} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{field}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -2803,7 +2803,7 @@ function ReordenSection() {
           'El sistema crea una PO borrador por cada proveedor que tenga productos pendientes',
           'Las POs creadas se pueden revisar y enviar desde Ordenes de Compra',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -2817,9 +2817,9 @@ function ReordenSection() {
           { kpi: 'Bajo punto de reorden', desc: 'Productos cuyo stock actual esta por debajo del reorder_point', color: 'red' },
           { kpi: 'En nivel normal', desc: 'Productos con stock por encima del punto de reorden', color: 'emerald' },
         ].map(({ kpi, desc, color }) => (
-          <div key={kpi} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={kpi} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{kpi}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
@@ -2846,7 +2846,7 @@ function RecetasSection() {
     <div>
       <SectionHeader icon={FlaskConical} title="Recetas (BOM)" subtitle="Composición de productos y verificacion de disponibilidad" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         Las recetas (Bill of Materials) definen los componentes necesarios para fabricar un producto terminado.
         La pagina de recetas permite gestionar las recetas independientemente de la produccion.
       </p>
@@ -2861,7 +2861,7 @@ function RecetasSection() {
           'Establecer la cantidad de rendimiento (yield)',
           'Click en "Crear"',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -2869,7 +2869,7 @@ function RecetasSection() {
       </div>
 
       <H2>Disponibilidad de componentes</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Cada receta muestra en tiempo real si tiene todos los componentes disponibles en inventario:
       </p>
       <div className="space-y-2 mb-4">
@@ -2877,18 +2877,18 @@ function RecetasSection() {
           { status: 'Disponible', desc: 'Todos los componentes tienen stock suficiente para al menos una corrida.', color: 'emerald' },
           { status: 'N sin stock', desc: 'Uno o más componentes no tienen stock suficiente. Muestra cuántos faltan.', color: 'red' },
         ].map(({ status, desc, color }) => (
-          <div key={status} className="flex gap-3 items-start rounded-xl border border-slate-100 p-3">
+          <div key={status} className="flex gap-3 items-start rounded-xl border border-border p-3">
             <Pill color={color}>{status}</Pill>
-            <p className="text-xs text-slate-500">{desc}</p>
+            <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         ))}
       </div>
 
       <H2>Detalle de receta</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Al expandir o ver el detalle de una receta, se muestra:
       </p>
-      <ul className="list-disc list-inside text-xs text-slate-500 space-y-1 mb-4">
+      <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1 mb-4">
         <li>Producto resultado y cantidad de rendimiento</li>
         <li>Lista de componentes con cantidad requerida y stock actual</li>
         <li>Disponibilidad por bodega (en que bodegas hay stock de cada componente)</li>
@@ -2910,7 +2910,7 @@ function CategoriasSection() {
     <div>
       <SectionHeader icon={FolderTree} title="Categorías" subtitle="Arbol jerarquico de categorias de producto" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         Las categorias permiten organizar los productos en una estructura jerarquica de arbol.
         Cada categoria puede tener sub-categorias, formando una taxonomia natural.
       </p>
@@ -2924,7 +2924,7 @@ function CategoriasSection() {
           'Opcionalmente seleccionar una categoria padre (para crear sub-categorias)',
           'Click en "Crear"',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -2934,7 +2934,7 @@ function CategoriasSection() {
       <H2>Jerarquia</H2>
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 mb-4">
         <p className="text-sm font-bold text-primary mb-2">Ejemplo de arbol</p>
-        <div className="text-xs text-slate-600 font-mono space-y-0.5">
+        <div className="text-xs text-muted-foreground font-mono space-y-0.5">
           <p>Alimentos</p>
           <p className="ml-4">├─ Lacteos</p>
           <p className="ml-8">├─ Leches</p>
@@ -2951,9 +2951,9 @@ function CategoriasSection() {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Campo</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Campo</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -2964,8 +2964,8 @@ function CategoriasSection() {
               ['is_active', 'Si la categoria esta activa'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-mono font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -2986,7 +2986,7 @@ function FacturacionSection() {
     <div>
       <SectionHeader icon={FileText} title="Facturación Electrónica" subtitle="CUFE, DIAN, sandbox, notas crédito y remisiones" />
 
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         El modulo de facturacion electronica permite emitir facturas ante la DIAN (Colombia),
         generar notas credito para devoluciones y gestionar remisiones de entrega.
       </p>
@@ -3000,7 +3000,7 @@ function FacturacionSection() {
           'La DIAN valida y retorna el CUFE (Codigo Unico de Factura Electronica)',
           'La factura queda registrada con numero, CUFE, URL del PDF y estado',
         ].map((step, i) => (
-          <div key={i} className="flex items-start gap-3 text-xs text-slate-600">
+          <div key={i} className="flex items-start gap-3 text-xs text-muted-foreground">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary font-bold shrink-0 text-[10px]">{i + 1}</span>
             {step}
           </div>
@@ -3011,9 +3011,9 @@ function FacturacionSection() {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Campo</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Campo</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -3026,8 +3026,8 @@ function FacturacionSection() {
               ['invoice_provider', 'Proveedor usado (ej: facturapi, siigo)'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-mono font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -3035,16 +3035,16 @@ function FacturacionSection() {
       </div>
 
       <H2>Notas credito</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Cuando una OV se devuelve (estado <Pill color="slate">returned</Pill>), se puede emitir una
         <strong> nota credito</strong> que anula total o parcialmente la factura original:
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-2 pr-4 font-semibold text-slate-500">Campo</th>
-              <th className="text-left py-2 font-semibold text-slate-500">Descripcion</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Campo</th>
+              <th className="text-left py-2 font-semibold text-muted-foreground">Descripcion</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -3055,8 +3055,8 @@ function FacturacionSection() {
               ['credit_note_status', 'Estado de la nota credito'],
             ].map(([field, desc]) => (
               <tr key={field}>
-                <td className="py-2 pr-4 font-mono font-semibold text-slate-700">{field}</td>
-                <td className="py-2 text-slate-500">{desc}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-foreground">{field}</td>
+                <td className="py-2 text-muted-foreground">{desc}</td>
               </tr>
             ))}
           </tbody>
@@ -3071,14 +3071,14 @@ function FacturacionSection() {
       </InfoBox>
 
       <H2>Resolución de facturación</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         La DIAN asigna resoluciones de facturacion a cada empresa. La pagina de <strong>Resolución</strong> permite
         configurar el prefijo, rango de numeracion (desde/hasta), fecha de vigencia y estado de la resolucion
         por tenant. Esto controla los consecutivos de las facturas emitidas.
       </p>
 
       <H2>Remision (guia de despacho)</H2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         La remision es el documento que acompana la mercancia durante el despacho. Se genera como PDF
         e incluye: numero de remision, fecha, datos del cliente, direccion de entrega, lista de productos
         con cantidades y espacio para firma de recibido.
@@ -3095,9 +3095,9 @@ Frontend: generateRemissionPDF() → Genera PDF local con jsPDF`}
           { name: 'Sandbox', path: '/facturacion-electronica-sandbox', desc: 'Generador de facturas de prueba en PDF' },
           { name: 'Resolución', path: '/facturacion-electronica/resolucion', desc: 'Configuracion de resoluciones DIAN por tenant' },
         ].map(({ name, path, desc }) => (
-          <div key={name} className="rounded-xl border border-slate-200 p-3">
-            <p className="text-xs font-bold text-slate-700">{name} <span className="text-[11px] text-slate-400 ml-1">{path}</span></p>
-            <p className="text-[11px] text-slate-500 mt-0.5">{desc}</p>
+          <div key={name} className="rounded-xl border border-border p-3">
+            <p className="text-xs font-bold text-foreground">{name} <span className="text-[11px] text-muted-foreground ml-1">{path}</span></p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{desc}</p>
           </div>
         ))}
       </div>
@@ -3201,7 +3201,7 @@ export function InventoryHelpPage() {
       <Topbar title="Inventario — Ayuda" subtitle={currentItem.label} />
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar nav */}
-        <nav className="w-52 shrink-0 border-r border-slate-100 overflow-y-auto py-4 px-2 bg-slate-50/50">
+        <nav className="w-52 shrink-0 border-r border-border overflow-y-auto py-4 px-2 bg-muted/50">
           {NAV_ITEMS.map(({ section: s, icon: Icon, label }) => (
             <NavLink
               key={s}
@@ -3210,8 +3210,8 @@ export function InventoryHelpPage() {
               className={({ isActive }) =>
                 `flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all mb-0.5 ${
                   isActive
-                    ? 'text-primary bg-white shadow-sm ring-1 ring-ring/20'
-                    : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
+                    ? 'text-primary bg-card  ring-1 ring-ring/20'
+                    : 'text-muted-foreground hover:bg-card/70 hover:text-foreground'
                 }`
               }
             >

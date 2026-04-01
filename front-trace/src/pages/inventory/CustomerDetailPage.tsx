@@ -12,7 +12,7 @@ import { useToast } from '@/store/toast'
 import type { SalesOrderStatus, Customer, CustomerPrice } from '@/types/inventory'
 
 const STATUS_CONFIG: Record<SalesOrderStatus, { label: string; color: string }> = {
-  draft: { label: 'Borrador', color: 'bg-slate-100 text-slate-600' },
+  draft: { label: 'Borrador', color: 'bg-secondary text-muted-foreground' },
   confirmed: { label: 'Confirmada', color: 'bg-blue-50 text-blue-700' },
   picking: { label: 'Picking', color: 'bg-amber-50 text-amber-700' },
   shipped: { label: 'Enviada', color: 'bg-primary/10 text-primary' },
@@ -82,7 +82,7 @@ export function CustomerDetailPage() {
   const { formRef: editFormRef, handleSubmit: validateAndSubmitEdit } = useFormValidation(doSubmitEdit)
 
   if (isLoading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>
-  if (!customer) return <p className="text-center text-slate-400 py-20">Cliente no encontrado</p>
+  if (!customer) return <p className="text-center text-muted-foreground py-20">Cliente no encontrado</p>
 
   const orders = ordersData?.items ?? []
   const typeName = types?.find(t => t.id === customer.customer_type_id)?.name
@@ -92,18 +92,18 @@ export function CustomerDetailPage() {
 
   return (
     <div className="space-y-6">
-      <button onClick={() => navigate('/inventario/socios')} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"><ArrowLeft className="h-4 w-4" /> Socios Comerciales</button>
+      <button onClick={() => navigate('/inventario/socios')} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Socios Comerciales</button>
 
       {/* Header */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
+      <div className="bg-card rounded-2xl border border-border/60  p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div className="h-14 w-14 rounded-2xl bg-primary/15 flex items-center justify-center">
               <Building2 className="h-7 w-7 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">{customer.name}</h1>
-              <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
+              <h1 className="text-2xl font-bold text-foreground">{customer.name}</h1>
+              <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
                 <span className="font-mono">{customer.code}</span>
                 {typeName && <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-semibold">{typeName}</span>}
                 {customer.tax_id && <span>NIT: {customer.tax_id}</span>}
@@ -117,61 +117,61 @@ export function CustomerDetailPage() {
             >
               <ExternalLink className="h-3.5 w-3.5" /> Ver Portal
             </button>
-            <button onClick={() => setShowEdit(true)} className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg"><Pencil className="h-4 w-4" /></button>
+            <button onClick={() => setShowEdit(true)} className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg"><Pencil className="h-4 w-4" /></button>
           </div>
         </div>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200/60 p-4">
-          <p className="text-xs text-slate-400 mb-1">Total Ventas</p>
+        <div className="bg-card rounded-xl border border-border/60 p-4">
+          <p className="text-xs text-muted-foreground mb-1">Total Ventas</p>
           <p className="text-xl font-bold text-emerald-600">${totalSales.toLocaleString()}</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200/60 p-4">
-          <p className="text-xs text-slate-400 mb-1">Ordenes Activas</p>
+        <div className="bg-card rounded-xl border border-border/60 p-4">
+          <p className="text-xs text-muted-foreground mb-1">Ordenes Activas</p>
           <p className="text-xl font-bold text-primary">{activeOrders}</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200/60 p-4">
-          <p className="text-xs text-slate-400 mb-1">Terminos de Pago</p>
+        <div className="bg-card rounded-xl border border-border/60 p-4">
+          <p className="text-xs text-muted-foreground mb-1">Terminos de Pago</p>
           <p className="text-xl font-bold">{customer.payment_terms_days} dias</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200/60 p-4">
-          <p className="text-xs text-slate-400 mb-1">Limite de Credito</p>
+        <div className="bg-card rounded-xl border border-border/60 p-4">
+          <p className="text-xs text-muted-foreground mb-1">Limite de Credito</p>
           <p className="text-xl font-bold">${customer.credit_limit.toLocaleString()}</p>
         </div>
       </div>
 
       {/* Contact info */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="bg-card rounded-2xl border border-border/60  p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
         {customer.contact_name && (
-          <div className="flex items-center gap-2 text-sm"><Building2 className="h-4 w-4 text-slate-400" /> <span className="text-slate-700">{customer.contact_name}</span></div>
+          <div className="flex items-center gap-2 text-sm"><Building2 className="h-4 w-4 text-muted-foreground" /> <span className="text-foreground">{customer.contact_name}</span></div>
         )}
         {customer.email && (
-          <div className="flex items-center gap-2 text-sm"><Mail className="h-4 w-4 text-slate-400" /> <span className="text-slate-700">{customer.email}</span></div>
+          <div className="flex items-center gap-2 text-sm"><Mail className="h-4 w-4 text-muted-foreground" /> <span className="text-foreground">{customer.email}</span></div>
         )}
         {customer.phone && (
-          <div className="flex items-center gap-2 text-sm"><Phone className="h-4 w-4 text-slate-400" /> <span className="text-slate-700">{customer.phone}</span></div>
+          <div className="flex items-center gap-2 text-sm"><Phone className="h-4 w-4 text-muted-foreground" /> <span className="text-foreground">{customer.phone}</span></div>
         )}
         {customer.discount_percent > 0 && (
-          <div className="flex items-center gap-2 text-sm"><DollarSign className="h-4 w-4 text-slate-400" /> <span className="text-slate-700">Descuento: {customer.discount_percent}%</span></div>
+          <div className="flex items-center gap-2 text-sm"><DollarSign className="h-4 w-4 text-muted-foreground" /> <span className="text-foreground">Descuento: {customer.discount_percent}%</span></div>
         )}
       </div>
 
       {customer.notes && (
-        <div className="bg-white rounded-xl border border-slate-200/60 p-4">
-          <p className="text-xs font-bold text-slate-400 uppercase mb-2">Notas</p>
-          <p className="text-sm text-slate-700">{customer.notes}</p>
+        <div className="bg-card rounded-xl border border-border/60 p-4">
+          <p className="text-xs font-bold text-muted-foreground uppercase mb-2">Notas</p>
+          <p className="text-sm text-foreground">{customer.notes}</p>
         </div>
       )}
 
       {/* Sales orders table */}
       <div className="space-y-3">
-        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2"><ShoppingBag className="h-5 w-5 text-primary" /> Ordenes de Venta</h2>
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+        <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><ShoppingBag className="h-5 w-5 text-primary" /> Ordenes de Venta</h2>
+        <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[600px]">
-            <thead><tr className="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase">
+            <thead><tr className="bg-muted text-left text-xs font-semibold text-muted-foreground uppercase">
               <th className="px-6 py-3"># Orden</th>
               <th className="px-6 py-3">Estado</th>
               <th className="px-6 py-3 text-right">Total</th>
@@ -179,14 +179,14 @@ export function CustomerDetailPage() {
             </tr></thead>
             <tbody className="divide-y divide-slate-100">
               {orders.map(o => (
-                <tr key={o.id} className="hover:bg-slate-50/60 cursor-pointer" onClick={() => navigate(`/inventario/ventas/${o.id}`)}>
+                <tr key={o.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => navigate(`/inventario/ventas/${o.id}`)}>
                   <td className="px-6 py-3 font-mono text-xs">{o.order_number}</td>
                   <td className="px-6 py-3"><span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold', STATUS_CONFIG[o.status]?.color)}>{STATUS_CONFIG[o.status]?.label}</span></td>
                   <td className="px-6 py-3 text-right font-mono">${o.total.toLocaleString()}</td>
-                  <td className="px-6 py-3 text-xs text-slate-400">{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</td>
+                  <td className="px-6 py-3 text-xs text-muted-foreground">{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</td>
                 </tr>
               ))}
-              {orders.length === 0 && <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-400">Sin ordenes para este cliente</td></tr>}
+              {orders.length === 0 && <tr><td colSpan={4} className="px-6 py-12 text-center text-muted-foreground">Sin ordenes para este cliente</td></tr>}
             </tbody>
           </table>
           </div>
@@ -196,15 +196,15 @@ export function CustomerDetailPage() {
       {/* Special Prices Section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2"><DollarSign className="h-5 w-5 text-blue-500" /> Precios Especiales</h2>
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><DollarSign className="h-5 w-5 text-blue-500" /> Precios Especiales</h2>
           <button onClick={() => setShowAddPrice(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition">
             <Plus className="h-3.5 w-3.5" /> Agregar precio especial
           </button>
         </div>
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[800px]">
-              <thead><tr className="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase">
+              <thead><tr className="bg-muted text-left text-xs font-semibold text-muted-foreground uppercase">
                 <th className="px-6 py-3">Producto</th>
                 <th className="px-6 py-3 text-right">Precio especial</th>
                 <th className="px-6 py-3 text-right">Precio base</th>
@@ -224,19 +224,19 @@ export function CustomerDetailPage() {
                   const isExpired = validTo && validTo < now
                   const isExpiringSoon = validTo && !isExpired && (validTo.getTime() - now.getTime()) < 30 * 24 * 60 * 60 * 1000
                   return (
-                    <tr key={sp.id} className="hover:bg-slate-50/60">
+                    <tr key={sp.id} className="hover:bg-muted/60">
                       <td className="px-6 py-3">
-                        <span className="font-semibold text-slate-900">{sp.product_name ?? prod?.name ?? sp.product_id.slice(0, 8)}</span>
-                        {sp.product_sku && <span className="ml-1.5 text-xs text-slate-400 font-mono">{sp.product_sku}</span>}
+                        <span className="font-semibold text-foreground">{sp.product_name ?? prod?.name ?? sp.product_id.slice(0, 8)}</span>
+                        {sp.product_sku && <span className="ml-1.5 text-xs text-muted-foreground font-mono">{sp.product_sku}</span>}
                       </td>
                       <td className="px-6 py-3 text-right font-mono font-bold text-blue-700">${sp.price.toLocaleString()}</td>
-                      <td className="px-6 py-3 text-right font-mono text-slate-500">${basePrice.toLocaleString()}</td>
+                      <td className="px-6 py-3 text-right font-mono text-muted-foreground">${basePrice.toLocaleString()}</td>
                       <td className="px-6 py-3 text-right">
                         {discountPct > 0 ? (
                           <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">{discountPct.toFixed(1)}%</span>
                         ) : <span className="text-slate-300">--</span>}
                       </td>
-                      <td className="px-6 py-3 text-right text-slate-600">{sp.min_quantity}</td>
+                      <td className="px-6 py-3 text-right text-muted-foreground">{sp.min_quantity}</td>
                       <td className="px-6 py-3 text-sm">
                         {validTo ? (
                           <span className="flex items-center gap-1.5">
@@ -246,7 +246,7 @@ export function CustomerDetailPage() {
                           </span>
                         ) : <span className="text-slate-300">Sin limite</span>}
                       </td>
-                      <td className="px-6 py-3 text-sm text-slate-500 max-w-[150px] truncate" title={sp.reason ?? ''}>{sp.reason ?? '--'}</td>
+                      <td className="px-6 py-3 text-sm text-muted-foreground max-w-[150px] truncate" title={sp.reason ?? ''}>{sp.reason ?? '--'}</td>
                       <td className="px-6 py-3 text-right">
                         <button
                           onClick={() => {
@@ -262,7 +262,7 @@ export function CustomerDetailPage() {
                   )
                 })}
                 {specialPrices.filter(sp => sp.is_active).length === 0 && (
-                  <tr><td colSpan={8} className="px-6 py-12 text-center text-slate-400">Sin precios especiales activos para este cliente</td></tr>
+                  <tr><td colSpan={8} className="px-6 py-12 text-center text-muted-foreground">Sin precios especiales activos para este cliente</td></tr>
                 )}
               </tbody>
             </table>
@@ -273,21 +273,21 @@ export function CustomerDetailPage() {
       {/* Price History Timeline */}
       {priceHistoryData.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2"><Clock className="h-4 w-4 text-slate-400" /> Historial de Precios</h3>
-          <div className="bg-white rounded-xl border border-slate-200/60 p-4 space-y-3">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2"><Clock className="h-4 w-4 text-muted-foreground" /> Historial de Precios</h3>
+          <div className="bg-card rounded-xl border border-border/60 p-4 space-y-3">
             {priceHistoryData.map(h => {
               const prod = productsMap.get(h.product_id)
               return (
-                <div key={h.id} className="flex items-start gap-3 text-sm border-l-2 border-slate-200 pl-3">
-                  <span className="text-xs text-slate-400 whitespace-nowrap">{new Date(h.changed_at).toLocaleDateString()}</span>
-                  <span className="text-slate-700">
+                <div key={h.id} className="flex items-start gap-3 text-sm border-l-2 border-border pl-3">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">{new Date(h.changed_at).toLocaleDateString()}</span>
+                  <span className="text-foreground">
                     <strong>{prod?.name ?? h.product_id.slice(0, 8)}</strong>:
                     {h.old_price !== null ? (
                       <> <span className="text-red-500 line-through">${h.old_price.toLocaleString()}</span> <span className="mx-1">→</span></>
                     ) : ' Nuevo: '}
                     <span className="text-emerald-600 font-semibold">${h.new_price.toLocaleString()}</span>
-                    {h.changed_by_name && <span className="text-slate-400"> por {h.changed_by_name}</span>}
-                    {h.reason && <span className="italic text-slate-400"> — "{h.reason}"</span>}
+                    {h.changed_by_name && <span className="text-muted-foreground"> por {h.changed_by_name}</span>}
+                    {h.reason && <span className="italic text-muted-foreground"> — "{h.reason}"</span>}
                   </span>
                 </div>
               )
@@ -299,45 +299,45 @@ export function CustomerDetailPage() {
       {/* Add Special Price Modal */}
       {showAddPrice && id && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddPrice(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-card rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-slate-900">Agregar Precio Especial</h3>
-              <button onClick={() => setShowAddPrice(false)} className="p-1 text-slate-400 hover:text-slate-600"><X className="h-5 w-5" /></button>
+              <h3 className="text-lg font-bold text-foreground">Agregar Precio Especial</h3>
+              <button onClick={() => setShowAddPrice(false)} className="p-1 text-muted-foreground hover:text-muted-foreground"><X className="h-5 w-5" /></button>
             </div>
             <form ref={addPriceFormRef} onSubmit={validateAndSubmitAddPrice} noValidate className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Producto *</label>
-                <select name="product_id" required className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none">
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Producto *</label>
+                <select name="product_id" required className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none">
                   <option value="">Seleccionar producto</option>
                   {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name} (${Number(p.suggested_sale_price ?? 0).toLocaleString()})</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Precio especial ($) *</label>
-                  <input name="price" type="number" step="0.01" required className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Precio especial ($) *</label>
+                  <input name="price" type="number" step="0.01" required className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Cantidad minima</label>
-                  <input name="min_quantity" type="number" min={1} defaultValue={1} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Cantidad minima</label>
+                  <input name="min_quantity" type="number" min={1} defaultValue={1} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Vigente desde</label>
-                  <input name="valid_from" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Vigente desde</label>
+                  <input name="valid_from" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Vigente hasta</label>
-                  <input name="valid_to" type="date" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Vigente hasta</label>
+                  <input name="valid_to" type="date" className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Motivo</label>
-                <input name="reason" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" placeholder="Ej: Acuerdo comercial 2026" />
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Motivo</label>
+                <input name="reason" className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" placeholder="Ej: Acuerdo comercial 2026" />
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowAddPrice(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+                <button type="button" onClick={() => setShowAddPrice(false)} className="px-4 py-2 text-sm text-muted-foreground hover:bg-secondary rounded-xl transition">Cancelar</button>
                 <button type="submit" disabled={createPriceMut.isPending} className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl disabled:opacity-50 transition">Guardar</button>
               </div>
             </form>
@@ -348,26 +348,26 @@ export function CustomerDetailPage() {
       {/* Edit modal */}
       {showEdit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowEdit(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-card rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-slate-900">Editar Cliente</h3>
-              <button onClick={() => setShowEdit(false)} className="p-1 text-slate-400 hover:text-slate-600"><X className="h-5 w-5" /></button>
+              <h3 className="text-lg font-bold text-foreground">Editar Cliente</h3>
+              <button onClick={() => setShowEdit(false)} className="p-1 text-muted-foreground hover:text-muted-foreground"><X className="h-5 w-5" /></button>
             </div>
             <form ref={editFormRef} onSubmit={validateAndSubmitEdit} noValidate className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-xs font-medium text-slate-600 mb-1">Nombre *</label><input name="name" required defaultValue={customer.name} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
-                <div><label className="block text-xs font-medium text-slate-600 mb-1">Codigo *</label><input name="code" required defaultValue={customer.code} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
-                <div><label className="block text-xs font-medium text-slate-600 mb-1">NIT / CC</label><input name="tax_id" defaultValue={customer.tax_id ?? ''} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
-                <div><label className="block text-xs font-medium text-slate-600 mb-1">Tipo</label><select name="customer_type_id" defaultValue={customer.customer_type_id ?? ''} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none"><option value="">Sin tipo</option>{(types ?? []).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
-                <div><label className="block text-xs font-medium text-slate-600 mb-1">Contacto</label><input name="contact_name" defaultValue={customer.contact_name ?? ''} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
-                <div><label className="block text-xs font-medium text-slate-600 mb-1">Email</label><input name="email" type="email" defaultValue={customer.email ?? ''} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
-                <div><label className="block text-xs font-medium text-slate-600 mb-1">Telefono</label><input name="phone" defaultValue={customer.phone ?? ''} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
-                <div><label className="block text-xs font-medium text-slate-600 mb-1">Dias de pago</label><input name="payment_terms_days" type="number" defaultValue={customer.payment_terms_days ?? 30} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
-                <div><label className="block text-xs font-medium text-slate-600 mb-1">Limite credito</label><input name="credit_limit" type="number" defaultValue={customer.credit_limit ?? 0} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
+                <div><label className="block text-xs font-medium text-muted-foreground mb-1">Nombre *</label><input name="name" required defaultValue={customer.name} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
+                <div><label className="block text-xs font-medium text-muted-foreground mb-1">Codigo *</label><input name="code" required defaultValue={customer.code} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
+                <div><label className="block text-xs font-medium text-muted-foreground mb-1">NIT / CC</label><input name="tax_id" defaultValue={customer.tax_id ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
+                <div><label className="block text-xs font-medium text-muted-foreground mb-1">Tipo</label><select name="customer_type_id" defaultValue={customer.customer_type_id ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none"><option value="">Sin tipo</option>{(types ?? []).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
+                <div><label className="block text-xs font-medium text-muted-foreground mb-1">Contacto</label><input name="contact_name" defaultValue={customer.contact_name ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
+                <div><label className="block text-xs font-medium text-muted-foreground mb-1">Email</label><input name="email" type="email" defaultValue={customer.email ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
+                <div><label className="block text-xs font-medium text-muted-foreground mb-1">Telefono</label><input name="phone" defaultValue={customer.phone ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
+                <div><label className="block text-xs font-medium text-muted-foreground mb-1">Dias de pago</label><input name="payment_terms_days" type="number" defaultValue={customer.payment_terms_days ?? 30} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
+                <div><label className="block text-xs font-medium text-muted-foreground mb-1">Limite credito</label><input name="credit_limit" type="number" defaultValue={customer.credit_limit ?? 0} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
               </div>
-              <div><label className="block text-xs font-medium text-slate-600 mb-1">Notas</label><textarea name="notes" rows={2} defaultValue={customer.notes ?? ''} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none resize-none" /></div>
+              <div><label className="block text-xs font-medium text-muted-foreground mb-1">Notas</label><textarea name="notes" rows={2} defaultValue={customer.notes ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none resize-none" /></div>
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowEdit(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+                <button type="button" onClick={() => setShowEdit(false)} className="px-4 py-2 text-sm text-muted-foreground hover:bg-secondary rounded-xl transition">Cancelar</button>
                 <button type="submit" disabled={updateMut.isPending} className="px-5 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-50 transition">Guardar</button>
               </div>
             </form>

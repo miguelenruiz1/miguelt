@@ -74,28 +74,28 @@ export function EInvoicingResolutionPage() {
     <div className="space-y-6">
       <nav className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
-          <li className="text-gray-500">Inicio</li>
-          <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
-          <li><Link to="/facturacion-electronica" className="text-gray-500 hover:text-primary">Facturación Electrónica</Link></li>
-          <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
+          <li className="text-muted-foreground">Inicio</li>
+          <li><ChevronRight className="h-4 w-4 text-muted-foreground" /></li>
+          <li><Link to="/facturacion-electronica" className="text-muted-foreground hover:text-primary">Facturación Electrónica</Link></li>
+          <li><ChevronRight className="h-4 w-4 text-muted-foreground" /></li>
           <li className="text-primary">Resolución DIAN</li>
         </ol>
       </nav>
 
       <div>
-        <h1 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+        <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
           <Hash className="h-6 w-6 text-primary" />
           Resolución de Facturación DIAN
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Configura el prefijo, rango de numeración y datos de resolución para tus facturas electrónicas.
         </p>
       </div>
 
       {/* Section A — Current MATIAS resolution status */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-border bg-card p-6  space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-800">Resolución MATIAS (Producción)</h2>
+          <h2 className="text-base font-semibold text-foreground">Resolución MATIAS (Producción)</h2>
           {hasMatiasRes && (
             <div className="flex items-center gap-2">
               {matiasRes.is_expired && (
@@ -123,38 +123,38 @@ export function EInvoicingResolutionPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
-                <p className="text-xs font-medium text-gray-400 uppercase">Nº Resolución</p>
-                <p className="text-sm font-bold text-gray-800 mt-0.5">{matiasRes.resolution_number}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase">Nº Resolución</p>
+                <p className="text-sm font-bold text-foreground mt-0.5">{matiasRes.resolution_number}</p>
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-400 uppercase">Prefijo</p>
-                <p className="text-sm font-bold text-gray-800 mt-0.5">{matiasRes.prefix}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase">Prefijo</p>
+                <p className="text-sm font-bold text-foreground mt-0.5">{matiasRes.prefix}</p>
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-400 uppercase">Rango</p>
-                <p className="text-sm font-bold text-gray-800 mt-0.5">{matiasRes.range_from.toLocaleString()} — {matiasRes.range_to.toLocaleString()}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase">Rango</p>
+                <p className="text-sm font-bold text-foreground mt-0.5">{matiasRes.range_from.toLocaleString()} — {matiasRes.range_to.toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-400 uppercase">Vigente hasta</p>
-                <p className={cn('text-sm font-bold mt-0.5', matiasRes.is_expired ? 'text-red-600' : 'text-gray-800')}>
+                <p className="text-xs font-medium text-muted-foreground uppercase">Vigente hasta</p>
+                <p className={cn('text-sm font-bold mt-0.5', matiasRes.is_expired ? 'text-red-600' : 'text-foreground')}>
                   {new Date(matiasRes.valid_to).toLocaleDateString('es-CO')}
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                <p className="text-xs font-medium text-gray-400 uppercase">Facturas emitidas</p>
-                <p className="text-xl font-bold text-gray-800 mt-1">{matiasRes.current_number.toLocaleString()}</p>
+              <div className="rounded-xl border border-border bg-muted p-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase">Facturas emitidas</p>
+                <p className="text-xl font-bold text-foreground mt-1">{matiasRes.current_number.toLocaleString()}</p>
               </div>
-              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                <p className="text-xs font-medium text-gray-400 uppercase">Restantes</p>
-                <p className={cn('text-xl font-bold mt-1', matiasRes.remaining < 100 ? 'text-red-600' : 'text-gray-800')}>
+              <div className="rounded-xl border border-border bg-muted p-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase">Restantes</p>
+                <p className={cn('text-xl font-bold mt-1', matiasRes.remaining < 100 ? 'text-red-600' : 'text-foreground')}>
                   {matiasRes.remaining.toLocaleString()}
                 </p>
               </div>
-              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                <p className="text-xs font-medium text-gray-400 uppercase">Próxima factura</p>
+              <div className="rounded-xl border border-border bg-muted p-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase">Próxima factura</p>
                 <p className="text-xl font-bold text-primary mt-1 font-mono">{matiasRes.next_invoice_number}</p>
               </div>
             </div>
@@ -184,10 +184,10 @@ export function EInvoicingResolutionPage() {
       </div>
 
       {/* Section B — Configure / update resolution form */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-border bg-card p-6  space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2">
-            <Settings2 className="h-4 w-4 text-gray-400" />
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <Settings2 className="h-4 w-4 text-muted-foreground" />
             {hasMatiasRes ? 'Actualizar resolución' : 'Configurar resolución DIAN'}
           </h2>
           {hasMatiasRes && (
@@ -204,7 +204,7 @@ export function EInvoicingResolutionPage() {
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">Número de resolución</label>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Número de resolución</label>
               <input
                 value={form.resolution_number}
                 onChange={e => setForm(f => ({ ...f, resolution_number: e.target.value }))}
@@ -214,7 +214,7 @@ export function EInvoicingResolutionPage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">Prefijo</label>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Prefijo</label>
               <input
                 value={form.prefix}
                 onChange={e => setForm(f => ({ ...f, prefix: e.target.value.slice(0, 10) }))}
@@ -225,7 +225,7 @@ export function EInvoicingResolutionPage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">Rango desde</label>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Rango desde</label>
               <input
                 type="number"
                 value={form.range_from}
@@ -237,7 +237,7 @@ export function EInvoicingResolutionPage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">Rango hasta</label>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Rango hasta</label>
               <input
                 type="number"
                 value={form.range_to}
@@ -249,7 +249,7 @@ export function EInvoicingResolutionPage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">Fecha inicio vigencia</label>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Fecha inicio vigencia</label>
               <input
                 type="date"
                 value={form.valid_from}
@@ -259,7 +259,7 @@ export function EInvoicingResolutionPage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">Fecha fin vigencia</label>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Fecha fin vigencia</label>
               <input
                 type="date"
                 value={form.valid_to}
@@ -274,7 +274,7 @@ export function EInvoicingResolutionPage() {
             <button
               type="submit"
               disabled={createMut.isPending}
-              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary disabled:opacity-50"
+              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white  transition hover:bg-primary disabled:opacity-50"
             >
               {createMut.isPending ? 'Guardando...' : 'Guardar resolución'}
             </button>
@@ -283,36 +283,36 @@ export function EInvoicingResolutionPage() {
       </div>
 
       {/* Section C — Sandbox resolution (collapsed) */}
-      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-2xl border border-border bg-card  overflow-hidden">
         <button
           onClick={() => setShowSandbox(!showSandbox)}
-          className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition"
+          className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-muted transition"
         >
-          <h2 className="text-base font-semibold text-gray-800">Resolución Sandbox</h2>
-          <ChevronRight className={cn('h-4 w-4 text-gray-400 transition-transform', showSandbox && 'rotate-90')} />
+          <h2 className="text-base font-semibold text-foreground">Resolución Sandbox</h2>
+          <ChevronRight className={cn('h-4 w-4 text-muted-foreground transition-transform', showSandbox && 'rotate-90')} />
         </button>
 
         {showSandbox && (
-          <div className="px-6 pb-6 space-y-4 border-t border-gray-100 pt-4">
+          <div className="px-6 pb-6 space-y-4 border-t border-border pt-4">
             {loadingSandbox ? (
               <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-amber-500" /></div>
             ) : sandboxRes ? (
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
-                    <p className="text-xs font-medium text-gray-400 uppercase">Prefijo</p>
-                    <p className="text-sm font-bold text-gray-800 mt-0.5">{sandboxRes.prefix}</p>
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Prefijo</p>
+                    <p className="text-sm font-bold text-foreground mt-0.5">{sandboxRes.prefix}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-gray-400 uppercase">Rango</p>
-                    <p className="text-sm font-bold text-gray-800 mt-0.5">{sandboxRes.range_from.toLocaleString()} — {sandboxRes.range_to.toLocaleString()}</p>
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Rango</p>
+                    <p className="text-sm font-bold text-foreground mt-0.5">{sandboxRes.range_from.toLocaleString()} — {sandboxRes.range_to.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-gray-400 uppercase">Consecutivo actual</p>
-                    <p className="text-sm font-bold text-gray-800 mt-0.5">{sandboxRes.current_number.toLocaleString()}</p>
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Consecutivo actual</p>
+                    <p className="text-sm font-bold text-foreground mt-0.5">{sandboxRes.current_number.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-gray-400 uppercase">Próxima factura</p>
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Próxima factura</p>
                     <p className="text-sm font-bold text-amber-600 mt-0.5 font-mono">{sandboxRes.next_invoice_number}</p>
                   </div>
                 </div>
@@ -326,7 +326,7 @@ export function EInvoicingResolutionPage() {
                 </button>
               </>
             ) : (
-              <p className="text-sm text-gray-400">No hay resolución sandbox configurada. Se creará automáticamente al simular la primera factura.</p>
+              <p className="text-sm text-muted-foreground">No hay resolución sandbox configurada. Se creará automáticamente al simular la primera factura.</p>
             )}
           </div>
         )}

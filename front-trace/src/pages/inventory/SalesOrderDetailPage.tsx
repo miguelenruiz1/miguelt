@@ -20,7 +20,7 @@ import { generateSandboxInvoicePDF } from '@/utils/generateSandboxInvoicePDF'
 import type { SalesOrderStatus, ShippingInfo, StockCheckResult, ConfirmWithBackorderOut, StockReservation } from '@/types/inventory'
 
 const STATUS_CONFIG: Record<SalesOrderStatus, { label: string; color: string }> = {
-  draft: { label: 'Borrador', color: 'bg-slate-100 text-slate-600' },
+  draft: { label: 'Borrador', color: 'bg-secondary text-muted-foreground' },
   pending_approval: { label: 'Pend. Aprobación', color: 'bg-yellow-50 text-yellow-700' },
   confirmed: { label: 'Confirmada', color: 'bg-blue-50 text-blue-700' },
   picking: { label: 'En Picking', color: 'bg-amber-50 text-amber-700' },
@@ -84,18 +84,18 @@ function ShipModal({ onClose, onSubmit, isPending }: {
     onSubmit(form)
   }
 
-  const inp = 'w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring'
+  const inp = 'w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl p-6 max-h-[92vh] overflow-y-auto">
-        <h2 className="text-lg font-bold text-slate-900 mb-1">Datos de Envio</h2>
-        <p className="text-xs text-slate-400 mb-4">Completa la informacion del despacho antes de enviar la orden.</p>
+      <div className="w-full max-w-xl bg-card rounded-3xl shadow-2xl p-6 max-h-[92vh] overflow-y-auto">
+        <h2 className="text-lg font-bold text-foreground mb-1">Datos de Envio</h2>
+        <p className="text-xs text-muted-foreground mb-4">Completa la informacion del despacho antes de enviar la orden.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Buyer info */}
           <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1"><FileText className="h-3 w-3" /> Datos del comprador</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1"><FileText className="h-3 w-3" /> Datos del comprador</p>
             <div className="grid grid-cols-2 gap-3">
               <input value={form.recipient_name ?? ''} onChange={e => setForm(f => ({ ...f, recipient_name: e.target.value }))}
                 placeholder="Nombre completo" className={inp} />
@@ -110,7 +110,7 @@ function ShipModal({ onClose, onSubmit, isPending }: {
 
           {/* Address */}
           <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1"><MapPin className="h-3 w-3" /> Direccion de entrega</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1"><MapPin className="h-3 w-3" /> Direccion de entrega</p>
             <div className="space-y-3">
               <input value={form.address_line ?? ''} onChange={e => setForm(f => ({ ...f, address_line: e.target.value }))}
                 placeholder="Direccion (calle, numero, apto...)" className={inp} />
@@ -129,7 +129,7 @@ function ShipModal({ onClose, onSubmit, isPending }: {
 
           {/* Shipping method */}
           <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1"><TruckIcon className="h-3 w-3" /> Metodo de envio</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1"><TruckIcon className="h-3 w-3" /> Metodo de envio</p>
             <div className="space-y-3">
               <div className="flex gap-2 flex-wrap">
                 {SHIPPING_METHODS.map(m => (
@@ -139,7 +139,7 @@ function ShipModal({ onClose, onSubmit, isPending }: {
                       'rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors border',
                       form.shipping_method === m.value
                         ? 'bg-primary text-white border-primary'
-                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        : 'bg-card text-muted-foreground border-border hover:bg-muted'
                     )}>
                     {m.label}
                   </button>
@@ -156,19 +156,19 @@ function ShipModal({ onClose, onSubmit, isPending }: {
 
           {/* Photo */}
           <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1"><Camera className="h-3 w-3" /> Foto del despacho</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1"><Camera className="h-3 w-3" /> Foto del despacho</p>
             <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
             {photoPreview ? (
               <div className="relative">
-                <img src={photoPreview} alt="Foto despacho" className="w-full max-h-48 object-cover rounded-xl border border-slate-200" />
+                <img src={photoPreview} alt="Foto despacho" className="w-full max-h-48 object-cover rounded-xl border border-border" />
                 <button type="button" onClick={() => { setPhotoPreview(null); setForm(f => ({ ...f, photo_url: '' })); if (fileRef.current) fileRef.current.value = '' }}
-                  className="absolute top-2 right-2 bg-white/80 rounded-full p-1 text-slate-500 hover:text-red-500">
+                  className="absolute top-2 right-2 bg-card/80 rounded-full p-1 text-muted-foreground hover:text-red-500">
                   <XCircle className="h-4 w-4" />
                 </button>
               </div>
             ) : (
               <button type="button" onClick={() => fileRef.current?.click()}
-                className="w-full rounded-xl border-2 border-dashed border-slate-200 py-6 text-sm text-slate-400 hover:border-primary/50 hover:text-primary transition-colors">
+                className="w-full rounded-xl border-2 border-dashed border-border py-6 text-sm text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors">
                 Click para subir foto (max 5 MB)
               </button>
             )}
@@ -179,7 +179,7 @@ function ShipModal({ onClose, onSubmit, isPending }: {
             placeholder="Notas de envio (opcional)" rows={2} className={inp} />
 
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-muted">Cancelar</button>
             <button type="submit" disabled={isPending}
               className="flex-1 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60 flex items-center justify-center gap-2">
               <TruckIcon className="h-4 w-4" />
@@ -196,7 +196,7 @@ function ShippingInfoCard({ info }: { info: ShippingInfo }) {
   const methodLabel = SHIPPING_METHODS.find(m => m.value === info.shipping_method)?.label ?? info.shipping_method
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+    <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
       <div className="px-6 py-3 bg-primary/10 border-b border-primary/20">
         <h3 className="text-sm font-bold text-primary flex items-center gap-2"><TruckIcon className="h-4 w-4" /> Informacion de Envio</h3>
       </div>
@@ -204,12 +204,12 @@ function ShippingInfoCard({ info }: { info: ShippingInfo }) {
         {/* Buyer data */}
         {(info.recipient_name || info.recipient_phone || info.recipient_email || info.recipient_document) && (
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1"><FileText className="h-3 w-3" /> Comprador</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1"><FileText className="h-3 w-3" /> Comprador</p>
             <div className="space-y-1.5">
-              {info.recipient_name && <p className="text-sm font-semibold text-slate-800">{info.recipient_name}</p>}
-              {info.recipient_document && <p className="text-xs text-slate-500">Doc: {info.recipient_document}</p>}
-              {info.recipient_phone && <p className="text-xs text-slate-500 flex items-center gap-1"><Phone className="h-3 w-3" /> {info.recipient_phone}</p>}
-              {info.recipient_email && <p className="text-xs text-slate-500 flex items-center gap-1"><Mail className="h-3 w-3" /> {info.recipient_email}</p>}
+              {info.recipient_name && <p className="text-sm font-semibold text-foreground">{info.recipient_name}</p>}
+              {info.recipient_document && <p className="text-xs text-muted-foreground">Doc: {info.recipient_document}</p>}
+              {info.recipient_phone && <p className="text-xs text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> {info.recipient_phone}</p>}
+              {info.recipient_email && <p className="text-xs text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" /> {info.recipient_email}</p>}
             </div>
           </div>
         )}
@@ -217,13 +217,13 @@ function ShippingInfoCard({ info }: { info: ShippingInfo }) {
         {/* Address */}
         {(info.address_line || info.city) && (
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1"><MapPin className="h-3 w-3" /> Direccion</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1"><MapPin className="h-3 w-3" /> Direccion</p>
             <div className="space-y-0.5">
-              {info.address_line && <p className="text-sm text-slate-700">{info.address_line}</p>}
-              <p className="text-xs text-slate-500">
+              {info.address_line && <p className="text-sm text-foreground">{info.address_line}</p>}
+              <p className="text-xs text-muted-foreground">
                 {[info.city, info.state, info.zip_code].filter(Boolean).join(', ')}
               </p>
-              {info.country && <p className="text-xs text-slate-500">{info.country}</p>}
+              {info.country && <p className="text-xs text-muted-foreground">{info.country}</p>}
             </div>
           </div>
         )}
@@ -231,16 +231,16 @@ function ShippingInfoCard({ info }: { info: ShippingInfo }) {
         {/* Shipping method */}
         {(info.shipping_method || info.carrier || info.tracking_number) && (
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1"><Package className="h-3 w-3" /> Transporte</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1"><Package className="h-3 w-3" /> Transporte</p>
             <div className="space-y-1.5">
               {info.shipping_method && (
                 <span className="inline-flex rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
                   {methodLabel}
                 </span>
               )}
-              {info.carrier && <p className="text-sm text-slate-700">Empresa: <span className="font-medium">{info.carrier}</span></p>}
+              {info.carrier && <p className="text-sm text-foreground">Empresa: <span className="font-medium">{info.carrier}</span></p>}
               {info.tracking_number && (
-                <p className="text-sm text-slate-700">Guia: <span className="font-mono font-bold text-primary">{info.tracking_number}</span></p>
+                <p className="text-sm text-foreground">Guia: <span className="font-mono font-bold text-primary">{info.tracking_number}</span></p>
               )}
             </div>
           </div>
@@ -249,16 +249,16 @@ function ShippingInfoCard({ info }: { info: ShippingInfo }) {
         {/* Photo */}
         {info.photo_url && (
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1"><Camera className="h-3 w-3" /> Foto del despacho</p>
-            <img src={info.photo_url} alt="Foto despacho" className="w-full max-h-48 object-cover rounded-xl border border-slate-200" />
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1"><Camera className="h-3 w-3" /> Foto del despacho</p>
+            <img src={info.photo_url} alt="Foto despacho" className="w-full max-h-48 object-cover rounded-xl border border-border" />
           </div>
         )}
 
         {/* Notes */}
         {info.shipping_notes && (
           <div className="md:col-span-2">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Notas de envio</p>
-            <p className="text-sm text-slate-600">{info.shipping_notes}</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Notas de envio</p>
+            <p className="text-sm text-muted-foreground">{info.shipping_notes}</p>
           </div>
         )}
       </div>
@@ -289,20 +289,20 @@ function BatchTraceabilitySection({ orderId, status }: { orderId: string; status
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+    <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
+      <div className="px-6 py-4 border-b border-border flex items-center gap-2">
         <Package className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-bold text-slate-800">Trazabilidad de lotes</h3>
+        <h3 className="text-sm font-bold text-foreground">Trazabilidad de lotes</h3>
       </div>
       <div className="p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center py-8 text-slate-400 text-sm">Cargando...</div>
+          <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Cargando...</div>
         ) : !data?.batches_used?.length ? (
-          <p className="text-sm text-slate-400 text-center py-4">No se han asignado lotes a este pedido.</p>
+          <p className="text-sm text-muted-foreground text-center py-4">No se han asignado lotes a este pedido.</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs font-semibold text-slate-500 uppercase border-b border-slate-100">
+              <tr className="text-left text-xs font-semibold text-muted-foreground uppercase border-b border-border">
                 <th className="pb-2 pr-4">Producto</th>
                 <th className="pb-2 pr-4"># Lote</th>
                 <th className="pb-2 pr-4">Vencimiento</th>
@@ -311,20 +311,20 @@ function BatchTraceabilitySection({ orderId, status }: { orderId: string; status
             </thead>
             <tbody className="divide-y divide-slate-50">
               {data.batches_used.map((b, i) => (
-                <tr key={`${b.batch_id}-${b.line_id}-${i}`} className="hover:bg-slate-50">
-                  <td className="py-2 pr-4 text-slate-700">{b.product_name ?? b.product_id.slice(0, 8)}</td>
+                <tr key={`${b.batch_id}-${b.line_id}-${i}`} className="hover:bg-muted">
+                  <td className="py-2 pr-4 text-foreground">{b.product_name ?? b.product_id.slice(0, 8)}</td>
                   <td className="py-2 pr-4">
-                    <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-mono font-semibold text-slate-700">{b.batch_number}</span>
+                    <span className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-xs font-mono font-semibold text-foreground">{b.batch_number}</span>
                   </td>
                   <td className="py-2 pr-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-600">
+                      <span className="text-muted-foreground">
                         {b.expiration_date ? new Date(b.expiration_date).toLocaleDateString('es-CO') : '\u2014'}
                       </span>
                       {expiryBadge(b.expiration_date)}
                     </div>
                   </td>
-                  <td className="py-2 text-right font-bold text-slate-900">{b.qty_from_this_batch}</td>
+                  <td className="py-2 text-right font-bold text-foreground">{b.qty_from_this_batch}</td>
                 </tr>
               ))}
             </tbody>
@@ -353,25 +353,25 @@ function DiscountModal({ orderId, currentDiscount, onClose }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6">
-        <h2 className="text-lg font-bold text-slate-900 mb-4">Aplicar Descuento Global</h2>
+      <div className="w-full max-w-sm bg-card rounded-3xl shadow-2xl p-6">
+        <h2 className="text-lg font-bold text-foreground mb-4">Aplicar Descuento Global</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="text-xs text-slate-500 mb-1 block">Porcentaje de descuento</label>
+            <label className="text-xs text-muted-foreground mb-1 block">Porcentaje de descuento</label>
             <input required type="number" step="0.01" min="0" max="100" value={pct}
               onChange={e => setPct(e.target.value)}
               placeholder="Ej: 10"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div>
-            <label className="text-xs text-slate-500 mb-1 block">Motivo (requerido)</label>
+            <label className="text-xs text-muted-foreground mb-1 block">Motivo (requerido)</label>
             <input required value={reason} onChange={e => setReason(e.target.value)}
               placeholder="Ej: Cliente VIP, Promoción..."
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose}
-              className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+              className="flex-1 rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-muted">Cancelar</button>
             <button type="submit" disabled={applyDiscount.isPending}
               className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {applyDiscount.isPending ? 'Aplicando...' : 'Aplicar'}
@@ -426,7 +426,7 @@ export function SalesOrderDetailPage() {
   const applyDiscount = useApplyDiscount()
 
   if (isLoading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>
-  if (!order) return <p className="text-center text-slate-400 py-20">Orden no encontrada</p>
+  if (!order) return <p className="text-center text-muted-foreground py-20">Orden no encontrada</p>
 
   const steps: SalesOrderStatus[] = order.approval_required
     ? ['draft', 'pending_approval', 'confirmed', 'picking', 'shipped', 'delivered']
@@ -464,13 +464,13 @@ export function SalesOrderDetailPage() {
 
   return (
     <div className="space-y-6">
-      <button onClick={() => navigate('/inventario/ventas')} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"><ArrowLeft className="h-4 w-4" /> Volver</button>
+      <button onClick={() => navigate('/inventario/ventas')} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Volver</button>
 
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{order.order_number}</h1>
-          <p className="text-sm text-slate-500 mt-1">Cliente: <span className="font-semibold text-slate-700">{order.customer_name ?? customer?.name ?? order.customer_id.slice(0, 8)}</span></p>
-          {order.warehouse_name && <p className="text-xs text-slate-400 mt-0.5">Bodega: <span className="font-medium text-slate-600">{order.warehouse_name}</span></p>}
+          <h1 className="text-2xl font-bold text-foreground">{order.order_number}</h1>
+          <p className="text-sm text-muted-foreground mt-1">Cliente: <span className="font-semibold text-foreground">{order.customer_name ?? customer?.name ?? order.customer_id.slice(0, 8)}</span></p>
+          {order.warehouse_name && <p className="text-xs text-muted-foreground mt-0.5">Bodega: <span className="font-medium text-muted-foreground">{order.warehouse_name}</span></p>}
         </div>
         <span className={cn('px-3 py-1 rounded-full text-sm font-bold', STATUS_CONFIG[order.status]?.color)}>{STATUS_CONFIG[order.status]?.label}</span>
       </div>
@@ -485,7 +485,7 @@ export function SalesOrderDetailPage() {
               <div key={s} className="flex items-center flex-1 last:flex-none">
                 <div className={cn('h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold border-2',
                   isRejectedStep ? 'bg-red-500 text-white border-red-500' :
-                  active ? 'bg-primary text-white border-primary' : 'bg-white text-slate-400 border-slate-200')}>
+                  active ? 'bg-primary text-white border-primary' : 'bg-card text-muted-foreground border-border')}>
                   {i + 1}
                 </div>
                 {i < steps.length - 1 && <div className={cn('flex-1 h-0.5', i < currentStepIdx ? 'bg-primary' : 'bg-slate-200')} />}
@@ -499,7 +499,7 @@ export function SalesOrderDetailPage() {
       {stepIdx >= 3 && order.remission_number && (
         <div className="flex items-center gap-2 text-xs">
           <TruckIcon className="h-3.5 w-3.5 text-orange-500" />
-          <span className="text-slate-500">Remisión:</span>
+          <span className="text-muted-foreground">Remisión:</span>
           <span className="font-mono font-bold text-orange-700">{order.remission_number}</span>
           <button
             onClick={async () => {
@@ -520,15 +520,15 @@ export function SalesOrderDetailPage() {
       {/* Invoice status chip on confirmed step */}
       {stepIdx >= 1 && order.invoice_status && (
         <div className="flex items-center gap-2 text-xs">
-          <FileText className="h-3.5 w-3.5 text-slate-400" />
-          <span className="text-slate-500">Factura al confirmar:</span>
+          <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-muted-foreground">Factura al confirmar:</span>
           <span className={cn(
             'inline-flex rounded-full px-2 py-0.5 font-semibold',
             order.invoice_status === 'issued' ? 'bg-emerald-50 text-emerald-700' :
             order.invoice_status === 'simulated' ? 'bg-amber-50 text-amber-700' :
             order.invoice_status === 'pending' ? 'bg-blue-50 text-blue-600' :
             order.invoice_status === 'failed' ? 'bg-red-50 text-red-600' :
-            'bg-gray-100 text-gray-600',
+            'bg-secondary text-muted-foreground',
           )}>
             {order.invoice_status === 'issued' ? 'Emitida' :
              order.invoice_status === 'simulated' ? 'Simulada' :
@@ -600,7 +600,7 @@ export function SalesOrderDetailPage() {
               <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-semibold">
                 <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 text-blue-700 px-2 py-0.5">Trasladar stock desde otra bodega</span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 px-2 py-0.5">Crear orden de compra</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 text-slate-600 px-2 py-0.5">Eliminar línea sin stock</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 text-muted-foreground px-2 py-0.5">Eliminar línea sin stock</span>
               </div>
             </div>
           </div>
@@ -611,7 +611,7 @@ export function SalesOrderDetailPage() {
       <div className="flex gap-2">
         {order.status === 'draft' && (
           <button onClick={() => setShowDiscount(true)}
-            className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+            className="flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">
             <Percent className="h-4 w-4" /> Descuento
           </button>
         )}
@@ -632,8 +632,8 @@ export function SalesOrderDetailPage() {
             },
           })
         }} disabled={confirmMut.isPending} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl disabled:opacity-50"><Check className="h-4 w-4" /> {confirmMut.isPending ? 'Confirmando...' : 'Confirmar'}</button>}
-        {order.status === 'confirmed' && <button onClick={() => { onMutate(); pickMut.mutate(order.id, { onError }) }} disabled={pickMut.isPending || (stockCheckAuto != null && !stockCheckAuto.ready_to_ship)} title={stockCheckAuto && !stockCheckAuto.ready_to_ship ? 'Resuelve el stock insuficiente antes de iniciar picking' : undefined} className={cn("flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl disabled:opacity-50", stockCheckAuto && !stockCheckAuto.ready_to_ship ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "text-white bg-amber-600 hover:bg-amber-700")}><PackageCheck className="h-4 w-4" /> {pickMut.isPending ? 'Iniciando...' : 'Picking'}</button>}
-        {order.status === 'picking' && <button onClick={() => { if (stockCheckAuto && !stockCheckAuto.ready_to_ship) { setActionError('No se puede enviar: hay productos sin stock suficiente. Verifica la sección de stock.'); return; } setShowShipModal(true) }} className={cn("flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl", stockCheckAuto && !stockCheckAuto.ready_to_ship ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "text-white bg-primary hover:bg-primary/90")}><TruckIcon className="h-4 w-4" /> Enviar</button>}
+        {order.status === 'confirmed' && <button onClick={() => { onMutate(); pickMut.mutate(order.id, { onError }) }} disabled={pickMut.isPending || (stockCheckAuto != null && !stockCheckAuto.ready_to_ship)} title={stockCheckAuto && !stockCheckAuto.ready_to_ship ? 'Resuelve el stock insuficiente antes de iniciar picking' : undefined} className={cn("flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl disabled:opacity-50", stockCheckAuto && !stockCheckAuto.ready_to_ship ? "bg-slate-300 text-muted-foreground cursor-not-allowed" : "text-white bg-amber-600 hover:bg-amber-700")}><PackageCheck className="h-4 w-4" /> {pickMut.isPending ? 'Iniciando...' : 'Picking'}</button>}
+        {order.status === 'picking' && <button onClick={() => { if (stockCheckAuto && !stockCheckAuto.ready_to_ship) { setActionError('No se puede enviar: hay productos sin stock suficiente. Verifica la sección de stock.'); return; } setShowShipModal(true) }} className={cn("flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl", stockCheckAuto && !stockCheckAuto.ready_to_ship ? "bg-slate-300 text-muted-foreground cursor-not-allowed" : "text-white bg-primary hover:bg-primary/90")}><TruckIcon className="h-4 w-4" /> Enviar</button>}
         {order.status === 'shipped' && <button onClick={() => { onMutate(); deliverMut.mutate(order.id, { onError }) }} disabled={deliverMut.isPending} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl disabled:opacity-50"><CheckCircle2 className="h-4 w-4" /> {deliverMut.isPending ? 'Entregando...' : 'Entregar'}</button>}
         {order.status === 'delivered' && <button onClick={() => { onMutate(); returnMut.mutate(order.id, { onError }) }} disabled={returnMut.isPending} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-xl disabled:opacity-50"><RotateCcw className="h-4 w-4" /> {returnMut.isPending ? 'Procesando...' : 'Devolver'}</button>}
         {!isFinal && <button onClick={() => { onMutate(); cancelMut.mutate(order.id, { onError }) }} disabled={cancelMut.isPending} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl disabled:opacity-50"><XCircle className="h-4 w-4" /> {cancelMut.isPending ? 'Cancelando...' : 'Cancelar'}</button>}
@@ -658,7 +658,7 @@ export function SalesOrderDetailPage() {
 
       {/* Remission / delivery note section */}
       {order.remission_number && (order.status === 'shipped' || order.status === 'delivered') && (
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
           <div className="px-6 py-3 bg-orange-50 border-b border-orange-100">
             <h3 className="text-sm font-bold text-orange-800 flex items-center gap-2">
               <TruckIcon className="h-4 w-4" /> Remisión de Entrega
@@ -666,9 +666,9 @@ export function SalesOrderDetailPage() {
           </div>
           <div className="p-6 flex items-center justify-between">
             <div className="space-y-1">
-              <p className="text-xs font-bold text-slate-400 uppercase">Nº Remisión</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase">Nº Remisión</p>
               <p className="text-lg font-bold font-mono text-orange-700">{order.remission_number}</p>
-              <p className="text-xs text-slate-500">Fecha despacho: {order.shipped_date ? new Date(order.shipped_date).toLocaleDateString('es-CO') : '--'}</p>
+              <p className="text-xs text-muted-foreground">Fecha despacho: {order.shipped_date ? new Date(order.shipped_date).toLocaleDateString('es-CO') : '--'}</p>
             </div>
             <button
               onClick={async () => {
@@ -691,7 +691,7 @@ export function SalesOrderDetailPage() {
 
       {/* Factura Electrónica section */}
       {order.invoice_status && (
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
           <div className={cn(
             'px-6 py-3 border-b',
             order.invoice_provider === 'sandbox' ? 'bg-amber-50 border-amber-100' : 'bg-cyan-50 border-cyan-100',
@@ -717,7 +717,7 @@ export function SalesOrderDetailPage() {
                 order.invoice_status === 'issued' ? 'bg-emerald-50 text-emerald-700' :
                 order.invoice_status === 'simulated' ? 'bg-amber-50 text-amber-700' :
                 order.invoice_status === 'failed' ? 'bg-red-50 text-red-600' :
-                'bg-gray-100 text-gray-600',
+                'bg-secondary text-muted-foreground',
               )}>
                 {order.invoice_status === 'issued' ? 'Emitida' :
                  order.invoice_status === 'simulated' ? 'Simulada' :
@@ -737,18 +737,18 @@ export function SalesOrderDetailPage() {
             </div>
             {order.invoice_number && (
               <div>
-                <p className="text-xs font-bold text-slate-400 uppercase mb-1">Nº Factura</p>
-                <p className="text-sm font-bold font-mono text-gray-800">{order.invoice_number}</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Nº Factura</p>
+                <p className="text-sm font-bold font-mono text-foreground">{order.invoice_number}</p>
               </div>
             )}
             {order.cufe && (
               <div>
-                <p className="text-xs font-bold text-slate-400 uppercase mb-1">CUFE</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase mb-1">CUFE</p>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-slate-600" title={order.cufe}>{order.cufe.slice(0, 20)}...</span>
+                  <span className="text-xs font-mono text-muted-foreground" title={order.cufe}>{order.cufe.slice(0, 20)}...</span>
                   <button
                     onClick={() => navigator.clipboard.writeText(order.cufe!)}
-                    className="text-slate-400 hover:text-primary transition"
+                    className="text-muted-foreground hover:text-primary transition"
                     title="Copiar CUFE completo"
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -799,7 +799,7 @@ export function SalesOrderDetailPage() {
               </button>
             )}
             {order.invoice_status === 'simulated' && (
-              <p className="text-xs text-gray-400 italic">Sin validez ante la DIAN</p>
+              <p className="text-xs text-muted-foreground italic">Sin validez ante la DIAN</p>
             )}
           </div>
         </div>
@@ -807,7 +807,7 @@ export function SalesOrderDetailPage() {
 
       {/* Nota Crédito section */}
       {order.credit_note_status && (
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
           <div className={cn(
             'px-6 py-3 border-b',
             order.invoice_provider === 'sandbox' ? 'bg-orange-50 border-orange-100' : 'bg-rose-50 border-rose-100',
@@ -831,7 +831,7 @@ export function SalesOrderDetailPage() {
                 order.credit_note_status === 'issued' ? 'bg-emerald-50 text-emerald-700' :
                 order.credit_note_status === 'simulated' ? 'bg-amber-50 text-amber-700' :
                 order.credit_note_status === 'failed' ? 'bg-red-50 text-red-600' :
-                'bg-gray-100 text-gray-600',
+                'bg-secondary text-muted-foreground',
               )}>
                 {order.credit_note_status === 'issued' ? 'Emitida' :
                  order.credit_note_status === 'simulated' ? 'Simulada' :
@@ -851,18 +851,18 @@ export function SalesOrderDetailPage() {
             </div>
             {order.credit_note_number && (
               <div>
-                <p className="text-xs font-bold text-slate-400 uppercase mb-1">Nº Nota Crédito</p>
-                <p className="text-sm font-bold font-mono text-gray-800">{order.credit_note_number}</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Nº Nota Crédito</p>
+                <p className="text-sm font-bold font-mono text-foreground">{order.credit_note_number}</p>
               </div>
             )}
             {order.credit_note_cufe && (
               <div>
-                <p className="text-xs font-bold text-slate-400 uppercase mb-1">CUFE Nota Crédito</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase mb-1">CUFE Nota Crédito</p>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-slate-600" title={order.credit_note_cufe}>{order.credit_note_cufe.slice(0, 20)}...</span>
+                  <span className="text-xs font-mono text-muted-foreground" title={order.credit_note_cufe}>{order.credit_note_cufe.slice(0, 20)}...</span>
                   <button
                     onClick={() => navigator.clipboard.writeText(order.credit_note_cufe!)}
-                    className="text-slate-400 hover:text-primary transition"
+                    className="text-muted-foreground hover:text-primary transition"
                     title="Copiar CUFE completo"
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -871,14 +871,14 @@ export function SalesOrderDetailPage() {
               </div>
             )}
             {order.credit_note_status === 'simulated' && (
-              <p className="text-xs text-gray-400 italic">Sin validez ante la DIAN</p>
+              <p className="text-xs text-muted-foreground italic">Sin validez ante la DIAN</p>
             )}
           </div>
         </div>
       )}
 
       {/* Totals breakdown */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
+      <div className="bg-card rounded-2xl border border-border/60  p-6">
         <div className="max-w-sm ml-auto space-y-2 text-sm">
           {/* Savings from special prices */}
           {(() => {
@@ -913,7 +913,7 @@ export function SalesOrderDetailPage() {
             }
             return null;
           })()}
-          <div className="flex justify-between text-slate-600"><span>Subtotal (lineas)</span><span className="font-mono font-semibold">${order.subtotal.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</span></div>
+          <div className="flex justify-between text-muted-foreground"><span>Subtotal (lineas)</span><span className="font-mono font-semibold">${order.subtotal.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</span></div>
           {order.discount_pct > 0 && (
             <div className="flex justify-between text-amber-600">
               <span>Descuento global ({order.discount_pct}%){order.discount_reason ? ` — ${order.discount_reason}` : ''}</span>
@@ -921,22 +921,22 @@ export function SalesOrderDetailPage() {
             </div>
           )}
           {order.discount_pct > 0 && (
-            <div className="flex justify-between text-slate-500"><span>Base gravable</span><span className="font-mono">${(order.subtotal - order.discount_amount).toLocaleString('es-CO', { minimumFractionDigits: 2 })}</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>Base gravable</span><span className="font-mono">${(order.subtotal - order.discount_amount).toLocaleString('es-CO', { minimumFractionDigits: 2 })}</span></div>
           )}
-          <div className="flex justify-between text-slate-600"><span>IVA</span><span className="font-mono font-semibold">${order.tax_amount.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</span></div>
+          <div className="flex justify-between text-muted-foreground"><span>IVA</span><span className="font-mono font-semibold">${order.tax_amount.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</span></div>
           {(order.total_retention ?? 0) > 0 && (
             <div className="flex justify-between text-orange-600"><span>Retención en la fuente</span><span className="font-mono font-semibold">-${(order.total_retention ?? 0).toLocaleString('es-CO', { minimumFractionDigits: 2 })}</span></div>
           )}
-          <div className="flex justify-between text-slate-500 border-t border-slate-100 pt-1"><span>Subtotal + IVA</span><span className="font-mono">${(order.total_with_tax ?? order.total).toLocaleString('es-CO', { minimumFractionDigits: 2 })}</span></div>
-          <div className="flex justify-between font-bold text-lg text-primary border-t border-slate-200 pt-2"><span>Total a pagar</span><span className="font-mono">${(order.total_payable ?? order.total).toLocaleString('es-CO', { minimumFractionDigits: 2 })} {order.currency}</span></div>
+          <div className="flex justify-between text-muted-foreground border-t border-border pt-1"><span>Subtotal + IVA</span><span className="font-mono">${(order.total_with_tax ?? order.total).toLocaleString('es-CO', { minimumFractionDigits: 2 })}</span></div>
+          <div className="flex justify-between font-bold text-lg text-primary border-t border-border pt-2"><span>Total a pagar</span><span className="font-mono">${(order.total_payable ?? order.total).toLocaleString('es-CO', { minimumFractionDigits: 2 })} {order.currency}</span></div>
         </div>
       </div>
 
       {/* Stock check section */}
       {['confirmed', 'picking'].includes(order.status) && (
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-          <div className="px-6 py-3 bg-slate-50 border-b border-slate-200/60 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2"><ClipboardCheck className="h-4 w-4" /> Verificacion de Stock</h3>
+        <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
+          <div className="px-6 py-3 bg-muted border-b border-border/60 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2"><ClipboardCheck className="h-4 w-4" /> Verificacion de Stock</h3>
             <button
               onClick={runStockCheck}
               disabled={stockCheckLoading}
@@ -955,7 +955,7 @@ export function SalesOrderDetailPage() {
                 {stockCheck.ready_to_ship ? '✓ Listo para despachar' : '✗ Stock insuficiente'}
               </div>
               <table className="w-full text-sm">
-                <thead><tr className="text-left text-xs font-semibold text-slate-400 uppercase">
+                <thead><tr className="text-left text-xs font-semibold text-muted-foreground uppercase">
                   <th className="px-3 py-2">Producto</th>
                   <th className="px-3 py-2">Bodega</th>
                   <th className="px-3 py-2 text-right">Requerido</th>
@@ -965,8 +965,8 @@ export function SalesOrderDetailPage() {
                 <tbody className="divide-y divide-slate-100">
                   {stockCheck.lines.map(l => (
                     <tr key={l.line_id}>
-                      <td className="px-3 py-2 text-slate-700">{l.product_name}</td>
-                      <td className="px-3 py-2 text-slate-500">{l.warehouse_name}</td>
+                      <td className="px-3 py-2 text-foreground">{l.product_name}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.warehouse_name}</td>
                       <td className="px-3 py-2 text-right font-mono">{l.required}</td>
                       <td className="px-3 py-2 text-right font-mono">{l.available}</td>
                       <td className="px-3 py-2 text-center">
@@ -985,12 +985,12 @@ export function SalesOrderDetailPage() {
 
       {/* Stock reservations section */}
       {reservations.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
           <div className="px-6 py-3 bg-blue-50 border-b border-blue-200/60">
             <h3 className="text-sm font-bold text-blue-800 flex items-center gap-2"><Lock className="h-4 w-4" /> Reservas de Stock ({reservations.length})</h3>
           </div>
           <table className="w-full text-sm">
-            <thead><tr className="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase">
+            <thead><tr className="bg-muted text-left text-xs font-semibold text-muted-foreground uppercase">
               <th className="px-6 py-2">Producto</th>
               <th className="px-6 py-2">Bodega</th>
               <th className="px-6 py-2 text-right">Cantidad</th>
@@ -1001,22 +1001,22 @@ export function SalesOrderDetailPage() {
               {reservations.map((r: StockReservation) => (
                 <tr key={r.id}>
                   <td className="px-6 py-2">
-                    <span className="font-medium text-slate-800">{r.product_name ?? r.product_id.slice(0, 8)}</span>
-                    {r.product_sku && <span className="ml-2 text-xs text-slate-400">{r.product_sku}</span>}
+                    <span className="font-medium text-foreground">{r.product_name ?? r.product_id.slice(0, 8)}</span>
+                    {r.product_sku && <span className="ml-2 text-xs text-muted-foreground">{r.product_sku}</span>}
                   </td>
-                  <td className="px-6 py-2 text-slate-600">{r.warehouse_name ?? r.warehouse_id.slice(0, 8)}</td>
+                  <td className="px-6 py-2 text-muted-foreground">{r.warehouse_name ?? r.warehouse_id.slice(0, 8)}</td>
                   <td className="px-6 py-2 text-right font-mono">{r.quantity}</td>
                   <td className="px-6 py-2 text-center">
                     <span className={cn('inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold',
                       r.status === 'active' ? 'bg-emerald-50 text-emerald-700' :
-                      r.status === 'consumed' ? 'bg-slate-100 text-slate-500' :
-                      'bg-slate-100 text-slate-500'
+                      r.status === 'consumed' ? 'bg-secondary text-muted-foreground' :
+                      'bg-secondary text-muted-foreground'
                     )}>
                       {r.status === 'active' ? 'Activa' : r.status === 'consumed' ? 'Consumida' : 'Liberada'}
                     </span>
-                    {r.released_reason && <span className="ml-1 text-[10px] text-slate-400">({r.released_reason})</span>}
+                    {r.released_reason && <span className="ml-1 text-[10px] text-muted-foreground">({r.released_reason})</span>}
                   </td>
-                  <td className="px-6 py-2 text-xs text-slate-500">{r.reserved_at ? new Date(r.reserved_at).toLocaleDateString() : ''}</td>
+                  <td className="px-6 py-2 text-xs text-muted-foreground">{r.reserved_at ? new Date(r.reserved_at).toLocaleDateString() : ''}</td>
                 </tr>
               ))}
             </tbody>
@@ -1037,23 +1037,23 @@ export function SalesOrderDetailPage() {
 
       {/* Backorder children section */}
       {(backorders.length > 0 || (order.backorder_ids && order.backorder_ids.length > 0)) && (
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
           <div className="px-6 py-3 bg-amber-50 border-b border-amber-200/60">
             <h3 className="text-sm font-bold text-amber-800 flex items-center gap-2"><Package className="h-4 w-4" /> Backorders ({backorders.length})</h3>
           </div>
           <div className="divide-y divide-slate-100">
             {backorders.map((bo: { id: string; order_number: string; status: string; total: number; currency: string; lines: Array<{ id: string }> }) => (
-              <div key={bo.id} className="px-6 py-3 flex items-center justify-between hover:bg-slate-50 cursor-pointer" onClick={() => navigate(`/inventario/ventas/${bo.id}`)}>
+              <div key={bo.id} className="px-6 py-3 flex items-center justify-between hover:bg-muted cursor-pointer" onClick={() => navigate(`/inventario/ventas/${bo.id}`)}>
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-sm font-semibold text-slate-700">{bo.order_number}</span>
+                  <span className="font-mono text-sm font-semibold text-foreground">{bo.order_number}</span>
                   <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                    STATUS_CONFIG[bo.status as SalesOrderStatus]?.color ?? 'bg-slate-100 text-slate-600',
+                    STATUS_CONFIG[bo.status as SalesOrderStatus]?.color ?? 'bg-secondary text-muted-foreground',
                   )}>
                     {STATUS_CONFIG[bo.status as SalesOrderStatus]?.label ?? bo.status}
                   </span>
-                  <span className="text-xs text-slate-400">{bo.lines?.length ?? 0} lineas</span>
+                  <span className="text-xs text-muted-foreground">{bo.lines?.length ?? 0} lineas</span>
                 </div>
-                <span className="font-mono text-sm font-bold text-slate-700">{bo.currency} {bo.total?.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</span>
+                <span className="font-mono text-sm font-bold text-foreground">{bo.currency} {bo.total?.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</span>
               </div>
             ))}
           </div>
@@ -1062,7 +1062,7 @@ export function SalesOrderDetailPage() {
 
       {/* Approval history */}
       {approvalLog.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
           <div className="px-6 py-3 bg-yellow-50 border-b border-yellow-100">
             <h3 className="text-sm font-bold text-yellow-800 flex items-center gap-2"><Clock className="h-4 w-4" /> Historial de Aprobación</h3>
           </div>
@@ -1076,7 +1076,7 @@ export function SalesOrderDetailPage() {
                   'bg-blue-500'
                 )} />
                 <div>
-                  <p className="text-sm text-slate-700">
+                  <p className="text-sm text-foreground">
                     <span className="font-semibold">
                       {entry.action === 'requested' ? 'Enviado a aprobación' :
                        entry.action === 'approved' ? 'Aprobado' :
@@ -1087,7 +1087,7 @@ export function SalesOrderDetailPage() {
                     <span className="font-medium">{entry.performed_by_name || entry.performed_by}</span>
                   </p>
                   {entry.reason && <p className="text-sm text-red-600 mt-0.5">{entry.reason}</p>}
-                  <p className="text-xs text-slate-400">{entry.created_at ? new Date(entry.created_at).toLocaleString('es-CO') : ''} — Total: ${entry.so_total_at_action.toLocaleString('es-CO')}</p>
+                  <p className="text-xs text-muted-foreground">{entry.created_at ? new Date(entry.created_at).toLocaleString('es-CO') : ''} — Total: ${entry.so_total_at_action.toLocaleString('es-CO')}</p>
                 </div>
               </div>
             ))}
@@ -1097,13 +1097,13 @@ export function SalesOrderDetailPage() {
 
       {/* Split preview after confirm */}
       {lastBackorderResult?.split_preview?.has_backorder && (
-        <div className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-amber-200  overflow-hidden">
           <div className="px-6 py-3 bg-amber-50 border-b border-amber-200/60">
             <h3 className="text-sm font-bold text-amber-800 flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Division de orden por stock insuficiente</h3>
           </div>
           <div className="p-4">
             <table className="w-full text-sm">
-              <thead><tr className="text-left text-xs font-semibold text-slate-400 uppercase">
+              <thead><tr className="text-left text-xs font-semibold text-muted-foreground uppercase">
                 <th className="px-3 py-2">Producto</th>
                 <th className="px-3 py-2 text-right">Pedido</th>
                 <th className="px-3 py-2 text-right">Confirmado</th>
@@ -1112,7 +1112,7 @@ export function SalesOrderDetailPage() {
               <tbody className="divide-y divide-slate-100">
                 {lastBackorderResult.split_preview.lines.filter(l => l.qty_backordered > 0).map((l, i) => (
                   <tr key={i}>
-                    <td className="px-3 py-2 text-slate-700">{l.product_name} {l.product_sku && <span className="text-xs text-slate-400 ml-1">{l.product_sku}</span>}</td>
+                    <td className="px-3 py-2 text-foreground">{l.product_name} {l.product_sku && <span className="text-xs text-muted-foreground ml-1">{l.product_sku}</span>}</td>
                     <td className="px-3 py-2 text-right font-mono">{l.qty_ordered}</td>
                     <td className="px-3 py-2 text-right font-mono text-emerald-600">{l.qty_confirmable}</td>
                     <td className="px-3 py-2 text-right font-mono text-amber-600">{l.qty_backordered}</td>
@@ -1122,7 +1122,7 @@ export function SalesOrderDetailPage() {
             </table>
             {lastBackorderResult.backorder && (
               <div className="mt-3 flex items-center gap-2">
-                <span className="text-sm text-slate-500">Backorder creado:</span>
+                <span className="text-sm text-muted-foreground">Backorder creado:</span>
                 <button onClick={() => navigate(`/inventario/ventas/${lastBackorderResult.backorder!.id}`)} className="text-sm font-semibold text-amber-700 underline hover:text-amber-900">
                   {lastBackorderResult.backorder.order_number}
                 </button>
@@ -1133,9 +1133,9 @@ export function SalesOrderDetailPage() {
       )}
 
       {/* Lines table */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
         <table className="w-full text-sm">
-          <thead><tr className="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase">
+          <thead><tr className="bg-muted text-left text-xs font-semibold text-muted-foreground uppercase">
             <th className="px-6 py-3">Producto</th>
             <th className="px-6 py-3">Bodega</th>
             <th className="px-6 py-3 text-right">Cant. Pedida</th>
@@ -1152,8 +1152,8 @@ export function SalesOrderDetailPage() {
             {order.lines.map(l => (
               <tr key={l.id}>
                 <td className="px-6 py-3">
-                  <span className="text-sm font-medium text-slate-800">{l.product_name ?? l.product_id.slice(0, 8)}</span>
-                  {l.product_sku && <span className="ml-2 text-xs text-slate-400">{l.product_sku}</span>}
+                  <span className="text-sm font-medium text-foreground">{l.product_name ?? l.product_id.slice(0, 8)}</span>
+                  {l.product_sku && <span className="ml-2 text-xs text-muted-foreground">{l.product_sku}</span>}
                 </td>
                 <td className="px-6 py-3">
                   {isDraftOrConfirmed ? (
@@ -1164,18 +1164,18 @@ export function SalesOrderDetailPage() {
                           updateLineWhMut.mutate({ orderId: order.id, lineId: l.id, warehouseId: e.target.value }, { onError })
                         }
                       }}
-                      className="rounded-lg border border-slate-200 px-2 py-1 text-xs focus:ring-2 focus:ring-ring"
+                      className="rounded-lg border border-border px-2 py-1 text-xs focus:ring-2 focus:ring-ring"
                     >
                       <option value="">{order.warehouse_name ? `Bodega SO (${order.warehouse_name})` : 'Sin bodega'}</option>
                       {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                     </select>
                   ) : (
-                    <span className="text-sm text-slate-600">
+                    <span className="text-sm text-muted-foreground">
                       {l.warehouse_name ?? order.warehouse_name ?? '—'}
                       {l.warehouse_id && l.warehouse_id !== order.warehouse_id ? (
                         <span className="ml-1.5 inline-flex rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600">Específica</span>
                       ) : l.warehouse_id ? null : (
-                        <span className="ml-1.5 inline-flex rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">Bodega SO</span>
+                        <span className="ml-1.5 inline-flex rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">Bodega SO</span>
                       )}
                     </span>
                   )}
@@ -1186,7 +1186,7 @@ export function SalesOrderDetailPage() {
                   <span className="font-mono">${l.unit_price.toLocaleString()}</span>
                   {l.price_source === 'customer_special' && l.original_unit_price != null && (
                     <div className="mt-0.5">
-                      <span className="text-[10px] text-slate-400 line-through font-mono">${l.original_unit_price.toLocaleString()}</span>
+                      <span className="text-[10px] text-muted-foreground line-through font-mono">${l.original_unit_price.toLocaleString()}</span>
                       <span className="ml-1 inline-flex rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
                         Precio especial ({Math.round((1 - l.unit_price / l.original_unit_price) * 100)}% dto.)
                       </span>
@@ -1195,7 +1195,7 @@ export function SalesOrderDetailPage() {
                   {l.price_source === 'manual' && (
                     <div className="mt-0.5">
                       {l.original_unit_price != null && (
-                        <span className="text-[10px] text-slate-400 line-through font-mono mr-1">${l.original_unit_price.toLocaleString()}</span>
+                        <span className="text-[10px] text-muted-foreground line-through font-mono mr-1">${l.original_unit_price.toLocaleString()}</span>
                       )}
                       <span className="inline-flex rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Manual</span>
                     </div>
@@ -1222,9 +1222,9 @@ export function SalesOrderDetailPage() {
 
       {/* Notes */}
       {order.notes && (
-        <div className="bg-white rounded-xl border border-slate-200/60 p-4">
-          <p className="text-xs font-bold text-slate-400 uppercase mb-2">Notas</p>
-          <p className="text-sm text-slate-700">{order.notes}</p>
+        <div className="bg-card rounded-xl border border-border/60 p-4">
+          <p className="text-xs font-bold text-muted-foreground uppercase mb-2">Notas</p>
+          <p className="text-sm text-foreground">{order.notes}</p>
         </div>
       )}
 
@@ -1249,18 +1249,18 @@ export function SalesOrderDetailPage() {
       {/* Reject modal */}
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-1">Rechazar Orden</h2>
-            <p className="text-xs text-slate-400 mb-4">Indica el motivo del rechazo (mínimo 10 caracteres).</p>
+          <div className="w-full max-w-md bg-card rounded-3xl shadow-2xl p-6">
+            <h2 className="text-lg font-bold text-foreground mb-1">Rechazar Orden</h2>
+            <p className="text-xs text-muted-foreground mb-4">Indica el motivo del rechazo (mínimo 10 caracteres).</p>
             <textarea
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
               rows={3}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
               placeholder="Motivo del rechazo..."
             />
             <div className="flex justify-end gap-3 mt-4">
-              <button onClick={() => { setShowRejectModal(false); setRejectReason('') }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">Cancelar</button>
+              <button onClick={() => { setShowRejectModal(false); setRejectReason('') }} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">Cancelar</button>
               <button
                 onClick={() => {
                   if (rejectReason.trim().length < 10) { setActionError('El motivo debe tener al menos 10 caracteres'); return }

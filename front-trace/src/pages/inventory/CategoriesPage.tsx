@@ -55,42 +55,42 @@ function CategoryModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6">
+      <div className="w-full max-w-lg bg-card rounded-3xl shadow-2xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 className="text-lg font-bold text-foreground">
             {category ? 'Editar categoría' : 'Nueva categoría'}
           </h2>
-          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-lg">
-            <X className="h-4 w-4 text-slate-400" />
+          <button onClick={onClose} className="p-1 hover:bg-secondary rounded-lg">
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
         <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">Nombre *</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Nombre *</label>
             <input
               required
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Ej: Materias primas"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">Descripción</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Descripción</label>
             <textarea
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               rows={2}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Descripción opcional"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">Categoría padre</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Categoría padre</label>
             <select
               value={form.parent_id}
               onChange={e => setForm(f => ({ ...f, parent_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Sin padre (raíz)</option>
               {parentOptions.map(c => (
@@ -106,7 +106,7 @@ function CategoryModal({
               id="cat-active"
               className="rounded border-slate-300"
             />
-            <label htmlFor="cat-active" className="text-sm text-slate-600">Activa</label>
+            <label htmlFor="cat-active" className="text-sm text-muted-foreground">Activa</label>
           </div>
           {error && (
             <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
@@ -114,7 +114,7 @@ function CategoryModal({
             </div>
           )}
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-muted">
               Cancelar
             </button>
             <button type="submit" disabled={isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
@@ -162,11 +162,11 @@ export function CategoriesPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <FolderTree className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold text-slate-900">Categorías de producto</h1>
+          <h1 className="text-2xl font-bold text-foreground">Categorías de producto</h1>
         </div>
         <button
           onClick={() => { setEditing(null); setShowModal(true) }}
-          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm"
+          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 "
         >
           <Plus className="h-4 w-4" /> Nueva categoría
         </button>
@@ -175,20 +175,20 @@ export function CategoriesPage() {
       {/* Search + filters */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
             placeholder="Buscar categorías..."
-            className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-xl border border-border pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <button
           onClick={() => setShowInactive(v => !v)}
           className={cn(
             'rounded-xl px-3 py-2 text-xs font-semibold transition-colors',
-            showInactive ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+            showInactive ? 'bg-slate-700 text-white' : 'bg-secondary text-muted-foreground hover:bg-slate-200',
           )}
         >
           {showInactive ? 'Mostrando inactivas' : 'Solo activas'}
@@ -196,38 +196,38 @@ export function CategoriesPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border  overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-slate-400">Cargando...</div>
+          <div className="p-8 text-center text-muted-foreground">Cargando...</div>
         ) : !categories.length ? (
-          <div className="p-8 text-center text-slate-400">Sin categorías</div>
+          <div className="p-8 text-center text-muted-foreground">Sin categorías</div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-100">
+            <thead className="bg-muted border-b border-border">
               <tr>
                 {['Nombre', 'Descripción', 'Categoría padre', 'Estado', 'Acciones'].map(h => (
-                  <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
+                  <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {categories.map(cat => (
-                <tr key={cat.id} className="hover:bg-slate-50">
-                  <td className="px-5 py-3 font-medium text-slate-800">{cat.name}</td>
-                  <td className="px-5 py-3 text-slate-500 text-xs max-w-[250px] truncate">{cat.description || '\u2014'}</td>
-                  <td className="px-5 py-3 text-slate-500 text-xs">{cat.parent_name || '\u2014'}</td>
+                <tr key={cat.id} className="hover:bg-muted">
+                  <td className="px-5 py-3 font-medium text-foreground">{cat.name}</td>
+                  <td className="px-5 py-3 text-muted-foreground text-xs max-w-[250px] truncate">{cat.description || '\u2014'}</td>
+                  <td className="px-5 py-3 text-muted-foreground text-xs">{cat.parent_name || '\u2014'}</td>
                   <td className="px-5 py-3">
                     <span className={cn(
                       'inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold',
-                      cat.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500',
+                      cat.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-secondary text-muted-foreground',
                     )}>
                       {cat.is_active ? 'Activa' : 'Inactiva'}
                     </span>
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => handleEdit(cat)} className="p-1.5 hover:bg-slate-100 rounded-lg" title="Editar">
-                        <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                      <button onClick={() => handleEdit(cat)} className="p-1.5 hover:bg-secondary rounded-lg" title="Editar">
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                       </button>
                       <button onClick={() => handleDelete(cat)} className="p-1.5 hover:bg-red-50 rounded-lg" title="Eliminar" disabled={deleteMut.isPending}>
                         <Trash2 className="h-3.5 w-3.5 text-red-500" />

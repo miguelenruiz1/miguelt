@@ -24,7 +24,7 @@ export function WalletTable({ wallets, orgs = [] }: { wallets: Wallet[]; orgs?: 
   }
 
   if (!wallets.length) return (
-    <div className="text-center py-12 text-slate-400 text-sm">Sin wallets registradas.</div>
+    <div className="text-center py-12 text-muted-foreground text-sm">Sin wallets registradas.</div>
   )
 
   return (
@@ -40,9 +40,9 @@ export function WalletTable({ wallets, orgs = [] }: { wallets: Wallet[]; orgs?: 
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-slate-50/50 backdrop-blur-sm border-b border-slate-100/50">
+            <tr className="bg-muted/50 backdrop-blur-sm border-b border-border/50">
               {['Nombre', 'Llave Pública', 'Organización', 'Etiquetas', 'Estado', 'Creación', 'Acciones'].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
                   {h}
                 </th>
               ))}
@@ -80,7 +80,7 @@ function WalletRow({
   }
 
   return (
-    <tr className="hover:bg-white transition-all duration-300 group hover:shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+    <tr className="hover:bg-card transition-all duration-300 group hover:shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
       {/* Name */}
       <td className="px-4 py-3">
         <Link to={`/wallets/${w.id}`} className="text-sm font-medium text-primary hover:text-primary hover:underline truncate max-w-[120px] block">
@@ -96,7 +96,7 @@ function WalletRow({
           </Link>
           <button
             onClick={handleCopy}
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-700"
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
           >
             {copied
               ? <Check className="h-3.5 w-3.5 text-emerald-500" />
@@ -109,7 +109,7 @@ function WalletRow({
       {/* Organization */}
       <td className="px-4 py-3">
         {org ? (
-          <span className="text-xs text-slate-600 font-medium">{org.name}</span>
+          <span className="text-xs text-muted-foreground font-medium">{org.name}</span>
         ) : (
           <span className="text-slate-300 text-xs">—</span>
         )}
@@ -120,7 +120,7 @@ function WalletRow({
         <div className="flex flex-wrap gap-1.5">
           {w.tags.length > 0
             ? w.tags.map((t) => (
-              <span key={t} className="rounded-md bg-white border border-slate-200/60 shadow-sm px-2 py-0.5 text-xs font-medium text-slate-600">
+              <span key={t} className="rounded-md bg-card border border-border/60  px-2 py-0.5 text-xs font-medium text-muted-foreground">
                 {t}
               </span>
             ))
@@ -133,7 +133,7 @@ function WalletRow({
       <td className="px-4 py-3"><WalletStatusBadge status={w.status} /></td>
 
       {/* Created */}
-      <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap tabular-nums">
+      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap tabular-nums">
         {fmtDateShort(w.created_at)}
       </td>
 
@@ -147,7 +147,7 @@ function WalletRow({
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-10 z-20 w-44 rounded-xl border border-slate-200 bg-white shadow-card-lg py-1 overflow-hidden">
+              <div className="absolute right-0 top-10 z-20 w-44 rounded-xl border border-border bg-card shadow-card-lg py-1 overflow-hidden">
                 {w.status !== 'active' && (
                   <MenuItem icon={<ShieldCheck className="h-4 w-4 text-emerald-600" />} label="Activar" onClick={() => { onStatusChange(w.id, 'active'); setMenuOpen(false) }} />
                 )}
@@ -179,7 +179,7 @@ function WalletCard({
   const org = w.organization_id ? orgMap.get(w.organization_id) : undefined
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
+    <div className="rounded-xl border border-border bg-card p-4  space-y-2">
       <div className="flex items-center justify-between">
         <Link to={`/wallets/${w.id}`} className="text-sm font-medium text-primary hover:text-primary hover:underline truncate">
           {w.name ?? shortPubkey(w.wallet_pubkey)}
@@ -187,28 +187,28 @@ function WalletCard({
         <WalletStatusBadge status={w.status} />
       </div>
       <div className="flex items-center justify-between text-xs">
-        <span className="text-slate-500">Llave Pública</span>
+        <span className="text-muted-foreground">Llave Pública</span>
         <Link to={`/assets?q=${w.wallet_pubkey}`} className="font-mono text-primary hover:text-primary hover:underline" title={w.wallet_pubkey}>
           {shortPubkey(w.wallet_pubkey)}
         </Link>
       </div>
       {org && (
         <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-500">Organización</span>
-          <span className="text-slate-600 font-medium">{org.name}</span>
+          <span className="text-muted-foreground">Organización</span>
+          <span className="text-muted-foreground font-medium">{org.name}</span>
         </div>
       )}
       {w.tags.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {w.tags.map((t) => (
-            <span key={t} className="rounded-md bg-white border border-slate-200/60 shadow-sm px-2 py-0.5 text-xs font-medium text-slate-600">
+            <span key={t} className="rounded-md bg-card border border-border/60  px-2 py-0.5 text-xs font-medium text-muted-foreground">
               {t}
             </span>
           ))}
         </div>
       )}
       <div className="flex items-center justify-between text-xs">
-        <span className="text-slate-400">{fmtDateShort(w.created_at)}</span>
+        <span className="text-muted-foreground">{fmtDateShort(w.created_at)}</span>
         <div className="relative">
           <Button variant="ghost" size="icon" onClick={() => setMenuOpen((o) => !o)}>
             <MoreHorizontal className="h-4 w-4" />
@@ -216,7 +216,7 @@ function WalletCard({
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 bottom-10 z-20 w-44 rounded-xl border border-slate-200 bg-white shadow-card-lg py-1 overflow-hidden">
+              <div className="absolute right-0 bottom-10 z-20 w-44 rounded-xl border border-border bg-card shadow-card-lg py-1 overflow-hidden">
                 {w.status !== 'active' && (
                   <MenuItem icon={<ShieldCheck className="h-4 w-4 text-emerald-600" />} label="Activar" onClick={() => { onStatusChange(w.id, 'active'); setMenuOpen(false) }} />
                 )}
@@ -239,7 +239,7 @@ function MenuItem({ icon, label, onClick }: { icon: React.ReactNode; label: stri
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+      className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
     >
       {icon}
       {label}

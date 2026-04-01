@@ -49,11 +49,11 @@ export function PlatformTeamPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/platform" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-primary mb-2">
+        <Link to="/platform" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-2">
           <ArrowLeft className="h-4 w-4" /> Panel
         </Link>
-        <h1 className="text-2xl font-bold text-slate-900">Equipo de Plataforma</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Equipo de Plataforma</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Gestiona los operadores internos de TraceLog. Los superusuarios tienen acceso total a todos los tenants.
         </p>
       </div>
@@ -61,20 +61,20 @@ export function PlatformTeamPage() {
       {/* Search + stats */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[240px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="Buscar por nombre o email..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none"
+            className="w-full pl-9 pr-3 py-2.5 text-sm bg-card border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none"
           />
         </div>
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Crown className="h-4 w-4 text-amber-500" />
           <span>{superusers.length} superusuarios</span>
           <span className="text-slate-300">|</span>
-          <Users className="h-4 w-4 text-slate-400" />
+          <Users className="h-4 w-4 text-muted-foreground" />
           <span>{users.length} total</span>
         </div>
       </div>
@@ -86,13 +86,13 @@ export function PlatformTeamPage() {
       ) : (
         <>
           {/* Superusers section */}
-          <div className="bg-white rounded-2xl border border-amber-200/60 shadow-sm overflow-hidden">
+          <div className="bg-card rounded-2xl border border-amber-200/60  overflow-hidden">
             <div className="px-6 py-4 border-b border-amber-100 bg-amber-50/50 flex items-center gap-2">
               <Crown className="h-4 w-4 text-amber-500" />
               <h3 className="text-sm font-semibold text-amber-800">Operadores de Plataforma (Superusuarios)</h3>
             </div>
             {superusers.length === 0 ? (
-              <p className="px-6 py-8 text-sm text-slate-400 text-center">Ningun superusuario encontrado</p>
+              <p className="px-6 py-8 text-sm text-muted-foreground text-center">Ningun superusuario encontrado</p>
             ) : (
               <div className="divide-y divide-amber-100">
                 {superusers.map(u => (
@@ -109,14 +109,14 @@ export function PlatformTeamPage() {
           </div>
 
           {/* Regular users section */}
-          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
-              <Users className="h-4 w-4 text-slate-500" />
-              <h3 className="text-sm font-semibold text-slate-700">Usuarios Regulares</h3>
-              <span className="ml-auto text-xs text-slate-400">{regularUsers.length} usuarios</span>
+          <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
+            <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground">Usuarios Regulares</h3>
+              <span className="ml-auto text-xs text-muted-foreground">{regularUsers.length} usuarios</span>
             </div>
             {regularUsers.length === 0 ? (
-              <p className="px-6 py-8 text-sm text-slate-400 text-center">Sin usuarios regulares</p>
+              <p className="px-6 py-8 text-sm text-muted-foreground text-center">Sin usuarios regulares</p>
             ) : (
               <div className="divide-y divide-slate-100">
                 {regularUsers.map(u => (
@@ -154,11 +154,11 @@ function UserRow({ user, isCurrent, onToggleSuperuser, onToggleActive }: {
   onToggleActive: (val: boolean) => void
 }) {
   return (
-    <div className="px-6 py-3 flex items-center gap-4 hover:bg-slate-50/60">
+    <div className="px-6 py-3 flex items-center gap-4 hover:bg-muted/60">
       {/* Avatar */}
       <div className={cn(
         'h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0',
-        user.is_superuser ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600',
+        user.is_superuser ? 'bg-amber-100 text-amber-700' : 'bg-secondary text-muted-foreground',
       )}>
         {user.full_name?.[0]?.toUpperCase() ?? '?'}
       </div>
@@ -166,11 +166,11 @@ function UserRow({ user, isCurrent, onToggleSuperuser, onToggleActive }: {
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-slate-900 truncate">{user.full_name}</span>
+          <span className="text-sm font-semibold text-foreground truncate">{user.full_name}</span>
           {isCurrent && <span className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-md font-medium">Tu</span>}
           {user.is_superuser && <Crown className="h-3.5 w-3.5 text-amber-500" />}
         </div>
-        <div className="flex items-center gap-3 text-xs text-slate-400">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {user.email}</span>
           <span>Tenant: {user.tenant_id}</span>
           {user.roles && user.roles.length > 0 && (
@@ -204,7 +204,7 @@ function UserRow({ user, isCurrent, onToggleSuperuser, onToggleActive }: {
             'text-xs px-3 py-1.5 rounded-lg font-medium transition',
             user.is_superuser
               ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-              : 'bg-slate-100 text-slate-600 hover:bg-primary/15 hover:text-primary',
+              : 'bg-secondary text-muted-foreground hover:bg-primary/15 hover:text-primary',
             isCurrent && 'opacity-50 cursor-not-allowed',
           )}
           title={isCurrent ? 'No puedes cambiar tu propio estado' : ''}

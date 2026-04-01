@@ -61,29 +61,29 @@ function Illustration404() {
 
 export function NotFoundPage() {
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen px-4 py-8 sm:p-6 overflow-hidden bg-white z-[1]">
+    <div className="relative flex flex-col items-center justify-center min-h-screen px-4 py-8 sm:p-6 overflow-hidden bg-card z-[1]">
       <GridShape />
 
       <div className="mx-auto w-full max-w-[242px] text-center sm:max-w-[472px]">
-        <h1 className="mb-8 font-bold text-gray-800 text-2xl xl:text-4xl">
+        <h1 className="mb-8 font-bold text-foreground text-2xl xl:text-4xl">
           ERROR
         </h1>
 
         <Illustration404 />
 
-        <p className="mt-10 mb-6 text-base text-gray-700 sm:text-lg">
+        <p className="mt-10 mb-6 text-base text-foreground sm:text-lg">
           No pudimos encontrar la página que buscas
         </p>
 
         <Link
           to="/"
-          className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-3.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-800 transition-colors"
+          className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-card px-5 py-3.5 text-sm font-medium text-foreground  hover:bg-muted hover:text-foreground transition-colors"
         >
           Volver al inicio
         </Link>
       </div>
 
-      <p className="absolute text-sm text-center text-gray-500 -translate-x-1/2 bottom-6 left-1/2">
+      <p className="absolute text-sm text-center text-muted-foreground -translate-x-1/2 bottom-6 left-1/2">
         &copy; {new Date().getFullYear()} — TraceLog
       </p>
     </div>

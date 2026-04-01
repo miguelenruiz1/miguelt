@@ -24,7 +24,7 @@ function RoleDropdown({ user, onAssign, onRemove }: {
         Roles <ChevronDown className="h-3 w-3" />
       </button>
       {open && (
-        <div className="absolute right-0 top-6 z-50 w-52 rounded-xl bg-white shadow-xl ring-1 ring-slate-200 py-1">
+        <div className="absolute right-0 top-6 z-50 w-52 rounded-xl bg-card shadow-xl ring-1 ring-slate-200 py-1">
           {roles.map((role) => {
             const hasRole = user.roles.some((r) => r.id === role.id)
             return (
@@ -35,7 +35,7 @@ function RoleDropdown({ user, onAssign, onRemove }: {
                   else onAssign(role.id)
                   setOpen(false)
                 }}
-                className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-slate-50 text-slate-700"
+                className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted text-foreground"
               >
                 <span>{role.name}</span>
                 {hasRole && <span className="text-xs text-emerald-600 font-medium">✓</span>}
@@ -51,7 +51,7 @@ function RoleDropdown({ user, onAssign, onRemove }: {
 function UserStatusBadge({ user }: { user: AuthUser }) {
   if (!user.is_active) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-0.5 bg-slate-100 text-slate-500">
+      <span className="inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-0.5 bg-secondary text-muted-foreground">
         Desactivado
       </span>
     )
@@ -97,37 +97,37 @@ function InviteUserModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-slate-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-800 text-lg">Invitar usuario</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+      <div className="w-full max-w-md rounded-2xl bg-card shadow-2xl border border-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h2 className="font-semibold text-foreground text-lg">Invitar usuario</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-muted-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
         <form onSubmit={submit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Nombre completo</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Nombre completo</label>
             <input
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="María García"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Email</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Email</label>
             <input
               required
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="maria@empresa.com"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Roles</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Roles</label>
             <div className="flex flex-wrap gap-2 mt-1">
               {roles.map((role) => {
                 const selected = selectedRoles.includes(role.id)
@@ -139,7 +139,7 @@ function InviteUserModal({ onClose }: { onClose: () => void }) {
                     className={`text-xs rounded-full px-3 py-1.5 border transition-colors ${
                       selected
                         ? 'bg-primary text-white border-primary'
-                        : 'bg-white text-slate-600 border-slate-200 hover:border-primary/50'
+                        : 'bg-card text-muted-foreground border-border hover:border-primary/50'
                     }`}
                   >
                     {role.name}
@@ -159,7 +159,7 @@ function InviteUserModal({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800"
+              className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
             >
               Cancelar
             </button>
@@ -180,7 +180,7 @@ function InviteUserModal({ onClose }: { onClose: () => void }) {
 function PlanLimitBadge({ used, max }: { used: number; max: number }) {
   if (max === -1) {
     return (
-      <span className="text-xs text-slate-500 bg-slate-100 rounded-full px-3 py-1">
+      <span className="text-xs text-muted-foreground bg-secondary rounded-full px-3 py-1">
         {used} usuarios · ilimitado
       </span>
     )
@@ -219,8 +219,8 @@ export function UsersPage() {
             <Users className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Mi Equipo</h1>
-            <p className="text-sm text-slate-500">Usuarios, roles y permisos de tu organización</p>
+            <h1 className="text-2xl font-bold text-foreground">Mi Equipo</h1>
+            <p className="text-sm text-muted-foreground">Usuarios, roles y permisos de tu organización</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -244,23 +244,23 @@ export function UsersPage() {
         </div>
       )}
 
-      <div className="bg-white/80 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-card/80 rounded-2xl border border-border  overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-slate-500">Cargando...</div>
+          <div className="p-8 text-center text-muted-foreground">Cargando...</div>
         ) : (<>
           {/* Mobile cards */}
           <div className="space-y-3 p-4 md:hidden">
             {data?.items.map((user) => {
               const isPending = !!user.invitation_sent_at && !user.invitation_accepted_at
               return (
-                <div key={user.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+                <div key={user.id} className="rounded-xl border border-border bg-card p-4  space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary font-semibold text-sm shrink-0">
                       {user.full_name[0]?.toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-slate-800 truncate">{user.full_name}</div>
-                      <div className="text-xs text-slate-400 truncate">{user.email}</div>
+                      <div className="font-medium text-foreground truncate">{user.full_name}</div>
+                      <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                     </div>
                     <UserStatusBadge user={user} />
                   </div>
@@ -272,9 +272,9 @@ export function UsersPage() {
                     ))}
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Creado: {new Date(user.created_at).toLocaleDateString('es')}</span>
+                    <span className="text-muted-foreground">Creado: {new Date(user.created_at).toLocaleDateString('es')}</span>
                   </div>
-                  <div className="flex items-center gap-3 pt-1 border-t border-slate-100">
+                  <div className="flex items-center gap-3 pt-1 border-t border-border">
                     <RoleDropdown
                       user={user}
                       onAssign={(roleId) => assignRole.mutate({ userId: user.id, roleId })}
@@ -314,28 +314,28 @@ export function UsersPage() {
           {/* Desktop table */}
           <div className="hidden md:block">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead className="bg-muted border-b border-border">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold text-slate-600">Usuario</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-600">Roles</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-600">Estado</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-600">Creado</th>
-                <th className="px-4 py-3 text-right font-semibold text-slate-600">Acciones</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Usuario</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Roles</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Estado</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Creado</th>
+                <th className="px-4 py-3 text-right font-semibold text-muted-foreground">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {data?.items.map((user) => {
                 const isPending = !!user.invitation_sent_at && !user.invitation_accepted_at
                 return (
-                  <tr key={user.id} className="hover:bg-slate-50/50">
+                  <tr key={user.id} className="hover:bg-muted/50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary font-semibold text-sm shrink-0">
                           {user.full_name[0]?.toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-medium text-slate-800">{user.full_name}</div>
-                          <div className="text-xs text-slate-400">{user.email}</div>
+                          <div className="font-medium text-foreground">{user.full_name}</div>
+                          <div className="text-xs text-muted-foreground">{user.email}</div>
                         </div>
                       </div>
                     </td>
@@ -351,7 +351,7 @@ export function UsersPage() {
                     <td className="px-4 py-3">
                       <UserStatusBadge user={user} />
                     </td>
-                    <td className="px-4 py-3 text-slate-500 text-xs">
+                    <td className="px-4 py-3 text-muted-foreground text-xs">
                       {new Date(user.created_at).toLocaleDateString('es')}
                     </td>
                     <td className="px-4 py-3">

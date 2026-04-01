@@ -3,7 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import { Sidebar } from './Sidebar'
 import { Toaster } from '@/components/ui/sonner'
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { ConfirmDialog } from '@/components/ui/confirmdialog'
 import { useConfirmStore } from '@/store/confirm'
 
 export function Layout() {

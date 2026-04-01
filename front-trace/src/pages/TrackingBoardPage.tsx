@@ -204,7 +204,7 @@ export function TrackingBoardPage() {
                 <span className={cn(
                   'text-[10px] font-medium rounded-full px-1.5',
                   stateFilter === tab.value
-                    ? 'bg-white/20 text-white'
+                    ? 'bg-card/20 text-white'
                     : 'bg-background text-muted-foreground',
                 )}>
                   {tab.count}

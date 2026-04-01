@@ -51,45 +51,45 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6">
-        <h2 className="text-lg font-bold text-slate-900 mb-4">Nuevo Evento</h2>
+      <div className="w-full max-w-lg bg-card rounded-3xl shadow-2xl p-6">
+        <h2 className="text-lg font-bold text-foreground mb-4">Nuevo Evento</h2>
         <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
           <input required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-            placeholder="Título *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            placeholder="Título *" className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <div className="grid grid-cols-2 gap-3">
             <select required value={form.event_type_id} onChange={e => setForm(f => ({ ...f, event_type_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Tipo *</option>
               {eventTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
             <select required value={form.severity_id} onChange={e => setForm(f => ({ ...f, severity_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Severidad *</option>
               {severities.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <select required value={form.status_id} onChange={e => setForm(f => ({ ...f, status_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Estado *</option>
               {statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             <select value={form.warehouse_id} onChange={e => setForm(f => ({ ...f, warehouse_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Bodega (opcional)</option>
               {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
           </div>
           <input type="datetime-local" value={form.occurred_at} onChange={e => setForm(f => ({ ...f, occurred_at: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             placeholder="Descripción" rows={2}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           {error && (
             <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{error}</div>
           )}
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-muted">Cancelar</button>
             <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {create.isPending ? 'Guardando...' : 'Crear evento'}
             </button>
@@ -161,12 +161,12 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-white h-full shadow-2xl overflow-y-auto">
+      <div className="w-full max-w-lg bg-card h-full shadow-2xl overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white z-10 border-b border-slate-100 px-6 py-4">
+        <div className="sticky top-0 bg-card z-10 border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <h2 className="font-bold text-slate-900 text-lg truncate">{event.title}</h2>
+              <h2 className="font-bold text-foreground text-lg truncate">{event.title}</h2>
               <div className="flex flex-wrap gap-2 mt-2">
                 {typeObj && (
                   <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold text-white" style={{ backgroundColor: typeObj.color ?? '#6366f1' }}>
@@ -185,7 +185,7 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
                 )}
               </div>
             </div>
-            <button onClick={onClose} className="ml-4 rounded-lg p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+            <button onClick={onClose} className="ml-4 rounded-lg p-2 text-muted-foreground hover:text-muted-foreground hover:bg-secondary">
               <span className="text-xl font-bold leading-none">&times;</span>
             </button>
           </div>
@@ -200,7 +200,7 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
                     <div
                       className={cn(
                         'h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-colors',
-                        active ? 'text-white border-transparent' : 'bg-white text-slate-400 border-slate-200'
+                        active ? 'text-white border-transparent' : 'bg-card text-muted-foreground border-border'
                       )}
                       style={active ? { backgroundColor: s.color ?? '#6366f1', borderColor: s.color ?? '#6366f1' } : undefined}
                       title={s.name}
@@ -220,13 +220,13 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
         <div className="px-6 py-5 space-y-6">
           {/* Info cards */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-slate-50 rounded-xl p-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Fecha del evento</p>
-              <p className="text-sm font-medium text-slate-700">{new Date(event.occurred_at).toLocaleString('es')}</p>
+            <div className="bg-muted rounded-xl p-3">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Fecha del evento</p>
+              <p className="text-sm font-medium text-foreground">{new Date(event.occurred_at).toLocaleString('es')}</p>
             </div>
-            <div className="bg-slate-50 rounded-xl p-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Reportado por</p>
-              <p className="text-sm font-medium text-slate-700">{resolve(event.reported_by)}</p>
+            <div className="bg-muted rounded-xl p-3">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Reportado por</p>
+              <p className="text-sm font-medium text-foreground">{resolve(event.reported_by)}</p>
             </div>
             {event.resolved_at && (
               <div className="bg-emerald-50 rounded-xl p-3 col-span-2">
@@ -237,15 +237,15 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
           </div>
 
           {event.description && (
-            <div className="bg-slate-50 rounded-xl p-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Descripción</p>
-              <p className="text-sm text-slate-600">{event.description}</p>
+            <div className="bg-muted rounded-xl p-3">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Descripción</p>
+              <p className="text-sm text-muted-foreground">{event.description}</p>
             </div>
           )}
 
           {/* ── Change status ── */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide">Cambiar estado</h3>
+          <div className="bg-card rounded-xl border border-border p-4 space-y-3">
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Cambiar estado</h3>
             <div className="flex flex-wrap gap-2">
               {sortedStatuses.map(s => (
                 <button key={s.id}
@@ -257,7 +257,7 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
                       ? 'ring-2 ring-offset-1 text-white cursor-default'
                       : s.id === pendingStatusId
                         ? 'ring-2 ring-offset-1 ring-ring text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-40'
+                        : 'bg-secondary text-muted-foreground hover:bg-slate-200 disabled:opacity-40'
                   )}
                   style={
                     s.id === event.status_id
@@ -274,20 +274,20 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
 
             {/* Notes form when a new status is selected */}
             {pendingStatusId && pendingStatusId !== event.status_id && (
-              <div className="space-y-2 border-t border-slate-100 pt-3">
-                <label className="text-xs font-medium text-slate-500">Notas del cambio (opcional)</label>
+              <div className="space-y-2 border-t border-border pt-3">
+                <label className="text-xs font-medium text-muted-foreground">Notas del cambio (opcional)</label>
                 <textarea
                   value={statusNotes}
                   onChange={e => setStatusNotes(e.target.value)}
                   placeholder="Describe la razón del cambio de estado..."
                   rows={2}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => { setPendingStatusId(null); setStatusNotes('') }}
-                    className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                    className="flex-1 rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted"
                   >
                     Cancelar
                   </button>
@@ -315,7 +315,7 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
           {/* ── Timeline ── */}
           {(event.status_logs?.length ?? 0) > 0 && (
             <div>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Historial de estados</h3>
+              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3">Historial de estados</h3>
               <div className="relative ml-3">
                 <div className="absolute left-0 top-2 bottom-2 w-0.5 bg-slate-200" />
                 <div className="space-y-0">
@@ -328,14 +328,14 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
                           className="absolute left-[-4px] top-1.5 h-[10px] w-[10px] rounded-full border-2 border-white"
                           style={{ backgroundColor: toSt?.color ?? '#6366f1' }}
                         />
-                        <div className="bg-slate-50 rounded-xl p-3">
+                        <div className="bg-muted rounded-xl p-3">
                           <div className="flex items-center gap-2 flex-wrap">
                             {fromSt && (
                               <>
                                 <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-white" style={{ backgroundColor: fromSt.color ?? '#6b7280' }}>
                                   {fromSt.name}
                                 </span>
-                                <span className="text-slate-400 text-xs">&rarr;</span>
+                                <span className="text-muted-foreground text-xs">&rarr;</span>
                               </>
                             )}
                             <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-white" style={{ backgroundColor: toSt?.color ?? '#6366f1' }}>
@@ -343,12 +343,12 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
                             </span>
                           </div>
                           {log.notes && (
-                            <p className="text-xs text-slate-600 mt-1.5 flex items-start gap-1.5">
-                              <MessageSquare className="h-3 w-3 text-slate-400 mt-0.5 shrink-0" />
+                            <p className="text-xs text-muted-foreground mt-1.5 flex items-start gap-1.5">
+                              <MessageSquare className="h-3 w-3 text-muted-foreground mt-0.5 shrink-0" />
                               {log.notes}
                             </p>
                           )}
-                          <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-400">
+                          <div className="flex items-center gap-3 mt-1.5 text-[10px] text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
                               {new Date(log.created_at).toLocaleString('es')}
@@ -371,25 +371,25 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
 
           {/* ── Impacts ── */}
           <div>
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Impactos ({event.impacts?.length ?? 0})</h3>
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">Impactos ({event.impacts?.length ?? 0})</h3>
             {event.impacts?.map(imp => (
-              <div key={imp.id} className="bg-slate-50 rounded-xl p-3 mb-2">
+              <div key={imp.id} className="bg-muted rounded-xl p-3 mb-2">
                 <div className="flex justify-between text-sm">
-                  <span className="font-medium text-slate-700">{productMap[imp.entity_id] ?? imp.entity_id.slice(0, 8)}</span>
-                  <span className="font-bold text-slate-900">{imp.quantity_impact}</span>
+                  <span className="font-medium text-foreground">{productMap[imp.entity_id] ?? imp.entity_id.slice(0, 8)}</span>
+                  <span className="font-bold text-foreground">{imp.quantity_impact}</span>
                 </div>
-                {imp.notes && <p className="text-xs text-slate-400 mt-1">{imp.notes}</p>}
+                {imp.notes && <p className="text-xs text-muted-foreground mt-1">{imp.notes}</p>}
               </div>
             ))}
-            <form ref={impactFormRef} onSubmit={validateAndSubmitImpact} noValidate className="border-t border-slate-100 pt-3 mt-3 space-y-2">
+            <form ref={impactFormRef} onSubmit={validateAndSubmitImpact} noValidate className="border-t border-border pt-3 mt-3 space-y-2">
               <select required value={impactForm.entity_id} onChange={e => setImpactForm(f => ({ ...f, entity_id: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm">
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm">
                 <option value="">Producto *</option>
                 {productsData?.items?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
               <input required type="number" step="0.01" value={impactForm.quantity_impact}
                 onChange={e => setImpactForm(f => ({ ...f, quantity_impact: e.target.value }))}
-                placeholder="Cantidad impactada *" className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm" />
+                placeholder="Cantidad impactada *" className="w-full rounded-lg border border-border px-3 py-1.5 text-sm" />
               <button type="submit" disabled={addImpact.isPending}
                 className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-50">
                 Agregar impacto
@@ -427,33 +427,33 @@ export function EventsPage() {
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Eventos</h1>
+        <h1 className="text-2xl font-bold text-foreground">Eventos</h1>
         <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm">
+          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 ">
           <Plus className="h-4 w-4" /> Nuevo evento
         </button>
       </div>
 
       <div className="flex gap-3">
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+          className="rounded-2xl border border-border bg-card px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Todos los tipos</option>
           {eventTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
         <select value={severityFilter} onChange={e => setSeverityFilter(e.target.value)}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+          className="rounded-2xl border border-border bg-card px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Todas las severidades</option>
           {severities.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border  overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-slate-400">Cargando...</div>
+          <div className="p-8 text-center text-muted-foreground">Cargando...</div>
         ) : !data?.items?.length ? (
           <div className="p-8 text-center">
             <AlertTriangle className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-            <p className="text-sm text-slate-400">Sin eventos registrados</p>
+            <p className="text-sm text-muted-foreground">Sin eventos registrados</p>
           </div>
         ) : (<>
           {/* Mobile cards */}
@@ -464,17 +464,17 @@ export function EventsPage() {
               const st = statusMap[ev.status_id]
               return (
                 <div key={ev.id} onClick={() => setSelectedId(ev.id)}
-                  className="rounded-xl border border-slate-200 bg-white p-4 space-y-2 cursor-pointer active:bg-slate-50">
+                  className="rounded-xl border border-border bg-card p-4 space-y-2 cursor-pointer active:bg-muted">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-slate-900">{ev.title}</span>
-                    <Eye className="h-4 w-4 text-slate-400" />
+                    <span className="text-sm font-medium text-foreground">{ev.title}</span>
+                    <Eye className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {et && <span className="rounded-full px-2 py-0.5 text-xs font-semibold text-white" style={{ backgroundColor: et.color ?? '#6366f1' }}>{et.name}</span>}
                     {sev && <span className="rounded-full px-2 py-0.5 text-xs font-semibold text-white" style={{ backgroundColor: sev.color ?? '#f59e0b' }}>{sev.name}</span>}
                     {st && <span className="rounded-full px-2 py-0.5 text-xs font-semibold text-white" style={{ backgroundColor: st.color ?? '#6366f1' }}>{st.name}</span>}
                   </div>
-                  <div className="flex items-center justify-between text-xs text-slate-400">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{new Date(ev.occurred_at).toLocaleDateString('es')}</span>
                     <span>{resolve(ev.reported_by)}</span>
                   </div>
@@ -485,10 +485,10 @@ export function EventsPage() {
           {/* Desktop table */}
           <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm min-w-[600px]">
-            <thead className="bg-slate-50 border-b border-slate-100">
+            <thead className="bg-muted border-b border-border">
               <tr>
                 {['Tipo', 'Severidad', 'Estado', 'Título', 'Fecha', 'Reportado por', ''].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -498,7 +498,7 @@ export function EventsPage() {
                 const sev = sevMap[ev.severity_id]
                 const st = statusMap[ev.status_id]
                 return (
-                  <tr key={ev.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => setSelectedId(ev.id)}>
+                  <tr key={ev.id} className="hover:bg-muted cursor-pointer" onClick={() => setSelectedId(ev.id)}>
                     <td className="px-4 py-3">
                       {et && <span className="rounded-full px-2 py-0.5 text-xs font-semibold text-white" style={{ backgroundColor: et.color ?? '#6366f1' }}>{et.name}</span>}
                     </td>
@@ -508,11 +508,11 @@ export function EventsPage() {
                     <td className="px-4 py-3">
                       {st && <span className="rounded-full px-2 py-0.5 text-xs font-semibold text-white" style={{ backgroundColor: st.color ?? '#6366f1' }}>{st.name}</span>}
                     </td>
-                    <td className="px-4 py-3 font-medium text-slate-900">{ev.title}</td>
-                    <td className="px-4 py-3 text-slate-400 text-xs">{new Date(ev.occurred_at).toLocaleDateString('es')}</td>
-                    <td className="px-4 py-3 text-slate-400 text-xs">{resolve(ev.reported_by)}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">{ev.title}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(ev.occurred_at).toLocaleDateString('es')}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{resolve(ev.reported_by)}</td>
                     <td className="px-4 py-3">
-                      <Eye className="h-4 w-4 text-slate-400 hover:text-primary" />
+                      <Eye className="h-4 w-4 text-muted-foreground hover:text-primary" />
                     </td>
                   </tr>
                 )

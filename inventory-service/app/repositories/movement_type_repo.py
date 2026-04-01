@@ -55,5 +55,5 @@ class MovementTypeRepository:
         return obj
 
     async def delete(self, obj: DynamicMovementType) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()

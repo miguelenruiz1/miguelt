@@ -100,7 +100,7 @@ export default function ComplianceProgressTracker({
     <div className="space-y-3">
       {/* Progress bar */}
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
           <div
             className={cn(
               'h-full rounded-full transition-all duration-500',
@@ -109,7 +109,7 @@ export default function ComplianceProgressTracker({
             style={{ width: `${progress}%` }}
           />
         </div>
-        <span className="text-xs font-semibold text-slate-500 tabular-nums">{progress}%</span>
+        <span className="text-xs font-semibold text-muted-foreground tabular-nums">{progress}%</span>
       </div>
 
       {/* Steps */}
@@ -130,7 +130,7 @@ export default function ComplianceProgressTracker({
                 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all',
                 isActive
                   ? 'bg-primary/10 text-primary ring-1 ring-primary/30'
-                  : 'hover:bg-slate-50 text-slate-500',
+                  : 'hover:bg-muted text-muted-foreground',
               )}
             >
               <StatusIcon className={cn(

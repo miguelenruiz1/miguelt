@@ -101,7 +101,7 @@ async def create_sales_order(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = SalesOrderService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     data = body.model_dump(exclude={"lines"})
     lines = [l.model_dump() for l in body.lines]
     order = await svc.create(user["tenant_id"], data, lines, user.get("id"))
@@ -134,7 +134,7 @@ async def update_sales_order(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = SalesOrderService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     order = await svc.get(order_id, user["tenant_id"])
     old_data = {"order_number": order.order_number, "status": order.status.value if hasattr(order.status, "value") else str(order.status)}
     data = body.model_dump(exclude_unset=True)
@@ -168,7 +168,7 @@ async def delete_sales_order(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = SalesOrderService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     order = await svc.get(order_id, user["tenant_id"])
     await audit.log(
         tenant_id=user["tenant_id"], user=user,
@@ -190,7 +190,7 @@ async def confirm_order(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = SalesOrderService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     order = await svc.get(order_id, user["tenant_id"])
     old_status = order.status.value if hasattr(order.status, "value") else str(order.status)
     result = await svc.confirm(order_id, user["tenant_id"], user.get("id"), user.get("name"))
@@ -246,7 +246,7 @@ async def start_picking(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = SalesOrderService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     order = await svc.get(order_id, user["tenant_id"])
     old_status = order.status.value if hasattr(order.status, "value") else str(order.status)
     result = await svc.start_picking(order_id, user["tenant_id"], user.get("id"))
@@ -271,7 +271,7 @@ async def ship_order(
     body: ShipRequest | None = None,
 ):
     svc = SalesOrderService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     order = await svc.get(order_id, user["tenant_id"])
     old_status = order.status.value if hasattr(order.status, "value") else str(order.status)
     line_shipments = [s.model_dump() for s in body.line_shipments] if body and body.line_shipments else None
@@ -316,7 +316,7 @@ async def deliver_order(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = SalesOrderService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     order = await svc.get(order_id, user["tenant_id"])
     old_status = order.status.value if hasattr(order.status, "value") else str(order.status)
     result = await svc.deliver(order_id, user["tenant_id"], user.get("id"))
@@ -340,7 +340,7 @@ async def return_order(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = SalesOrderService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     order = await svc.get(order_id, user["tenant_id"])
     old_status = order.status.value if hasattr(order.status, "value") else str(order.status)
     result = await svc.return_order(order_id, user["tenant_id"], user.get("id"))
@@ -364,7 +364,7 @@ async def cancel_order(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = SalesOrderService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     order = await svc.get(order_id, user["tenant_id"])
     old_status = order.status.value if hasattr(order.status, "value") else str(order.status)
     result = await svc.cancel(order_id, user["tenant_id"], user.get("id"))
@@ -601,7 +601,7 @@ async def update_discount(
 ):
     """Apply or change the global discount on a draft SO."""
     svc = SalesOrderService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.apply_discount(order_id, user["tenant_id"], body.discount_pct, body.discount_reason)
     await audit.log(
         tenant_id=user["tenant_id"], user=user,
@@ -635,7 +635,7 @@ async def confirm_backorder(
 ):
     """Confirm a backorder SO (re-runs stock check, may create nested backorder)."""
     svc = SalesOrderService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     order = await svc.get(order_id, user["tenant_id"])
     old_status = order.status.value if hasattr(order.status, "value") else str(order.status)
     result = await svc.confirm_backorder(order_id, user["tenant_id"], user.get("id"))
@@ -664,7 +664,7 @@ async def approve_order(
 ):
     """Approve a pending SO and confirm it (reserves stock, invoices)."""
     svc = SalesOrderService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.approve_and_confirm(
         order_id, user["tenant_id"], user.get("id", ""), user.get("name"),
     )
@@ -694,7 +694,7 @@ async def reject_order(
     """Reject a pending SO."""
     from app.services.approval_service import ApprovalService
     svc = SalesOrderService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     order = await svc.get(order_id, user["tenant_id"])
     approval_svc = ApprovalService(db)
     await approval_svc.reject(order, user.get("id", ""), body.reason, user.get("name"))
@@ -721,7 +721,7 @@ async def resubmit_order(
     """Re-submit a rejected SO for approval."""
     from app.services.approval_service import ApprovalService
     svc = SalesOrderService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     order = await svc.get(order_id, user["tenant_id"])
     approval_svc = ApprovalService(db)
     await approval_svc.resubmit(order, user.get("id", ""), user.get("name"))

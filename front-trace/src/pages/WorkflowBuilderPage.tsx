@@ -656,7 +656,7 @@ function PresetsTab({
           return (
             <div
               key={name}
-              className="border rounded-lg p-4 space-y-3 hover:shadow-sm transition-shadow"
+              className="border rounded-lg p-4 space-y-3 hover: transition-shadow"
             >
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{meta?.emoji ?? '\u{1F4E6}'}</span>

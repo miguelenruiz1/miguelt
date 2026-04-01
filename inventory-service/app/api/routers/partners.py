@@ -55,7 +55,7 @@ async def create_partner(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = PartnerService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     data = body.model_dump()
     data["created_by"] = current_user.get("id")
     partner = await svc.create(current_user["tenant_id"], data)
@@ -89,7 +89,7 @@ async def update_partner(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = PartnerService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     update_data = body.model_dump(exclude_none=True)
     update_data["updated_by"] = current_user.get("id")
     partner = await svc.update(partner_id, current_user["tenant_id"], update_data)
@@ -110,12 +110,13 @@ async def delete_partner(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = PartnerService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete(partner_id, current_user["tenant_id"])
     await audit.log(
         tenant_id=current_user["tenant_id"], user=current_user,
         action="inventory.partner.delete", resource_type="partner",
         resource_id=partner_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
     from fastapi import Response
     return Response(status_code=204)

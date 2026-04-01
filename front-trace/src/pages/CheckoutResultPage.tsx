@@ -14,7 +14,7 @@ export function CheckoutResultPage() {
 
   return (
     <div className="flex items-center justify-center min-h-[60vh] p-6">
-      <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl p-10 text-center space-y-6">
+      <div className="w-full max-w-md rounded-3xl bg-card shadow-2xl p-10 text-center space-y-6">
         {hasTransaction ? (
           <>
             <div className="flex justify-center">
@@ -23,14 +23,14 @@ export function CheckoutResultPage() {
               </div>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Pago procesado</h1>
-              <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+              <h1 className="text-2xl font-bold text-foreground">Pago procesado</h1>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
                 Tu transaccion ha sido recibida. Wompi confirmara el pago y tu suscripcion se activara automaticamente.
               </p>
             </div>
-            <div className="rounded-2xl bg-slate-50 border border-slate-200 px-4 py-3 text-xs text-slate-500 space-y-1">
-              {ref && <p>Referencia: <span className="font-mono font-semibold text-slate-700">{ref}</span></p>}
-              <p>Transaccion: <span className="font-mono font-semibold text-slate-700">{id}</span></p>
+            <div className="rounded-2xl bg-muted border border-border px-4 py-3 text-xs text-muted-foreground space-y-1">
+              {ref && <p>Referencia: <span className="font-mono font-semibold text-foreground">{ref}</span></p>}
+              <p>Transaccion: <span className="font-mono font-semibold text-foreground">{id}</span></p>
             </div>
             <button
               onClick={() => navigate('/marketplace')}
@@ -47,14 +47,14 @@ export function CheckoutResultPage() {
               </div>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Procesando pago</h1>
-              <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+              <h1 className="text-2xl font-bold text-foreground">Procesando pago</h1>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
                 Estamos esperando la confirmacion de Wompi. Si ya completaste el pago, tu suscripcion se activara en unos minutos.
               </p>
             </div>
             <button
               onClick={() => navigate('/marketplace')}
-              className="w-full rounded-2xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+              className="w-full rounded-2xl border border-border py-3 text-sm font-semibold text-muted-foreground hover:bg-muted transition-colors"
             >
               Volver al Marketplace
             </button>

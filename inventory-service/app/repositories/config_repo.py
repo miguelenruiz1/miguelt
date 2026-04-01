@@ -47,7 +47,7 @@ class ProductTypeRepository:
         return obj
 
     async def delete(self, obj: ProductType) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()
 
 
@@ -86,7 +86,7 @@ class OrderTypeRepository:
         return obj
 
     async def delete(self, obj: OrderType) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()
 
 
@@ -132,7 +132,7 @@ class CustomFieldRepository:
         return obj
 
     async def delete(self, obj: CustomProductField) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()
 
 
@@ -171,7 +171,7 @@ class SupplierTypeRepository:
         return obj
 
     async def delete(self, obj: SupplierType) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()
 
 
@@ -217,7 +217,7 @@ class CustomSupplierFieldRepository:
         return obj
 
     async def delete(self, obj: CustomSupplierField) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()
 
 
@@ -263,7 +263,7 @@ class CustomWarehouseFieldRepository:
         return obj
 
     async def delete(self, obj: CustomWarehouseField) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()
 
 
@@ -309,5 +309,5 @@ class CustomMovementFieldRepository:
         return obj
 
     async def delete(self, obj: CustomMovementField) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()

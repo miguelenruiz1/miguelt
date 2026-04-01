@@ -44,7 +44,7 @@ class EventTypeRepository:
         return obj
 
     async def delete(self, obj: EventType) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()
 
 
@@ -80,7 +80,7 @@ class EventSeverityRepository:
         return obj
 
     async def delete(self, obj: EventSeverity) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()
 
 
@@ -116,7 +116,7 @@ class EventStatusRepository:
         return obj
 
     async def delete(self, obj: EventStatus) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()
 
 

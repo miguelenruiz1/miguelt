@@ -9,52 +9,53 @@
 
 @layer base {
   :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0.014 285.823);
+    /* Light app with green primary matching landing accent */
+    --background: #ffffff;
+    --foreground: #0f172a;
 
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0.014 285.823);
+    --card: #ffffff;
+    --card-foreground: #0f172a;
 
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0.014 285.823);
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
 
-    /* Primary — GREEN (shadcn green theme) */
-    --primary: oklch(0.627 0.194 149.214);
-    --primary-foreground: oklch(0.982 0.018 166.913);
+    /* Primary — Neon green (same as landing) */
+    --primary: #00C264;
+    --primary-foreground: #ffffff;
 
-    --secondary: oklch(0.968 0.003 264.542);
-    --secondary-foreground: oklch(0.205 0.015 285.823);
+    --secondary: #f1f5f9;
+    --secondary-foreground: #0f172a;
 
-    --muted: oklch(0.968 0.003 264.542);
-    --muted-foreground: oklch(0.556 0.009 285.823);
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
 
-    --accent: oklch(0.968 0.003 264.542);
-    --accent-foreground: oklch(0.205 0.015 285.823);
+    --accent: #f1f5f9;
+    --accent-foreground: #0f172a;
 
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.982 0.018 166.913);
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
 
-    --border: oklch(0.918 0.004 264.542);
-    --input: oklch(0.918 0.004 264.542);
-    --ring: oklch(0.627 0.194 149.214);
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #00C264;
 
     --radius: 0.625rem;
 
-    --chart-1: oklch(0.627 0.194 149.214);
-    --chart-2: oklch(0.696 0.17 149.214);
-    --chart-3: oklch(0.765 0.146 149.214);
-    --chart-4: oklch(0.834 0.122 149.214);
-    --chart-5: oklch(0.903 0.098 149.214);
+    --chart-1: #00E87A;
+    --chart-2: #00C264;
+    --chart-3: #34d399;
+    --chart-4: #6ee7b7;
+    --chart-5: #a7f3d0;
 
-    /* Sidebar — deep blue-black premium (Linear/Railway style) */
-    --sidebar: oklch(0.165 0.022 255);
-    --sidebar-foreground: oklch(0.65 0.02 250);
-    --sidebar-primary: oklch(0.627 0.194 149.214);
-    --sidebar-primary-foreground: oklch(0.982 0.018 166.913);
-    --sidebar-accent: oklch(0.2 0.018 250);
-    --sidebar-accent-foreground: oklch(1 0 0);
-    --sidebar-border: oklch(0.19 0.016 250);
-    --sidebar-ring: oklch(0.627 0.194 149.214);
+    /* Sidebar — dark premium (contrasts with white app background) */
+    --sidebar: #080B0F;
+    --sidebar-foreground: #6B7A8D;
+    --sidebar-primary: #00E87A;
+    --sidebar-primary-foreground: #000000;
+    --sidebar-accent: #0E1318;
+    --sidebar-accent-foreground: #F0F4F8;
+    --sidebar-border: rgba(255,255,255,0.06);
+    --sidebar-ring: #00C264;
   }
 
   * {

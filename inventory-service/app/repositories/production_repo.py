@@ -86,5 +86,5 @@ class ProductionRunRepository:
         return result.scalar_one()
 
     async def delete(self, obj: ProductionRun) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()

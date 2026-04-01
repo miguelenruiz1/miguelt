@@ -36,15 +36,15 @@ function KpiCard({
   subtext?: string
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-5 ">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</span>
         <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${color}`}>
           <Icon className="h-4.5 w-4.5 text-white" />
         </div>
       </div>
-      <div className="text-2xl font-bold text-gray-800">{value}</div>
-      {subtext && <p className="text-xs text-gray-500 mt-1">{subtext}</p>}
+      <div className="text-2xl font-bold text-foreground">{value}</div>
+      {subtext && <p className="text-xs text-muted-foreground mt-1">{subtext}</p>}
     </div>
   )
 }
@@ -79,8 +79,8 @@ export function PlatformDashboardPage() {
       {/* Breadcrumb */}
       <nav className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
-          <li className="text-gray-500">Plataforma</li>
-          <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
+          <li className="text-muted-foreground">Plataforma</li>
+          <li><ChevronRight className="h-4 w-4 text-muted-foreground" /></li>
           <li className="text-primary">Panel Ejecutivo</li>
         </ol>
       </nav>
@@ -88,8 +88,8 @@ export function PlatformDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Panel de Plataforma</h1>
-          <p className="text-sm text-gray-500 mt-1">Vision ejecutiva del negocio SaaS</p>
+          <h1 className="text-2xl font-semibold text-foreground">Panel de Plataforma</h1>
+          <p className="text-sm text-muted-foreground mt-1">Vision ejecutiva del negocio SaaS</p>
         </div>
         <div className="flex gap-2">
           <Link
@@ -100,7 +100,7 @@ export function PlatformDashboardPage() {
           </Link>
           <Link
             to="/platform/analytics"
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-secondary hover:bg-gray-200 text-foreground rounded-lg transition"
           >
             <Activity className="h-4 w-4" /> Analitica
           </Link>
@@ -150,8 +150,8 @@ export function PlatformDashboardPage() {
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status distribution pie */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Distribucion por Estado</h3>
+        <div className="rounded-2xl border border-border bg-card p-6 ">
+          <h3 className="text-sm font-medium text-foreground mb-4">Distribucion por Estado</h3>
           {pieData.length > 0 ? (
             <div className="flex items-center gap-6">
               <ResponsiveContainer width="50%" height={180}>
@@ -168,20 +168,20 @@ export function PlatformDashboardPage() {
                 {pieData.map(d => (
                   <div key={d.name} className="flex items-center gap-2 text-sm">
                     <span className="h-3 w-3 rounded-full" style={{ backgroundColor: d.color }} />
-                    <span className="text-gray-600">{d.name}</span>
-                    <span className="font-semibold text-gray-800 ml-auto">{d.value}</span>
+                    <span className="text-muted-foreground">{d.name}</span>
+                    <span className="font-semibold text-foreground ml-auto">{d.value}</span>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-400">Sin datos</p>
+            <p className="text-sm text-muted-foreground">Sin datos</p>
           )}
         </div>
 
         {/* Plan breakdown bar */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Distribucion por Plan</h3>
+        <div className="rounded-2xl border border-border bg-card p-6 ">
+          <h3 className="text-sm font-medium text-foreground mb-4">Distribucion por Plan</h3>
           {data.plan_breakdown.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={data.plan_breakdown}>
@@ -193,24 +193,24 @@ export function PlatformDashboardPage() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-sm text-gray-400">Sin datos</p>
+            <p className="text-sm text-muted-foreground">Sin datos</p>
           )}
         </div>
       </div>
 
       {/* Module adoption */}
       {data.module_adoption.length > 0 && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Adopcion de Modulos</h3>
+        <div className="rounded-2xl border border-border bg-card p-6 ">
+          <h3 className="text-sm font-medium text-foreground mb-4">Adopcion de Modulos</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {data.module_adoption.map(m => (
-              <div key={m.slug} className="bg-gray-50 rounded-xl p-4">
+              <div key={m.slug} className="bg-muted rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Layers className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold text-gray-700 capitalize">{m.slug}</span>
+                  <span className="text-sm font-semibold text-foreground capitalize">{m.slug}</span>
                 </div>
-                <div className="text-xl font-bold text-gray-800">{m.active_tenants}</div>
-                <p className="text-xs text-gray-500">empresas activas</p>
+                <div className="text-xl font-bold text-foreground">{m.active_tenants}</div>
+                <p className="text-xs text-muted-foreground">empresas activas</p>
               </div>
             ))}
           </div>

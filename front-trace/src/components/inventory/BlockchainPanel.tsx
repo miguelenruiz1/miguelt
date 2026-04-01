@@ -8,7 +8,7 @@ interface Props {
 }
 
 const STATUS_CONFIG = {
-  none: { icon: Shield, color: 'text-gray-400', bg: 'bg-gray-50', label: 'Sin anclar' },
+  none: { icon: Shield, color: 'text-muted-foreground', bg: 'bg-muted', label: 'Sin anclar' },
   pending: { icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50', label: 'Pendiente' },
   anchored: { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50', label: 'Anclado en Solana' },
   failed: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-50', label: 'Error' },
@@ -21,7 +21,7 @@ export default function BlockchainPanel({ entityType, entityId }: Props) {
 
   if (isLoading) {
     return (
-      <div className="bg-gray-50 rounded-xl border p-4 flex items-center gap-2 text-sm text-gray-500">
+      <div className="bg-muted rounded-xl border p-4 flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" /> Cargando estado blockchain...
       </div>
     )
@@ -59,7 +59,7 @@ export default function BlockchainPanel({ entityType, entityId }: Props) {
         <div className="flex items-center gap-3">
           <Icon className={`h-5 w-5 ${config.color}`} />
           <div>
-            <p className="text-sm font-medium text-gray-900">Blockchain</p>
+            <p className="text-sm font-medium text-foreground">Blockchain</p>
             <p className={`text-xs ${config.color}`}>{config.label}</p>
           </div>
         </div>
@@ -79,22 +79,22 @@ export default function BlockchainPanel({ entityType, entityId }: Props) {
       </div>
 
       {status.anchor_hash && (
-        <div className="mt-3 pt-3 border-t border-gray-200">
-          <p className="text-xs text-gray-500">Hash SHA-256</p>
-          <p className="text-xs font-mono text-gray-700 break-all mt-0.5">{status.anchor_hash}</p>
+        <div className="mt-3 pt-3 border-t border-border">
+          <p className="text-xs text-muted-foreground">Hash SHA-256</p>
+          <p className="text-xs font-mono text-foreground break-all mt-0.5">{status.anchor_hash}</p>
         </div>
       )}
 
       {status.anchor_tx_sig && (
         <div className="mt-2">
-          <p className="text-xs text-gray-500">Solana TX</p>
-          <p className="text-xs font-mono text-gray-700 break-all mt-0.5">{status.anchor_tx_sig}</p>
+          <p className="text-xs text-muted-foreground">Solana TX</p>
+          <p className="text-xs font-mono text-foreground break-all mt-0.5">{status.anchor_tx_sig}</p>
         </div>
       )}
 
       {status.anchored_at && (
         <div className="mt-2">
-          <p className="text-xs text-gray-500">Anclado: {new Date(status.anchored_at).toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">Anclado: {new Date(status.anchored_at).toLocaleString()}</p>
         </div>
       )}
     </div>

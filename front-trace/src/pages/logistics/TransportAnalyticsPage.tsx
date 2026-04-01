@@ -28,13 +28,13 @@ function KpiCard({ icon: Icon, label, value, sub, color = 'text-indigo-600' }: {
   icon: typeof BarChart3; label: string; value: string; sub?: string; color?: string
 }) {
   return (
-    <div className="bg-white rounded-xl border p-5">
+    <div className="bg-card rounded-xl border p-5">
       <div className="flex items-center gap-3 mb-3">
-        <div className={`p-2 rounded-lg bg-gray-50`}><Icon className={`h-5 w-5 ${color}`} /></div>
-        <span className="text-sm font-medium text-gray-500">{label}</span>
+        <div className={`p-2 rounded-lg bg-muted`}><Icon className={`h-5 w-5 ${color}`} /></div>
+        <span className="text-sm font-medium text-muted-foreground">{label}</span>
       </div>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+      <p className="text-2xl font-bold text-foreground">{value}</p>
+      {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
     </div>
   )
 }
@@ -56,16 +56,16 @@ export default function TransportAnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Analiticas de Transporte</h1>
-          <p className="text-sm text-gray-500 mt-1">Metricas operativas de envios, tiempos y costos logisticos</p>
+          <h1 className="text-2xl font-bold text-foreground">Analiticas de Transporte</h1>
+          <p className="text-sm text-muted-foreground mt-1">Metricas operativas de envios, tiempos y costos logisticos</p>
         </div>
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+        <div className="flex gap-1 bg-secondary rounded-lg p-1">
           {PERIOD_OPTIONS.map(o => (
             <button
               key={o.value}
               onClick={() => setPeriod(o.value)}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                period === o.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                period === o.value ? 'bg-card text-foreground ' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {o.label}
@@ -79,7 +79,7 @@ export default function TransportAnalyticsPage() {
           <div className="h-8 w-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
         </div>
       ) : !data ? (
-        <div className="text-center py-20 text-gray-400">Sin datos de analiticas</div>
+        <div className="text-center py-20 text-muted-foreground">Sin datos de analiticas</div>
       ) : (
         <>
           {/* KPI Cards */}
@@ -93,12 +93,12 @@ export default function TransportAnalyticsPage() {
           {/* Cost Breakdown + Shipments by Status */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Costs */}
-            <div className="bg-white rounded-xl border p-6">
+            <div className="bg-card rounded-xl border p-6">
               <div className="flex items-center gap-2 mb-4">
                 <DollarSign className="h-5 w-5 text-emerald-600" />
-                <h2 className="text-base font-semibold text-gray-900">Costos Logisticos</h2>
+                <h2 className="text-base font-semibold text-foreground">Costos Logisticos</h2>
               </div>
-              <p className="text-3xl font-bold text-gray-900 mb-4">{fmtMoney(data.total_logistics_cost.total)}</p>
+              <p className="text-3xl font-bold text-foreground mb-4">{fmtMoney(data.total_logistics_cost.total)}</p>
               <div className="space-y-3">
                 {([
                   { key: 'freight', label: 'Flete', color: 'bg-blue-500' },
@@ -111,11 +111,11 @@ export default function TransportAnalyticsPage() {
                   const pct = data.total_logistics_cost.total > 0 ? (val / data.total_logistics_cost.total) * 100 : 0
                   return (
                     <div key={item.key} className="flex items-center gap-3">
-                      <span className="w-20 text-xs text-gray-500">{item.label}</span>
-                      <div className="flex-1 bg-gray-100 rounded-full h-2">
+                      <span className="w-20 text-xs text-muted-foreground">{item.label}</span>
+                      <div className="flex-1 bg-secondary rounded-full h-2">
                         <div className={`${item.color} h-2 rounded-full`} style={{ width: `${pct}%` }} />
                       </div>
-                      <span className="w-24 text-right text-xs font-medium text-gray-700">{fmtMoney(val)}</span>
+                      <span className="w-24 text-right text-xs font-medium text-foreground">{fmtMoney(val)}</span>
                     </div>
                   )
                 })}
@@ -123,22 +123,22 @@ export default function TransportAnalyticsPage() {
             </div>
 
             {/* Shipments by Status */}
-            <div className="bg-white rounded-xl border p-6">
+            <div className="bg-card rounded-xl border p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Truck className="h-5 w-5 text-indigo-600" />
-                <h2 className="text-base font-semibold text-gray-900">Envios por Estado</h2>
+                <h2 className="text-base font-semibold text-foreground">Envios por Estado</h2>
               </div>
               <div className="space-y-3">
                 {Object.entries(data.shipments_by_status).map(([status, count]) => (
                   <div key={status} className="flex items-center gap-3">
-                    <span className="w-24 text-xs text-gray-500">{STATUS_LABELS[status] ?? status}</span>
-                    <div className="flex-1 bg-gray-100 rounded-full h-3">
+                    <span className="w-24 text-xs text-muted-foreground">{STATUS_LABELS[status] ?? status}</span>
+                    <div className="flex-1 bg-secondary rounded-full h-3">
                       <div
                         className={`${STATUS_COLORS[status] ?? 'bg-gray-300'} h-3 rounded-full transition-all`}
                         style={{ width: `${totalShipments > 0 ? (count / totalShipments) * 100 : 0}%` }}
                       />
                     </div>
-                    <span className="w-8 text-right text-sm font-semibold text-gray-700">{count}</span>
+                    <span className="w-8 text-right text-sm font-semibold text-foreground">{count}</span>
                   </div>
                 ))}
               </div>
@@ -148,20 +148,20 @@ export default function TransportAnalyticsPage() {
           {/* Deliveries by Period + Top Carriers */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Deliveries Chart */}
-            <div className="bg-white rounded-xl border p-6">
-              <h2 className="text-base font-semibold text-gray-900 mb-4">Entregas por Periodo</h2>
+            <div className="bg-card rounded-xl border p-6">
+              <h2 className="text-base font-semibold text-foreground mb-4">Entregas por Periodo</h2>
               {data.deliveries_by_period.length === 0 ? (
-                <p className="text-sm text-gray-400 py-8 text-center">Sin entregas en este periodo</p>
+                <p className="text-sm text-muted-foreground py-8 text-center">Sin entregas en este periodo</p>
               ) : (
                 <div className="flex items-end gap-1 h-40">
                   {data.deliveries_by_period.map((d, i) => (
                     <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                      <span className="text-[10px] font-medium text-gray-600">{d.count}</span>
+                      <span className="text-[10px] font-medium text-muted-foreground">{d.count}</span>
                       <div
                         className="w-full bg-indigo-400 rounded-t-sm min-h-[4px] transition-all"
                         style={{ height: `${(d.count / maxBarValue) * 100}%` }}
                       />
-                      <span className="text-[9px] text-gray-400 truncate w-full text-center">
+                      <span className="text-[9px] text-muted-foreground truncate w-full text-center">
                         {d.period.slice(5, 10)}
                       </span>
                     </div>
@@ -171,23 +171,23 @@ export default function TransportAnalyticsPage() {
             </div>
 
             {/* Top Carriers */}
-            <div className="bg-white rounded-xl border p-6">
-              <h2 className="text-base font-semibold text-gray-900 mb-4">Top Transportistas</h2>
+            <div className="bg-card rounded-xl border p-6">
+              <h2 className="text-base font-semibold text-foreground mb-4">Top Transportistas</h2>
               {data.top_carriers.length === 0 ? (
-                <p className="text-sm text-gray-400 py-8 text-center">Sin datos de transportistas</p>
+                <p className="text-sm text-muted-foreground py-8 text-center">Sin datos de transportistas</p>
               ) : (
                 <div className="space-y-3">
                   {data.top_carriers.map((c, i) => (
                     <div key={i} className="flex items-center gap-3">
-                      <span className="w-6 text-xs font-bold text-gray-400">#{i + 1}</span>
-                      <span className="w-32 text-sm text-gray-700 truncate">{c.carrier}</span>
-                      <div className="flex-1 bg-gray-100 rounded-full h-2.5">
+                      <span className="w-6 text-xs font-bold text-muted-foreground">#{i + 1}</span>
+                      <span className="w-32 text-sm text-foreground truncate">{c.carrier}</span>
+                      <div className="flex-1 bg-secondary rounded-full h-2.5">
                         <div
                           className="bg-indigo-500 h-2.5 rounded-full transition-all"
                           style={{ width: `${(c.shipments / maxCarrierValue) * 100}%` }}
                         />
                       </div>
-                      <span className="w-8 text-right text-sm font-semibold text-gray-700">{c.shipments}</span>
+                      <span className="w-8 text-right text-sm font-semibold text-foreground">{c.shipments}</span>
                     </div>
                   ))}
                 </div>

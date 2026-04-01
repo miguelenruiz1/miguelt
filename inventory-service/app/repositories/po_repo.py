@@ -116,5 +116,5 @@ class PORepository:
         return line
 
     async def delete(self, po: PurchaseOrder) -> None:
-        self.db.delete(po)
+        await self.db.delete(po)
         await self.db.flush()

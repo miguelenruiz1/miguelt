@@ -97,7 +97,7 @@ export function DataTable<T>({
   /* ---- Loading / Empty ---- */
   if (isLoading) {
     return (
-      <div className={cn('rounded-md bg-card shadow-sm border border-border', className)}>
+      <div className={cn('rounded-md bg-card  border border-border', className)}>
         <div className="flex items-center justify-center py-16">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
@@ -107,7 +107,7 @@ export function DataTable<T>({
 
   if (!data.length) {
     return (
-      <div className={cn('rounded-md bg-card shadow-sm border border-border', className)}>
+      <div className={cn('rounded-md bg-card  border border-border', className)}>
         <div className="py-16 text-center text-sm text-muted-foreground">{emptyMessage}</div>
       </div>
     )
@@ -121,7 +121,7 @@ export function DataTable<T>({
           key={getKey(row, i)}
           onClick={onRowClick ? () => onRowClick(row) : undefined}
           className={cn(
-            'rounded-md border border-border bg-card p-4 shadow-sm space-y-2',
+            'rounded-md border border-border bg-card p-4  space-y-2',
             onRowClick && 'cursor-pointer hover:border-primary/30 hover:shadow-md transition-all active:scale-[0.99]',
           )}
         >
@@ -138,7 +138,7 @@ export function DataTable<T>({
 
   /* ---- Desktop Table ---- */
   const desktopTable = (
-    <div className={cn('overflow-x-auto rounded-md bg-card shadow-sm border border-border', !forceTable && 'hidden md:block')}>
+    <div className={cn('overflow-x-auto rounded-md bg-card  border border-border', !forceTable && 'hidden md:block')}>
       <table className="w-full text-sm min-w-[600px]">
         <thead>
           <tr className="border-b border-border">

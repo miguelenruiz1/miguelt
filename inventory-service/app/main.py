@@ -116,7 +116,7 @@ def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
 
-    app = FastAPI(
+    app = FastAPI(redirect_slashes=False, 
         title="Trace — Inventory Service",
         description="Inventory management: products, warehouses, stock movements and purchase orders.",
         version=settings.APP_VERSION,

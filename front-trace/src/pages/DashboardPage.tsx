@@ -9,7 +9,7 @@ import type { UsageCounter } from '@/types/subscription'
 function UsageKpi({ counter, label, icon: Icon, gradient }: { counter?: { current: number; limit: number; percentage?: number }; label: string; icon: React.ElementType; gradient: string }) {
   if (!counter) return null
   const pct = counter.limit > 0 ? Math.min(100, (counter.current / counter.limit) * 100) : 0
-  const barColor = pct >= 90 ? 'bg-red-300' : pct >= 70 ? 'bg-amber-300' : 'bg-white/40'
+  const barColor = pct >= 90 ? 'bg-red-300' : pct >= 70 ? 'bg-amber-300' : 'bg-card/40'
   const limitLabel = counter.limit < 0 ? 'Ilimitado' : counter.limit === 0 ? '—' : counter.limit.toLocaleString('es')
 
   return (
@@ -20,7 +20,7 @@ function UsageKpi({ counter, label, icon: Icon, gradient }: { counter?: { curren
       <p className="text-xs font-medium opacity-80 uppercase tracking-wider">{label}</p>
       <p className="text-2xl font-extrabold mt-1">{counter.current.toLocaleString('es')}</p>
       <p className="text-[11px] opacity-70 mt-0.5">de {limitLabel}</p>
-      <div className="mt-2 h-1.5 w-full rounded-full bg-white/20 overflow-hidden">
+      <div className="mt-2 h-1.5 w-full rounded-full bg-card/20 overflow-hidden">
         <div
           className={cn('h-full rounded-full transition-all', barColor)}
           style={{ width: counter.limit < 0 ? '5%' : `${pct}%` }}
@@ -43,7 +43,7 @@ export function DashboardPage() {
     { to: '/marketplace', icon: Layers, label: 'Marketplace', desc: 'Explora y activa módulos', color: 'bg-primary' },
     { to: '/equipo/usuarios', icon: Users, label: 'Mi Equipo', desc: 'Usuarios, roles y permisos', color: 'bg-violet-500' },
     { to: '/empresa/suscripcion', icon: CreditCard, label: 'Mi Suscripción', desc: 'Plan, facturación y período', color: 'bg-amber-500' },
-    { to: '/profile', icon: Settings, label: 'Mi Perfil', desc: 'Datos personales y contraseña', color: 'bg-gray-500' },
+    { to: '/profile', icon: Settings, label: 'Mi Perfil', desc: 'Datos personales y contraseña', color: 'bg-muted0' },
   ].filter(Boolean) as { to: string; icon: React.ElementType; label: string; desc: string; color: string }[]
 
   return (
@@ -51,8 +51,8 @@ export function DashboardPage() {
       {/* Breadcrumb */}
       <nav className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
-          <li className="text-gray-500">Inicio</li>
-          <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
+          <li className="text-muted-foreground">Inicio</li>
+          <li><ChevronRight className="h-4 w-4 text-muted-foreground" /></li>
           <li className="text-primary">Dashboard</li>
         </ol>
       </nav>
@@ -63,17 +63,17 @@ export function DashboardPage() {
           <Rocket className="h-7 w-7 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-2xl font-bold text-foreground">
             Hola, {user?.full_name?.split(' ')[0] ?? 'usuario'}
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">Bienvenido a TraceLog</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Bienvenido a TraceLog</p>
         </div>
       </div>
 
       {/* Usage summary */}
       {usage && (
         <div>
-          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Tu plan: {usage.plan_name}</h2>
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">Tu plan: {usage.plan_name}</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div className="relative rounded-2xl p-5 text-white overflow-hidden bg-gradient-to-br from-primary to-emerald-600">
               <div className="absolute -right-3 -top-3 opacity-10">
@@ -92,20 +92,20 @@ export function DashboardPage() {
 
       {/* Quick access grid */}
       <div>
-        <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Acceso rapido</h2>
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">Acceso rapido</h2>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {shortcuts.map(({ to, icon: Icon, label, desc, color }) => (
             <Link
               key={to}
               to={to}
-              className="group flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-gray-300 transition-all"
+              className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5  hover:shadow-md hover:border-gray-300 transition-all"
             >
               <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color} shrink-0`}>
                 <Icon className="h-5 w-5 text-white" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-800 group-hover:text-primary transition-colors">{label}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+                <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
               </div>
             </Link>
           ))}

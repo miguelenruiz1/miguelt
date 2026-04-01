@@ -24,13 +24,13 @@ const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> 
   trialing: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Prueba' },
   past_due: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Mora' },
   canceled: { bg: 'bg-red-100', text: 'text-red-700', label: 'Cancelada' },
-  expired:  { bg: 'bg-slate-100', text: 'text-slate-600', label: 'Expirada' },
+  expired:  { bg: 'bg-secondary', text: 'text-muted-foreground', label: 'Expirada' },
 }
 
 const INV_BADGE: Record<string, string> = {
   paid: 'bg-green-100 text-green-700',
   open: 'bg-blue-100 text-blue-700',
-  draft: 'bg-slate-100 text-slate-600',
+  draft: 'bg-secondary text-muted-foreground',
   void: 'bg-red-100 text-red-700',
   uncollectible: 'bg-amber-100 text-amber-700',
 }
@@ -85,7 +85,7 @@ export function PlatformTenantDetailPage() {
   if (!data) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-500">Empresa no encontrada</p>
+        <p className="text-muted-foreground">Empresa no encontrada</p>
         <Link to="/platform/tenants" className="text-primary text-sm mt-2 inline-block">Volver</Link>
       </div>
     )
@@ -100,7 +100,7 @@ export function PlatformTenantDetailPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <Link to="/platform/tenants" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-primary mb-3">
+        <Link to="/platform/tenants" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-3">
           <ArrowLeft className="h-4 w-4" /> Empresas
         </Link>
         <div className="flex items-center gap-4">
@@ -108,26 +108,26 @@ export function PlatformTenantDetailPage() {
             <Building2 className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">{data.tenant_id}</h1>
+            <h1 className="text-xl font-bold text-foreground">{data.tenant_id}</h1>
             <div className="flex items-center gap-2 mt-1">
               <span className={`inline-flex px-2.5 py-0.5 rounded-lg text-xs font-semibold ${badge.bg} ${badge.text}`}>
                 {badge.label}
               </span>
-              <span className="text-xs text-slate-400">Plan: {sub.plan.name} (${sub.plan.price_monthly}/mes)</span>
+              <span className="text-xs text-muted-foreground">Plan: {sub.plan.name} (${sub.plan.price_monthly}/mes)</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-secondary p-1 rounded-xl w-fit">
         {tabs.map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={cn(
               'px-4 py-2 text-sm font-medium rounded-lg transition',
-              tab === t ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700',
+              tab === t ? 'bg-card  text-foreground' : 'text-muted-foreground hover:text-foreground',
             )}
           >
             {t}
@@ -139,8 +139,8 @@ export function PlatformTenantDetailPage() {
       {tab === 'Resumen' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Subscription info */}
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+          <div className="bg-card rounded-2xl border border-border/60 p-6 ">
+            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-primary" /> Suscripcion
             </h3>
             <dl className="space-y-3 text-sm">
@@ -152,24 +152,24 @@ export function PlatformTenantDetailPage() {
                 ['Creada', sub.created_at ? new Date(sub.created_at).toLocaleDateString('es') : '-'],
               ] as const).map(([label, val]) => (
                 <div key={label} className="flex justify-between">
-                  <dt className="text-slate-500">{label}</dt>
+                  <dt className="text-muted-foreground">{label}</dt>
                   <dd className="font-medium">{val}</dd>
                 </div>
               ))}
               {sub.canceled_at && (
                 <div className="flex justify-between">
-                  <dt className="text-slate-500">Cancelada</dt>
+                  <dt className="text-muted-foreground">Cancelada</dt>
                   <dd className="font-medium text-red-600">{new Date(sub.canceled_at).toLocaleDateString('es')}</dd>
                 </div>
               )}
             </dl>
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Limites</p>
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Limites</p>
               <div className="grid grid-cols-3 gap-3">
                 {([['Usuarios', sub.plan.max_users], ['Assets', sub.plan.max_assets], ['Wallets', sub.plan.max_wallets]] as const).map(([l, v]) => (
-                  <div key={l} className="bg-slate-50 rounded-lg p-2 text-center">
-                    <div className="text-lg font-bold text-slate-900">{v}</div>
-                    <div className="text-xs text-slate-500">{l}</div>
+                  <div key={l} className="bg-muted rounded-lg p-2 text-center">
+                    <div className="text-lg font-bold text-foreground">{v}</div>
+                    <div className="text-xs text-muted-foreground">{l}</div>
                   </div>
                 ))}
               </div>
@@ -177,28 +177,28 @@ export function PlatformTenantDetailPage() {
           </div>
 
           {/* Modules + gateway */}
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+          <div className="bg-card rounded-2xl border border-border/60 p-6 ">
+            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
               <Layers className="h-4 w-4 text-primary" /> Modulos
             </h3>
             <div className="space-y-3">
               {data.modules.length > 0 ? data.modules.map(m => (
-                <div key={m.slug} className="flex items-center justify-between bg-slate-50 rounded-xl p-3">
+                <div key={m.slug} className="flex items-center justify-between bg-muted rounded-xl p-3">
                   <div className="flex items-center gap-3">
                     <span className={cn('h-2.5 w-2.5 rounded-full', m.is_active ? 'bg-green-500' : 'bg-slate-300')} />
-                    <span className="text-sm font-medium text-slate-700 capitalize">{m.slug}</span>
+                    <span className="text-sm font-medium text-foreground capitalize">{m.slug}</span>
                   </div>
-                  <span className="text-xs text-slate-400">{m.is_active ? 'Activo' : 'Inactivo'}</span>
+                  <span className="text-xs text-muted-foreground">{m.is_active ? 'Activo' : 'Inactivo'}</span>
                 </div>
               )) : (
-                <p className="text-sm text-slate-400">Sin modulos activados</p>
+                <p className="text-sm text-muted-foreground">Sin modulos activados</p>
               )}
             </div>
             {data.active_gateway && (
-              <div className="mt-6 pt-4 border-t border-slate-100">
-                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Pasarela</h4>
-                <div className="bg-slate-50 rounded-xl p-3">
-                  <span className="text-sm font-medium text-slate-700">{data.active_gateway.display_name}</span>
+              <div className="mt-6 pt-4 border-t border-border">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Pasarela</h4>
+                <div className="bg-muted rounded-xl p-3">
+                  <span className="text-sm font-medium text-foreground">{data.active_gateway.display_name}</span>
                   <span className={cn('ml-2 text-xs px-2 py-0.5 rounded-md font-medium',
                     data.active_gateway.is_test_mode ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700',
                   )}>
@@ -215,11 +215,11 @@ export function PlatformTenantDetailPage() {
       {tab === 'Acciones' && (
         <div className="space-y-6">
           {/* Change plan */}
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+          <div className="bg-card rounded-2xl border border-border/60 p-6 ">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <ArrowUpDown className="h-4 w-4 text-primary" /> Cambiar Plan
             </h3>
-            <p className="text-xs text-slate-400 mb-3">Plan actual: <strong>{sub.plan.name}</strong></p>
+            <p className="text-xs text-muted-foreground mb-3">Plan actual: <strong>{sub.plan.name}</strong></p>
             <div className="flex flex-wrap gap-2">
               {activePlans.map(p => (
                 <button
@@ -230,7 +230,7 @@ export function PlatformTenantDetailPage() {
                     'px-4 py-2 text-sm rounded-xl border-2 font-medium transition',
                     p.slug === sub.plan.slug
                       ? 'border-primary bg-primary/10 text-primary cursor-default'
-                      : 'border-slate-200 text-slate-600 hover:border-primary/50 hover:bg-primary/10',
+                      : 'border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/10',
                   )}
                 >
                   {p.name} {p.price_monthly > 0 ? `($${p.price_monthly})` : '(Gratis)'}
@@ -243,8 +243,8 @@ export function PlatformTenantDetailPage() {
           </div>
 
           {/* Toggle modules */}
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+          <div className="bg-card rounded-2xl border border-border/60 p-6 ">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <Layers className="h-4 w-4 text-primary" /> Modulos
             </h3>
             <div className="flex gap-3">
@@ -259,7 +259,7 @@ export function PlatformTenantDetailPage() {
                       'flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition',
                       isActive
                         ? 'border-green-500 bg-green-50 text-green-700'
-                        : 'border-slate-200 text-slate-600 hover:border-slate-300',
+                        : 'border-border text-muted-foreground hover:border-slate-300',
                     )}
                   >
                     <Power className="h-4 w-4" />
@@ -272,8 +272,8 @@ export function PlatformTenantDetailPage() {
           </div>
 
           {/* Invoice + payment link */}
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+          <div className="bg-card rounded-2xl border border-border/60 p-6 ">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <Receipt className="h-4 w-4 text-primary" /> Facturacion
             </h3>
             <div className="flex flex-wrap gap-3">
@@ -301,10 +301,10 @@ export function PlatformTenantDetailPage() {
               </p>
             )}
             {paymentLink && (
-              <div className="mt-3 bg-slate-50 rounded-xl p-4">
-                <p className="text-xs font-semibold text-slate-500 mb-1">Link de Pago Generado</p>
+              <div className="mt-3 bg-muted rounded-xl p-4">
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Link de Pago Generado</p>
                 <div className="flex items-center gap-2">
-                  <code className="text-sm text-primary bg-white px-3 py-1.5 rounded-lg border border-slate-200 flex-1 truncate">
+                  <code className="text-sm text-primary bg-card px-3 py-1.5 rounded-lg border border-border flex-1 truncate">
                     {window.location.origin}{paymentLink.link}
                   </code>
                   <button
@@ -314,7 +314,7 @@ export function PlatformTenantDetailPage() {
                     Copiar
                   </button>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {paymentLink.plan_name} — ${paymentLink.amount} {paymentLink.currency} — Factura: {paymentLink.invoice_number}
                 </p>
               </div>
@@ -322,8 +322,8 @@ export function PlatformTenantDetailPage() {
           </div>
 
           {/* Cancel / Reactivate */}
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+          <div className="bg-card rounded-2xl border border-border/60 p-6 ">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               {isCanceled ? <RefreshCw className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
               {isCanceled ? 'Reactivar Suscripcion' : 'Cancelar Suscripcion'}
             </h3>
@@ -342,7 +342,7 @@ export function PlatformTenantDetailPage() {
                   onChange={e => setCancelReason(e.target.value)}
                   placeholder="Razon de cancelacion (opcional)..."
                   rows={2}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl outline-none resize-none"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-xl outline-none resize-none"
                 />
                 <div className="flex gap-2">
                   <button
@@ -354,7 +354,7 @@ export function PlatformTenantDetailPage() {
                   </button>
                   <button
                     onClick={() => setShowCancelConfirm(false)}
-                    className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+                    className="px-4 py-2 text-sm font-medium text-muted-foreground bg-secondary hover:bg-slate-200 rounded-xl transition"
                   >
                     Volver
                   </button>
@@ -374,37 +374,37 @@ export function PlatformTenantDetailPage() {
 
       {/* === Facturas tab === */}
       {tab === 'Facturas' && (
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
           {data.invoices.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
+            <div className="text-center py-12 text-muted-foreground">
               <CreditCard className="h-8 w-8 mx-auto mb-2 opacity-40" />
               <p className="text-sm">Sin facturas</p>
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="text-left px-5 py-3 font-semibold text-slate-600">Factura</th>
-                  <th className="text-left px-5 py-3 font-semibold text-slate-600">Estado</th>
-                  <th className="text-right px-5 py-3 font-semibold text-slate-600">Monto</th>
-                  <th className="text-left px-5 py-3 font-semibold text-slate-600">Periodo</th>
-                  <th className="text-left px-5 py-3 font-semibold text-slate-600">Pagada</th>
+                <tr className="bg-muted border-b border-border">
+                  <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Factura</th>
+                  <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Estado</th>
+                  <th className="text-right px-5 py-3 font-semibold text-muted-foreground">Monto</th>
+                  <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Periodo</th>
+                  <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Pagada</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {data.invoices.map(inv => (
-                  <tr key={inv.id} className="hover:bg-slate-50/60">
-                    <td className="px-5 py-3 font-medium text-slate-900">{inv.invoice_number}</td>
+                  <tr key={inv.id} className="hover:bg-muted/60">
+                    <td className="px-5 py-3 font-medium text-foreground">{inv.invoice_number}</td>
                     <td className="px-5 py-3">
                       <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-semibold ${INV_BADGE[inv.status] ?? INV_BADGE.draft}`}>
                         {inv.status}
                       </span>
                     </td>
                     <td className="px-5 py-3 text-right font-semibold">${inv.amount.toLocaleString()} {inv.currency}</td>
-                    <td className="px-5 py-3 text-slate-500">
+                    <td className="px-5 py-3 text-muted-foreground">
                       {inv.period_start ? new Date(inv.period_start).toLocaleDateString('es', { month: 'short', year: 'numeric' }) : '-'}
                     </td>
-                    <td className="px-5 py-3 text-slate-500">
+                    <td className="px-5 py-3 text-muted-foreground">
                       {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString('es') : '-'}
                     </td>
                   </tr>
@@ -417,26 +417,26 @@ export function PlatformTenantDetailPage() {
 
       {/* === Licencias tab === */}
       {tab === 'Licencias' && (
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
           {data.licenses.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
+            <div className="text-center py-12 text-muted-foreground">
               <Key className="h-8 w-8 mx-auto mb-2 opacity-40" />
               <p className="text-sm">Sin licencias</p>
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="text-left px-5 py-3 font-semibold text-slate-600">Clave</th>
-                  <th className="text-left px-5 py-3 font-semibold text-slate-600">Estado</th>
-                  <th className="text-left px-5 py-3 font-semibold text-slate-600">Activaciones</th>
-                  <th className="text-left px-5 py-3 font-semibold text-slate-600">Emitida</th>
+                <tr className="bg-muted border-b border-border">
+                  <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Clave</th>
+                  <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Estado</th>
+                  <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Activaciones</th>
+                  <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Emitida</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {data.licenses.map(lic => (
-                  <tr key={lic.id} className="hover:bg-slate-50/60">
-                    <td className="px-5 py-3 font-mono text-xs text-slate-700">{lic.key}</td>
+                  <tr key={lic.id} className="hover:bg-muted/60">
+                    <td className="px-5 py-3 font-mono text-xs text-foreground">{lic.key}</td>
                     <td className="px-5 py-3">
                       <span className={cn(
                         'inline-flex px-2 py-0.5 rounded-md text-xs font-semibold',
@@ -445,10 +445,10 @@ export function PlatformTenantDetailPage() {
                         {lic.status}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-slate-600">
+                    <td className="px-5 py-3 text-muted-foreground">
                       {lic.activations_count} / {lic.max_activations === -1 ? 'ilimitado' : lic.max_activations}
                     </td>
-                    <td className="px-5 py-3 text-slate-500">
+                    <td className="px-5 py-3 text-muted-foreground">
                       {lic.issued_at ? new Date(lic.issued_at).toLocaleDateString('es') : '-'}
                     </td>
                   </tr>
@@ -461,9 +461,9 @@ export function PlatformTenantDetailPage() {
 
       {/* === Eventos tab === */}
       {tab === 'Eventos' && (
-        <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
+        <div className="bg-card rounded-2xl border border-border/60 p-6 ">
           {data.events.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
+            <div className="text-center py-12 text-muted-foreground">
               <Activity className="h-8 w-8 mx-auto mb-2 opacity-40" />
               <p className="text-sm">Sin eventos</p>
             </div>
@@ -476,19 +476,19 @@ export function PlatformTenantDetailPage() {
                     {idx < data.events.length - 1 && (
                       <div className="absolute left-[15px] top-8 bottom-0 w-px bg-slate-200" />
                     )}
-                    <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 z-10">
-                      <Icon className="h-4 w-4 text-slate-500" />
+                    <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center shrink-0 z-10">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div className="pb-6 flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-700">{ev.event_type.replace(/_/g, ' ')}</span>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-sm font-semibold text-foreground">{ev.event_type.replace(/_/g, ' ')}</span>
+                        <span className="text-xs text-muted-foreground">
                           {ev.created_at ? new Date(ev.created_at).toLocaleString('es') : ''}
                         </span>
                       </div>
-                      {ev.performed_by && <p className="text-xs text-slate-400 mt-0.5">por {ev.performed_by}</p>}
+                      {ev.performed_by && <p className="text-xs text-muted-foreground mt-0.5">por {ev.performed_by}</p>}
                       {ev.data && Object.keys(ev.data).length > 0 && (
-                        <pre className="mt-1 text-xs text-slate-500 bg-slate-50 rounded-lg p-2 overflow-x-auto">
+                        <pre className="mt-1 text-xs text-muted-foreground bg-muted rounded-lg p-2 overflow-x-auto">
                           {JSON.stringify(ev.data, null, 2)}
                         </pre>
                       )}

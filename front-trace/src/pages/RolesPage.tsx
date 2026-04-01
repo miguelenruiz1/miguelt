@@ -136,14 +136,14 @@ function GroupRow({
   const Icon = group.icon
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+    <div className="rounded-2xl border border-border bg-card  overflow-hidden">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
         <div className={cn('flex h-9 w-9 items-center justify-center rounded-xl text-white shrink-0', group.color)}>
           <Icon className="h-4 w-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-slate-800">{group.label}</h3>
-          <p className="text-xs text-slate-400">{group.description}</p>
+          <h3 className="text-sm font-semibold text-foreground">{group.label}</h3>
+          <p className="text-xs text-muted-foreground">{group.description}</p>
         </div>
       </div>
       <div className="px-5 py-3 flex flex-wrap gap-3">
@@ -160,7 +160,7 @@ function GroupRow({
                   ? 'border-primary bg-primary/5 text-primary'
                   : partial
                     ? 'border-amber-300 bg-amber-50 text-amber-700'
-                    : 'border-slate-200 text-slate-500 hover:border-slate-300',
+                    : 'border-border text-muted-foreground hover:border-slate-300',
               )}
             >
               <div className={cn(
@@ -293,7 +293,7 @@ export function RolesPage() {
   }
 
   if (rolesLoading || permsLoading) {
-    return <div className="p-8 text-slate-500">Cargando...</div>
+    return <div className="p-8 text-muted-foreground">Cargando...</div>
   }
 
   return (
@@ -305,8 +305,8 @@ export function RolesPage() {
             <Shield className="h-5 w-5 text-purple-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Roles y Permisos</h1>
-            <p className="text-sm text-slate-500">Asigna módulos completos a cada rol</p>
+            <h1 className="text-2xl font-bold text-foreground">Roles y Permisos</h1>
+            <p className="text-sm text-muted-foreground">Asigna módulos completos a cada rol</p>
           </div>
         </div>
       </div>
@@ -318,7 +318,7 @@ export function RolesPage() {
           onChange={e => setNewRoleName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleCreateRole()}
           placeholder="Nombre del nuevo rol..."
-          className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-64"
+          className="rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-64"
         />
         <button
           onClick={handleCreateRole}
@@ -331,8 +331,8 @@ export function RolesPage() {
 
       {/* Operaciones — day-to-day employee access */}
       <div>
-        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Operaciones</h2>
-        <p className="text-xs text-slate-400 mb-4">Permisos del día a día — asigna a empleados, operarios y colaboradores</p>
+        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">Operaciones</h2>
+        <p className="text-xs text-muted-foreground mb-4">Permisos del día a día — asigna a empleados, operarios y colaboradores</p>
         <div className="space-y-3">
           {OPERATIONS_GROUPS.map(group => (
             <GroupRow key={group.key} group={group} roles={roles} groupPermIds={groupPermIds} isGroupActive={isGroupActive} isGroupPartial={isGroupPartial} toggleGroup={toggleGroup} />
@@ -342,8 +342,8 @@ export function RolesPage() {
 
       {/* Administración — business owner only */}
       <div>
-        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Administración</h2>
-        <p className="text-xs text-slate-400 mb-4">Solo para dueños o gerentes — control total del negocio</p>
+        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">Administración</h2>
+        <p className="text-xs text-muted-foreground mb-4">Solo para dueños o gerentes — control total del negocio</p>
         <div className="space-y-3">
           {ADMIN_GROUPS.map(group => (
             <GroupRow key={group.key} group={group} roles={roles} groupPermIds={groupPermIds} isGroupActive={isGroupActive} isGroupPartial={isGroupPartial} toggleGroup={toggleGroup} />
@@ -371,7 +371,7 @@ export function RolesPage() {
               setDirty(new Set())
               qc.invalidateQueries({ queryKey: ['admin', 'roles'] })
             }}
-            className="text-slate-400 hover:text-white text-xs"
+            className="text-muted-foreground hover:text-white text-xs"
           >
             Cancelar
           </button>

@@ -69,7 +69,7 @@ class RecipeRepository:
         if components is not None:
             # Replace components
             for c in list(recipe.components):
-                self.db.delete(c)
+                await self.db.delete(c)
             await self.db.flush()
             for comp in components:
                 self.db.add(RecipeComponent(id=str(uuid.uuid4()), tenant_id=recipe.tenant_id, recipe_id=recipe.id, **comp))

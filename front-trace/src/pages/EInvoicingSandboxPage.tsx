@@ -98,8 +98,8 @@ export function EInvoicingSandboxPage() {
       {/* Breadcrumb */}
       <nav className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
-          <li className="text-gray-500">Inicio</li>
-          <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
+          <li className="text-muted-foreground">Inicio</li>
+          <li><ChevronRight className="h-4 w-4 text-muted-foreground" /></li>
           <li className="text-primary">Facturación Electrónica — Sandbox</li>
         </ol>
       </nav>
@@ -107,17 +107,17 @@ export function EInvoicingSandboxPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
             <FlaskConical className="h-6 w-6 text-amber-500" />
             Facturación Electrónica — Sandbox
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Simula el flujo completo de facturación electrónica sin conexión a la DIAN.
           </p>
         </div>
         <button
           onClick={() => { setShowSimModal(true); setSimResult(null); setSelectedSO(null) }}
-          className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-amber-600"
+          className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white  transition hover:bg-amber-600"
         >
           Simular factura manualmente
         </button>
@@ -131,60 +131,60 @@ export function EInvoicingSandboxPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-medium text-gray-400 uppercase">Facturas Simuladas</p>
+        <div className="rounded-2xl border border-border bg-card p-5 ">
+          <p className="text-xs font-medium text-muted-foreground uppercase">Facturas Simuladas</p>
           <p className="text-2xl font-bold text-amber-600 mt-1">{sandboxOrders.length}</p>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-medium text-gray-400 uppercase">SOs sin factura</p>
-          <p className="text-2xl font-bold text-gray-600 mt-1">{uninvoicedOrders.length}</p>
+        <div className="rounded-2xl border border-border bg-card p-5 ">
+          <p className="text-xs font-medium text-muted-foreground uppercase">SOs sin factura</p>
+          <p className="text-2xl font-bold text-muted-foreground mt-1">{uninvoicedOrders.length}</p>
         </div>
       </div>
 
       {/* Invoice history table */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-gray-800">Historial de Facturas Simuladas</h2>
+        <h2 className="text-lg font-semibold text-foreground">Historial de Facturas Simuladas</h2>
         {sandboxOrders.length === 0 ? (
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-400">
+          <div className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
             No hay facturas simuladas aún. Usa el botón &quot;Simular factura manualmente&quot; o entrega una Sales Order con el módulo sandbox activo.
           </div>
         ) : (
-          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+          <div className="rounded-2xl border border-border bg-card  overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Orden</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Nº Factura</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
-                    <th className="px-5 py-3.5 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">CUFE Simulado</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Nota Crédito</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                  <tr className="border-b border-border">
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-muted-foreground uppercase">Orden</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-muted-foreground uppercase">Nº Factura</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-muted-foreground uppercase">Cliente</th>
+                    <th className="px-5 py-3.5 text-right text-xs font-medium text-muted-foreground uppercase">Total</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-muted-foreground uppercase">CUFE Simulado</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-muted-foreground uppercase">Fecha</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-muted-foreground uppercase">Estado</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-muted-foreground uppercase">Nota Crédito</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-muted-foreground uppercase">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {sandboxOrders.map(order => (
-                    <tr key={order.id} className="hover:bg-gray-50/60">
+                    <tr key={order.id} className="hover:bg-muted/60">
                       <td className="px-5 py-3">
                         <Link to={`/inventario/ventas/${order.id}`} className="font-medium text-primary hover:text-primary">
                           {order.order_number}
                         </Link>
                       </td>
                       <td className="px-5 py-3 font-mono text-xs text-amber-700">{order.invoice_number ?? '—'}</td>
-                      <td className="px-5 py-3 text-gray-700">{order.customer_name ?? '—'}</td>
-                      <td className="px-5 py-3 text-right font-mono text-gray-700">${order.total.toLocaleString()} {order.currency}</td>
+                      <td className="px-5 py-3 text-foreground">{order.customer_name ?? '—'}</td>
+                      <td className="px-5 py-3 text-right font-mono text-foreground">${order.total.toLocaleString()} {order.currency}</td>
                       <td className="px-5 py-3">
                         {order.cufe ? (
                           <div className="flex items-center gap-1.5">
-                            <span className="font-mono text-xs text-gray-500" title={order.cufe}>
+                            <span className="font-mono text-xs text-muted-foreground" title={order.cufe}>
                               {order.cufe.slice(0, 20)}...
                             </span>
                             <button
                               onClick={() => copyCufe(order.cufe!)}
-                              className="text-gray-400 hover:text-primary transition"
+                              className="text-muted-foreground hover:text-primary transition"
                               title="Copiar CUFE completo"
                             >
                               {copiedCufe === order.cufe ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
@@ -192,7 +192,7 @@ export function EInvoicingSandboxPage() {
                           </div>
                         ) : '—'}
                       </td>
-                      <td className="px-5 py-3 text-gray-500 text-xs">
+                      <td className="px-5 py-3 text-muted-foreground text-xs">
                         {order.confirmed_at ? new Date(order.confirmed_at).toLocaleDateString() : '—'}
                       </td>
                       <td className="px-5 py-3">
@@ -206,7 +206,7 @@ export function EInvoicingSandboxPage() {
                         ) : order.credit_note_status === 'failed' ? (
                           <span className="inline-flex rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">Fallida</span>
                         ) : order.credit_note_status === 'pending' ? (
-                          <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">Pendiente</span>
+                          <span className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground">Pendiente</span>
                         ) : '—'}
                       </td>
                       <td className="px-5 py-3">
@@ -234,11 +234,11 @@ export function EInvoicingSandboxPage() {
           <div className="absolute inset-0 bg-gray-900/50" onClick={() => setShowSimModal(false)} />
           <div
             onClick={e => e.stopPropagation()}
-            className="relative w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-xl space-y-5"
+            className="relative w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl space-y-5"
           >
             <div>
-              <h3 className="text-lg font-semibold text-gray-800">Simular Factura Electrónica</h3>
-              <p className="text-sm text-gray-500 mt-1">Selecciona una Sales Order entregada sin CUFE para simular su factura.</p>
+              <h3 className="text-lg font-semibold text-foreground">Simular Factura Electrónica</h3>
+              <p className="text-sm text-muted-foreground mt-1">Selecciona una Sales Order entregada sin CUFE para simular su factura.</p>
             </div>
 
             {simResult ? (
@@ -247,10 +247,10 @@ export function EInvoicingSandboxPage() {
                   Simulación exitosa
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase mb-1">CUFE Generado</p>
-                  <p className="text-xs font-mono text-gray-600 break-all bg-gray-50 rounded-lg p-3">{String(simResult.cufe ?? '')}</p>
+                  <p className="text-xs font-bold text-muted-foreground uppercase mb-1">CUFE Generado</p>
+                  <p className="text-xs font-mono text-muted-foreground break-all bg-muted rounded-lg p-3">{String(simResult.cufe ?? '')}</p>
                 </div>
-                <p className="text-xs text-gray-400 italic">{String(simResult.message ?? '')}</p>
+                <p className="text-xs text-muted-foreground italic">{String(simResult.message ?? '')}</p>
                 <button
                   onClick={() => setShowSimModal(false)}
                   className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary"
@@ -261,7 +261,7 @@ export function EInvoicingSandboxPage() {
             ) : (
               <div className="space-y-4">
                 {uninvoicedOrders.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-4">No hay Sales Orders entregadas sin factura.</p>
+                  <p className="text-sm text-muted-foreground text-center py-4">No hay Sales Orders entregadas sin factura.</p>
                 ) : (
                   <div className="max-h-60 overflow-y-auto space-y-1.5">
                     {uninvoicedOrders.map(o => (
@@ -272,11 +272,11 @@ export function EInvoicingSandboxPage() {
                           'w-full text-left rounded-lg border px-4 py-3 text-sm transition',
                           selectedSO?.id === o.id
                             ? 'border-primary/70 bg-primary/10 text-primary'
-                            : 'border-gray-200 hover:bg-gray-50 text-gray-700',
+                            : 'border-border hover:bg-muted text-foreground',
                         )}
                       >
                         <span className="font-medium">{o.order_number}</span>
-                        <span className="text-gray-400 ml-2">— {o.customer_name ?? 'Sin nombre'}</span>
+                        <span className="text-muted-foreground ml-2">— {o.customer_name ?? 'Sin nombre'}</span>
                         <span className="float-right font-mono">${o.total.toLocaleString()}</span>
                       </button>
                     ))}
@@ -287,14 +287,14 @@ export function EInvoicingSandboxPage() {
                   <button
                     type="button"
                     onClick={() => setShowSimModal(false)}
-                    className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                    className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted"
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={handleSimulate}
                     disabled={!selectedSO || createInvoiceMut.isPending}
-                    className="rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-amber-600 disabled:opacity-50 flex items-center gap-2"
+                    className="rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-medium text-white  transition hover:bg-amber-600 disabled:opacity-50 flex items-center gap-2"
                   >
                     <RefreshCw className={cn('h-4 w-4', createInvoiceMut.isPending && 'animate-spin')} />
                     {createInvoiceMut.isPending ? 'Simulando...' : 'Simular'}

@@ -14,25 +14,25 @@ export function ConfigSectionPage() {
   return (
     <div className="p-8 space-y-6 max-w-5xl mx-auto">
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-1.5 text-xs text-slate-400">
-        <Link to="/inventario/configuracion" className="hover:text-slate-600 transition-colors">Configuración</Link>
+      <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Link to="/inventario/configuracion" className="hover:text-muted-foreground transition-colors">Configuración</Link>
         <ChevronRight className="h-3 w-3" />
-        <span className="text-slate-700 font-medium">{sectionConfig.label}</span>
+        <span className="text-foreground font-medium">{sectionConfig.label}</span>
       </nav>
 
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100">
-          <sectionConfig.icon className="h-5 w-5 text-slate-600" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
+          <sectionConfig.icon className="h-5 w-5 text-muted-foreground" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-slate-900">{sectionConfig.label}</h1>
-          <p className="text-sm text-slate-500">{sectionConfig.description}</p>
+          <h1 className="text-xl font-bold text-foreground">{sectionConfig.label}</h1>
+          <p className="text-sm text-muted-foreground">{sectionConfig.description}</p>
         </div>
       </div>
 
       {/* Content */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <div className="bg-card rounded-2xl border border-border  p-6">
         {component}
       </div>
     </div>

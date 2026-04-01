@@ -33,7 +33,7 @@ export default function MRPPage() {
     } catch (e: any) { toast.error(e.message) }
   }
 
-  const inputCls = "w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gray-900/10"
+  const inputCls = "w-full bg-muted border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:bg-card focus:ring-2 focus:ring-gray-900/10"
 
   return (
     <div className="space-y-6">
@@ -41,33 +41,33 @@ export default function MRPPage() {
         <Search className="h-6 w-6 text-indigo-600" />
         <div>
           <h1 className="text-2xl font-bold">MRP — Planificacion de Necesidades</h1>
-          <p className="text-sm text-gray-500">Explota la BOM, verifica stock y genera sugerencias de compra</p>
+          <p className="text-sm text-muted-foreground">Explota la BOM, verifica stock y genera sugerencias de compra</p>
         </div>
       </div>
 
       {/* Form */}
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-card rounded-xl border p-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="text-xs text-gray-500">Receta *</label>
+            <label className="text-xs text-muted-foreground">Receta *</label>
             <select value={form.recipe_id} onChange={e => setForm(f => ({...f, recipe_id: e.target.value}))} className={inputCls}>
               <option value="">Seleccionar...</option>
               {recipes.filter(r => r.is_active).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-500">Cantidad a producir *</label>
+            <label className="text-xs text-muted-foreground">Cantidad a producir *</label>
             <input type="number" min="1" step="1" value={form.quantity} onChange={e => setForm(f => ({...f, quantity: e.target.value}))} className={inputCls} />
           </div>
           <div>
-            <label className="text-xs text-gray-500">Bodega *</label>
+            <label className="text-xs text-muted-foreground">Bodega *</label>
             <select value={form.warehouse_id} onChange={e => setForm(f => ({...f, warehouse_id: e.target.value}))} className={inputCls}>
               <option value="">Seleccionar...</option>
               {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
           </div>
           <div className="flex items-end gap-3">
-            <label className="flex items-center gap-2 text-sm text-gray-600 pb-2">
+            <label className="flex items-center gap-2 text-sm text-muted-foreground pb-2">
               <input type="checkbox" checked={form.auto_create_po} onChange={e => setForm(f => ({...f, auto_create_po: e.target.checked}))} className="rounded" />
               Auto-crear OC
             </label>
@@ -84,16 +84,16 @@ export default function MRPPage() {
         <div className="space-y-4">
           {/* Summary */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl border p-4">
-              <p className="text-xs text-gray-400 mb-1">Receta</p>
+            <div className="bg-card rounded-xl border p-4">
+              <p className="text-xs text-muted-foreground mb-1">Receta</p>
               <p className="text-lg font-bold">{result.recipe_name}</p>
             </div>
-            <div className="bg-white rounded-xl border p-4">
-              <p className="text-xs text-gray-400 mb-1">Cantidad a producir</p>
+            <div className="bg-card rounded-xl border p-4">
+              <p className="text-xs text-muted-foreground mb-1">Cantidad a producir</p>
               <p className="text-lg font-bold">{result.output_quantity}</p>
             </div>
-            <div className="bg-white rounded-xl border p-4">
-              <p className="text-xs text-gray-400 mb-1">Costo estimado total</p>
+            <div className="bg-card rounded-xl border p-4">
+              <p className="text-xs text-muted-foreground mb-1">Costo estimado total</p>
               <p className="text-lg font-bold text-indigo-600">${Number(result.total_estimated_cost).toLocaleString('es-CO')}</p>
             </div>
           </div>
@@ -111,14 +111,14 @@ export default function MRPPage() {
 
           {/* Make suggestions (sub-assemblies) */}
           {result.make_suggestions.length > 0 && (
-            <div className="bg-white rounded-xl border overflow-hidden">
+            <div className="bg-card rounded-xl border overflow-hidden">
               <div className="px-4 py-3 bg-purple-50 border-b flex items-center gap-2">
                 <Factory className="h-4 w-4 text-purple-600" />
                 <span className="text-sm font-bold text-purple-800">Sub-ensambles a fabricar</span>
                 <span className="text-xs text-purple-500">({result.make_suggestions.length} componentes tienen su propia BOM)</span>
               </div>
               <table className="w-full text-sm">
-                <thead><tr className="bg-gray-50 border-b text-xs text-gray-500 uppercase">
+                <thead><tr className="bg-muted border-b text-xs text-muted-foreground uppercase">
                   <th className="px-4 py-3 text-left">Componente</th>
                   <th className="px-4 py-3 text-left">Receta</th>
                   <th className="px-4 py-3 text-right">Requerido</th>
@@ -141,7 +141,7 @@ export default function MRPPage() {
           )}
 
           {/* Buy Lines (materials to purchase) */}
-          <div className="bg-white rounded-xl border overflow-hidden">
+          <div className="bg-card rounded-xl border overflow-hidden">
             {result.lines.length > 0 && (
               <div className="px-4 py-3 bg-blue-50 border-b flex items-center gap-2">
                 <ShoppingCart className="h-4 w-4 text-blue-600" />
@@ -149,7 +149,7 @@ export default function MRPPage() {
               </div>
             )}
             <table className="w-full text-sm">
-              <thead><tr className="bg-gray-50 border-b text-xs text-gray-500 uppercase">
+              <thead><tr className="bg-muted border-b text-xs text-muted-foreground uppercase">
                 <th className="px-4 py-3 text-left">Componente</th>
                 <th className="px-4 py-3 text-right">Requerido</th>
                 <th className="px-4 py-3 text-right">Disponible</th>
@@ -168,7 +168,7 @@ export default function MRPPage() {
                       <td className="px-4 py-2.5 text-right font-mono">{Number(line.available_qty).toFixed(2)}</td>
                       <td className="px-4 py-2.5 text-right font-mono font-bold">{shortage > 0 ? shortage.toFixed(2) : '—'}</td>
                       <td className="px-4 py-2.5 text-right font-mono">{shortage > 0 ? Number(line.suggested_order_qty).toFixed(2) : '—'}</td>
-                      <td className="px-4 py-2.5 text-right font-mono text-gray-500">${Number(line.estimated_unit_cost).toFixed(2)}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">${Number(line.estimated_unit_cost).toFixed(2)}</td>
                       <td className="px-4 py-2.5 text-center">
                         {shortage > 0 ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700">

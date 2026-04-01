@@ -29,7 +29,7 @@ const REPORTS: ReportDef[] = [
     desc: 'Reporte ejecutivo de P&L con graficas y analisis por producto',
     icon: TrendingUp,
     gradient: 'from-primary to-violet-500',
-    iconBg: 'bg-white/20',
+    iconBg: 'bg-card/20',
     hasDateFilter: true,
     format: 'pdf',
   },
@@ -39,7 +39,7 @@ const REPORTS: ReportDef[] = [
     desc: 'Datos de compras, ventas y utilidad en formato tabular',
     icon: TrendingUp,
     gradient: 'from-violet-500 to-purple-500',
-    iconBg: 'bg-white/20',
+    iconBg: 'bg-card/20',
     hasDateFilter: true,
     format: 'zip',
   },
@@ -49,7 +49,7 @@ const REPORTS: ReportDef[] = [
     desc: 'Todo tu catalogo con precios, categorias y stock',
     icon: Box,
     gradient: 'from-blue-500 to-cyan-500',
-    iconBg: 'bg-white/20',
+    iconBg: 'bg-card/20',
     hasDateFilter: false,
     format: 'csv',
   },
@@ -59,7 +59,7 @@ const REPORTS: ReportDef[] = [
     desc: 'Niveles de stock por producto y bodega en tiempo real',
     icon: Warehouse,
     gradient: 'from-emerald-500 to-teal-500',
-    iconBg: 'bg-white/20',
+    iconBg: 'bg-card/20',
     hasDateFilter: false,
     format: 'csv',
   },
@@ -69,7 +69,7 @@ const REPORTS: ReportDef[] = [
     desc: 'Entradas, salidas, transferencias y ajustes',
     icon: ArrowLeftRight,
     gradient: 'from-amber-500 to-orange-500',
-    iconBg: 'bg-white/20',
+    iconBg: 'bg-card/20',
     hasDateFilter: true,
     format: 'csv',
   },
@@ -79,7 +79,7 @@ const REPORTS: ReportDef[] = [
     desc: 'OC con proveedor, estado, lineas y totales',
     icon: ShoppingCart,
     gradient: 'from-teal-500 to-emerald-500',
-    iconBg: 'bg-white/20',
+    iconBg: 'bg-card/20',
     hasDateFilter: true,
     format: 'csv',
   },
@@ -89,7 +89,7 @@ const REPORTS: ReportDef[] = [
     desc: 'Proveedores y clientes con contacto y condiciones',
     icon: Users2,
     gradient: 'from-pink-500 to-rose-500',
-    iconBg: 'bg-white/20',
+    iconBg: 'bg-card/20',
     hasDateFilter: false,
     format: 'csv',
   },
@@ -99,7 +99,7 @@ const REPORTS: ReportDef[] = [
     desc: 'Incidentes con severidad, estado e impactos',
     icon: Zap,
     gradient: 'from-red-500 to-orange-500',
-    iconBg: 'bg-white/20',
+    iconBg: 'bg-card/20',
     hasDateFilter: true,
     format: 'csv',
     feature: 'eventos',
@@ -110,7 +110,7 @@ const REPORTS: ReportDef[] = [
     desc: 'Numeros de serie con estado y ubicacion',
     icon: Fingerprint,
     gradient: 'from-cyan-500 to-blue-500',
-    iconBg: 'bg-white/20',
+    iconBg: 'bg-card/20',
     hasDateFilter: false,
     format: 'csv',
     feature: 'seriales',
@@ -121,7 +121,7 @@ const REPORTS: ReportDef[] = [
     desc: 'Lotes con fechas de fabricacion y vencimiento',
     icon: Grid3x3,
     gradient: 'from-purple-500 to-primary',
-    iconBg: 'bg-white/20',
+    iconBg: 'bg-card/20',
     hasDateFilter: false,
     format: 'csv',
     feature: 'lotes',
@@ -161,7 +161,7 @@ function ReportCard({ report }: { report: ReportDef }) {
   const fmt = FORMAT_LABELS[report.format]
 
   return (
-    <div className="group relative bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
+    <div className="group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-lg hover:border-border transition-all duration-300">
       {/* Gradient accent top */}
       <div className={cn('h-1 bg-gradient-to-r', report.gradient)} />
 
@@ -175,13 +175,13 @@ function ReportCard({ report }: { report: ReportDef }) {
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="text-[15px] font-semibold text-gray-900 tracking-tight">{report.label}</h3>
-              <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 bg-gray-100 rounded-md px-1.5 py-0.5 uppercase">
+              <h3 className="text-[15px] font-semibold text-foreground tracking-tight">{report.label}</h3>
+              <span className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground bg-secondary rounded-md px-1.5 py-0.5 uppercase">
                 <fmt.icon className="h-3 w-3" />
                 {fmt.label}
               </span>
             </div>
-            <p className="text-[13px] text-gray-500 mt-0.5 leading-relaxed">{report.desc}</p>
+            <p className="text-[13px] text-muted-foreground mt-0.5 leading-relaxed">{report.desc}</p>
 
             {/* Date filters */}
             {report.hasDateFilter && (
@@ -190,14 +190,14 @@ function ReportCard({ report }: { report: ReportDef }) {
                   type="date"
                   value={dateFrom}
                   onChange={e => setDateFrom(e.target.value)}
-                  className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none"
+                  className="flex-1 bg-muted border border-border rounded-lg px-2.5 py-1.5 text-xs focus:bg-card focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none"
                 />
                 <span className="text-gray-300 text-xs">—</span>
                 <input
                   type="date"
                   value={dateTo}
                   onChange={e => setDateTo(e.target.value)}
-                  className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none"
+                  className="flex-1 bg-muted border border-border rounded-lg px-2.5 py-1.5 text-xs focus:bg-card focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none"
                 />
               </div>
             )}
@@ -212,8 +212,8 @@ function ReportCard({ report }: { report: ReportDef }) {
               status === 'done'
                 ? 'bg-emerald-500 text-white scale-110'
                 : status === 'loading'
-                ? 'bg-gray-100 text-gray-400'
-                : 'bg-gray-100 text-gray-500 hover:bg-gray-900 hover:text-white hover:scale-105',
+                ? 'bg-secondary text-muted-foreground'
+                : 'bg-secondary text-muted-foreground hover:bg-gray-900 hover:text-white hover:scale-105',
             )}
           >
             {status === 'loading' ? (
@@ -241,8 +241,8 @@ export function InventoryReportsPage() {
     <div className="space-y-8 max-w-5xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Reportes</h1>
-        <p className="text-[15px] text-gray-500 mt-1">Descarga los datos de tu inventario en un click</p>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Reportes</h1>
+        <p className="text-[15px] text-muted-foreground mt-1">Descarga los datos de tu inventario en un click</p>
       </div>
 
       {/* Featured reports — larger cards */}
@@ -257,7 +257,7 @@ export function InventoryReportsPage() {
       {/* Standard reports grid */}
       {standard.length > 0 && (
       <div>
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Datos operativos</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Datos operativos</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {standard.map(report => (
             <ReportCard key={report.id} report={report} />

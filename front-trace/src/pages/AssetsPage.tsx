@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Plus, Search, RefreshCw, Package, Sparkles, ExternalLink, ChevronRight } from 'lucide-react'
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/button'
-import { Spinner, EmptyState } from '@/components/ui/Misc'
+import { Spinner, EmptyState } from '@/components/ui/misc'
 import { StateBadge, BlockchainStatusBadge } from '@/components/domain-badges'
 import { CreateAssetModal } from '@/components/assets/CreateAssetModal'
 import { MintNFTModal } from '@/components/assets/MintNFTModal'
@@ -14,7 +14,7 @@ import { useWorkflowStates } from '@/hooks/useWorkflow'
 import { shortPubkey, fmtDateShort } from '@/lib/utils'
 import type { Asset, AssetState } from '@/types/api'
 
-const fieldCls = 'rounded-xl border border-white/60 bg-white/50 backdrop-blur-md px-4 py-2.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 hover:bg-white/70 hover:border-primary/50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-ring/20 focus:outline-none transition-all shadow-sm'
+const fieldCls = 'rounded-xl border border-white/60 bg-card/50 backdrop-blur-md px-4 py-2.5 text-sm font-medium text-foreground placeholder:text-muted-foreground hover:bg-card/70 hover:border-primary/50 focus:bg-card focus:border-primary focus:ring-2 focus:ring-ring/20 focus:outline-none transition-all '
 
 export function AssetsPage() {
   const [searchParams] = useSearchParams()
@@ -96,7 +96,7 @@ export function AssetsPage() {
         {/* Filters */}
         <div className="flex gap-3 mb-6 flex-wrap">
           <div className="relative flex-1 min-w-48 max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <input
               type="text"
               placeholder="Buscar por nombre, producto o custodio…"
@@ -142,17 +142,17 @@ export function AssetsPage() {
             }
           />
         ) : (
-          <div className="bg-white rounded-xl border overflow-hidden shadow-sm">
+          <div className="bg-card rounded-xl border overflow-hidden ">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-muted">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Carga</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cantidad</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Custodio</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Blockchain</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Carga</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Producto</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Cantidad</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Custodio</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Estado</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Blockchain</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Fecha</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -162,28 +162,28 @@ export function AssetsPage() {
                   const weight = getWeight(asset)
 
                   return (
-                    <tr key={asset.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={asset.id} className="hover:bg-muted transition-colors">
                       <td className="px-4 py-3">
                         <Link to={`/assets/${asset.id}`} className="flex items-center gap-3 group">
                           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 shrink-0">
                             <Package className="h-4 w-4 text-primary" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-gray-900 truncate max-w-48 group-hover:text-primary transition-colors">
+                            <p className="text-sm font-semibold text-foreground truncate max-w-48 group-hover:text-primary transition-colors">
                               {cargoName || shortPubkey(asset.asset_mint)}
                             </p>
-                            <p className="text-xs text-gray-400 font-mono">{shortPubkey(asset.asset_mint)}</p>
+                            <p className="text-xs text-muted-foreground font-mono">{shortPubkey(asset.asset_mint)}</p>
                           </div>
                         </Link>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-700 font-medium">{asset.product_type}</span>
+                        <span className="text-sm text-foreground font-medium">{asset.product_type}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-600">{weight || '—'}</span>
+                        <span className="text-sm text-muted-foreground">{weight || '—'}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-700">{getCustodianLabel(asset.current_custodian_wallet)}</span>
+                        <span className="text-sm text-foreground">{getCustodianLabel(asset.current_custodian_wallet)}</span>
                       </td>
                       <td className="px-4 py-3">
                         <StateBadge state={asset.state} />
@@ -192,11 +192,11 @@ export function AssetsPage() {
                         <BlockchainStatusBadge status={asset.blockchain_status} />
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-xs text-gray-500">{fmtDateShort(asset.updated_at)}</span>
+                        <span className="text-xs text-muted-foreground">{fmtDateShort(asset.updated_at)}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <Link to={`/assets/${asset.id}`} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
-                          <ChevronRight className="h-4 w-4 text-gray-400" />
+                        <Link to={`/assets/${asset.id}`} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-secondary transition-colors">
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         </Link>
                       </td>
                     </tr>

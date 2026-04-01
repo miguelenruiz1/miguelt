@@ -54,7 +54,7 @@ def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
 
-    app = FastAPI(
+    app = FastAPI(redirect_slashes=False, 
         title="Trace - AI Service",
         description="Centralized AI analysis, memory, and configuration for all Trace modules.",
         version=settings.APP_VERSION,

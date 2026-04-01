@@ -14,14 +14,14 @@ export default function ReceiptsPage() {
         <PackageCheck className="h-6 w-6 text-emerald-600" />
         <div>
           <h1 className="text-2xl font-bold">Recibos de Produccion</h1>
-          <p className="text-sm text-gray-500">Historial de productos terminados recibidos</p>
+          <p className="text-sm text-muted-foreground">Historial de productos terminados recibidos</p>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="text-center py-16"><Loader2 className="h-6 w-6 animate-spin mx-auto text-gray-400" /></div>
+        <div className="text-center py-16"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>
       ) : runsWithReceipts.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">Sin recibos registrados — recibe productos desde una orden en produccion</div>
+        <div className="text-center py-16 text-muted-foreground">Sin recibos registrados — recibe productos desde una orden en produccion</div>
       ) : (
         <div className="space-y-3">
           {runsWithReceipts.map(run => (
@@ -38,13 +38,13 @@ function RunReceiptsCard({ runId, runNumber, onNavigate }: { runId: string; runN
   if (!receipts || receipts.length === 0) return null
 
   return (
-    <div className="bg-white rounded-xl border overflow-hidden">
-      <div className="px-4 py-3 bg-gray-50 border-b">
+    <div className="bg-card rounded-xl border overflow-hidden">
+      <div className="px-4 py-3 bg-muted border-b">
         <button onClick={onNavigate} className="text-sm font-bold text-primary hover:underline">{runNumber}</button>
-        <span className="text-xs text-gray-400 ml-2">{receipts.length} recibo{receipts.length !== 1 ? 's' : ''}</span>
+        <span className="text-xs text-muted-foreground ml-2">{receipts.length} recibo{receipts.length !== 1 ? 's' : ''}</span>
       </div>
       <table className="w-full text-xs">
-        <thead><tr className="text-gray-400 border-b">
+        <thead><tr className="text-muted-foreground border-b">
           <th className="px-4 py-2 text-left"># Recibo</th>
           <th className="px-4 py-2 text-left">Fecha</th>
           <th className="px-4 py-2 text-right">Cantidad</th>
@@ -55,9 +55,9 @@ function RunReceiptsCard({ runId, runNumber, onNavigate }: { runId: string; runN
         <tbody>
           {receipts.map(rc => (
             rc.lines.map(l => (
-              <tr key={l.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+              <tr key={l.id} className="border-b border-gray-50 hover:bg-muted/50">
                 <td className="px-4 py-2 font-mono font-medium">{rc.receipt_number}</td>
-                <td className="px-4 py-2 text-gray-500">{new Date(rc.receipt_date).toLocaleString('es-CO')}</td>
+                <td className="px-4 py-2 text-muted-foreground">{new Date(rc.receipt_date).toLocaleString('es-CO')}</td>
                 <td className="px-4 py-2 text-right font-mono font-bold">{l.received_quantity}</td>
                 <td className="px-4 py-2 text-right font-mono">${Number(l.unit_cost).toFixed(4)}</td>
                 <td className="px-4 py-2 text-right font-mono">${Number(l.total_cost).toLocaleString('es-CO')}</td>

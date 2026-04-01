@@ -30,14 +30,14 @@ export function ForgotPasswordPage() {
   const onSubmit = (data: FormData) => mutation.mutate(data.email)
 
   return (
-    <div className="relative bg-white">
+    <div className="relative bg-card">
       <div className="relative flex flex-col justify-center w-full min-h-screen lg:h-screen lg:flex-row">
         {/* Left — form */}
         <div className="flex flex-col flex-1 px-5 sm:px-6 lg:px-0">
           <div className="w-full max-w-md pt-8 sm:pt-10 mx-auto">
             <Link
               to="/login"
-              className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700"
+              className="inline-flex items-center text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <ChevronLeft className="h-5 w-5" />
               Volver al login
@@ -51,15 +51,15 @@ export function ForgotPasswordPage() {
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 mx-auto mb-5">
                     <Mail className="h-7 w-7 text-primary" />
                   </div>
-                  <h1 className="mb-2 text-2xl font-semibold text-gray-800 sm:text-3xl">
+                  <h1 className="mb-2 text-2xl font-semibold text-foreground sm:text-3xl">
                     Revisa tu correo
                   </h1>
-                  <p className="text-sm text-gray-500 mb-8 max-w-xs mx-auto">
+                  <p className="text-sm text-muted-foreground mb-8 max-w-xs mx-auto">
                     Si el correo existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.
                   </p>
                   <Link
                     to="/login"
-                    className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-primary"
+                    className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white  transition hover:bg-primary"
                   >
                     Volver al login
                   </Link>
@@ -67,10 +67,10 @@ export function ForgotPasswordPage() {
               ) : (
                 <>
                   <div className="mb-5 sm:mb-8">
-                    <h1 className="mb-2 text-2xl font-semibold text-gray-800 sm:text-3xl">
+                    <h1 className="mb-2 text-2xl font-semibold text-foreground sm:text-3xl">
                       ¿Olvidaste tu contraseña?
                     </h1>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                       Ingresa tu email y te enviaremos un enlace para restablecerla.
                     </p>
                   </div>
@@ -78,7 +78,7 @@ export function ForgotPasswordPage() {
                   <form onSubmit={handleSubmit(onSubmit)}>
                     <div className="space-y-6">
                       <div>
-                        <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        <label className="mb-1.5 block text-sm font-medium text-foreground">
                           Email <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -86,7 +86,7 @@ export function ForgotPasswordPage() {
                           type="email"
                           autoComplete="email"
                           placeholder="tu@email.com"
-                          className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20"
+                          className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-foreground  placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20"
                         />
                         {errors.email && <p className="mt-1.5 text-xs text-red-500">{errors.email.message}</p>}
                       </div>
@@ -101,7 +101,7 @@ export function ForgotPasswordPage() {
                         <button
                           type="submit"
                           disabled={mutation.isPending}
-                          className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white  transition hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {mutation.isPending ? 'Enviando...' : 'Enviar enlace'}
                         </button>
@@ -148,7 +148,7 @@ export function ForgotPasswordPage() {
               <h2 className="text-2xl font-bold text-white mb-3">
                 Trace<span className="font-medium text-primary/50">Log</span>
               </h2>
-              <p className="text-center text-gray-400">
+              <p className="text-center text-muted-foreground">
                 Recupera el acceso a tu cuenta de forma segura.
               </p>
             </div>

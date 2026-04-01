@@ -73,13 +73,14 @@ async def create_movement_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.create_movement_type(tenant_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.movement_type.create", resource_type="config",
         resource_id=result.id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.patch("/movement-types/{type_id}", response_model=MovementTypeOut)
@@ -93,13 +94,14 @@ async def update_movement_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.update_movement_type(tenant_id, type_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.movement_type.update", resource_type="config",
         resource_id=type_id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.delete("/movement-types/{type_id}", status_code=204)
@@ -112,13 +114,14 @@ async def delete_movement_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete_movement_type(tenant_id, type_id)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.movement_type.delete", resource_type="config",
         resource_id=type_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
 
 
 # ── Warehouse Types ──────────────────────────────────────────────────────────
@@ -145,13 +148,14 @@ async def create_warehouse_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.create_warehouse_type(tenant_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.warehouse_type.create", resource_type="config",
         resource_id=result.id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.patch("/warehouse-types/{type_id}", response_model=WarehouseTypeOut)
@@ -165,13 +169,14 @@ async def update_warehouse_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.update_warehouse_type(tenant_id, type_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.warehouse_type.update", resource_type="config",
         resource_id=type_id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.delete("/warehouse-types/{type_id}", status_code=204)
@@ -184,13 +189,14 @@ async def delete_warehouse_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete_warehouse_type(tenant_id, type_id)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.warehouse_type.delete", resource_type="config",
         resource_id=type_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
 
 
 # ── Locations ────────────────────────────────────────────────────────────────
@@ -218,13 +224,14 @@ async def create_location(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.create_location(tenant_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.location.create", resource_type="config",
         resource_id=result.id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.post("/locations/bulk", response_model=list[LocationOut], status_code=201)
@@ -241,7 +248,7 @@ async def bulk_create_locations(
         from fastapi import HTTPException
         raise HTTPException(status_code=400, detail="Max 500 locations per bulk request")
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     results = []
     for loc in body:
         result = await svc.create_location(tenant_id, loc.model_dump())
@@ -251,6 +258,7 @@ async def bulk_create_locations(
         action="inventory.config.location.bulk_create", resource_type="config",
         resource_id="bulk", new_data={"count": len(results)}, ip_address=_ip(request),
     )
+    await svc.db.commit()
     return results
 
 
@@ -265,13 +273,14 @@ async def update_location(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.update_location(tenant_id, location_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.location.update", resource_type="config",
         resource_id=location_id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.delete("/locations/{location_id}", status_code=204)
@@ -284,13 +293,14 @@ async def delete_location(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete_location(tenant_id, location_id)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.location.delete", resource_type="config",
         resource_id=location_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
 
 
 # ── Event Types ──────────────────────────────────────────────────────────────
@@ -317,13 +327,14 @@ async def create_event_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.create_event_type(tenant_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.event_type.create", resource_type="config",
         resource_id=result.id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.patch("/event-types/{type_id}", response_model=EventTypeOut)
@@ -337,13 +348,14 @@ async def update_event_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.update_event_type(tenant_id, type_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.event_type.update", resource_type="config",
         resource_id=type_id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.delete("/event-types/{type_id}", status_code=204)
@@ -356,13 +368,14 @@ async def delete_event_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete_event_type(tenant_id, type_id)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.event_type.delete", resource_type="config",
         resource_id=type_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
 
 
 # ── Event Severities ────────────────────────────────────────────────────────
@@ -389,13 +402,14 @@ async def create_event_severity(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.create_event_severity(tenant_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.event_severity.create", resource_type="config",
         resource_id=result.id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.patch("/event-severities/{sev_id}", response_model=EventSeverityOut)
@@ -409,13 +423,14 @@ async def update_event_severity(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.update_event_severity(tenant_id, sev_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.event_severity.update", resource_type="config",
         resource_id=sev_id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.delete("/event-severities/{sev_id}", status_code=204)
@@ -428,13 +443,14 @@ async def delete_event_severity(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete_event_severity(tenant_id, sev_id)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.event_severity.delete", resource_type="config",
         resource_id=sev_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
 
 
 # ── Event Statuses ──────────────────────────────────────────────────────────
@@ -461,13 +477,14 @@ async def create_event_status(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.create_event_status(tenant_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.event_status.create", resource_type="config",
         resource_id=result.id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.patch("/event-statuses/{status_id}", response_model=EventStatusOut)
@@ -481,13 +498,14 @@ async def update_event_status(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.update_event_status(tenant_id, status_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.event_status.update", resource_type="config",
         resource_id=status_id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.delete("/event-statuses/{status_id}", status_code=204)
@@ -500,13 +518,14 @@ async def delete_event_status(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete_event_status(tenant_id, status_id)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.event_status.delete", resource_type="config",
         resource_id=status_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
 
 
 # ── Serial Statuses ─────────────────────────────────────────────────────────
@@ -533,13 +552,14 @@ async def create_serial_status(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.create_serial_status(tenant_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.serial_status.create", resource_type="config",
         resource_id=result.id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.patch("/serial-statuses/{status_id}", response_model=SerialStatusOut)
@@ -553,13 +573,14 @@ async def update_serial_status(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.update_serial_status(tenant_id, status_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.serial_status.update", resource_type="config",
         resource_id=status_id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.delete("/serial-statuses/{status_id}", status_code=204)
@@ -572,13 +593,14 @@ async def delete_serial_status(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete_serial_status(tenant_id, status_id)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.serial_status.delete", resource_type="config",
         resource_id=status_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
 
 
 # ── Product Types ─────────────────────────────────────────────────────────────
@@ -604,13 +626,14 @@ async def create_product_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.create_product_type(tenant_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.product_type.create", resource_type="config",
         resource_id=result.id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.patch("/product-types/{type_id}", response_model=ProductTypeOut)
@@ -624,13 +647,14 @@ async def update_product_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.update_product_type(tenant_id, type_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.product_type.update", resource_type="config",
         resource_id=type_id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.delete("/product-types/{type_id}", status_code=204)
@@ -640,16 +664,16 @@ async def delete_product_type(
     _: Annotated[dict, Depends(require_permission("inventory.config"))],
     request: Request,
     svc: ConfigService = Depends(_svc),
-    db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete_product_type(tenant_id, type_id)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.product_type.delete", resource_type="config",
         resource_id=type_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
 
 
 # ── Order Types ──────────────────────────────────────────────────────────────
@@ -675,13 +699,14 @@ async def create_order_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.create_order_type(tenant_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.order_type.create", resource_type="config",
         resource_id=result.id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.patch("/order-types/{type_id}", response_model=OrderTypeOut)
@@ -695,13 +720,14 @@ async def update_order_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.update_order_type(tenant_id, type_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.order_type.update", resource_type="config",
         resource_id=type_id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.delete("/order-types/{type_id}", status_code=204)
@@ -714,13 +740,14 @@ async def delete_order_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete_order_type(tenant_id, type_id)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.order_type.delete", resource_type="config",
         resource_id=type_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
 
 
 # ── Custom Fields ─────────────────────────────────────────────────────────────
@@ -748,13 +775,14 @@ async def create_custom_field(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.create_custom_field(tenant_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.custom_field.create", resource_type="config",
         resource_id=result.id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.patch("/custom-fields/{field_id}", response_model=CustomFieldOut)
@@ -768,13 +796,14 @@ async def update_custom_field(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.update_custom_field(tenant_id, field_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.custom_field.update", resource_type="config",
         resource_id=field_id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.delete("/custom-fields/{field_id}", status_code=204)
@@ -787,13 +816,14 @@ async def delete_custom_field(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete_custom_field(tenant_id, field_id)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.custom_field.delete", resource_type="config",
         resource_id=field_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
 
 
 # ── Supplier Types ────────────────────────────────────────────────────────────
@@ -819,13 +849,14 @@ async def create_supplier_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.create_supplier_type(tenant_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.supplier_type.create", resource_type="config",
         resource_id=result.id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.patch("/supplier-types/{type_id}", response_model=SupplierTypeOut)
@@ -839,13 +870,14 @@ async def update_supplier_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.update_supplier_type(tenant_id, type_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.supplier_type.update", resource_type="config",
         resource_id=type_id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.delete("/supplier-types/{type_id}", status_code=204)
@@ -858,13 +890,14 @@ async def delete_supplier_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete_supplier_type(tenant_id, type_id)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.supplier_type.delete", resource_type="config",
         resource_id=type_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
 
 
 # ── Custom Supplier Fields ───────────────────────────────────────────────────
@@ -892,13 +925,14 @@ async def create_supplier_field(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.create_supplier_field(tenant_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.supplier_field.create", resource_type="config",
         resource_id=result.id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.patch("/supplier-fields/{field_id}", response_model=CustomSupplierFieldOut)
@@ -912,13 +946,14 @@ async def update_supplier_field(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.update_supplier_field(tenant_id, field_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.supplier_field.update", resource_type="config",
         resource_id=field_id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.delete("/supplier-fields/{field_id}", status_code=204)
@@ -931,13 +966,14 @@ async def delete_supplier_field(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete_supplier_field(tenant_id, field_id)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.supplier_field.delete", resource_type="config",
         resource_id=field_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
 
 
 # ── Custom Warehouse Fields ─────────────────────────────────────────────────
@@ -965,13 +1001,14 @@ async def create_warehouse_field(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.create_warehouse_field(tenant_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.warehouse_field.create", resource_type="config",
         resource_id=result.id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.patch("/warehouse-fields/{field_id}", response_model=CustomWarehouseFieldOut)
@@ -985,13 +1022,14 @@ async def update_warehouse_field(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.update_warehouse_field(tenant_id, field_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.warehouse_field.update", resource_type="config",
         resource_id=field_id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.delete("/warehouse-fields/{field_id}", status_code=204)
@@ -1004,13 +1042,14 @@ async def delete_warehouse_field(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete_warehouse_field(tenant_id, field_id)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.warehouse_field.delete", resource_type="config",
         resource_id=field_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
 
 
 # ── Custom Movement Fields ──────────────────────────────────────────────────
@@ -1038,13 +1077,14 @@ async def create_movement_field(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.create_movement_field(tenant_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.movement_field.create", resource_type="config",
         resource_id=result.id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.patch("/movement-fields/{field_id}", response_model=CustomMovementFieldOut)
@@ -1058,13 +1098,14 @@ async def update_movement_field(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     result = await svc.update_movement_field(tenant_id, field_id, body.model_dump())
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.movement_field.update", resource_type="config",
         resource_id=field_id, new_data=body.model_dump(), ip_address=_ip(request),
     )
+    await svc.db.commit()
     return result
 
 @router.delete("/movement-fields/{field_id}", status_code=204)
@@ -1077,13 +1118,14 @@ async def delete_movement_field(
     db: AsyncSession = Depends(get_db_session),
 ):
     tenant_id = current_user.get("tenant_id", "default")
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete_movement_field(tenant_id, field_id)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.movement_field.delete", resource_type="config",
         resource_id=field_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
 
 
 # ─── SO Approval Threshold ─────────────────────────────────────────────────
@@ -1178,12 +1220,13 @@ async def update_margin_config(
     if "margin_cost_method_global" in body:
         config.margin_cost_method_global = body["margin_cost_method_global"]
     await db.flush()
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.margins.update", resource_type="config",
         resource_id=tenant_id, new_data=body, ip_address=_ip(request),
     )
+    await svc.db.commit()
     return {
         "tenant_id": tenant_id,
         "margin_target_global": float(config.margin_target_global) if config.margin_target_global is not None else 35.0,

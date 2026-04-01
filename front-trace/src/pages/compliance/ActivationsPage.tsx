@@ -5,7 +5,7 @@ import {
 } from '@/hooks/useCompliance'
 import { useConfirm } from '@/store/confirm'
 import { useToast } from '@/store/toast'
-import { DataTable, type Column } from '@/components/ui/DataTable'
+import { DataTable, type Column } from '@/components/ui/datatable'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
@@ -72,7 +72,7 @@ function EditDestinationsModal({
     >
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             Destinos de exportacion (separados por coma)
           </label>
           <input
@@ -82,7 +82,7 @@ function EditDestinationsModal({
             placeholder="EU, US, JP"
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-ring outline-none"
           />
-          <p className="mt-1 text-xs text-gray-400">Ej: EU, US, JP, IN</p>
+          <p className="mt-1 text-xs text-muted-foreground">Ej: EU, US, JP, IN</p>
         </div>
       </div>
     </Dialog>
@@ -136,7 +136,7 @@ export default function ActivationsPage() {
       header: 'Framework',
       sortable: true,
       render: (row) => (
-        <span className="font-medium text-gray-900">
+        <span className="font-medium text-foreground">
           {flagForSlug(row.framework_slug)}{frameworkName(row.framework_slug)}
         </span>
       ),
@@ -150,7 +150,7 @@ export default function ActivationsPage() {
             ? row.export_destination!.map((d) => (
                 <Badge key={d} variant="info">{d}</Badge>
               ))
-            : <span className="text-xs text-gray-400">Sin destinos</span>
+            : <span className="text-xs text-muted-foreground">Sin destinos</span>
           }
         </div>
       ),
@@ -160,7 +160,7 @@ export default function ActivationsPage() {
       header: 'Fecha activacion',
       sortable: true,
       render: (row) => (
-        <span className="text-sm text-gray-600 tabular-nums">
+        <span className="text-sm text-muted-foreground tabular-nums">
           {new Date(row.activated_at).toLocaleDateString('es-CO', {
             year: 'numeric', month: 'short', day: 'numeric',
           })}
@@ -183,14 +183,14 @@ export default function ActivationsPage() {
         <div className="flex items-center gap-1 justify-end">
           <button
             onClick={() => setEditingActivation(row)}
-            className="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-muted-foreground hover:bg-secondary transition-colors"
             title="Editar destinos"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => handleDeactivate(row.framework_slug)}
-            className="rounded-lg p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
             title="Desactivar"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -209,8 +209,8 @@ export default function ActivationsPage() {
             <ShieldCheck className="h-5 w-5 text-emerald-600" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Normas Activas</h1>
-            <p className="text-sm text-gray-500">Marcos normativos activados para tu organizacion</p>
+            <h1 className="text-lg font-semibold text-foreground">Normas Activas</h1>
+            <p className="text-sm text-muted-foreground">Marcos normativos activados para tu organizacion</p>
           </div>
         </div>
       </div>

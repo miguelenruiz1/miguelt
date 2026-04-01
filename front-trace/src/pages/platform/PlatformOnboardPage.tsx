@@ -75,28 +75,28 @@ export function PlatformOnboardPage() {
     }
   }
 
-  const inputCls = 'w-full px-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none'
+  const inputCls = 'w-full px-3 py-2.5 text-sm bg-card border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none'
 
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <Link to="/platform/tenants" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-primary mb-2">
+        <Link to="/platform/tenants" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-2">
           <ArrowLeft className="h-4 w-4" /> Empresas
         </Link>
-        <h1 className="text-2xl font-bold text-slate-900">Onboarding de Empresa</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Onboarding de Empresa</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Registra una nueva empresa con su administrador, plan y módulos.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Company + Tenant */}
-        <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+        <div className="bg-card rounded-2xl border border-border/60 p-6  space-y-4">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Building2 className="h-4 w-4 text-primary" /> Datos de la Empresa
           </h3>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Nombre de la empresa <span className="text-red-500">*</span>
             </label>
             <input
@@ -109,7 +109,7 @@ export function PlatformOnboardPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Tenant ID (slug) <span className="text-red-500">*</span>
             </label>
             <input
@@ -120,10 +120,10 @@ export function PlatformOnboardPage() {
               required
               className={cn(inputCls, 'font-mono')}
             />
-            <p className="text-xs text-slate-400 mt-1">Identificador único. Se genera automáticamente del nombre.</p>
+            <p className="text-xs text-muted-foreground mt-1">Identificador único. Se genera automáticamente del nombre.</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Notas (opcional)</label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Notas (opcional)</label>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
@@ -135,16 +135,16 @@ export function PlatformOnboardPage() {
         </div>
 
         {/* Admin user */}
-        <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+        <div className="bg-card rounded-2xl border border-border/60 p-6  space-y-4">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <User className="h-4 w-4 text-primary" /> Usuario Administrador
           </h3>
-          <p className="text-xs text-slate-400 -mt-2">
+          <p className="text-xs text-muted-foreground -mt-2">
             Se creará como primer usuario con rol Administrador.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-slate-600 mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Nombre completo <span className="text-red-500">*</span>
               </label>
               <input
@@ -157,7 +157,7 @@ export function PlatformOnboardPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Correo electrónico <span className="text-red-500">*</span>
               </label>
               <input
@@ -170,7 +170,7 @@ export function PlatformOnboardPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Contraseña <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -186,7 +186,7 @@ export function PlatformOnboardPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(p => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -196,8 +196,8 @@ export function PlatformOnboardPage() {
         </div>
 
         {/* Plan selection */}
-        <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+        <div className="bg-card rounded-2xl border border-border/60 p-6  space-y-4">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <CreditCard className="h-4 w-4 text-primary" /> Plan de Suscripción
           </h3>
           <div className="grid grid-cols-2 gap-3">
@@ -210,14 +210,14 @@ export function PlatformOnboardPage() {
                   'text-left rounded-xl border-2 p-4 transition',
                   planSlug === p.slug
                     ? 'border-primary bg-primary/5 ring-1 ring-ring/30'
-                    : 'border-slate-200 hover:border-slate-300',
+                    : 'border-border hover:border-slate-300',
                 )}
               >
-                <div className="text-sm font-semibold text-slate-900">{p.name}</div>
+                <div className="text-sm font-semibold text-foreground">{p.name}</div>
                 <div className="text-lg font-bold text-primary mt-1">
                   {p.price_monthly > 0 ? `$${p.price_monthly}/mes` : 'Gratis'}
                 </div>
-                <div className="text-xs text-slate-400 mt-1">
+                <div className="text-xs text-muted-foreground mt-1">
                   {p.max_users} usuarios, {p.max_assets} assets
                 </div>
                 {planSlug === p.slug && (
@@ -228,7 +228,7 @@ export function PlatformOnboardPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Ciclo de Facturación</label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Ciclo de Facturación</label>
             <div className="flex gap-2">
               {(['monthly', 'annual'] as const).map(c => (
                 <button
@@ -239,7 +239,7 @@ export function PlatformOnboardPage() {
                     'px-4 py-2 text-sm rounded-xl border-2 font-medium transition',
                     billingCycle === c
                       ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-slate-200 text-slate-600 hover:border-slate-300',
+                      : 'border-border text-muted-foreground hover:border-slate-300',
                   )}
                 >
                   {c === 'monthly' ? 'Mensual' : 'Anual'}
@@ -250,8 +250,8 @@ export function PlatformOnboardPage() {
         </div>
 
         {/* Module selection */}
-        <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+        <div className="bg-card rounded-2xl border border-border/60 p-6  space-y-4">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Layers className="h-4 w-4 text-primary" /> Módulos a Activar
           </h3>
           <div className="flex flex-wrap gap-3">
@@ -264,13 +264,13 @@ export function PlatformOnboardPage() {
                   'flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition',
                   modules.includes(m)
                     ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-slate-200 text-slate-600 hover:border-slate-300',
+                    : 'border-border text-muted-foreground hover:border-slate-300',
                 )}
               >
                 {modules.includes(m) ? (
                   <CheckCircle2 className="h-4 w-4 text-primary" />
                 ) : (
-                  <Plus className="h-4 w-4 text-slate-400" />
+                  <Plus className="h-4 w-4 text-muted-foreground" />
                 )}
                 <span>{MODULE_LABELS[m] ?? m}</span>
               </button>

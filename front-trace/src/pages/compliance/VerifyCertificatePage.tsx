@@ -87,14 +87,14 @@ export default function VerifyCertificatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-muted flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-6 py-4">
+      <header className="bg-card border-b border-border px-6 py-4">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
             <ShieldCheck className="h-5 w-5 text-white" />
           </div>
-          <span className="text-lg font-bold text-slate-900 tracking-tight">Trace</span>
+          <span className="text-lg font-bold text-foreground tracking-tight">Trace</span>
         </div>
       </header>
 
@@ -105,7 +105,7 @@ export default function VerifyCertificatePage() {
           {isLoading && activeNumber && (
             <div className="text-center py-16">
               <Loader2 className="h-10 w-10 text-primary mx-auto mb-4 animate-spin" />
-              <p className="text-sm text-slate-500">{t.verifying}</p>
+              <p className="text-sm text-muted-foreground">{t.verifying}</p>
             </div>
           )}
 
@@ -116,13 +116,13 @@ export default function VerifyCertificatePage() {
                 <AlertTriangle className="h-8 w-8 text-amber-500" />
               </div>
               <h1 className="text-xl font-bold text-amber-700 mb-2">{t.not_found_title}</h1>
-              <p className="text-sm text-slate-500 max-w-sm mx-auto mb-8">{t.not_found_desc}</p>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-8">{t.not_found_desc}</p>
 
               <form onSubmit={handleManualVerify} className="flex items-center gap-2 max-w-md mx-auto">
                 <input value={manualNumber}
                   onChange={e => setManualNumber(e.target.value)}
                   placeholder={t.placeholder}
-                  className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring font-mono" />
+                  className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring font-mono" />
                 <button type="submit"
                   className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 transition-colors">
                   <Search className="h-4 w-4" /> {t.verify_btn}
@@ -140,7 +140,7 @@ export default function VerifyCertificatePage() {
                 <p className="text-sm font-mono text-green-700 mt-1">{data.certificate_number}</p>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm divide-y divide-slate-100">
+              <div className="bg-card rounded-2xl border border-border  divide-y divide-slate-100">
                 <InfoRow label={t.framework} value={data.framework} />
                 <InfoRow label={t.commodity} value={data.commodity_type} />
                 <InfoRow label={t.quantity} value={data.quantity_kg != null ? `${Number(data.quantity_kg).toLocaleString()} kg` : null} />
@@ -161,13 +161,13 @@ export default function VerifyCertificatePage() {
 
               {/* Blockchain */}
               {data.blockchain && (data.blockchain.cnft_address || data.blockchain.tx_signature) && (
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-2">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide">{t.blockchain}</h3>
+                <div className="bg-card rounded-2xl border border-border  p-5 space-y-2">
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{t.blockchain}</h3>
                   {data.blockchain.cnft_address && (
-                    <p className="text-xs text-slate-600">{t.cnft}: <code className="font-mono text-primary break-all">{data.blockchain.cnft_address}</code></p>
+                    <p className="text-xs text-muted-foreground">{t.cnft}: <code className="font-mono text-primary break-all">{data.blockchain.cnft_address}</code></p>
                   )}
                   {data.blockchain.tx_signature && (
-                    <p className="text-xs text-slate-600">{t.tx}: <code className="font-mono text-primary break-all">{data.blockchain.tx_signature}</code></p>
+                    <p className="text-xs text-muted-foreground">{t.tx}: <code className="font-mono text-primary break-all">{data.blockchain.tx_signature}</code></p>
                   )}
                 </div>
               )}
@@ -201,15 +201,15 @@ export default function VerifyCertificatePage() {
           {/* No number entered yet */}
           {!activeNumber && !isLoading && (
             <div className="text-center py-10">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 mx-auto mb-4">
-                <Search className="h-8 w-8 text-slate-400" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary mx-auto mb-4">
+                <Search className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h1 className="text-xl font-bold text-slate-700 mb-4">{t.verify_btn}</h1>
+              <h1 className="text-xl font-bold text-foreground mb-4">{t.verify_btn}</h1>
               <form onSubmit={handleManualVerify} className="flex items-center gap-2 max-w-md mx-auto">
                 <input value={manualNumber}
                   onChange={e => setManualNumber(e.target.value)}
                   placeholder={t.placeholder}
-                  className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring font-mono" />
+                  className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring font-mono" />
                 <button type="submit"
                   className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 transition-colors">
                   <Search className="h-4 w-4" /> {t.verify_btn}
@@ -221,9 +221,9 @@ export default function VerifyCertificatePage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white px-6 py-4 text-center">
-        <p className="text-xs text-slate-400">
-          {t.powered_by} <span className="font-semibold text-slate-600">Trace</span>
+      <footer className="border-t border-border bg-card px-6 py-4 text-center">
+        <p className="text-xs text-muted-foreground">
+          {t.powered_by} <span className="font-semibold text-muted-foreground">Trace</span>
         </p>
       </footer>
     </div>
@@ -234,8 +234,8 @@ function InfoRow({ label, value, valueColor }: { label: string; value: string | 
   if (!value) return null
   return (
     <div className="flex items-center justify-between px-5 py-3.5">
-      <span className="text-sm font-medium text-slate-500">{label}</span>
-      <span className={cn('text-sm font-medium text-slate-900', valueColor)}>{value}</span>
+      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+      <span className={cn('text-sm font-medium text-foreground', valueColor)}>{value}</span>
     </div>
   )
 }

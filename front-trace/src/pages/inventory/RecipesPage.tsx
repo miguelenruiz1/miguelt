@@ -75,17 +75,17 @@ function RecipeDrawer({ recipeId, onClose, onEdit, stockMap, warehouseMap }: {
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-white h-full shadow-2xl p-6 overflow-y-auto">
+      <div className="w-full max-w-md bg-card h-full shadow-2xl p-6 overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="font-bold text-slate-900">{recipe.name}</h2>
-            {recipe.description && <p className="text-xs text-slate-400 mt-1">{recipe.description}</p>}
+            <h2 className="font-bold text-foreground">{recipe.name}</h2>
+            {recipe.description && <p className="text-xs text-muted-foreground mt-1">{recipe.description}</p>}
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => { onClose(); onEdit(recipeId) }} className="text-slate-400 hover:text-primary" title="Editar">
+            <button onClick={() => { onClose(); onEdit(recipeId) }} className="text-muted-foreground hover:text-primary" title="Editar">
               <Pencil className="h-4 w-4" />
             </button>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl font-bold">x</button>
+            <button onClick={onClose} className="text-muted-foreground hover:text-muted-foreground text-xl font-bold">x</button>
           </div>
         </div>
 
@@ -105,13 +105,13 @@ function RecipeDrawer({ recipeId, onClose, onEdit, stockMap, warehouseMap }: {
 
           {/* Warehouses where components exist */}
           {availability.warehouses.size > 0 && (
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+            <div className="bg-muted border border-border rounded-xl p-3">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1">
                 <Warehouse className="h-3 w-3" /> Bodegas con stock
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {[...availability.warehouses].map(wId => (
-                  <span key={wId} className="inline-flex rounded-full bg-white border border-slate-200 px-2.5 py-0.5 text-[11px] font-medium text-slate-700">
+                  <span key={wId} className="inline-flex rounded-full bg-card border border-border px-2.5 py-0.5 text-[11px] font-medium text-foreground">
                     {warehouseMap[wId] ?? wId.slice(0, 8)}
                   </span>
                 ))}
@@ -126,7 +126,7 @@ function RecipeDrawer({ recipeId, onClose, onEdit, stockMap, warehouseMap }: {
           </div>
 
           <div>
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
               Componentes ({recipe.components?.length ?? 0})
             </h3>
             {recipe.components?.length ? (
@@ -139,14 +139,14 @@ function RecipeDrawer({ recipeId, onClose, onEdit, stockMap, warehouseMap }: {
                   const hasEnough = totalAvail >= needed
 
                   return (
-                    <div key={c.id} className={`rounded-xl p-3 ${hasEnough ? 'bg-slate-50' : 'bg-red-50 border border-red-100'}`}>
+                    <div key={c.id} className={`rounded-xl p-3 ${hasEnough ? 'bg-muted' : 'bg-red-50 border border-red-100'}`}>
                       <div className="flex justify-between items-center">
-                        <span className="font-medium text-slate-700">{p?.name ?? c.component_entity_id.slice(0, 8)}</span>
+                        <span className="font-medium text-foreground">{p?.name ?? c.component_entity_id.slice(0, 8)}</span>
                         <div className="flex items-center gap-2">
                           <span className={`text-xs font-medium ${hasEnough ? 'text-emerald-600' : 'text-red-600'}`}>
                             {totalAvail.toFixed(1)} / {needed}
                           </span>
-                          <span className="font-bold text-slate-900">{c.quantity_required}</span>
+                          <span className="font-bold text-foreground">{c.quantity_required}</span>
                         </div>
                       </div>
                       {/* Warehouse breakdown */}
@@ -155,9 +155,9 @@ function RecipeDrawer({ recipeId, onClose, onEdit, stockMap, warehouseMap }: {
                           {Object.entries(stock.byWarehouse)
                             .filter(([, qty]) => qty > 0)
                             .map(([wId, qty]) => (
-                            <span key={wId} className="inline-flex items-center gap-1 rounded bg-white border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-500">
+                            <span key={wId} className="inline-flex items-center gap-1 rounded bg-card border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
                               <Warehouse className="h-2.5 w-2.5" />
-                              {warehouseMap[wId] ?? wId.slice(0, 6)}: <b className="text-slate-700">{qty.toFixed(1)}</b>
+                              {warehouseMap[wId] ?? wId.slice(0, 6)}: <b className="text-foreground">{qty.toFixed(1)}</b>
                             </span>
                           ))}
                         </div>
@@ -169,7 +169,7 @@ function RecipeDrawer({ recipeId, onClose, onEdit, stockMap, warehouseMap }: {
                   )
                 })}
               </div>
-            ) : <p className="text-sm text-slate-400">Sin componentes</p>}
+            ) : <p className="text-sm text-muted-foreground">Sin componentes</p>}
           </div>
         </div>
       </div>
@@ -238,26 +238,26 @@ function EditRecipeModal({ recipeId, onClose }: { recipeId: string; onClose: () 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-bold text-slate-900 mb-4">Editar Receta</h2>
+      <div className="w-full max-w-lg bg-card rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-bold text-foreground mb-4">Editar Receta</h2>
         <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
           <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder="Nombre *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            placeholder="Nombre *" className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <div className="grid grid-cols-2 gap-3">
             <select required value={form.output_entity_id} onChange={e => setForm(f => ({ ...f, output_entity_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Producto de salida *</option>
               {productsData?.items?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <input required type="number" step="0.01" min="0.01" value={form.output_quantity}
               onChange={e => setForm(f => ({ ...f, output_quantity: e.target.value }))}
-              placeholder="Cantidad salida *" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              placeholder="Cantidad salida *" className="rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] text-slate-400 uppercase">Tipo BOM</label>
+              <label className="text-[10px] text-muted-foreground uppercase">Tipo BOM</label>
               <select value={form.bom_type} onChange={e => setForm(f => ({ ...f, bom_type: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="production">Produccion</option>
                 <option value="assembly">Conjunto (Kit)</option>
                 <option value="sales">Ventas</option>
@@ -265,25 +265,25 @@ function EditRecipeModal({ recipeId, onClose }: { recipeId: string; onClose: () 
               </select>
             </div>
             <div>
-              <label className="text-[10px] text-slate-400 uppercase">Costo estandar</label>
+              <label className="text-[10px] text-muted-foreground uppercase">Costo estandar</label>
               <input type="number" step="0.01" min="0" value={form.standard_cost}
                 onChange={e => setForm(f => ({ ...f, standard_cost: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
-              <label className="text-[10px] text-slate-400 uppercase">Tam. lote plan.</label>
+              <label className="text-[10px] text-muted-foreground uppercase">Tam. lote plan.</label>
               <input type="number" min="1" value={form.planned_production_size}
                 onChange={e => setForm(f => ({ ...f, planned_production_size: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
           </div>
           <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             placeholder="Descripcion" rows={2}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
 
-          <div className="border-t border-slate-100 pt-3">
+          <div className="border-t border-border pt-3">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Componentes</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Componentes</p>
               <button type="button" onClick={addComponent} className="text-xs text-primary hover:text-primary font-semibold">
                 + Agregar
               </button>
@@ -291,28 +291,28 @@ function EditRecipeModal({ recipeId, onClose }: { recipeId: string; onClose: () 
             {components.map((c, i) => (
               <div key={i} className="flex gap-2 mb-2">
                 <select required value={c.component_entity_id} onChange={e => updateComponent(i, 'component_entity_id', e.target.value)}
-                  className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm">
+                  className="flex-1 rounded-lg border border-border px-2 py-1.5 text-sm">
                   <option value="">Producto *</option>
                   {productsData?.items?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
                 <input required type="number" step="0.01" min="0.01" value={c.quantity_required}
                   onChange={e => updateComponent(i, 'quantity_required', e.target.value)}
-                  placeholder="Cant." className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
+                  placeholder="Cant." className="w-20 rounded-lg border border-border px-2 py-1.5 text-sm" />
                 <input type="number" step="0.1" min="0" max="100" value={c.scrap_percentage ?? '0'}
                   onChange={e => updateComponent(i, 'scrap_percentage', e.target.value)}
-                  placeholder="Merma%" className="w-16 rounded-lg border border-slate-200 px-2 py-1.5 text-sm" title="Merma %" />
-                <button type="button" onClick={() => removeComponent(i)} className="text-slate-400 hover:text-red-500">
+                  placeholder="Merma%" className="w-16 rounded-lg border border-border px-2 py-1.5 text-sm" title="Merma %" />
+                <button type="button" onClick={() => removeComponent(i)} className="text-muted-foreground hover:text-red-500">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             ))}
             {components.length === 0 && (
-              <p className="text-xs text-slate-400 text-center py-2">Sin componentes. Usa "+ Agregar" para anadir.</p>
+              <p className="text-xs text-muted-foreground text-center py-2">Sin componentes. Usa "+ Agregar" para anadir.</p>
             )}
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-muted">Cancelar</button>
             <button type="submit" disabled={update.isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {update.isPending ? 'Guardando...' : 'Guardar cambios'}
             </button>
@@ -361,26 +361,26 @@ function CreateRecipeModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-bold text-slate-900 mb-4">Nueva Receta</h2>
+      <div className="w-full max-w-lg bg-card rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-bold text-foreground mb-4">Nueva Receta</h2>
         <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
           <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder="Nombre *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            placeholder="Nombre *" className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <div className="grid grid-cols-2 gap-3">
             <select required value={form.output_entity_id} onChange={e => setForm(f => ({ ...f, output_entity_id: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Producto de salida *</option>
               {productsData?.items?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <input required type="number" step="0.01" min="0.01" value={form.output_quantity}
               onChange={e => setForm(f => ({ ...f, output_quantity: e.target.value }))}
-              placeholder="Cantidad salida *" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              placeholder="Cantidad salida *" className="rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] text-slate-400 uppercase">Tipo BOM</label>
+              <label className="text-[10px] text-muted-foreground uppercase">Tipo BOM</label>
               <select value={form.bom_type} onChange={e => setForm(f => ({ ...f, bom_type: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="production">Produccion</option>
                 <option value="assembly">Conjunto (Kit)</option>
                 <option value="sales">Ventas</option>
@@ -388,25 +388,25 @@ function CreateRecipeModal({ onClose }: { onClose: () => void }) {
               </select>
             </div>
             <div>
-              <label className="text-[10px] text-slate-400 uppercase">Costo estandar</label>
+              <label className="text-[10px] text-muted-foreground uppercase">Costo estandar</label>
               <input type="number" step="0.01" min="0" value={form.standard_cost}
                 onChange={e => setForm(f => ({ ...f, standard_cost: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
-              <label className="text-[10px] text-slate-400 uppercase">Tam. lote plan.</label>
+              <label className="text-[10px] text-muted-foreground uppercase">Tam. lote plan.</label>
               <input type="number" min="1" value={form.planned_production_size}
                 onChange={e => setForm(f => ({ ...f, planned_production_size: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
           </div>
           <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             placeholder="Descripcion" rows={2}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
 
-          <div className="border-t border-slate-100 pt-3">
+          <div className="border-t border-border pt-3">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Componentes</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Componentes</p>
               <button type="button" onClick={addComponent} className="text-xs text-primary hover:text-primary font-semibold">
                 + Agregar
               </button>
@@ -414,17 +414,17 @@ function CreateRecipeModal({ onClose }: { onClose: () => void }) {
             {components.map((c, i) => (
               <div key={i} className="flex gap-2 mb-2">
                 <select required value={c.component_entity_id} onChange={e => updateComponent(i, 'component_entity_id', e.target.value)}
-                  className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm">
+                  className="flex-1 rounded-lg border border-border px-2 py-1.5 text-sm">
                   <option value="">Producto *</option>
                   {productsData?.items?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
                 <input required type="number" step="0.01" min="0.01" value={c.quantity_required}
                   onChange={e => updateComponent(i, 'quantity_required', e.target.value)}
-                  placeholder="Cant." className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
+                  placeholder="Cant." className="w-20 rounded-lg border border-border px-2 py-1.5 text-sm" />
                 <input type="number" step="0.1" min="0" max="100" value={c.scrap_percentage ?? '0'}
                   onChange={e => updateComponent(i, 'scrap_percentage', e.target.value)}
-                  placeholder="Merma%" className="w-16 rounded-lg border border-slate-200 px-2 py-1.5 text-sm" title="Merma %" />
-                <button type="button" onClick={() => removeComponent(i)} className="text-slate-400 hover:text-red-500">
+                  placeholder="Merma%" className="w-16 rounded-lg border border-border px-2 py-1.5 text-sm" title="Merma %" />
+                <button type="button" onClick={() => removeComponent(i)} className="text-muted-foreground hover:text-red-500">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
@@ -432,7 +432,7 @@ function CreateRecipeModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-muted">Cancelar</button>
             <button type="submit" disabled={create.isPending} className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {create.isPending ? 'Guardando...' : 'Crear receta'}
             </button>
@@ -462,27 +462,27 @@ export function RecipesPage() {
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Recetas</h1>
+        <h1 className="text-2xl font-bold text-foreground">Recetas</h1>
         <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm">
+          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 ">
           <Plus className="h-4 w-4" /> Nueva receta
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border  overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-slate-400">Cargando...</div>
+          <div className="p-8 text-center text-muted-foreground">Cargando...</div>
         ) : recipes.length === 0 ? (
           <div className="p-8 text-center">
             <FlaskConical className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-            <p className="text-sm text-slate-400">Sin recetas. Crea la primera.</p>
+            <p className="text-sm text-muted-foreground">Sin recetas. Crea la primera.</p>
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-100">
+            <thead className="bg-muted border-b border-border">
               <tr>
                 {['Nombre', 'Producto salida', 'Cant. salida', 'Componentes', 'Disponibilidad', 'Bodegas', ''].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -490,11 +490,11 @@ export function RecipesPage() {
               {recipes.map(r => {
                 const avail = getRecipeAvailability(r, stockMap)
                 return (
-                  <tr key={r.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-medium text-slate-900">{r.name}</td>
-                    <td className="px-4 py-3 text-slate-700">{productMap[r.output_entity_id] ?? '\u2014'}</td>
-                    <td className="px-4 py-3 font-bold text-slate-900">{r.output_quantity}</td>
-                    <td className="px-4 py-3 text-slate-500">{r.components?.length ?? 0}</td>
+                  <tr key={r.id} className="hover:bg-muted">
+                    <td className="px-4 py-3 font-medium text-foreground">{r.name}</td>
+                    <td className="px-4 py-3 text-foreground">{productMap[r.output_entity_id] ?? '\u2014'}</td>
+                    <td className="px-4 py-3 font-bold text-foreground">{r.output_quantity}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{r.components?.length ?? 0}</td>
                     <td className="px-4 py-3">
                       <AvailabilityBadge available={avail.available} missingCount={avail.missing.length} />
                     </td>
@@ -502,14 +502,14 @@ export function RecipesPage() {
                       {avail.warehouses.size > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {[...avail.warehouses].map(wId => (
-                            <span key={wId} className="inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                            <span key={wId} className="inline-flex items-center gap-0.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                               <Warehouse className="h-2.5 w-2.5" />
                               {warehouseMap[wId] ?? wId.slice(0, 6)}
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <span className="text-[11px] text-slate-400">\u2014</span>
+                        <span className="text-[11px] text-muted-foreground">\u2014</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -531,19 +531,19 @@ export function RecipesPage() {
                             {del.isPending ? '...' : 'Confirmar'}
                           </button>
                           <button onClick={() => setConfirmDeleteId(null)}
-                            className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] text-slate-500 hover:bg-slate-50">
+                            className="rounded-lg border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted">
                             No
                           </button>
                         </div>
                       ) : (
                         <div className="flex gap-2 justify-end">
-                          <button onClick={() => setSelectedId(r.id)} className="text-slate-400 hover:text-primary" title="Ver">
+                          <button onClick={() => setSelectedId(r.id)} className="text-muted-foreground hover:text-primary" title="Ver">
                             <Eye className="h-4 w-4" />
                           </button>
-                          <button onClick={() => setEditId(r.id)} className="text-slate-400 hover:text-amber-600" title="Editar">
+                          <button onClick={() => setEditId(r.id)} className="text-muted-foreground hover:text-amber-600" title="Editar">
                             <Pencil className="h-4 w-4" />
                           </button>
-                          <button onClick={() => setConfirmDeleteId(r.id)} className="text-slate-400 hover:text-red-500" title="Eliminar">
+                          <button onClick={() => setConfirmDeleteId(r.id)} className="text-muted-foreground hover:text-red-500" title="Eliminar">
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>

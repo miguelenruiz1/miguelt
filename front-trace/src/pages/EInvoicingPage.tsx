@@ -15,7 +15,7 @@ const INVOICE_STATUS_COLORS: Record<string, string> = {
   issued: 'bg-emerald-50 text-emerald-700',
   simulated: 'bg-amber-50 text-amber-700',
   failed: 'bg-red-50 text-red-600',
-  pending: 'bg-gray-100 text-gray-600',
+  pending: 'bg-secondary text-muted-foreground',
 }
 
 export function EInvoicingPage() {
@@ -68,8 +68,8 @@ export function EInvoicingPage() {
       {/* Breadcrumb */}
       <nav className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
-          <li className="text-gray-500">Inicio</li>
-          <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
+          <li className="text-muted-foreground">Inicio</li>
+          <li><ChevronRight className="h-4 w-4 text-muted-foreground" /></li>
           <li className="text-primary">Facturación Electrónica</li>
         </ol>
       </nav>
@@ -77,10 +77,10 @@ export function EInvoicingPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">
+          <h1 className="text-2xl font-semibold text-foreground">
             Facturación Electrónica DIAN
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Emite facturas electrónicas válidas desde tus Sales Orders — Powered by MATIAS API
           </p>
         </div>
@@ -97,12 +97,12 @@ export function EInvoicingPage() {
         </div>
       )}
       {hasMatiasRes && (
-        <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+        <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3 ">
           <div className="flex items-center gap-3 text-sm">
             <Hash className="h-4 w-4 text-primary" />
-            <span className="text-gray-600">Resolución: <span className="font-semibold text-gray-800">{matiasRes.prefix}{matiasRes.current_number + 1}</span> (próxima)</span>
-            <span className="text-gray-400">|</span>
-            <span className="text-gray-500">{matiasRes.remaining.toLocaleString()} restantes</span>
+            <span className="text-muted-foreground">Resolución: <span className="font-semibold text-foreground">{matiasRes.prefix}{matiasRes.current_number + 1}</span> (próxima)</span>
+            <span className="text-muted-foreground">|</span>
+            <span className="text-muted-foreground">{matiasRes.remaining.toLocaleString()} restantes</span>
           </div>
           <Link to="/facturacion-electronica/resolucion" className="text-xs font-medium text-primary hover:text-primary">
             Configurar resolución DIAN
@@ -115,21 +115,21 @@ export function EInvoicingPage() {
         <div className={cn('rounded-lg px-4 py-3 text-sm flex items-center gap-2 border', testResult.ok ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-200')}>
           {testResult.ok ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
           {testResult.message}
-          <button onClick={() => setTestResult(null)} className="ml-auto text-gray-400 hover:text-gray-600">
+          <button onClick={() => setTestResult(null)} className="ml-auto text-muted-foreground hover:text-muted-foreground">
             <XCircle className="h-4 w-4" />
           </button>
         </div>
       )}
 
       {/* Section A: Config */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-border bg-card p-6  space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-50">
               <FileText className="h-6 w-6 text-cyan-600" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-gray-800">Configuración MATIAS API</h2>
+              <h2 className="text-base font-semibold text-foreground">Configuración MATIAS API</h2>
               <div className="flex items-center gap-2 mt-0.5">
                 {isConnected ? (
                   <>
@@ -143,7 +143,7 @@ export function EInvoicingPage() {
                     )}
                   </>
                 ) : (
-                  <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
+                  <span className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                     No configurado
                   </span>
                 )}
@@ -156,7 +156,7 @@ export function EInvoicingPage() {
                 <button
                   onClick={handleTest}
                   disabled={testMut.isPending}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-200"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-2 text-xs font-medium text-foreground transition hover:bg-gray-200"
                 >
                   <Zap className="h-3.5 w-3.5" /> {testMut.isPending ? 'Probando...' : 'Probar conexión'}
                 </button>
@@ -171,7 +171,7 @@ export function EInvoicingPage() {
             {!isConnected && (
               <button
                 onClick={() => setShowSetup(true)}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-primary"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white  transition hover:bg-primary"
               >
                 Configurar
               </button>
@@ -182,60 +182,60 @@ export function EInvoicingPage() {
 
       {/* Section C: Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-medium text-gray-400 uppercase">Emitidas</p>
+        <div className="rounded-2xl border border-border bg-card p-5 ">
+          <p className="text-xs font-medium text-muted-foreground uppercase">Emitidas</p>
           <p className="text-2xl font-bold text-emerald-600 mt-1">{totalIssued}</p>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-medium text-gray-400 uppercase">Simuladas</p>
+        <div className="rounded-2xl border border-border bg-card p-5 ">
+          <p className="text-xs font-medium text-muted-foreground uppercase">Simuladas</p>
           <p className="text-2xl font-bold text-amber-600 mt-1">{totalSimulated}</p>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-medium text-gray-400 uppercase">Fallidas</p>
+        <div className="rounded-2xl border border-border bg-card p-5 ">
+          <p className="text-xs font-medium text-muted-foreground uppercase">Fallidas</p>
           <p className="text-2xl font-bold text-red-600 mt-1">{totalFailed}</p>
         </div>
       </div>
 
       {/* Section B: Invoice history */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-gray-800">Historial de Facturas Electrónicas</h2>
+        <h2 className="text-lg font-semibold text-foreground">Historial de Facturas Electrónicas</h2>
         {invoicedOrders.length === 0 ? (
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-400">
+          <div className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
             No hay facturas electrónicas aún. Las facturas se generan automáticamente al confirmar una Sales Order.
           </div>
         ) : (
-          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+          <div className="rounded-2xl border border-border bg-card  overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Orden</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
-                    <th className="px-5 py-3.5 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">CUFE</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase">PDF</th>
+                  <tr className="border-b border-border">
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-muted-foreground uppercase">Orden</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-muted-foreground uppercase">Cliente</th>
+                    <th className="px-5 py-3.5 text-right text-xs font-medium text-muted-foreground uppercase">Total</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-muted-foreground uppercase">CUFE</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-muted-foreground uppercase">Estado</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-muted-foreground uppercase">PDF</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {invoicedOrders.map(order => (
-                    <tr key={order.id} className="hover:bg-gray-50/60">
+                    <tr key={order.id} className="hover:bg-muted/60">
                       <td className="px-5 py-3">
                         <Link to={`/inventario/ventas/${order.id}`} className="font-medium text-primary hover:text-primary">
                           {order.order_number}
                         </Link>
                       </td>
-                      <td className="px-5 py-3 text-gray-700">{order.customer_name ?? '—'}</td>
-                      <td className="px-5 py-3 text-right font-mono text-gray-700">${order.total.toLocaleString()} {order.currency}</td>
+                      <td className="px-5 py-3 text-foreground">{order.customer_name ?? '—'}</td>
+                      <td className="px-5 py-3 text-right font-mono text-foreground">${order.total.toLocaleString()} {order.currency}</td>
                       <td className="px-5 py-3">
                         {order.cufe ? (
-                          <span className="font-mono text-xs text-gray-500" title={order.cufe}>
+                          <span className="font-mono text-xs text-muted-foreground" title={order.cufe}>
                             {order.cufe.slice(0, 20)}...
                           </span>
                         ) : '—'}
                       </td>
                       <td className="px-5 py-3">
-                        <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', INVOICE_STATUS_COLORS[order.invoice_status ?? ''] ?? 'bg-gray-100')}>
+                        <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', INVOICE_STATUS_COLORS[order.invoice_status ?? ''] ?? 'bg-secondary')}>
                           {order.invoice_status}
                         </span>
                       </td>
@@ -263,29 +263,29 @@ export function EInvoicingPage() {
           <form
             onSubmit={handleSetup}
             onClick={e => e.stopPropagation()}
-            className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-xl space-y-5"
+            className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-5"
           >
             <div>
-              <h3 className="text-lg font-semibold text-gray-800">Configurar MATIAS API</h3>
-              <p className="text-sm text-gray-500 mt-1">Ingresa tu API Key para conectar con el servicio de facturación electrónica.</p>
+              <h3 className="text-lg font-semibold text-foreground">Configurar MATIAS API</h3>
+              <p className="text-sm text-muted-foreground mt-1">Ingresa tu API Key para conectar con el servicio de facturación electrónica.</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">API Key <span className="text-red-500">*</span></label>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">API Key <span className="text-red-500">*</span></label>
                 <input
                   value={apiKey}
                   onChange={e => setApiKey(e.target.value)}
                   type="password"
                   required
-                  className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20"
+                  className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-foreground  placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20"
                   placeholder="Ingresa tu API Key de MATIAS"
                 />
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Modo Simulación</p>
-                  <p className="text-xs text-gray-400">Genera facturas de prueba sin enviar a la DIAN</p>
+                  <p className="text-sm font-medium text-foreground">Modo Simulación</p>
+                  <p className="text-xs text-muted-foreground">Genera facturas de prueba sin enviar a la DIAN</p>
                 </div>
                 <button
                   type="button"
@@ -298,7 +298,7 @@ export function EInvoicingPage() {
                   )}
                 >
                   <span className={cn(
-                    'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transform transition duration-150 ease-linear',
+                    'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-card  transform transition duration-150 ease-linear',
                     simMode ? 'translate-x-full' : 'translate-x-0',
                   )} />
                 </button>
@@ -306,10 +306,10 @@ export function EInvoicingPage() {
             </div>
 
             <div className="flex justify-end gap-3 pt-1">
-              <button type="button" onClick={() => setShowSetup(false)} className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+              <button type="button" onClick={() => setShowSetup(false)} className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted">
                 Cancelar
               </button>
-              <button type="submit" disabled={createMut.isPending} className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary disabled:opacity-50">
+              <button type="submit" disabled={createMut.isPending} className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white  transition hover:bg-primary disabled:opacity-50">
                 {createMut.isPending ? 'Conectando...' : 'Conectar'}
               </button>
             </div>

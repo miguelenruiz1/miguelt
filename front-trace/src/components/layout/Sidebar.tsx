@@ -171,8 +171,8 @@ function NavItem({ to, icon: Icon, label, onClick, collapsed }: {
             cn(
               'flex items-center justify-center rounded-md py-2 mx-auto w-10 transition-colors duration-150',
               isActive
-                ? 'bg-white/[0.08] text-white'
-                : 'text-[color:var(--sidebar-foreground)] hover:bg-white/[0.05]',
+                ? 'bg-card/[0.08] text-white'
+                : 'text-[color:var(--sidebar-foreground)] hover:bg-card/[0.05]',
             )
           }
         >
@@ -196,8 +196,8 @@ function NavItem({ to, icon: Icon, label, onClick, collapsed }: {
         cn(
           'flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors duration-150',
           isActive
-            ? 'bg-white/[0.08] text-white font-medium'
-            : 'text-[color:var(--sidebar-foreground)] hover:bg-white/[0.05] hover:text-white/90 font-normal',
+            ? 'bg-card/[0.08] text-white font-medium'
+            : 'text-[color:var(--sidebar-foreground)] hover:bg-card/[0.05] hover:text-white/90 font-normal',
         )
       }
     >
@@ -356,7 +356,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       >
         <div className={cn(
           'w-px h-full transition-colors',
-          isDragging ? 'bg-emerald-500/40' : 'bg-white/[0.06] group-hover:bg-white/[0.12]',
+          isDragging ? 'bg-emerald-500/40' : 'bg-card/[0.06] group-hover:bg-card/[0.12]',
         )} />
       </div>
 
@@ -391,7 +391,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       )}
 
       {/* Separator */}
-      {!collapsed && <div className="mx-3 h-px bg-white/[0.06]" />}
+      {!collapsed && <div className="mx-3 h-px bg-card/[0.06]" />}
 
       {/* ── Navigation ──────────────────────────────────────────────── */}
       <nav className="flex-1 px-2 py-2 overflow-y-auto sidebar-scroll">
@@ -434,8 +434,8 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                         className={cn(
                           'w-full flex items-center gap-2.5 px-3 py-1.5 text-sm rounded-md transition-colors duration-150',
                           isGroupOpen
-                            ? 'bg-white/[0.08] text-white font-medium'
-                            : 'text-[color:var(--sidebar-foreground)] hover:bg-white/[0.05] hover:text-white/90',
+                            ? 'bg-card/[0.08] text-white font-medium'
+                            : 'text-[color:var(--sidebar-foreground)] hover:bg-card/[0.05] hover:text-white/90',
                         )}
                       >
                         <GroupIcon className={cn('h-4 w-4 shrink-0', isGroupOpen ? 'text-emerald-400' : 'opacity-50')} />
@@ -475,7 +475,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         )}
 
         {/* Separador */}
-        {!collapsed && <div className="mx-3 my-2 h-px bg-white/[0.06]" />}
+        {!collapsed && <div className="mx-3 my-2 h-px bg-card/[0.06]" />}
 
         {/* Mi Equipo */}
         {visibleEquipoItems.length > 0 && (
@@ -519,12 +519,12 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
       {/* ── Footer ──────────────────────────────────────────────────── */}
       <div className="px-3 pb-4 pt-2 shrink-0">
-        <div className="h-px bg-white/[0.06] mb-3" />
+        <div className="h-px bg-card/[0.06] mb-3" />
         {user && (
           <NavLink
             to="/profile"
             onClick={collapsed ? expandSidebar : onClose}
-            className="flex items-center gap-3 rounded-md px-2 py-2 transition-colors duration-150 group hover:bg-white/[0.05]"
+            className="flex items-center gap-3 rounded-md px-2 py-2 transition-colors duration-150 group hover:bg-card/[0.05]"
           >
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-500/20 text-[10px] font-semibold text-emerald-400">
               {user.avatar_url ? (
@@ -543,7 +543,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                 </div>
                 <button
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); logout.mutate() }}
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-white/[0.08] text-[color:var(--sidebar-foreground)] hover:text-red-400 transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-card/[0.08] text-[color:var(--sidebar-foreground)] hover:text-red-400 transition-all"
                   title="Cerrar sesion"
                 >
                   <LogOut className="h-3.5 w-3.5" />

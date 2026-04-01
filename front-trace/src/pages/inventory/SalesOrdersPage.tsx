@@ -45,13 +45,13 @@ function PriceSemaphore({ productId, unitPrice }: { productId: string; unitPrice
   return (
     <div className={`text-xs mt-1 p-2 rounded border ${color} col-span-full`}>
       {icon} {msg}
-      <div className="mt-1 text-gray-500">Costo: ${cost.toLocaleString('es-CO')} | Sugerido: ${suggested.toLocaleString('es-CO')} | Mínimo: ${minimum.toLocaleString('es-CO')}</div>
+      <div className="mt-1 text-muted-foreground">Costo: ${cost.toLocaleString('es-CO')} | Sugerido: ${suggested.toLocaleString('es-CO')} | Mínimo: ${minimum.toLocaleString('es-CO')}</div>
     </div>
   )
 }
 
 const STATUS_CONFIG: Record<SalesOrderStatus, { label: string; color: string }> = {
-  draft: { label: 'Borrador', color: 'bg-slate-100 text-slate-600' },
+  draft: { label: 'Borrador', color: 'bg-secondary text-muted-foreground' },
   confirmed: { label: 'Confirmada', color: 'bg-blue-50 text-blue-700' },
   picking: { label: 'En Picking', color: 'bg-amber-50 text-amber-700' },
   shipped: { label: 'Enviada', color: 'bg-primary/10 text-primary' },
@@ -201,8 +201,8 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2"><ShoppingBag className="h-5 w-5 text-primary" /> Nueva Orden de Venta</h2>
+      <div className="w-full max-w-5xl bg-card rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2"><ShoppingBag className="h-5 w-5 text-primary" /> Nueva Orden de Venta</h2>
         <form ref={formRef} onSubmit={validateAndSubmit} className="space-y-3" noValidate>
           {/* Alerts */}
           {partners.length === 0 && (
@@ -221,16 +221,16 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          <select required value={form.customer_id} onChange={e => onCustomerChange(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+          <select required value={form.customer_id} onChange={e => onCustomerChange(e.target.value)} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="">Cliente *</option>
             {partners.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
           </select>
-          <input type="date" value={form.expected_date} onChange={e => setForm(f => ({ ...f, expected_date: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-          <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notas" rows={2} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
+          <input type="date" value={form.expected_date} onChange={e => setForm(f => ({ ...f, expected_date: e.target.value }))} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+          <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notas" rows={2} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Lineas</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Lineas</p>
               <button type="button" onClick={addLine} className="text-xs text-primary hover:text-primary font-semibold">+ Linea</button>
             </div>
             {lines.map((line, i) => {
@@ -239,7 +239,7 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
               return (
                 <div key={i}>
                 <div className="flex gap-2 items-center">
-                  <select required value={line.product_id} onChange={e => onProductSelect(i, e.target.value)} className="flex-1 rounded-xl border border-slate-200 px-2 py-1.5 text-xs focus:ring-2 focus:ring-ring">
+                  <select required value={line.product_id} onChange={e => onProductSelect(i, e.target.value)} className="flex-1 rounded-xl border border-border px-2 py-1.5 text-xs focus:ring-2 focus:ring-ring">
                     <option value="">Producto *</option>
                     {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name}</option>)}
                   </select>
@@ -270,17 +270,17 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
                     required
                     value={line.warehouse_id}
                     onChange={e => updateLine(i, 'warehouse_id', e.target.value)}
-                    className="w-32 rounded-xl border border-slate-200 px-2 py-1.5 text-xs focus:ring-2 focus:ring-ring"
+                    className="w-32 rounded-xl border border-border px-2 py-1.5 text-xs focus:ring-2 focus:ring-ring"
                   >
                     <option value="">Bodega *</option>
                     {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                   </select>
-                  <input required type="number" min={1} value={line.qty_ordered} onChange={e => updateLine(i, 'qty_ordered', e.target.value)} className="w-16 rounded-xl border border-slate-200 px-2 py-1.5 text-xs" placeholder="Qty" />
+                  <input required type="number" min={1} value={line.qty_ordered} onChange={e => updateLine(i, 'qty_ordered', e.target.value)} className="w-16 rounded-xl border border-border px-2 py-1.5 text-xs" placeholder="Qty" />
                   <div className="relative">
                     <input type="number" step="0.01" value={line.unit_price} onChange={e => updateLine(i, 'unit_price', e.target.value)}
                       className={cn('w-24 rounded-xl border px-2 py-1.5 text-xs',
                         isSpecial ? 'border-blue-300 bg-blue-50' :
-                        'border-slate-200'
+                        'border-border'
                       )}
                       placeholder="Precio"
                       title={isSpecial ? 'Precio especial del cliente' : 'Precio base del producto'}
@@ -289,13 +289,13 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
                       <div className="absolute -top-2 -right-1 inline-flex items-center gap-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-[9px] font-bold text-blue-700 whitespace-nowrap">
                         Esp.
                         {priceSource.original_price != null && priceSource.original_price !== priceSource.price && (
-                          <span className="text-slate-400 line-through font-normal">${priceSource.original_price.toLocaleString()}</span>
+                          <span className="text-muted-foreground line-through font-normal">${priceSource.original_price.toLocaleString()}</span>
                         )}
                       </div>
                     )}
                   </div>
-                  <input type="number" step="0.01" min={0} max={100} value={line.discount_pct} onChange={e => updateLine(i, 'discount_pct', e.target.value)} className="w-16 rounded-xl border border-slate-200 px-2 py-1.5 text-xs" placeholder="Desc%" title="Descuento linea %" />
-                  <select value={line.tax_rate} onChange={e => updateLine(i, 'tax_rate', e.target.value)} className="w-20 rounded-xl border border-slate-200 px-1 py-1.5 text-xs focus:ring-2 focus:ring-ring" title="IVA %">
+                  <input type="number" step="0.01" min={0} max={100} value={line.discount_pct} onChange={e => updateLine(i, 'discount_pct', e.target.value)} className="w-16 rounded-xl border border-border px-2 py-1.5 text-xs" placeholder="Desc%" title="Descuento linea %" />
+                  <select value={line.tax_rate} onChange={e => updateLine(i, 'tax_rate', e.target.value)} className="w-20 rounded-xl border border-border px-1 py-1.5 text-xs focus:ring-2 focus:ring-ring" title="IVA %">
                     <option value="0">0%</option>
                     <option value="5">5%</option>
                     <option value="19">19%</option>
@@ -314,12 +314,12 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
           {/* Global discount */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Descuento global %</label>
-              <input type="number" step="0.01" min={0} max={100} value={form.discount_pct} onChange={e => setForm(f => ({ ...f, discount_pct: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="0" />
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase mb-1">Descuento global %</label>
+              <input type="number" step="0.01" min={0} max={100} value={form.discount_pct} onChange={e => setForm(f => ({ ...f, discount_pct: e.target.value }))} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="0" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Razon descuento</label>
-              <input value={form.discount_reason} onChange={e => setForm(f => ({ ...f, discount_reason: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Ej: Descuento mayorista" />
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase mb-1">Razon descuento</label>
+              <input value={form.discount_reason} onChange={e => setForm(f => ({ ...f, discount_reason: e.target.value }))} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Ej: Descuento mayorista" />
             </div>
           </div>
 
@@ -348,24 +348,24 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
             const discAmount = subtotal * globalDisc / 100
             const total = subtotal - discAmount + taxTotal
             return (
-              <div className="bg-slate-50 rounded-xl px-4 py-3 space-y-1 text-sm">
+              <div className="bg-muted rounded-xl px-4 py-3 space-y-1 text-sm">
                 {specialSavings > 0 && (
                   <div className="flex justify-between text-blue-600 bg-blue-50 -mx-4 -mt-3 px-4 py-2 rounded-t-xl mb-1">
                     <span className="font-medium">Ahorro precios especiales</span>
                     <span className="font-mono font-bold">-${specialSavings.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-slate-600"><span>Subtotal</span><span className="font-mono">${subtotal.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span className="font-mono">${subtotal.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
                 {globalDisc > 0 && <div className="flex justify-between text-amber-600"><span>Descuento global ({globalDisc}%)</span><span className="font-mono">-${discAmount.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>}
-                <div className="flex justify-between text-slate-600"><span>Impuestos</span><span className="font-mono">${taxTotal.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
-                <div className="flex justify-between text-xs text-slate-400"><span>Retención: calculada al confirmar</span></div>
-                <div className="flex justify-between font-bold text-slate-900 border-t border-slate-200 pt-1"><span>Total</span><span className="font-mono">${total.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                <div className="flex justify-between text-muted-foreground"><span>Impuestos</span><span className="font-mono">${taxTotal.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                <div className="flex justify-between text-xs text-muted-foreground"><span>Retención: calculada al confirmar</span></div>
+                <div className="flex justify-between font-bold text-foreground border-t border-border pt-1"><span>Total</span><span className="font-mono">${total.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
               </div>
             )
           })()}
 
           <div className="flex justify-end gap-3 pt-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">Cancelar</button>
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">Cancelar</button>
             <button type="submit" disabled={create.isPending} className="px-5 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-50">Crear</button>
           </div>
         </form>
@@ -438,8 +438,8 @@ export function SalesOrdersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Ordenes de Venta</h1>
-          <p className="text-sm text-slate-500 mt-1">Gestiona el ciclo de vida de tus ventas</p>
+          <h1 className="text-2xl font-bold text-foreground">Ordenes de Venta</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gestiona el ciclo de vida de tus ventas</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl transition">
           <Plus className="h-4 w-4" /> Nueva Orden
@@ -450,9 +450,9 @@ export function SalesOrdersPage() {
       {summary && (
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-            <div key={key} className="bg-white rounded-xl border border-slate-200/60 px-4 py-3 text-center">
+            <div key={key} className="bg-card rounded-xl border border-border/60 px-4 py-3 text-center">
               <span className={cn('inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mb-1', cfg.color)}>{cfg.label}</span>
-              <p className="text-lg font-bold text-slate-900">{(summary as Record<string, number>)[key] ?? 0}</p>
+              <p className="text-lg font-bold text-foreground">{(summary as Record<string, number>)[key] ?? 0}</p>
             </div>
           ))}
         </div>
@@ -461,16 +461,16 @@ export function SalesOrdersPage() {
       {/* Filter */}
       <div className="flex gap-2 flex-wrap">
         {STATUS_FILTERS.map(f => (
-          <button key={f.value} onClick={() => setStatusFilter(f.value)} className={cn('px-3 py-1.5 text-xs font-medium rounded-lg transition', statusFilter === f.value ? 'bg-primary/15 text-primary' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')}>{f.label}</button>
+          <button key={f.value} onClick={() => setStatusFilter(f.value)} className={cn('px-3 py-1.5 text-xs font-medium rounded-lg transition', statusFilter === f.value ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground hover:bg-slate-200')}>{f.label}</button>
         ))}
       </div>
 
       {isLoading ? (
         <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
           <table className="w-full text-sm">
-            <thead><tr className="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase">
+            <thead><tr className="bg-muted text-left text-xs font-semibold text-muted-foreground uppercase">
               <th className="px-6 py-3"># Orden</th>
               <th className="px-6 py-3">Cliente</th>
               <th className="px-6 py-3">Bodega</th>
@@ -482,22 +482,22 @@ export function SalesOrdersPage() {
             </tr></thead>
             <tbody className="divide-y divide-slate-100">
               {orders.map(o => (
-                <tr key={o.id} className="hover:bg-slate-50/60 cursor-pointer" onClick={() => navigate(`/inventario/ventas/${o.id}`)}>
+                <tr key={o.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => navigate(`/inventario/ventas/${o.id}`)}>
                   <td className="px-6 py-3 font-mono text-xs">
                     {o.order_number}
                     {o.is_backorder && <span className="ml-1.5 inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700">BO</span>}
                     {o.backorder_ids && o.backorder_ids.length > 0 && <span className="ml-1.5 inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-700">{o.backorder_ids.length} BO</span>}
                   </td>
-                  <td className="px-6 py-3 font-semibold text-slate-900">{o.customer_name ?? customersMap.get(o.customer_id) ?? o.customer_id.slice(0, 8)}</td>
-                  <td className="px-6 py-3 text-sm text-slate-600">{o.warehouse_name ?? '—'}</td>
+                  <td className="px-6 py-3 font-semibold text-foreground">{o.customer_name ?? customersMap.get(o.customer_id) ?? o.customer_id.slice(0, 8)}</td>
+                  <td className="px-6 py-3 text-sm text-muted-foreground">{o.warehouse_name ?? '—'}</td>
                   <td className="px-6 py-3 font-mono text-xs">{o.remission_number ? <span className="text-orange-700 font-semibold">{o.remission_number}</span> : <span className="text-slate-300">—</span>}</td>
                   <td className="px-6 py-3"><span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold', STATUS_CONFIG[o.status]?.color)}>{STATUS_CONFIG[o.status]?.label}</span></td>
                   <td className="px-6 py-3 text-right font-mono">${o.total.toLocaleString()}</td>
-                  <td className="px-6 py-3 text-slate-500 text-xs">{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</td>
+                  <td className="px-6 py-3 text-muted-foreground text-xs">{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</td>
                   <td className="px-6 py-3" onClick={e => e.stopPropagation()}>{actionBtn(o)}</td>
                 </tr>
               ))}
-              {orders.length === 0 && <tr><td colSpan={8} className="px-6 py-12 text-center text-slate-400">Sin ordenes de venta</td></tr>}
+              {orders.length === 0 && <tr><td colSpan={8} className="px-6 py-12 text-center text-muted-foreground">Sin ordenes de venta</td></tr>}
             </tbody>
           </table>
         </div>

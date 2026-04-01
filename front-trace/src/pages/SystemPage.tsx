@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, Spinner } from '@/components/ui/Misc'
+import { Card, Spinner } from '@/components/ui/misc'
 import { useLiveness, useReadiness, useSolanaAccount, useSolanaTx } from '@/hooks/useHealth'
 import { useAdminStore } from '@/store/admin'
 import { CheckCircle2, AlertCircle, Search, RefreshCw, Link2, KeyRound, Eye, EyeOff, Check, Shield } from 'lucide-react'
@@ -39,7 +39,7 @@ export function SystemPage() {
 
         {/* Health */}
         <Card>
-          <h2 className="text-sm font-semibold text-slate-800 mb-4">Verificaciones de Salud</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-4">Verificaciones de Salud</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <HealthRow label="API activa" value={health?.status} loading={hLoading} />
             {ready?.checks && Object.entries(ready.checks).map(([k, v]) => (
@@ -50,7 +50,7 @@ export function SystemPage() {
 
         {/* Solana account */}
         <Card>
-          <h2 className="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
             <Link2 className="h-4 w-4 text-primary" />
             Consulta de Cuenta Solana
           </h2>
@@ -66,7 +66,7 @@ export function SystemPage() {
 
         {/* Solana TX */}
         <Card>
-          <h2 className="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
             <Link2 className="h-4 w-4 text-primary" />
             Estado de Transacción
           </h2>
@@ -116,8 +116,8 @@ function BlockchainConfigCard() {
           <Shield className="h-5 w-5 text-amber-600" />
         </div>
         <div>
-          <h2 className="text-sm font-semibold text-slate-800">Clave de Blockchain</h2>
-          <p className="text-xs text-slate-500">Requerida para operaciones de liberación y anclaje en Solana</p>
+          <h2 className="text-sm font-semibold text-foreground">Clave de Blockchain</h2>
+          <p className="text-xs text-muted-foreground">Requerida para operaciones de liberación y anclaje en Solana</p>
         </div>
         {adminKey && (
           <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-600">
@@ -133,12 +133,12 @@ function BlockchainConfigCard() {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder={adminKey ? '(dejar vacío para mantener)' : 'Ingresa TRACE_ADMIN_KEY...'}
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 pr-10 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring"
+            className="h-10 w-full rounded-xl border border-border bg-card px-3 pr-10 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring"
           />
           <button
             type="button"
             onClick={() => setShowKey(v => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground"
           >
             {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
@@ -159,7 +159,7 @@ function BlockchainConfigCard() {
         </p>
       )}
 
-      <p className="mt-2 text-xs text-slate-400">
+      <p className="mt-2 text-xs text-muted-foreground">
         Debe coincidir con TRACE_ADMIN_KEY en el .env del backend. Se almacena en localStorage del navegador.
       </p>
     </Card>
@@ -182,7 +182,7 @@ function HealthRow({ label, value, loading }: { label: string; value?: string; l
             ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             : <AlertCircle  className="h-4 w-4 text-red-600" />
         }
-        <span className="text-sm text-slate-700">{label}</span>
+        <span className="text-sm text-foreground">{label}</span>
       </div>
       <span className={cn('text-xs font-mono font-medium', ok ? 'text-emerald-700' : 'text-red-700')}>
         {loading ? '…' : (value ?? 'desconocido')}
@@ -194,8 +194,8 @@ function HealthRow({ label, value, loading }: { label: string; value?: string; l
 function JsonBlock({ data, badge }: { data: unknown; badge: string }) {
   return (
     <div>
-      <p className="text-xs text-slate-400 mb-2">{badge}</p>
-      <pre className="rounded-xl bg-slate-50 border border-slate-200 p-4 text-xs text-slate-700 overflow-x-auto font-mono">
+      <p className="text-xs text-muted-foreground mb-2">{badge}</p>
+      <pre className="rounded-xl bg-muted border border-border p-4 text-xs text-foreground overflow-x-auto font-mono">
         {JSON.stringify(data, null, 2)}
       </pre>
     </div>

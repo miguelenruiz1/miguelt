@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     settings = get_settings()
 
-    app = FastAPI(
+    app = FastAPI(redirect_slashes=False, 
         title="Media Service — Trace Platform",
         description="Centralized file storage and media library for all Trace modules.",
         version=settings.APP_VERSION,

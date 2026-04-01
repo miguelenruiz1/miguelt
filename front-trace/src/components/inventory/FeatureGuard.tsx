@@ -15,11 +15,11 @@ export function FeatureGuard({ feature, children }: { feature: string; children:
   if (features?.[feature] === false) {
     return (
       <div className="flex flex-col items-center justify-center py-32 text-center">
-        <div className="h-14 w-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-          <Lock className="h-7 w-7 text-gray-400" />
+        <div className="h-14 w-14 rounded-2xl bg-secondary flex items-center justify-center mb-4">
+          <Lock className="h-7 w-7 text-muted-foreground" />
         </div>
-        <h2 className="text-lg font-semibold text-gray-900">Funcionalidad desactivada</h2>
-        <p className="text-sm text-gray-500 mt-1 max-w-sm">
+        <h2 className="text-lg font-semibold text-foreground">Funcionalidad desactivada</h2>
+        <p className="text-sm text-muted-foreground mt-1 max-w-sm">
           Esta funcionalidad no esta habilitada para tu negocio. Puedes activarla desde Configuracion.
         </p>
         <button

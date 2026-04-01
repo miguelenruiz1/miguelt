@@ -67,45 +67,45 @@ function InfoTab({ productType }: { productType: { id: string; name: string; slu
       <div className="space-y-4">
         <div className="grid grid-cols-[1fr_80px] gap-4">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Nombre *</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Nombre *</label>
             <input required value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Color</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Color</label>
             <input type="color" value={form.color}
               onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-              className="h-[38px] w-full rounded-lg border border-slate-200 cursor-pointer" />
+              className="h-[38px] w-full rounded-lg border border-border cursor-pointer" />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">Descripcion</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Descripcion</label>
           <textarea value={form.description}
             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             rows={3} placeholder="Describe este tipo de producto..."
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
         </div>
 
         {/* SKU prefix */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">Prefijo de SKU</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Prefijo de SKU</label>
           <input value={form.sku_prefix}
             onChange={e => setForm(f => ({ ...f, sku_prefix: e.target.value.toUpperCase() }))}
             placeholder="Ej: MP, PT, INS"
             maxLength={20}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring font-mono uppercase" />
-          <p className="text-[11px] text-slate-400 mt-1">Los productos de este tipo se crearan con SKU automatico: PREFIJO-0001</p>
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring font-mono uppercase" />
+          <p className="text-[11px] text-muted-foreground mt-1">Los productos de este tipo se crearan con SKU automatico: PREFIJO-0001</p>
         </div>
 
         {/* Dispatch rule */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">Regla de despacho</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Regla de despacho</label>
           <select
             value={form.dispatch_rule}
             onChange={e => setForm(f => ({ ...f, dispatch_rule: e.target.value as 'fifo' | 'fefo' | 'lifo' }))}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="fifo">FIFO (primero en entrar, primero en salir)</option>
             <option value="fefo">FEFO (por vencimiento)</option>
@@ -122,39 +122,39 @@ function InfoTab({ productType }: { productType: { id: string; name: string; slu
               onChange={e => setForm(f => ({ ...f, requires_qc: e.target.checked }))}
               className="rounded border-slate-300"
             />
-            <span className="text-sm font-medium text-slate-700">Requiere control de calidad al recibir</span>
+            <span className="text-sm font-medium text-foreground">Requiere control de calidad al recibir</span>
           </label>
         </div>
 
         {/* Entry rule location */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">Ubicacion de entrada predeterminada</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Ubicacion de entrada predeterminada</label>
           <select
             value={form.entry_rule_location_id}
             onChange={e => setForm(f => ({ ...f, entry_rule_location_id: e.target.value }))}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Sin ubicacion predeterminada</option>
             {locations.map(loc => (
               <option key={loc.id} value={loc.id}>{loc.name} ({loc.code})</option>
             ))}
           </select>
-          <p className="text-[10px] text-slate-400 mt-1">Los productos de este tipo se recibiran en esta ubicacion por defecto.</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Los productos de este tipo se recibiran en esta ubicacion por defecto.</p>
         </div>
 
         {/* Photo placeholder */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">Imagen</label>
-          <div className="rounded-xl border-2 border-dashed border-slate-200 p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Imagen</label>
+          <div className="rounded-xl border-2 border-dashed border-border p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
             <ImageIcon className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-            <p className="text-xs text-slate-400">Arrastra una imagen o haz clic para subir</p>
+            <p className="text-xs text-muted-foreground">Arrastra una imagen o haz clic para subir</p>
             <p className="text-[10px] text-slate-300 mt-1">PNG, JPG hasta 2MB</p>
           </div>
         </div>
 
-        <div className="rounded-lg bg-slate-50 px-4 py-3">
-          <label className="block text-xs font-medium text-slate-500 mb-0.5">Slug</label>
-          <code className="text-sm font-mono text-slate-700">{productType.slug}</code>
+        <div className="rounded-lg bg-muted px-4 py-3">
+          <label className="block text-xs font-medium text-muted-foreground mb-0.5">Slug</label>
+          <code className="text-sm font-mono text-foreground">{productType.slug}</code>
         </div>
       </div>
 
@@ -246,10 +246,10 @@ function FieldsTab({ productTypeId }: { productTypeId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Campos exclusivos de este tipo de producto</p>
+        <p className="text-sm text-muted-foreground">Campos exclusivos de este tipo de producto</p>
         <div className="flex items-center gap-2">
           <button onClick={() => { setShowReuse(!showReuse); setShowForm(false) }}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+            className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors">
             <Link2 className="h-3.5 w-3.5" /> Reusar campo del sistema
           </button>
           <button onClick={openCreate}
@@ -264,27 +264,27 @@ function FieldsTab({ productTypeId }: { productTypeId: string }) {
         <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-xs font-bold text-slate-700">Campos disponibles del sistema</h4>
-              <p className="text-[10px] text-slate-400 mt-0.5">Selecciona un campo existente para agregarlo a este tipo de producto</p>
+              <h4 className="text-xs font-bold text-foreground">Campos disponibles del sistema</h4>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Selecciona un campo existente para agregarlo a este tipo de producto</p>
             </div>
-            <button onClick={() => setShowReuse(false)} className="text-slate-400 hover:text-slate-600">
+            <button onClick={() => setShowReuse(false)} className="text-muted-foreground hover:text-muted-foreground">
               <X className="h-4 w-4" />
             </button>
           </div>
           {reusableFields.length === 0 ? (
-            <p className="text-xs text-slate-400 py-3 text-center">No hay campos disponibles para reusar.</p>
+            <p className="text-xs text-muted-foreground py-3 text-center">No hay campos disponibles para reusar.</p>
           ) : (
             <div className="grid gap-1.5 max-h-48 overflow-y-auto">
               {reusableFields.map(f => (
                 <button key={f.id}
                   onClick={() => reuseField(f)}
                   disabled={create.isPending}
-                  className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left hover:border-primary/50 hover:bg-primary/5 transition-colors disabled:opacity-50">
-                  <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0', FIELD_COLORS[f.field_type] ?? 'bg-slate-100 text-slate-600')}>
+                  className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left hover:border-primary/50 hover:bg-primary/5 transition-colors disabled:opacity-50">
+                  <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0', FIELD_COLORS[f.field_type] ?? 'bg-secondary text-muted-foreground')}>
                     {FIELD_TYPES.find(t => t.value === f.field_type)?.label ?? f.field_type}
                   </span>
-                  <span className="text-sm font-medium text-slate-900 flex-1">{f.label}</span>
-                  <code className="text-[10px] font-mono text-slate-400">{f.field_key}</code>
+                  <span className="text-sm font-medium text-foreground flex-1">{f.label}</span>
+                  <code className="text-[10px] font-mono text-muted-foreground">{f.field_key}</code>
                   <Plus className="h-3.5 w-3.5 text-primary shrink-0" />
                 </button>
               ))}
@@ -298,50 +298,50 @@ function FieldsTab({ productTypeId }: { productTypeId: string }) {
         <form onSubmit={submit} className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Etiqueta *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Etiqueta *</label>
               <input required value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Clave (key) *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Clave (key) *</label>
               <input required value={form.field_key}
                 onChange={e => setForm(f => ({ ...f, field_key: e.target.value.toLowerCase().replace(/\s+/g, '_') }))}
                 disabled={!!editing}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50 disabled:text-slate-400"
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-muted disabled:text-muted-foreground"
                 placeholder="campo_personalizado" />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Tipo</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Tipo</label>
               <select value={form.field_type} onChange={e => setForm(f => ({ ...f, field_type: e.target.value as FieldType }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 {FIELD_TYPES.map(ft => <option key={ft.value} value={ft.value}>{ft.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Orden</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Orden</label>
               <input type="number" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: Number(e.target.value) }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="flex items-end pb-1.5">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input type="checkbox" checked={form.required} onChange={e => setForm(f => ({ ...f, required: e.target.checked }))}
                   className="rounded" />
-                <span className="text-xs font-medium text-slate-600">Requerido</span>
+                <span className="text-xs font-medium text-muted-foreground">Requerido</span>
               </label>
             </div>
           </div>
           {form.field_type === 'select' && (
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Opciones (separadas por coma)</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Opciones (separadas por coma)</label>
               <input value={form.options} onChange={e => setForm(f => ({ ...f, options: e.target.value }))}
                 placeholder="Opción 1, Opción 2, Opción 3"
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
           )}
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100">
+            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary">
               <X className="h-3.5 w-3.5" />
             </button>
             <button type="submit" disabled={create.isPending || update.isPending}
@@ -354,60 +354,60 @@ function FieldsTab({ productTypeId }: { productTypeId: string }) {
 
       {/* Fields table */}
       {isLoading ? (
-        <div className="text-sm text-slate-400 py-6 text-center">Cargando...</div>
+        <div className="text-sm text-muted-foreground py-6 text-center">Cargando...</div>
       ) : fields.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-slate-200 p-10 text-center">
+        <div className="rounded-xl border-2 border-dashed border-border p-10 text-center">
           <Database className="h-8 w-8 text-slate-200 mx-auto mb-3" />
-          <p className="text-sm font-medium text-slate-600 mb-1">Sin campos personalizados</p>
-          <p className="text-xs text-slate-400 mb-4">Crea campos exclusivos o reusa campos existentes del sistema.</p>
+          <p className="text-sm font-medium text-muted-foreground mb-1">Sin campos personalizados</p>
+          <p className="text-xs text-muted-foreground mb-4">Crea campos exclusivos o reusa campos existentes del sistema.</p>
           <div className="flex items-center justify-center gap-2">
             <button onClick={openCreate}
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90">
               <Plus className="h-3.5 w-3.5" /> Nuevo campo
             </button>
             <button onClick={() => { setShowReuse(true); setShowForm(false) }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted">
               <Link2 className="h-3.5 w-3.5" /> Reusar campo
             </button>
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-100">
+            <thead className="bg-muted border-b border-border">
               <tr>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Etiqueta</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Key</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Tipo</th>
-                <th className="px-5 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">Requerido</th>
-                <th className="px-5 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">Orden</th>
-                <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Acciones</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Etiqueta</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Key</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tipo</th>
+                <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wide">Requerido</th>
+                <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wide">Orden</th>
+                <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {fields.map(f => (
-                <tr key={f.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-5 py-3 font-medium text-slate-900">{f.label}</td>
+                <tr key={f.id} className="hover:bg-muted/50 transition-colors">
+                  <td className="px-5 py-3 font-medium text-foreground">{f.label}</td>
                   <td className="px-5 py-3">
-                    <code className="text-xs font-mono text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded">{f.field_key}</code>
+                    <code className="text-xs font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{f.field_key}</code>
                   </td>
                   <td className="px-5 py-3">
-                    <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', FIELD_COLORS[f.field_type] ?? 'bg-slate-100 text-slate-600')}>
+                    <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', FIELD_COLORS[f.field_type] ?? 'bg-secondary text-muted-foreground')}>
                       {FIELD_TYPES.find(t => t.value === f.field_type)?.label ?? f.field_type}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-center text-xs text-slate-500">{f.required ? 'Sí' : 'No'}</td>
-                  <td className="px-5 py-3 text-center text-xs text-slate-500 tabular-nums">{f.sort_order}</td>
+                  <td className="px-5 py-3 text-center text-xs text-muted-foreground">{f.required ? 'Sí' : 'No'}</td>
+                  <td className="px-5 py-3 text-center text-xs text-muted-foreground tabular-nums">{f.sort_order}</td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => openEdit(f)}
-                        className="rounded-lg p-1.5 text-slate-400 hover:text-primary hover:bg-slate-100 transition-colors">
+                        className="rounded-lg p-1.5 text-muted-foreground hover:text-primary hover:bg-secondary transition-colors">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={async () => { if (await confirm({ message: `¿Eliminar el campo "${f.label}"?`, confirmLabel: 'Eliminar' })) del.mutate(f.id) }}
                         disabled={del.isPending}
-                        className="rounded-lg p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50">
+                        className="rounded-lg p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -441,7 +441,7 @@ export function ProductTypeDetailPage() {
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto p-6 lg:p-8">
-        <div className="text-sm text-slate-400 py-12 text-center">Cargando...</div>
+        <div className="text-sm text-muted-foreground py-12 text-center">Cargando...</div>
       </div>
     )
   }
@@ -452,12 +452,12 @@ export function ProductTypeDetailPage() {
   return (
     <div className="p-8 space-y-6 max-w-5xl mx-auto">
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-1.5 text-xs text-slate-400">
-        <Link to="/inventario/configuracion" className="hover:text-slate-600 transition-colors">Configuración</Link>
+      <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Link to="/inventario/configuracion" className="hover:text-muted-foreground transition-colors">Configuración</Link>
         <ChevronRight className="h-3 w-3" />
-        <Link to="/inventario/configuracion/tipos-producto" className="hover:text-slate-600 transition-colors">Tipos de producto</Link>
+        <Link to="/inventario/configuracion/tipos-producto" className="hover:text-muted-foreground transition-colors">Tipos de producto</Link>
         <ChevronRight className="h-3 w-3" />
-        <span className="text-slate-700 font-medium">{productType.name}</span>
+        <span className="text-foreground font-medium">{productType.name}</span>
       </nav>
 
       {/* Header */}
@@ -467,18 +467,18 @@ export function ProductTypeDetailPage() {
           <Tag className="h-5 w-5" style={{ color: productType.color ?? '#6366f1' }} />
         </div>
         <div className="flex-1">
-          <h1 className="text-xl font-bold text-slate-900">{productType.name}</h1>
+          <h1 className="text-xl font-bold text-foreground">{productType.name}</h1>
           {productType.description && (
-            <p className="text-sm text-slate-500">{productType.description}</p>
+            <p className="text-sm text-muted-foreground">{productType.description}</p>
           )}
         </div>
-        <code className="hidden sm:block text-xs font-mono text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-lg">
+        <code className="hidden sm:block text-xs font-mono text-muted-foreground bg-muted border border-border px-2.5 py-1 rounded-lg">
           {productType.slug}
         </code>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-slate-200">
+      <div className="border-b border-border">
         <div className="flex gap-1">
           {TABS.map(tab => (
             <button key={tab.id}
@@ -487,7 +487,7 @@ export function ProductTypeDetailPage() {
                 'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors',
                 activeTab === tab.id
                   ? 'border-primary text-primary'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-slate-300',
               )}>
               <tab.icon className="h-4 w-4" />
               {tab.label}
@@ -497,7 +497,7 @@ export function ProductTypeDetailPage() {
       </div>
 
       {/* Tab content */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <div className="bg-card rounded-2xl border border-border  p-6">
         {activeTab === 'info' && <InfoTab productType={productType} />}
         {activeTab === 'fields' && <FieldsTab productTypeId={productType.id} />}
       </div>

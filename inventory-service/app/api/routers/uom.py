@@ -24,7 +24,13 @@ async def list_uoms(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = UoMService(db)
-    items = await svc.list_uoms(current_user["tenant_id"])
+    tenant_id = current_user["tenant_id"]
+    items = await svc.list_uoms(tenant_id)
+    # Auto-seed UoMs for new tenants
+    if not items:
+        await svc.initialize_uoms(tenant_id)
+        await db.commit()
+        items = await svc.list_uoms(tenant_id)
     return [UoMOut.model_validate(u) for u in items]
 
 

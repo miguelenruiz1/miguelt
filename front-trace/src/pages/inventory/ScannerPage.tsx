@@ -106,7 +106,7 @@ function ReceiveForm({
       <select
         value={warehouseId}
         onChange={(e) => setWarehouseId(e.target.value)}
-        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+        className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
         required
       >
         <option value="">Seleccionar almacen</option>
@@ -123,7 +123,7 @@ function ReceiveForm({
         placeholder="Cantidad"
         value={quantity}
         onChange={(e) => setQuantity(e.target.value)}
-        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+        className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
         required
       />
       <div className="flex gap-2">
@@ -138,7 +138,7 @@ function ReceiveForm({
         <button
           type="button"
           onClick={onDone}
-          className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          className="rounded-xl border border-border px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted"
         >
           Cancelar
         </button>
@@ -188,7 +188,7 @@ function IssueForm({
       <select
         value={warehouseId}
         onChange={(e) => setWarehouseId(e.target.value)}
-        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+        className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
         required
       >
         <option value="">Seleccionar almacen</option>
@@ -205,7 +205,7 @@ function IssueForm({
         placeholder="Cantidad"
         value={quantity}
         onChange={(e) => setQuantity(e.target.value)}
-        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+        className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
         required
       />
       <div className="flex gap-2">
@@ -220,7 +220,7 @@ function IssueForm({
         <button
           type="button"
           onClick={onDone}
-          className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          className="rounded-xl border border-border px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted"
         >
           Cancelar
         </button>
@@ -275,7 +275,7 @@ function TransferForm({
       <select
         value={fromId}
         onChange={(e) => setFromId(e.target.value)}
-        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
         required
       >
         <option value="">Almacen origen</option>
@@ -288,7 +288,7 @@ function TransferForm({
       <select
         value={toId}
         onChange={(e) => setToId(e.target.value)}
-        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
         required
       >
         <option value="">Almacen destino</option>
@@ -305,7 +305,7 @@ function TransferForm({
         placeholder="Cantidad"
         value={quantity}
         onChange={(e) => setQuantity(e.target.value)}
-        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
         required
       />
       <div className="flex gap-2">
@@ -320,7 +320,7 @@ function TransferForm({
         <button
           type="button"
           onClick={onDone}
-          className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          className="rounded-xl border border-border px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted"
         >
           Cancelar
         </button>
@@ -344,32 +344,32 @@ function ProductCard({
   const warehouseMap = new Map(warehouses.map((w) => [w.id, w]))
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-2xl border border-border bg-card  overflow-hidden">
       {/* Product header */}
-      <div className="px-5 py-4 border-b border-slate-100">
+      <div className="px-5 py-4 border-b border-border">
         <div className="flex items-start gap-3">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Package className="h-6 w-6" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-lg font-semibold text-slate-900 truncate">{product.name}</h3>
-            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
-              <span>SKU: <span className="font-mono font-medium text-slate-700">{product.sku}</span></span>
+            <h3 className="text-lg font-semibold text-foreground truncate">{product.name}</h3>
+            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              <span>SKU: <span className="font-mono font-medium text-foreground">{product.sku}</span></span>
               {product.barcode && (
-                <span>Cod. barras: <span className="font-mono font-medium text-slate-700">{product.barcode}</span></span>
+                <span>Cod. barras: <span className="font-mono font-medium text-foreground">{product.barcode}</span></span>
               )}
               <span>UOM: {product.unit_of_measure}</span>
             </div>
             {product.description && (
-              <p className="mt-1 text-sm text-slate-400 line-clamp-2">{product.description}</p>
+              <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{product.description}</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Stock levels per warehouse */}
-      <div className="px-5 py-3 border-b border-slate-100">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Stock por almacen</h4>
+      <div className="px-5 py-3 border-b border-border">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Stock por almacen</h4>
         {stockLevels && stockLevels.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {stockLevels.map((sl: StockLevel) => {
@@ -377,15 +377,15 @@ function ProductCard({
               return (
                 <div
                   key={sl.id}
-                  className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2"
+                  className="flex items-center justify-between rounded-xl bg-muted px-3 py-2"
                 >
-                  <span className="text-sm text-slate-600 truncate">
+                  <span className="text-sm text-muted-foreground truncate">
                     {wh?.name ?? sl.warehouse_id}
                   </span>
                   <span
                     className={cn(
                       'text-sm font-semibold tabular-nums',
-                      Number(sl.qty_on_hand) <= 0 ? 'text-red-600' : 'text-slate-900',
+                      Number(sl.qty_on_hand) <= 0 ? 'text-red-600' : 'text-foreground',
                     )}
                   >
                     {sl.qty_on_hand}
@@ -395,7 +395,7 @@ function ProductCard({
             })}
           </div>
         ) : (
-          <p className="text-sm text-slate-400 italic">Sin stock registrado</p>
+          <p className="text-sm text-muted-foreground italic">Sin stock registrado</p>
         )}
       </div>
 
@@ -560,11 +560,11 @@ export function ScannerPage() {
     <div className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
           <ScanBarcode className="h-7 w-7 text-primary" />
           Escaner
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           Escanea codigos de barras para operaciones rapidas
         </p>
       </div>
@@ -575,7 +575,7 @@ export function ScannerPage() {
           {isSearching ? (
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           ) : (
-            <ScanBarcode className="h-6 w-6 text-slate-400" />
+            <ScanBarcode className="h-6 w-6 text-muted-foreground" />
           )}
         </div>
         <input
@@ -591,10 +591,10 @@ export function ScannerPage() {
           autoCapitalize="off"
           spellCheck={false}
           className={cn(
-            'w-full rounded-2xl border-2 bg-white py-5 pl-14 pr-5 text-lg font-mono tracking-wider',
+            'w-full rounded-2xl border-2 bg-card py-5 pl-14 pr-5 text-lg font-mono tracking-wider',
             'placeholder:text-slate-300 placeholder:font-sans placeholder:tracking-normal placeholder:text-base',
             'focus:outline-none focus:ring-4 focus:ring-ring/30 focus:border-primary',
-            'border-slate-200 transition-all',
+            'border-border transition-all',
             isSearching && 'border-primary/70 ring-4 ring-ring/20',
           )}
         />
@@ -604,7 +604,7 @@ export function ScannerPage() {
               setScanCode('')
               refocusInput()
             }}
-            className="absolute inset-y-0 right-0 flex items-center pr-5 text-slate-400 hover:text-slate-600"
+            className="absolute inset-y-0 right-0 flex items-center pr-5 text-muted-foreground hover:text-muted-foreground"
           >
             <X className="h-5 w-5" />
           </button>
@@ -621,9 +621,9 @@ export function ScannerPage() {
       )}
 
       {!foundProduct && !notFoundCode && !isSearching && (
-        <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 py-16 text-center">
+        <div className="rounded-2xl border-2 border-dashed border-border bg-muted/50 py-16 text-center">
           <ScanBarcode className="mx-auto h-16 w-16 text-slate-300" />
-          <p className="mt-4 text-lg font-medium text-slate-400">
+          <p className="mt-4 text-lg font-medium text-muted-foreground">
             Listo para escanear
           </p>
           <p className="mt-1 text-sm text-slate-300">
@@ -636,7 +636,7 @@ export function ScannerPage() {
       {history.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Historial de escaneos ({history.length})
             </h2>
@@ -645,7 +645,7 @@ export function ScannerPage() {
                 setHistory([])
                 refocusInput()
               }}
-              className="text-xs text-slate-400 hover:text-slate-600"
+              className="text-xs text-muted-foreground hover:text-muted-foreground"
             >
               Limpiar
             </button>
@@ -658,7 +658,7 @@ export function ScannerPage() {
                 className={cn(
                   'w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors',
                   entry.product
-                    ? 'bg-white border border-slate-100 hover:border-slate-200 hover:bg-slate-50'
+                    ? 'bg-card border border-border hover:border-border hover:bg-muted'
                     : 'bg-red-50/50 border border-red-100 hover:bg-red-50',
                 )}
               >
@@ -676,11 +676,11 @@ export function ScannerPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-medium text-slate-700 truncate">
+                    <span className="font-mono text-sm font-medium text-foreground truncate">
                       {entry.code}
                     </span>
                     {entry.product && (
-                      <span className="text-sm text-slate-400 truncate">
+                      <span className="text-sm text-muted-foreground truncate">
                         — {entry.product.name}
                       </span>
                     )}

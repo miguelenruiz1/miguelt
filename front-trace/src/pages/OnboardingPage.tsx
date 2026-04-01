@@ -1,46 +1,237 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Truck, Globe, Check, ChevronRight, ArrowRight, Building2, Leaf, ShieldCheck, FileCheck, BarChart3 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import {
+  Truck, Boxes, Factory, ShieldCheck, Sparkles, FileText,
+  Check, ChevronRight, ArrowRight, ArrowLeft, ShoppingCart,
+  Star, Zap, Crown, CreditCard, X, Plus, Minus,
+} from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import { userApi } from '@/lib/user-api'
-import { useCustodianTypes, useCreateOrganization } from '@/hooks/useTaxonomy'
 import { useActivateModule } from '@/hooks/useModules'
+import { usePlans } from '@/hooks/usePlans'
+import { useActiveGateway } from '@/hooks/usePayments'
+import { useCheckout } from '@/hooks/useBilling'
+import { useToast } from '@/store/toast'
 import { cn } from '@/lib/utils'
 
-const STEPS = ['welcome', 'eudr', 'organization', 'complete'] as const
+// ─── Module catalog with marketing copy ──────────────────────────────────────
+
+interface ModuleOption {
+  slug: string
+  name: string
+  tagline: string
+  description: string
+  icon: React.ElementType
+  color: string
+  gradient: string
+  price: number
+  popular?: boolean
+  features: string[]
+  whoNeeds: string
+}
+
+const MODULES: ModuleOption[] = [
+  {
+    slug: 'logistics',
+    name: 'Logistica',
+    tagline: 'Sabe donde esta cada carga',
+    description: 'Rastreo de activos en tiempo real con cadena de custodia inmutable.',
+    icon: Truck,
+    color: 'text-blue-600',
+    gradient: 'from-blue-500 to-blue-600',
+    price: 0,
+    features: [
+      'Tracking board en tiempo real',
+      'Cadena de custodia con blockchain',
+      'Custodios y organizaciones',
+      'Workflow configurable por industria',
+    ],
+    whoNeeds: 'Transportistas, operadores logisticos, distribuidores',
+  },
+  {
+    slug: 'inventory',
+    name: 'Inventario',
+    tagline: 'Control total de tu stock',
+    description: 'Productos, bodegas, movimientos, compras y ventas con costos reales.',
+    icon: Boxes,
+    color: 'text-orange-600',
+    gradient: 'from-orange-500 to-amber-600',
+    price: 29,
+    popular: true,
+    features: [
+      'Productos con variantes y lotes',
+      'Multi-bodega con ubicaciones',
+      'Compras y ventas con aprobaciones',
+      'Kardex y valorizacion (FIFO/FEFO)',
+    ],
+    whoNeeds: 'Comercializadoras, mayoristas, retailers, fabricantes',
+  },
+  {
+    slug: 'production',
+    name: 'Produccion',
+    tagline: 'De materia prima a producto terminado',
+    description: 'BOM, corridas de produccion, emisiones, recibos y MRP automatico.',
+    icon: Factory,
+    color: 'text-violet-600',
+    gradient: 'from-violet-500 to-purple-600',
+    price: 39,
+    features: [
+      'Recetas (BOM) con versiones',
+      'Corridas de produccion con costeo',
+      'MRP con explosion recursiva',
+      'Recursos y capacidad de planta',
+    ],
+    whoNeeds: 'Fabricantes, procesadores de alimentos, laboratorios',
+  },
+  {
+    slug: 'compliance',
+    name: 'Cumplimiento',
+    tagline: 'Exporta sin preocupaciones',
+    description: 'EUDR, USDA, FSSAI. Parcelas, registros y certificados verificables.',
+    icon: ShieldCheck,
+    color: 'text-emerald-600',
+    gradient: 'from-emerald-500 to-green-600',
+    price: 49,
+    features: [
+      'Certificacion EUDR automatica',
+      'Gestion de parcelas con GeoJSON',
+      'Certificados PDF verificables',
+      'Evaluacion de riesgo por proveedor',
+    ],
+    whoNeeds: 'Exportadores a Europa, caficultores, agroindustria',
+  },
+  {
+    slug: 'electronic-invoicing',
+    name: 'Facturacion DIAN',
+    tagline: 'Factura electronica legal',
+    description: 'Facturas, notas credito y debito ante la DIAN. Resolucion automatica.',
+    icon: FileText,
+    color: 'text-muted-foreground',
+    gradient: 'from-slate-600 to-slate-800',
+    price: 19,
+    features: [
+      'Factura electronica DIAN',
+      'Notas credito y debito',
+      'Numeracion con resolucion',
+      'Modo sandbox para pruebas',
+    ],
+    whoNeeds: 'Cualquier empresa colombiana que facture',
+  },
+  {
+    slug: 'ai-analysis',
+    name: 'Inteligencia Artificial',
+    tagline: 'Decisiones basadas en datos',
+    description: 'Analisis de rentabilidad con IA. Alertas de margen y recomendaciones.',
+    icon: Sparkles,
+    color: 'text-pink-600',
+    gradient: 'from-pink-500 to-rose-600',
+    price: 29,
+    features: [
+      'Analisis de rentabilidad por producto',
+      'Alertas de margen automaticas',
+      'Recomendaciones accionables',
+      'Reportes generados con IA',
+    ],
+    whoNeeds: 'Gerentes, directores financieros, analistas',
+  },
+]
+
+const STEPS = ['industry', 'modules', 'cart', 'checkout'] as const
 type Step = typeof STEPS[number]
+
+// ─── Industry presets ────────────────────────────────────────────────────────
+
+interface Industry {
+  id: string
+  name: string
+  icon: string
+  recommended: string[]
+}
+
+const INDUSTRIES: Industry[] = [
+  { id: 'coffee', name: 'Cafe / Cacao', icon: '☕', recommended: ['logistics', 'inventory', 'compliance', 'production'] },
+  { id: 'agro', name: 'Agroindustria', icon: '🌿', recommended: ['logistics', 'inventory', 'compliance'] },
+  { id: 'food', name: 'Alimentos', icon: '🍎', recommended: ['inventory', 'production', 'electronic-invoicing'] },
+  { id: 'manufacturing', name: 'Manufactura', icon: '🏭', recommended: ['inventory', 'production', 'electronic-invoicing'] },
+  { id: 'distribution', name: 'Distribucion', icon: '📦', recommended: ['logistics', 'inventory', 'electronic-invoicing'] },
+  { id: 'pharma', name: 'Farmaceutico', icon: '💊', recommended: ['logistics', 'inventory', 'compliance', 'production'] },
+  { id: 'retail', name: 'Retail / Comercio', icon: '🛒', recommended: ['inventory', 'electronic-invoicing', 'ai-analysis'] },
+  { id: 'other', name: 'Otro', icon: '🔧', recommended: ['logistics', 'inventory'] },
+]
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 
 export function OnboardingPage() {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const setAuth = useAuthStore((s) => s.setAuth)
-  const [step, setStep] = useState<Step>('welcome')
-  const [loading, setLoading] = useState(false)
-
-  // Step 3 form state
-  const [orgName, setOrgName] = useState('')
-  const [orgTypeId, setOrgTypeId] = useState('')
-  const { data: custodianTypes } = useCustodianTypes()
-  const createOrg = useCreateOrganization()
   const activateModule = useActivateModule()
+  const toast = useToast()
+
+  const [step, setStep] = useState<Step>('industry')
+  const [industry, setIndustry] = useState<string | null>(null)
+  const [selectedModules, setSelectedModules] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(false)
 
   const currentIndex = STEPS.indexOf(step)
 
-  async function goToStep(next: Step) {
-    try {
-      await userApi.onboarding.updateStep(next)
-    } catch {
-      // non-blocking
-    }
-    setStep(next)
+  function selectIndustry(id: string) {
+    setIndustry(id)
+    const ind = INDUSTRIES.find(i => i.id === id)
+    if (ind) setSelectedModules(new Set(ind.recommended))
+    setStep('modules')
   }
 
-  async function finishOnboarding() {
+  function toggleModule(slug: string) {
+    setSelectedModules(prev => {
+      const next = new Set(prev)
+      if (next.has(slug)) next.delete(slug)
+      else next.add(slug)
+      return next
+    })
+  }
+
+  const selectedList = MODULES.filter(m => selectedModules.has(m.slug))
+  const monthlyTotal = selectedList.reduce((sum, m) => sum + m.price, 0)
+
+  async function handleActivateAndFinish() {
+    if (!user) return
+    setLoading(true)
+    try {
+      // Activate all selected modules
+      for (const slug of selectedModules) {
+        try {
+          await activateModule.mutateAsync({ tenantId: user.tenant_id, slug })
+        } catch { /* ignore if already active */ }
+      }
+
+      // Mark onboarding complete
+      await userApi.onboarding.complete()
+      const { accessToken, refreshToken, permissions } = useAuthStore.getState()
+      setAuth(
+        { ...user, onboarding_completed: true, onboarding_step: 'complete' },
+        accessToken!,
+        refreshToken!,
+        permissions,
+      )
+
+      if (monthlyTotal > 0) {
+        navigate(`/checkout?modules=${Array.from(selectedModules).join(',')}`, { replace: true })
+      } else {
+        toast.success('Cuenta configurada')
+        navigate('/', { replace: true })
+      }
+    } catch {
+      navigate('/', { replace: true })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function skipAll() {
     setLoading(true)
     try {
       await userApi.onboarding.complete()
-      // Update local auth state
       if (user) {
         const { accessToken, refreshToken, permissions } = useAuthStore.getState()
         setAuth(
@@ -58,104 +249,59 @@ export function OnboardingPage() {
     }
   }
 
-  async function skipAll() {
-    await finishOnboarding()
-  }
-
-  async function handleEudrActivate() {
-    if (!user) return
-    setLoading(true)
-    try {
-      await activateModule.mutateAsync({ tenantId: user.tenant_id, slug: 'compliance' })
-    } catch {
-      // ignore — module might already be active
-    } finally {
-      setLoading(false)
-      goToStep('organization')
-    }
-  }
-
-  async function handleCreateOrg() {
-    if (!orgName.trim() || !orgTypeId) return
-    setLoading(true)
-    try {
-      await createOrg.mutateAsync({ name: orgName.trim(), custodian_type_id: orgTypeId })
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false)
-      goToStep('complete')
-    }
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-muted flex flex-col">
       {/* Top bar */}
-      <div className="border-b bg-white px-6 py-4 flex items-center justify-between">
+      <div className="border-b bg-card px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">T</span>
           </div>
-          <span className="font-semibold text-gray-900">TraceLog</span>
+          <span className="font-semibold text-foreground">TraceLog</span>
         </div>
-        <button
-          onClick={skipAll}
-          className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-        >
+        <button onClick={skipAll} className="text-sm text-muted-foreground hover:text-foreground">
           Saltar todo
         </button>
       </div>
 
-      {/* Progress bar */}
-      <div className="px-6 pt-8 max-w-2xl mx-auto w-full">
-        <div className="flex items-center gap-1 mb-2">
-          {STEPS.map((s, i) => (
-            <div
-              key={s}
-              className={cn(
-                'h-1.5 flex-1 rounded-full transition-colors duration-300',
-                i <= currentIndex ? 'bg-gray-900' : 'bg-gray-200',
-              )}
-            />
+      {/* Progress */}
+      <div className="px-6 pt-6 max-w-3xl mx-auto w-full">
+        <div className="flex items-center gap-1 mb-1">
+          {STEPS.map((_, i) => (
+            <div key={i} className={cn('h-1.5 flex-1 rounded-full transition-colors', i <= currentIndex ? 'bg-gray-900' : 'bg-gray-200')} />
           ))}
         </div>
-        <p className="text-xs text-gray-500 text-right">
-          Paso {currentIndex + 1} de {STEPS.length}
-        </p>
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>Tu industria</span>
+          <span>Modulos</span>
+          <span>Resumen</span>
+          <span>Pagar</span>
+        </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex items-start justify-center px-6 pt-8 pb-16">
-        <div className="w-full max-w-2xl">
-          {step === 'welcome' && (
-            <WelcomeStep
-              onDomestic={async () => {
-                await finishOnboarding()
-              }}
-              onExport={() => goToStep('eudr')}
+      <div className="flex-1 flex items-start justify-center px-6 pt-6 pb-16">
+        <div className="w-full max-w-3xl">
+          {step === 'industry' && <IndustryStep industries={INDUSTRIES} onSelect={selectIndustry} />}
+          {step === 'modules' && (
+            <ModulesStep
+              modules={MODULES}
+              selected={selectedModules}
+              industry={INDUSTRIES.find(i => i.id === industry)}
+              onToggle={toggleModule}
+              onBack={() => setStep('industry')}
+              onNext={() => setStep('cart')}
             />
           )}
-          {step === 'eudr' && (
-            <EudrStep
+          {step === 'cart' && (
+            <CartStep
+              selected={selectedList}
+              total={monthlyTotal}
+              onRemove={(slug) => toggleModule(slug)}
+              onBack={() => setStep('modules')}
+              onCheckout={handleActivateAndFinish}
               loading={loading}
-              onActivate={handleEudrActivate}
-              onSkip={() => goToStep('organization')}
             />
-          )}
-          {step === 'organization' && (
-            <OrganizationStep
-              orgName={orgName}
-              setOrgName={setOrgName}
-              orgTypeId={orgTypeId}
-              setOrgTypeId={setOrgTypeId}
-              custodianTypes={custodianTypes ?? []}
-              loading={loading}
-              onCreate={handleCreateOrg}
-              onSkip={() => goToStep('complete')}
-            />
-          )}
-          {step === 'complete' && (
-            <CompleteStep loading={loading} onFinish={finishOnboarding} />
           )}
         </div>
       </div>
@@ -163,246 +309,252 @@ export function OnboardingPage() {
   )
 }
 
-// ─── Step 1: Welcome ─────────────────────────────────────────────────────────
+// ─── Step 1: Industry ────────────────────────────────────────────────────────
 
-function WelcomeStep({
-  onDomestic,
-  onExport,
-}: {
-  onDomestic: () => void
-  onExport: () => void
-}) {
+function IndustryStep({ industries, onSelect }: { industries: Industry[]; onSelect: (id: string) => void }) {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Bienvenido a TraceLog
-        </h1>
-        <p className="text-gray-600">
-          Cuéntanos qué necesitas para personalizar tu experiencia
-        </p>
+        <h1 className="text-2xl font-bold text-foreground">A que se dedica tu empresa?</h1>
+        <p className="text-muted-foreground">Te recomendaremos los modulos ideales para tu industria</p>
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
-        <button
-          onClick={onDomestic}
-          className="group relative bg-white border-2 border-gray-200 hover:border-gray-900 rounded-xl p-6 text-left transition-all duration-200"
-        >
-          <div className="flex flex-col items-center text-center gap-4">
-            <div className="w-14 h-14 bg-gray-100 group-hover:bg-gray-900 rounded-xl flex items-center justify-center transition-colors">
-              <Truck className="w-7 h-7 text-gray-600 group-hover:text-white transition-colors" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-1">Solo logística nacional</h3>
-              <p className="text-sm text-gray-500">
-                Gestiona tus cadenas de custodia, activos e inventario dentro del país
-              </p>
-            </div>
-          </div>
-          <ChevronRight className="absolute top-1/2 right-3 -translate-y-1/2 w-5 h-5 text-gray-300 group-hover:text-gray-900 transition-colors" />
-        </button>
-
-        <button
-          onClick={onExport}
-          className="group relative bg-white border-2 border-gray-200 hover:border-emerald-600 rounded-xl p-6 text-left transition-all duration-200"
-        >
-          <div className="flex flex-col items-center text-center gap-4">
-            <div className="w-14 h-14 bg-emerald-50 group-hover:bg-emerald-600 rounded-xl flex items-center justify-center transition-colors">
-              <Globe className="w-7 h-7 text-emerald-600 group-hover:text-white transition-colors" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-1">Exportar a Europa</h3>
-              <p className="text-sm text-gray-500">
-                Certifica tus cargas con EUDR y trazabilidad internacional
-              </p>
-            </div>
-          </div>
-          <ChevronRight className="absolute top-1/2 right-3 -translate-y-1/2 w-5 h-5 text-gray-300 group-hover:text-emerald-600 transition-colors" />
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ─── Step 2: EUDR Activation ─────────────────────────────────────────────────
-
-function EudrStep({
-  loading,
-  onActivate,
-  onSkip,
-}: {
-  loading: boolean
-  onActivate: () => void
-  onSkip: () => void
-}) {
-  const benefits = [
-    { icon: Leaf, text: 'Cumple con la regulación EUDR de la Unión Europea' },
-    { icon: ShieldCheck, text: 'Genera declaraciones de diligencia debida (DDS) automáticas' },
-    { icon: FileCheck, text: 'Certificados verificables con código QR para cada carga' },
-    { icon: BarChart3, text: 'Trazabilidad completa desde parcela hasta destino' },
-  ]
-
-  return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-          <Globe className="w-7 h-7 text-emerald-600" />
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Activa el Upgrade Europa
-        </h1>
-        <p className="text-gray-600">
-          Certifica tus cargas para exportación bajo la regulación EUDR
-        </p>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
-        {benefits.map((b, i) => (
-          <div key={i} className="flex items-start gap-3">
-            <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-              <b.icon className="w-4 h-4 text-emerald-600" />
-            </div>
-            <p className="text-sm text-gray-700 pt-1">{b.text}</p>
-          </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {industries.map(ind => (
+          <button
+            key={ind.id}
+            onClick={() => onSelect(ind.id)}
+            className="group bg-card border-2 border-border hover:border-gray-900 rounded-xl p-4 text-center transition-all"
+          >
+            <div className="text-3xl mb-2">{ind.icon}</div>
+            <p className="text-sm font-semibold text-foreground">{ind.name}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{ind.recommended.length} modulos recomendados</p>
+          </button>
         ))}
       </div>
+    </div>
+  )
+}
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Button
-          variant="primary"
-          size="lg"
-          className="flex-1 bg-emerald-600 hover:bg-emerald-700"
-          loading={loading}
-          onClick={onActivate}
+// ─── Step 2: Module Selection ────────────────────────────────────────────────
+
+function ModulesStep({
+  modules, selected, industry, onToggle, onBack, onNext,
+}: {
+  modules: ModuleOption[]
+  selected: Set<string>
+  industry?: Industry
+  onToggle: (slug: string) => void
+  onBack: () => void
+  onNext: () => void
+}) {
+  const total = modules.filter(m => selected.has(m.slug)).reduce((s, m) => s + m.price, 0)
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> Cambiar industria
+        </button>
+        {industry && (
+          <span className="text-sm text-muted-foreground">
+            {industry.icon} {industry.name}
+          </span>
+        )}
+      </div>
+
+      <div className="text-center space-y-2">
+        <h1 className="text-2xl font-bold text-foreground">Arma tu plan</h1>
+        <p className="text-muted-foreground">Selecciona los modulos que necesitas. Puedes cambiarlos despues.</p>
+      </div>
+
+      <div className="space-y-3">
+        {modules.map(mod => {
+          const isSelected = selected.has(mod.slug)
+          const isRecommended = industry?.recommended.includes(mod.slug)
+          const Icon = mod.icon
+
+          return (
+            <button
+              key={mod.slug}
+              onClick={() => onToggle(mod.slug)}
+              className={cn(
+                'w-full flex items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all',
+                isSelected
+                  ? 'border-gray-900 bg-muted'
+                  : 'border-border bg-card hover:border-gray-300',
+              )}
+            >
+              <div className={cn('h-12 w-12 rounded-xl bg-gradient-to-br flex items-center justify-center shrink-0', mod.gradient)}>
+                <Icon className="h-6 w-6 text-white" />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-foreground">{mod.name}</h3>
+                  {isRecommended && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                      <Star className="h-3 w-3" /> Recomendado
+                    </span>
+                  )}
+                  {mod.popular && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                      <Zap className="h-3 w-3" /> Popular
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">{mod.tagline}</p>
+              </div>
+
+              <div className="text-right shrink-0">
+                <p className="text-lg font-bold text-foreground">
+                  {mod.price === 0 ? 'Gratis' : `$${mod.price}`}
+                </p>
+                {mod.price > 0 && <p className="text-[10px] text-muted-foreground">/mes</p>}
+              </div>
+
+              <div className={cn(
+                'h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors',
+                isSelected ? 'border-gray-900 bg-gray-900' : 'border-gray-300',
+              )}>
+                {isSelected && <Check className="h-4 w-4 text-white" />}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Sticky bottom */}
+      <div className="sticky bottom-0 bg-muted pt-4 pb-2">
+        <button
+          onClick={onNext}
+          disabled={selected.size === 0}
+          className="w-full flex items-center justify-center gap-3 bg-gray-900 text-white rounded-xl px-6 py-4 text-sm font-semibold hover:bg-gray-800 disabled:opacity-40 transition-colors"
         >
-          Activar ahora
-          <ArrowRight className="w-4 h-4" />
-        </Button>
-        <Button variant="ghost" size="lg" onClick={onSkip}>
-          Saltar
-        </Button>
+          <ShoppingCart className="h-5 w-5" />
+          Ver resumen — {total === 0 ? 'Gratis' : `$${total}/mes`}
+          <ArrowRight className="h-4 w-4" />
+        </button>
       </div>
     </div>
   )
 }
 
-// ─── Step 3: Create Organization ─────────────────────────────────────────────
+// ─── Step 3: Cart ────────────────────────────────────────────────────────────
 
-function OrganizationStep({
-  orgName,
-  setOrgName,
-  orgTypeId,
-  setOrgTypeId,
-  custodianTypes,
-  loading,
-  onCreate,
-  onSkip,
+function CartStep({
+  selected, total, onRemove, onBack, onCheckout, loading,
 }: {
-  orgName: string
-  setOrgName: (v: string) => void
-  orgTypeId: string
-  setOrgTypeId: (v: string) => void
-  custodianTypes: { id: string; name: string }[]
+  selected: ModuleOption[]
+  total: number
+  onRemove: (slug: string) => void
+  onBack: () => void
+  onCheckout: () => void
   loading: boolean
-  onCreate: () => void
-  onSkip: () => void
 }) {
   return (
     <div className="space-y-6">
+      <button onClick={onBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-4 w-4" /> Agregar mas modulos
+      </button>
+
       <div className="text-center space-y-2">
-        <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-          <Building2 className="w-7 h-7 text-blue-600" />
+        <h1 className="text-2xl font-bold text-foreground">Tu plan TraceLog</h1>
+        <p className="text-muted-foreground">{selected.length} modulo{selected.length !== 1 ? 's' : ''} seleccionado{selected.length !== 1 ? 's' : ''}</p>
+      </div>
+
+      {/* Cart items */}
+      <div className="bg-card rounded-2xl border border-border overflow-hidden divide-y divide-gray-100">
+        {selected.map(mod => {
+          const Icon = mod.icon
+          return (
+            <div key={mod.slug} className="flex items-center gap-4 px-5 py-4">
+              <div className={cn('h-10 w-10 rounded-xl bg-gradient-to-br flex items-center justify-center shrink-0', mod.gradient)}>
+                <Icon className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold text-foreground">{mod.name}</h3>
+                <p className="text-xs text-muted-foreground">{mod.tagline}</p>
+              </div>
+              <p className="text-sm font-bold text-foreground shrink-0">
+                {mod.price === 0 ? 'Gratis' : `$${mod.price}/mes`}
+              </p>
+              <button
+                onClick={() => onRemove(mod.slug)}
+                className="text-gray-300 hover:text-red-500 transition-colors shrink-0"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Summary */}
+      <div className="bg-gray-900 text-white rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">Subtotal mensual</span>
+          <span className="text-lg font-bold">${total} USD</span>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Registra tu primera organización
-        </h1>
-        <p className="text-gray-600">
-          Una organización agrupa tus operaciones (finca, bodega, transporte, etc.)
-        </p>
+        {total === 0 && (
+          <p className="text-xs text-muted-foreground">Plan gratuito — sin tarjeta de credito requerida</p>
+        )}
+        {total > 0 && (
+          <>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Pago anual (20% dto)</span>
+              <span className="font-semibold text-emerald-400">${Math.round(total * 12 * 0.8)} USD/ano</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Ahorras ${Math.round(total * 12 * 0.2)} USD al ano con pago anual
+            </p>
+          </>
+        )}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Nombre
-          </label>
-          <input
-            type="text"
-            value={orgName}
-            onChange={(e) => setOrgName(e.target.value)}
-            placeholder="Ej: Finca La Esperanza"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:ring-1 focus:ring-gray-500 outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Tipo
-          </label>
-          <select
-            value={orgTypeId}
-            onChange={(e) => setOrgTypeId(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:ring-1 focus:ring-gray-500 outline-none bg-white"
-          >
-            <option value="">Selecciona un tipo...</option>
-            {custodianTypes.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
+      {/* Features included */}
+      <div className="bg-card rounded-2xl border border-border p-5">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Incluido en todos los planes</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            'HTTPS y SSL automatico',
+            'Multi-usuario con roles',
+            'Soporte por email',
+            'Actualizaciones gratuitas',
+            'Datos en la nube (GCP)',
+            'Backups diarios automaticos',
+          ].map(f => (
+            <div key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+              {f}
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Button
-          variant="primary"
-          size="lg"
-          className="flex-1"
-          loading={loading}
-          disabled={!orgName.trim() || !orgTypeId}
-          onClick={onCreate}
-        >
-          Crear organización
-          <ArrowRight className="w-4 h-4" />
-        </Button>
-        <Button variant="ghost" size="lg" onClick={onSkip}>
-          Saltar
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-// ─── Step 4: Complete ────────────────────────────────────────────────────────
-
-function CompleteStep({
-  loading,
-  onFinish,
-}: {
-  loading: boolean
-  onFinish: () => void
-}) {
-  return (
-    <div className="space-y-6 text-center">
-      <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
-        <Check className="w-8 h-8 text-emerald-600" />
-      </div>
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Todo listo
-        </h1>
-        <p className="text-gray-600">
-          Tu cuenta está configurada. Puedes empezar a usar TraceLog ahora.
-        </p>
-      </div>
-
-      <Button
-        variant="primary"
-        size="lg"
-        loading={loading}
-        onClick={onFinish}
+      {/* CTA */}
+      <button
+        onClick={onCheckout}
+        disabled={loading || selected.length === 0}
+        className="w-full flex items-center justify-center gap-3 bg-gray-900 text-white rounded-xl px-6 py-4 text-sm font-semibold hover:bg-gray-800 disabled:opacity-40 transition-colors"
       >
-        Ir al Dashboard
-        <ArrowRight className="w-4 h-4" />
-      </Button>
+        {loading ? (
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+        ) : total === 0 ? (
+          <>
+            <Zap className="h-5 w-5" />
+            Empezar gratis
+          </>
+        ) : (
+          <>
+            <CreditCard className="h-5 w-5" />
+            Continuar al pago — ${total}/mes
+          </>
+        )}
+      </button>
+
+      <p className="text-center text-xs text-muted-foreground">
+        Puedes cancelar o cambiar tu plan en cualquier momento
+      </p>
     </div>
   )
 }

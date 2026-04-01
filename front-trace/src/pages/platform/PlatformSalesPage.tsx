@@ -10,15 +10,15 @@ function KpiCard({ label, value, icon: Icon, color, subtext }: {
   label: string; value: string | number; icon: React.ElementType; color: string; subtext?: string
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm">
+    <div className="bg-card rounded-2xl border border-border/60 p-5 ">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</span>
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</span>
         <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${color}`}>
           <Icon className="h-4.5 w-4.5 text-white" />
         </div>
       </div>
-      <div className="text-2xl font-bold text-slate-900">{value}</div>
-      {subtext && <p className="text-xs text-slate-500 mt-1">{subtext}</p>}
+      <div className="text-2xl font-bold text-foreground">{value}</div>
+      {subtext && <p className="text-xs text-muted-foreground mt-1">{subtext}</p>}
     </div>
   )
 }
@@ -38,11 +38,11 @@ export function PlatformSalesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/platform" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-primary mb-2">
+        <Link to="/platform" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-2">
           <ArrowLeft className="h-4 w-4" /> Panel
         </Link>
-        <h1 className="text-2xl font-bold text-slate-900">Ventas & Cobros</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Ventas & Cobros</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Renovaciones proximas, facturas pendientes, bajas y seguimiento de cobros en tiempo real.
         </p>
       </div>
@@ -80,14 +80,14 @@ export function PlatformSalesPage() {
       </div>
 
       {/* Upcoming renewals */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+      <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
+        <div className="px-6 py-4 border-b border-border flex items-center gap-2">
           <Clock className="h-4 w-4 text-blue-500" />
-          <h3 className="text-sm font-semibold text-slate-700">Renovaciones Proximas (30 dias)</h3>
-          <span className="ml-auto text-xs text-slate-400">{data.upcoming_renewals.length} empresas</span>
+          <h3 className="text-sm font-semibold text-foreground">Renovaciones Proximas (30 dias)</h3>
+          <span className="ml-auto text-xs text-muted-foreground">{data.upcoming_renewals.length} empresas</span>
         </div>
         {data.upcoming_renewals.length === 0 ? (
-          <p className="px-6 py-8 text-sm text-slate-400 text-center">Sin renovaciones proximas</p>
+          <p className="px-6 py-8 text-sm text-muted-foreground text-center">Sin renovaciones proximas</p>
         ) : (
           <div className="divide-y divide-slate-100">
             {data.upcoming_renewals.map(s => {
@@ -95,7 +95,7 @@ export function PlatformSalesPage() {
                 ? Math.ceil((new Date(s.current_period_end).getTime() - Date.now()) / 86_400_000)
                 : null
               return (
-                <div key={s.tenant_id} className="px-6 py-3 flex items-center gap-4 hover:bg-slate-50/60">
+                <div key={s.tenant_id} className="px-6 py-3 flex items-center gap-4 hover:bg-muted/60">
                   <div className="flex-1 min-w-0">
                     <Link
                       to={`/platform/tenants/${encodeURIComponent(s.tenant_id)}`}
@@ -103,20 +103,20 @@ export function PlatformSalesPage() {
                     >
                       {s.tenant_id}
                     </Link>
-                    <p className="text-xs text-slate-400">{s.plan_name} - ${s.price_monthly}/mes</p>
+                    <p className="text-xs text-muted-foreground">{s.plan_name} - ${s.price_monthly}/mes</p>
                   </div>
                   <div className="text-right">
                     <span className={cn(
                       'text-sm font-semibold',
-                      daysLeft != null && daysLeft <= 7 ? 'text-red-600' : 'text-slate-700',
+                      daysLeft != null && daysLeft <= 7 ? 'text-red-600' : 'text-foreground',
                     )}>
                       {daysLeft != null ? `${daysLeft} dias` : '-'}
                     </span>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-muted-foreground">
                       {s.current_period_end ? new Date(s.current_period_end).toLocaleDateString('es') : '-'}
                     </p>
                   </div>
-                  <Link to={`/platform/tenants/${encodeURIComponent(s.tenant_id)}`} className="text-slate-400 hover:text-primary">
+                  <Link to={`/platform/tenants/${encodeURIComponent(s.tenant_id)}`} className="text-muted-foreground hover:text-primary">
                     <ChevronRight className="h-4 w-4" />
                   </Link>
                 </div>
@@ -128,7 +128,7 @@ export function PlatformSalesPage() {
 
       {/* Overdue */}
       {data.overdue.length > 0 && (
-        <div className="bg-white rounded-2xl border border-red-200 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-red-200  overflow-hidden">
           <div className="px-6 py-4 border-b border-red-100 bg-red-50/50 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-red-500" />
             <h3 className="text-sm font-semibold text-red-700">Vencidas — Accion Requerida</h3>
@@ -148,7 +148,7 @@ export function PlatformSalesPage() {
                     >
                       {s.tenant_id}
                     </Link>
-                    <p className="text-xs text-slate-400">{s.plan_name} - ${s.price_monthly}/mes</p>
+                    <p className="text-xs text-muted-foreground">{s.plan_name} - ${s.price_monthly}/mes</p>
                   </div>
                   <span className="text-sm font-semibold text-red-600">
                     {daysOverdue != null ? `${daysOverdue} dias vencido` : '-'}
@@ -164,28 +164,28 @@ export function PlatformSalesPage() {
       )}
 
       {/* Open invoices */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+      <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
+        <div className="px-6 py-4 border-b border-border flex items-center gap-2">
           <CreditCard className="h-4 w-4 text-amber-500" />
-          <h3 className="text-sm font-semibold text-slate-700">Facturas Pendientes</h3>
-          <span className="ml-auto text-xs text-slate-400">${data.total_open_amount.toLocaleString()} total</span>
+          <h3 className="text-sm font-semibold text-foreground">Facturas Pendientes</h3>
+          <span className="ml-auto text-xs text-muted-foreground">${data.total_open_amount.toLocaleString()} total</span>
         </div>
         {data.open_invoices.length === 0 ? (
-          <p className="px-6 py-8 text-sm text-slate-400 text-center">Sin facturas pendientes</p>
+          <p className="px-6 py-8 text-sm text-muted-foreground text-center">Sin facturas pendientes</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="text-left px-5 py-2.5 font-semibold text-slate-600">Factura</th>
-                <th className="text-left px-5 py-2.5 font-semibold text-slate-600">Empresa</th>
-                <th className="text-right px-5 py-2.5 font-semibold text-slate-600">Monto</th>
-                <th className="text-left px-5 py-2.5 font-semibold text-slate-600">Creada</th>
+              <tr className="bg-muted border-b border-border">
+                <th className="text-left px-5 py-2.5 font-semibold text-muted-foreground">Factura</th>
+                <th className="text-left px-5 py-2.5 font-semibold text-muted-foreground">Empresa</th>
+                <th className="text-right px-5 py-2.5 font-semibold text-muted-foreground">Monto</th>
+                <th className="text-left px-5 py-2.5 font-semibold text-muted-foreground">Creada</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {data.open_invoices.map(inv => (
-                <tr key={inv.id} className="hover:bg-slate-50/60">
-                  <td className="px-5 py-2.5 font-mono text-xs text-slate-700">{inv.invoice_number}</td>
+                <tr key={inv.id} className="hover:bg-muted/60">
+                  <td className="px-5 py-2.5 font-mono text-xs text-foreground">{inv.invoice_number}</td>
                   <td className="px-5 py-2.5">
                     <Link
                       to={`/platform/tenants/${encodeURIComponent(inv.tenant_id)}`}
@@ -195,7 +195,7 @@ export function PlatformSalesPage() {
                     </Link>
                   </td>
                   <td className="px-5 py-2.5 text-right font-semibold">${inv.amount.toLocaleString()} {inv.currency}</td>
-                  <td className="px-5 py-2.5 text-slate-500">
+                  <td className="px-5 py-2.5 text-muted-foreground">
                     {inv.created_at ? new Date(inv.created_at).toLocaleDateString('es') : '-'}
                   </td>
                 </tr>
@@ -207,27 +207,27 @@ export function PlatformSalesPage() {
 
       {/* Recently canceled */}
       {data.recently_canceled.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+        <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
+          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
             <XCircle className="h-4 w-4 text-red-400" />
-            <h3 className="text-sm font-semibold text-slate-700">Bajas Recientes</h3>
+            <h3 className="text-sm font-semibold text-foreground">Bajas Recientes</h3>
           </div>
           <div className="divide-y divide-slate-100">
             {data.recently_canceled.map(s => (
-              <div key={s.tenant_id} className="px-6 py-3 flex items-center gap-4 hover:bg-slate-50/60">
+              <div key={s.tenant_id} className="px-6 py-3 flex items-center gap-4 hover:bg-muted/60">
                 <div className="flex-1 min-w-0">
                   <Link
                     to={`/platform/tenants/${encodeURIComponent(s.tenant_id)}`}
-                    className="text-sm font-semibold text-slate-700 hover:text-primary"
+                    className="text-sm font-semibold text-foreground hover:text-primary"
                   >
                     {s.tenant_id}
                   </Link>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-muted-foreground">
                     {s.plan_name}
                     {s.cancellation_reason ? ` — "${s.cancellation_reason}"` : ''}
                   </p>
                 </div>
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-muted-foreground">
                   {s.canceled_at ? new Date(s.canceled_at).toLocaleDateString('es') : '-'}
                 </div>
               </div>

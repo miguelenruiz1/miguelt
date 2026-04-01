@@ -153,7 +153,7 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       MEDIA_SERVICE_URL: http://media-api:8007
       S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN:-s2s-change-me-in-production}
-      SMTP_FROM: noreply@trace.app
+      SMTP_FROM: onboarding@resend.dev
       SMTP_USE_TLS: "false"
       FRONTEND_URL: http://localhost:5173
       SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002

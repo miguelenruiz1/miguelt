@@ -13,7 +13,7 @@ import { useUserLookup } from '@/hooks/useUserLookup'
 import type { CycleCountItem } from '@/types/inventory'
 
 const statusColors: Record<string, string> = {
-  draft: 'bg-slate-100 text-slate-700',
+  draft: 'bg-secondary text-foreground',
   in_progress: 'bg-blue-100 text-blue-700',
   completed: 'bg-amber-100 text-amber-700',
   approved: 'bg-green-100 text-green-700',
@@ -50,7 +50,7 @@ function iraBg(pct: number): string {
 }
 
 function discrepancyColor(d: string | null): string {
-  if (!d) return 'text-slate-400'
+  if (!d) return 'text-muted-foreground'
   const n = parseFloat(d)
   if (n === 0) return 'text-green-600'
   if (n < 0) return 'text-red-600'
@@ -69,10 +69,10 @@ export function CycleCountDetailPage() {
   const { resolve } = useUserLookup(userIds)
 
   if (isLoading) {
-    return <div className="p-8 text-center text-slate-400">Cargando...</div>
+    return <div className="p-8 text-center text-muted-foreground">Cargando...</div>
   }
   if (!cc) {
-    return <div className="p-8 text-center text-slate-400">Conteo no encontrado</div>
+    return <div className="p-8 text-center text-muted-foreground">Conteo no encontrado</div>
   }
 
   const items = cc.items ?? []
@@ -86,12 +86,12 @@ export function CycleCountDetailPage() {
       {/* Back + header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/inventario/conteos" className="p-2 rounded-xl hover:bg-slate-100">
-            <ArrowLeft className="h-5 w-5 text-slate-500" />
+          <Link to="/inventario/conteos" className="p-2 rounded-xl hover:bg-secondary">
+            <ArrowLeft className="h-5 w-5 text-muted-foreground" />
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-slate-900">{cc.count_number}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{cc.count_number}</h1>
               <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[cc.status] ?? ''}`}>
                 {statusLabels[cc.status] ?? cc.status}
               </span>
@@ -101,11 +101,11 @@ export function CycleCountDetailPage() {
                 </span>
               )}
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               Bodega: {cc.warehouse_name ?? cc.warehouse_id}
               {cc.scheduled_date && <> &middot; Programado: {new Date(cc.scheduled_date).toLocaleDateString()}</>}
             </p>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               Creado por: {resolve(cc.created_by)}
               {cc.approved_by && <> &middot; Aprobado por: {resolve(cc.approved_by)}</>}
             </p>
@@ -168,12 +168,12 @@ export function CycleCountDetailPage() {
           <div className={`rounded-2xl border p-4 ${iraBg(ira.ira_percentage)}`}>
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp className={`h-4 w-4 ${iraColor(ira.ira_percentage)}`} />
-              <span className="text-xs font-semibold text-slate-500 uppercase">IRA</span>
+              <span className="text-xs font-semibold text-muted-foreground uppercase">IRA</span>
             </div>
             <p className={`text-2xl font-bold ${iraColor(ira.ira_percentage)}`}>
               {ira.ira_percentage.toFixed(1)}%
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               Valor: {ira.value_accuracy.toFixed(1)}%
             </p>
           </div>
@@ -187,29 +187,29 @@ export function CycleCountDetailPage() {
         <div className={`rounded-2xl border p-4 ${feasibility.is_feasible ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
           <div className="flex items-center gap-2 mb-2">
             <Clock className={`h-4 w-4 ${feasibility.is_feasible ? 'text-green-600' : 'text-red-600'}`} />
-            <span className="text-sm font-semibold text-slate-800">Factibilidad del conteo</span>
+            <span className="text-sm font-semibold text-foreground">Factibilidad del conteo</span>
             <span className={`ml-auto px-2.5 py-0.5 rounded-full text-xs font-medium ${feasibility.is_feasible ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
               {feasibility.is_feasible ? 'Factible' : 'No factible'}
             </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
             <div>
-              <p className="text-xs text-slate-500">Items</p>
-              <p className="font-semibold text-slate-800">{feasibility.total_items}</p>
+              <p className="text-xs text-muted-foreground">Items</p>
+              <p className="font-semibold text-foreground">{feasibility.total_items}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-500">Tiempo total</p>
-              <p className="font-semibold text-slate-800">{feasibility.total_hours}h ({feasibility.total_minutes} min)</p>
+              <p className="text-xs text-muted-foreground">Tiempo total</p>
+              <p className="font-semibold text-foreground">{feasibility.total_hours}h ({feasibility.total_minutes} min)</p>
             </div>
             <div className="flex items-center gap-1">
-              <Users className="h-3.5 w-3.5 text-slate-400" />
+              <Users className="h-3.5 w-3.5 text-muted-foreground" />
               <div>
-                <p className="text-xs text-slate-500">Contadores</p>
-                <p className="font-semibold text-slate-800">{feasibility.assigned_counters}</p>
+                <p className="text-xs text-muted-foreground">Contadores</p>
+                <p className="font-semibold text-foreground">{feasibility.assigned_counters}</p>
               </div>
             </div>
             <div>
-              <p className="text-xs text-slate-500">Hrs/contador</p>
+              <p className="text-xs text-muted-foreground">Hrs/contador</p>
               <p className={`font-semibold ${feasibility.hours_per_counter <= feasibility.available_hours ? 'text-green-700' : 'text-red-700'}`}>
                 {feasibility.hours_per_counter}h / {feasibility.available_hours}h
               </p>
@@ -220,18 +220,18 @@ export function CycleCountDetailPage() {
 
       {/* Notes */}
       {cc.notes && (
-        <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-600">
-          <span className="font-medium text-slate-700">Notas:</span> {cc.notes}
+        <div className="bg-muted rounded-xl p-4 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">Notas:</span> {cc.notes}
         </div>
       )}
 
       {/* Items table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-800">Items de conteo</h2>
+      <div className="bg-card rounded-2xl border border-border  overflow-hidden">
+        <div className="px-4 py-3 border-b border-border">
+          <h2 className="text-sm font-semibold text-foreground">Items de conteo</h2>
         </div>
         {items.length === 0 ? (
-          <div className="p-8 text-center text-slate-400">Sin items</div>
+          <div className="p-8 text-center text-muted-foreground">Sin items</div>
         ) : (
           <>
           {/* Mobile cards */}
@@ -240,28 +240,28 @@ export function CycleCountDetailPage() {
               const sysQty = parseFloat(item.system_qty)
               const hasDisc = item.discrepancy !== null && parseFloat(item.discrepancy) !== 0
               return (
-                <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
+                <div key={item.id} className="rounded-xl border border-border bg-card p-4  space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="font-medium text-slate-900">{item.product_name ?? item.product_id}</span>
-                      {item.product_sku && <span className="ml-2 text-xs text-slate-400">{item.product_sku}</span>}
+                      <span className="font-medium text-foreground">{item.product_name ?? item.product_id}</span>
+                      {item.product_sku && <span className="ml-2 text-xs text-muted-foreground">{item.product_sku}</span>}
                     </div>
                   </div>
                   <div className="space-y-1 text-sm">
-                    <div className="flex justify-between"><span className="text-slate-400">Sistema</span><span className="font-mono text-slate-700">{sysQty.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-400">1er Conteo</span><span className="font-mono text-slate-700">{item.counted_qty !== null ? parseFloat(item.counted_qty).toFixed(2) : '---'}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Sistema</span><span className="font-mono text-foreground">{sysQty.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">1er Conteo</span><span className="font-mono text-foreground">{item.counted_qty !== null ? parseFloat(item.counted_qty).toFixed(2) : '---'}</span></div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Diferencia</span>
+                      <span className="text-muted-foreground">Diferencia</span>
                       <span className={`font-mono font-semibold ${discrepancyColor(item.discrepancy)}`}>
                         {item.discrepancy !== null ? `${parseFloat(item.discrepancy) > 0 ? '+' : ''}${parseFloat(item.discrepancy).toFixed(2)}` : '---'}
                       </span>
                     </div>
                     {item.recount_qty !== null && (
-                      <div className="flex justify-between"><span className="text-slate-400">Reconteo</span><span className="font-mono text-purple-600 font-semibold">{parseFloat(item.recount_qty).toFixed(2)}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Reconteo</span><span className="font-mono text-purple-600 font-semibold">{parseFloat(item.recount_qty).toFixed(2)}</span></div>
                     )}
-                    {item.root_cause && <div className="flex justify-between"><span className="text-slate-400">Causa raiz</span><span className="text-slate-600 text-xs">{item.root_cause}</span></div>}
-                    <div className="flex justify-between"><span className="text-slate-400">Contado por</span><span className="text-slate-500 text-xs">{resolve(item.counted_by)}</span></div>
-                    {item.notes && <div className="flex justify-between"><span className="text-slate-400">Notas</span><span className="text-slate-500 text-xs truncate max-w-[60%]">{item.notes}</span></div>}
+                    {item.root_cause && <div className="flex justify-between"><span className="text-muted-foreground">Causa raiz</span><span className="text-muted-foreground text-xs">{item.root_cause}</span></div>}
+                    <div className="flex justify-between"><span className="text-muted-foreground">Contado por</span><span className="text-muted-foreground text-xs">{resolve(item.counted_by)}</span></div>
+                    {item.notes && <div className="flex justify-between"><span className="text-muted-foreground">Notas</span><span className="text-muted-foreground text-xs truncate max-w-[60%]">{item.notes}</span></div>}
                   </div>
                 </div>
               )
@@ -272,15 +272,15 @@ export function CycleCountDetailPage() {
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">Producto</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">Sistema</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">1er Conteo</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">Diferencia</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">Reconteo</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">Causa raiz</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">Contado por</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">Notas</th>
+                <tr className="bg-muted border-b border-border">
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Producto</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Sistema</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">1er Conteo</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Diferencia</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Reconteo</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Causa raiz</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Contado por</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Notas</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -381,12 +381,12 @@ function CountItemRow({
 
   return (
     <>
-      <tr className="hover:bg-slate-50">
+      <tr className="hover:bg-muted">
         <td className="px-4 py-2.5">
-          <div className="font-medium text-slate-900">{item.product_name ?? item.product_id}</div>
-          {item.product_sku && <div className="text-xs text-slate-400">{item.product_sku}</div>}
+          <div className="font-medium text-foreground">{item.product_name ?? item.product_id}</div>
+          {item.product_sku && <div className="text-xs text-muted-foreground">{item.product_sku}</div>}
         </td>
-        <td className="px-4 py-2.5 text-right font-mono text-slate-700">
+        <td className="px-4 py-2.5 text-right font-mono text-foreground">
           {systemQty.toFixed(2)}
         </td>
         <td className="px-4 py-2.5 text-right">
@@ -398,7 +398,7 @@ function CountItemRow({
                 min="0"
                 value={localQty}
                 onChange={(e) => setLocalQty(e.target.value)}
-                className="w-24 rounded-lg border border-slate-200 px-2 py-1 text-sm text-right focus:ring-2 focus:ring-ring"
+                className="w-24 rounded-lg border border-border px-2 py-1 text-sm text-right focus:ring-2 focus:ring-ring"
                 autoFocus
               />
               <button
@@ -410,7 +410,7 @@ function CountItemRow({
               </button>
               <button
                 onClick={() => setEditing(false)}
-                className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700"
+                className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
               >
                 X
               </button>
@@ -423,7 +423,7 @@ function CountItemRow({
               {item.counted_qty !== null ? parseFloat(item.counted_qty).toFixed(2) : '---'}
             </button>
           ) : (
-            <span className="font-mono text-slate-700">
+            <span className="font-mono text-foreground">
               {item.counted_qty !== null ? parseFloat(item.counted_qty).toFixed(2) : '---'}
             </span>
           )}
@@ -449,21 +449,21 @@ function CountItemRow({
               <RotateCcw className="h-3 w-3" /> Recontar
             </button>
           ) : (
-            <span className="text-slate-400">-</span>
+            <span className="text-muted-foreground">-</span>
           )}
         </td>
-        <td className="px-4 py-2.5 text-xs text-slate-600 max-w-[120px] truncate">
+        <td className="px-4 py-2.5 text-xs text-muted-foreground max-w-[120px] truncate">
           {item.root_cause || '-'}
         </td>
-        <td className="px-4 py-2.5 text-slate-400 text-xs">{resolveUser(item.counted_by)}</td>
-        <td className="px-4 py-2.5 text-slate-500 text-xs max-w-[120px] truncate">
+        <td className="px-4 py-2.5 text-muted-foreground text-xs">{resolveUser(item.counted_by)}</td>
+        <td className="px-4 py-2.5 text-muted-foreground text-xs max-w-[120px] truncate">
           {editable && editing ? (
             <input
               type="text"
               value={localNotes}
               onChange={(e) => setLocalNotes(e.target.value)}
               placeholder="Notas..."
-              className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:ring-2 focus:ring-ring"
+              className="w-full rounded-lg border border-border px-2 py-1 text-xs focus:ring-2 focus:ring-ring"
             />
           ) : (
             item.notes || '-'
@@ -502,7 +502,7 @@ function CountItemRow({
               </button>
               <button
                 onClick={() => setRecountMode(false)}
-                className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700"
+                className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
               >
                 Cancelar
               </button>

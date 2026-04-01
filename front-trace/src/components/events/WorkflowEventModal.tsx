@@ -182,7 +182,7 @@ export function WorkflowEventModal({ asset, action, open, onClose }: Props) {
     >
       <form className="flex flex-col gap-4">
         {/* Header */}
-        <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
+        <div className="flex items-center gap-3 pb-2 border-b border-border">
           <div
             className="flex h-10 w-10 items-center justify-center rounded-xl border"
             style={colorStyle(et?.color || action.to_state?.color || '#6366f1')}
@@ -190,9 +190,9 @@ export function WorkflowEventModal({ asset, action, open, onClose }: Props) {
             <Icon className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-800">{title}</p>
+            <p className="text-sm font-semibold text-foreground">{title}</p>
             {et?.description && (
-              <p className="text-xs text-slate-500">{et.description}</p>
+              <p className="text-xs text-muted-foreground">{et.description}</p>
             )}
           </div>
           {action.to_state && (
@@ -206,9 +206,9 @@ export function WorkflowEventModal({ asset, action, open, onClose }: Props) {
         </div>
 
         {/* Current custodian info */}
-        <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
-          <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Custodio actual</p>
-          <p className="text-xs font-medium text-slate-700">{currentCustodianName}</p>
+        <div className="bg-muted rounded-lg px-3 py-2 border border-border">
+          <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Custodio actual</p>
+          <p className="text-xs font-medium text-foreground">{currentCustodianName}</p>
         </div>
 
         {/* Wallet selector — always visible for traceability */}
@@ -268,8 +268,8 @@ export function WorkflowEventModal({ asset, action, open, onClose }: Props) {
 
         {/* Document uploads */}
         {requirements.length > 0 && (
-          <div className="border-t border-slate-100 pt-3 mt-1">
-            <p className="text-xs font-semibold text-slate-600 mb-2 flex items-center gap-1.5">
+          <div className="border-t border-border pt-3 mt-1">
+            <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5" />
               Documentación
               {docReqs?.compliance_active && (
@@ -332,11 +332,11 @@ function DocumentDropZone({
         ? files.length > 0
           ? 'border-emerald-200 bg-emerald-50/30'
           : 'border-amber-200 bg-amber-50/30'
-        : 'border-slate-200 bg-slate-50/30'
+        : 'border-border bg-muted/30'
     }`}>
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium text-slate-700">{requirement.label}</span>
+          <span className="text-xs font-medium text-foreground">{requirement.label}</span>
           {requirement.required && (
             <span className="text-[9px] font-bold text-amber-600">*</span>
           )}
@@ -355,18 +355,18 @@ function DocumentDropZone({
       {files.length > 0 && (
         <div className="flex flex-col gap-1 mb-1.5">
           {files.map((f, i) => (
-            <div key={i} className="flex items-center gap-2 text-xs bg-white rounded px-2 py-1 border border-slate-100">
+            <div key={i} className="flex items-center gap-2 text-xs bg-card rounded px-2 py-1 border border-border">
               {isImage(f) ? (
-                <Image className="h-3 w-3 text-slate-400 shrink-0" />
+                <Image className="h-3 w-3 text-muted-foreground shrink-0" />
               ) : (
-                <FileText className="h-3 w-3 text-slate-400 shrink-0" />
+                <FileText className="h-3 w-3 text-muted-foreground shrink-0" />
               )}
-              <span className="truncate flex-1 text-slate-600">{f.name}</span>
-              <span className="text-slate-400 shrink-0">{formatSize(f.size)}</span>
+              <span className="truncate flex-1 text-muted-foreground">{f.name}</span>
+              <span className="text-muted-foreground shrink-0">{formatSize(f.size)}</span>
               <button
                 type="button"
                 onClick={() => onRemove(i)}
-                className="text-slate-400 hover:text-red-500 shrink-0"
+                className="text-muted-foreground hover:text-red-500 shrink-0"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -392,7 +392,7 @@ function DocumentDropZone({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="w-full flex items-center justify-center gap-1.5 rounded border border-dashed border-slate-300 py-1.5 text-xs text-slate-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/30 transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 rounded border border-dashed border-slate-300 py-1.5 text-xs text-muted-foreground hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/30 transition-colors"
           >
             <Upload className="h-3 w-3" />
             {files.length === 0 ? 'Seleccionar archivo' : 'Agregar otro'}

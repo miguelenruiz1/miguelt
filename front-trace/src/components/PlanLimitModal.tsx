@@ -29,12 +29,12 @@ export function PlanLimitModal() {
           <AlertTriangle className="h-7 w-7 text-amber-500" />
         </div>
 
-        <p className="text-sm text-gray-600">{message}</p>
+        <p className="text-sm text-muted-foreground">{message}</p>
 
-        <div className="w-full rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <div className="w-full rounded-xl border border-border bg-muted p-4">
           <div className="flex items-center justify-between text-sm mb-2">
-            <span className="text-gray-500">Uso actual</span>
-            <span className="font-semibold text-gray-800">{current} / {limit}</span>
+            <span className="text-muted-foreground">Uso actual</span>
+            <span className="font-semibold text-foreground">{current} / {limit}</span>
           </div>
           <div className="h-2.5 w-full rounded-full bg-gray-200 overflow-hidden">
             <div
@@ -44,7 +44,7 @@ export function PlanLimitModal() {
           </div>
         </div>
 
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-muted-foreground">
           Actualiza tu plan para obtener mas capacidad.
         </p>
       </div>

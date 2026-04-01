@@ -7,7 +7,7 @@ import { useSettingsStore, explorerTxUrl, xrayAssetUrl, xrayTxUrl } from '@/stor
 
 const isSimSig = (s: string) => s.startsWith('SIM_') || s.startsWith('sim')
 import { EventTypeBadge } from '@/components/domain-badges'
-import { HashChip } from '@/components/ui/Misc'
+import { HashChip } from '@/components/ui/misc'
 import { Button } from '@/components/ui/button'
 import { useAnchorEvent } from '@/hooks/useAssets'
 import { useEventDocuments } from '@/hooks/useDocuments'
@@ -192,7 +192,7 @@ function EventRow({
   const hasTechnicalData = event.event_hash || event.solana_tx_sig || hasExtra
 
   return (
-    <div className={`relative flex gap-4 px-2 py-3 rounded-xl transition-colors ${isFirst ? 'bg-primary/[0.03]' : 'hover:bg-slate-50/50'}`}>
+    <div className={`relative flex gap-4 px-2 py-3 rounded-xl transition-colors ${isFirst ? 'bg-primary/[0.03]' : 'hover:bg-muted/50'}`}>
       {/* Icon dot */}
       <div className="relative z-10 shrink-0 mt-0.5">
         <div
@@ -225,28 +225,28 @@ function EventRow({
               <FileText className="h-3 w-3" /> {docCount} doc{docCount !== 1 ? 's' : ''}
             </button>
           )}
-          <span className="text-[11px] text-slate-400 ml-auto whitespace-nowrap tabular-nums flex items-center gap-1">
+          <span className="text-[11px] text-muted-foreground ml-auto whitespace-nowrap tabular-nums flex items-center gap-1">
             <Clock className="h-3 w-3" />
             {fmtDate(event.timestamp)}
           </span>
         </div>
 
         {/* Human-readable description */}
-        <p className="mt-1.5 text-sm text-slate-700 leading-relaxed">
+        <p className="mt-1.5 text-sm text-foreground leading-relaxed">
           {description}
         </p>
 
         {/* Location pill */}
         {event.location?.label && (
-          <span className="inline-flex items-center gap-1 mt-2 text-xs text-slate-500 bg-slate-50 border border-slate-100 rounded-lg px-2 py-0.5">
-            <MapPin className="h-3 w-3 text-slate-400" /> {event.location.label}
+          <span className="inline-flex items-center gap-1 mt-2 text-xs text-muted-foreground bg-muted border border-border rounded-lg px-2 py-0.5">
+            <MapPin className="h-3 w-3 text-muted-foreground" /> {event.location.label}
           </span>
         )}
 
         {/* Transfer visual: from → to */}
         {event.from_wallet && event.to_wallet && (
           <div className="mt-2 flex items-center gap-2 text-xs">
-            <span className="inline-flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-lg px-2 py-1 font-medium text-slate-600">
+            <span className="inline-flex items-center gap-1 bg-muted border border-border rounded-lg px-2 py-1 font-medium text-muted-foreground">
               {resolveWalletName(event.from_wallet, walletMap)}
             </span>
             <ArrowRight className="h-3.5 w-3.5 text-slate-300 shrink-0" />
@@ -273,12 +273,12 @@ function EventRow({
                   href={f.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 rounded-lg bg-white border border-slate-100 px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-2 rounded-lg bg-card border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted transition-colors"
                 >
-                  <DocIcon className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  <DocIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <span className="truncate flex-1 font-medium">{f.title || f.original_filename}</span>
-                  <span className="text-[10px] text-slate-400 shrink-0">{link.document_type}</span>
-                  <span className="text-[10px] text-slate-400 shrink-0">{sizeStr}</span>
+                  <span className="text-[10px] text-muted-foreground shrink-0">{link.document_type}</span>
+                  <span className="text-[10px] text-muted-foreground shrink-0">{sizeStr}</span>
                   {link.compliance_source && (
                     <span className="text-[9px] px-1 py-0.5 bg-indigo-50 text-indigo-600 rounded border border-indigo-200 font-medium shrink-0">
                       EUDR
@@ -337,30 +337,30 @@ function EventRow({
           <div className="mt-2">
             <button
               onClick={() => setShowTechnical(!showTechnical)}
-              className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-600 transition-colors"
+              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-muted-foreground transition-colors"
             >
               {showTechnical ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               {showTechnical ? 'Ocultar detalles técnicos' : 'Detalles técnicos'}
             </button>
             {showTechnical && (
-              <div className="mt-2 rounded-xl bg-slate-50/80 border border-slate-100 p-3 space-y-2">
+              <div className="mt-2 rounded-xl bg-muted/80 border border-border p-3 space-y-2">
                 {event.event_hash && (
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-slate-400 font-medium shrink-0">Hash:</span>
+                    <span className="text-muted-foreground font-medium shrink-0">Hash:</span>
                     <HashChip hash={event.event_hash} head={10} tail={4} />
                   </div>
                 )}
                 {event.prev_event_hash && (
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-slate-400 font-medium shrink-0">Hash anterior:</span>
+                    <span className="text-muted-foreground font-medium shrink-0">Hash anterior:</span>
                     <HashChip hash={event.prev_event_hash} head={10} tail={4} />
                   </div>
                 )}
                 {event.solana_tx_sig && (
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-slate-400 font-medium shrink-0">TX Solana:</span>
+                    <span className="text-muted-foreground font-medium shrink-0">TX Solana:</span>
                     {isSimSig(event.solana_tx_sig) ? (
-                      <span className="text-slate-400 font-mono text-[11px]">Simulación</span>
+                      <span className="text-muted-foreground font-mono text-[11px]">Simulación</span>
                     ) : (
                       <HashChip hash={event.solana_tx_sig} head={10} tail={4} />
                     )}
@@ -368,20 +368,20 @@ function EventRow({
                 )}
                 {event.from_wallet && (
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-slate-400 font-medium shrink-0">Wallet origen:</span>
-                    <span className="font-mono text-[11px] text-slate-500">{event.from_wallet}</span>
+                    <span className="text-muted-foreground font-medium shrink-0">Wallet origen:</span>
+                    <span className="font-mono text-[11px] text-muted-foreground">{event.from_wallet}</span>
                   </div>
                 )}
                 {event.to_wallet && (
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-slate-400 font-medium shrink-0">Wallet destino:</span>
-                    <span className="font-mono text-[11px] text-slate-500">{event.to_wallet}</span>
+                    <span className="text-muted-foreground font-medium shrink-0">Wallet destino:</span>
+                    <span className="font-mono text-[11px] text-muted-foreground">{event.to_wallet}</span>
                   </div>
                 )}
                 {hasExtra && (
                   <div>
-                    <span className="text-slate-400 font-medium text-xs">Datos del evento:</span>
-                    <pre className="mt-1 rounded-lg bg-white border border-slate-100 p-2 text-[11px] text-slate-600 overflow-x-auto font-mono">
+                    <span className="text-muted-foreground font-medium text-xs">Datos del evento:</span>
+                    <pre className="mt-1 rounded-lg bg-card border border-border p-2 text-[11px] text-muted-foreground overflow-x-auto font-mono">
                       {JSON.stringify(event.data, null, 2)}
                     </pre>
                   </div>
@@ -399,7 +399,7 @@ function EventRow({
         )}
         {!event.anchored && (
           <div className="mt-1.5">
-            <Button variant="ghost" size="sm" className="h-7 text-[11px] text-slate-400 hover:text-slate-600" loading={anchor.isPending} onClick={handleAnchor}>
+            <Button variant="ghost" size="sm" className="h-7 text-[11px] text-muted-foreground hover:text-muted-foreground" loading={anchor.isPending} onClick={handleAnchor}>
               <Anchor className="h-3 w-3" />
               Certificar en blockchain
             </Button>

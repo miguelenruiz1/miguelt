@@ -57,8 +57,8 @@ const LANGUAGES = [
 
 const USER_API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
-const inputCls = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all hover:border-slate-300'
-const labelCls = 'block text-sm font-medium text-slate-700 mb-1.5'
+const inputCls = 'w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all hover:border-slate-300'
+const labelCls = 'block text-sm font-medium text-foreground mb-1.5'
 
 export function ProfilePage() {
   const user = useAuthStore((s) => s.user)
@@ -159,10 +159,10 @@ export function ProfilePage() {
           {avatarMenuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setAvatarMenuOpen(false)} />
-              <div className="absolute left-0 top-full mt-2 z-20 w-48 rounded-xl border border-slate-200 bg-white shadow-lg py-1 overflow-hidden">
+              <div className="absolute left-0 top-full mt-2 z-20 w-48 rounded-xl border border-border bg-card shadow-lg py-1 overflow-hidden">
                 <button
                   onClick={() => { fileInputRef.current?.click(); setAvatarMenuOpen(false) }}
-                  className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                 >
                   <Camera className="h-4 w-4 text-primary" />
                   Subir foto
@@ -196,8 +196,8 @@ export function ProfilePage() {
         </div>
 
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-slate-900 truncate">{user.full_name}</h1>
-          <p className="text-sm text-slate-500 truncate">{user.email}</p>
+          <h1 className="text-2xl font-bold text-foreground truncate">{user.full_name}</h1>
+          <p className="text-sm text-muted-foreground truncate">{user.email}</p>
           <div className="flex gap-2 mt-1.5">
             {user.roles.map((r) => (
               <span key={r.id} className="text-xs bg-primary/15 text-primary rounded-full px-2.5 py-0.5 font-medium">
@@ -209,8 +209,8 @@ export function ProfilePage() {
       </div>
 
       {/* Personal info form */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-800 mb-5 flex items-center gap-2">
+      <div className="bg-card rounded-2xl border border-border p-6 ">
+        <h2 className="text-base font-semibold text-foreground mb-5 flex items-center gap-2">
           <Pencil className="h-4 w-4 text-primary" /> Información personal
         </h2>
         <form
@@ -297,7 +297,7 @@ export function ProfilePage() {
               placeholder="Cuéntanos sobre ti..."
               maxLength={500}
             />
-            <p className="text-xs text-slate-400 mt-0.5 text-right">
+            <p className="text-xs text-muted-foreground mt-0.5 text-right">
               {(profileForm.watch('bio') ?? '').length}/500
             </p>
           </div>
@@ -326,12 +326,12 @@ export function ProfilePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
+          <div className="flex items-center gap-3 pt-2 border-t border-border">
             <button
               type="submit"
               disabled={updateProfile.isPending || !profileForm.formState.isDirty}
               className={cn(
-                'rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all shadow-sm',
+                'rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all ',
                 profileForm.formState.isDirty
                   ? 'bg-primary hover:bg-primary/90 hover:shadow-md'
                   : 'bg-slate-300 cursor-not-allowed',
@@ -350,8 +350,8 @@ export function ProfilePage() {
       </div>
 
       {/* Password form */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-800 mb-4">Cambiar contraseña</h2>
+      <div className="bg-card rounded-2xl border border-border p-6 ">
+        <h2 className="text-base font-semibold text-foreground mb-4">Cambiar contraseña</h2>
         <form
           onSubmit={passwordForm.handleSubmit((data) =>
             changePassword.mutate(
@@ -399,11 +399,11 @@ export function ProfilePage() {
           {changePassword.error && (
             <p className="text-sm text-red-600">{changePassword.error.message}</p>
           )}
-          <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
+          <div className="flex items-center gap-3 pt-2 border-t border-border">
             <button
               type="submit"
               disabled={changePassword.isPending}
-              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60 transition-all shadow-sm hover:shadow-md"
+              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60 transition-all  hover:shadow-md"
             >
               {changePassword.isPending ? 'Cambiando...' : 'Cambiar contraseña'}
             </button>
@@ -415,19 +415,19 @@ export function ProfilePage() {
       </div>
 
       {/* Account info (read-only) */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-800 mb-4">Información de la cuenta</h2>
+      <div className="bg-card rounded-2xl border border-border p-6 ">
+        <h2 className="text-base font-semibold text-foreground mb-4">Información de la cuenta</h2>
         <dl className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <div>
-            <dt className="text-slate-500">ID</dt>
-            <dd className="font-mono text-slate-800 text-xs mt-0.5">{user.id}</dd>
+            <dt className="text-muted-foreground">ID</dt>
+            <dd className="font-mono text-foreground text-xs mt-0.5">{user.id}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">Tenant</dt>
-            <dd className="text-slate-800 mt-0.5">{user.tenant_id}</dd>
+            <dt className="text-muted-foreground">Tenant</dt>
+            <dd className="text-foreground mt-0.5">{user.tenant_id}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">Estado</dt>
+            <dt className="text-muted-foreground">Estado</dt>
             <dd className="mt-0.5">
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                 {user.is_active ? 'Activo' : 'Inactivo'}
@@ -435,16 +435,16 @@ export function ProfilePage() {
             </dd>
           </div>
           <div>
-            <dt className="text-slate-500">Superusuario</dt>
-            <dd className="text-slate-800 mt-0.5">{user.is_superuser ? 'Sí' : 'No'}</dd>
+            <dt className="text-muted-foreground">Superusuario</dt>
+            <dd className="text-foreground mt-0.5">{user.is_superuser ? 'Sí' : 'No'}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">Creado</dt>
-            <dd className="text-slate-800 mt-0.5">{new Date(user.created_at).toLocaleDateString('es-CO')}</dd>
+            <dt className="text-muted-foreground">Creado</dt>
+            <dd className="text-foreground mt-0.5">{new Date(user.created_at).toLocaleDateString('es-CO')}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">Actualizado</dt>
-            <dd className="text-slate-800 mt-0.5">{new Date(user.updated_at).toLocaleDateString('es-CO')}</dd>
+            <dt className="text-muted-foreground">Actualizado</dt>
+            <dd className="text-foreground mt-0.5">{new Date(user.updated_at).toLocaleDateString('es-CO')}</dd>
           </div>
         </dl>
       </div>

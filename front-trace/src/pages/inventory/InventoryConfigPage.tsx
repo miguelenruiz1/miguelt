@@ -80,7 +80,7 @@ function ProductTypesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Tipos de producto para clasificar tu catálogo</p>
+        <p className="text-sm text-muted-foreground">Tipos de producto para clasificar tu catálogo</p>
         <button
           onClick={openCreate}
           className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90"
@@ -93,23 +93,23 @@ function ProductTypesTab() {
         <form onSubmit={submit} className="rounded-xl border border-primary/30 bg-primary/10 p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Nombre *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre *</label>
               <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Color</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Color</label>
               <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                className="h-9 w-full rounded-lg border border-slate-200 cursor-pointer" />
+                className="h-9 w-full rounded-lg border border-border cursor-pointer" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-600 mb-1 block">Descripción</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Descripción</label>
             <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100">
+            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary">
               <X className="h-3.5 w-3.5" />
             </button>
             <button type="submit" disabled={create.isPending || update.isPending}
@@ -121,20 +121,20 @@ function ProductTypesTab() {
       )}
 
       {isLoading ? (
-        <div className="text-sm text-slate-400 py-4">Cargando...</div>
+        <div className="text-sm text-muted-foreground py-4">Cargando...</div>
       ) : types.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
+        <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           Sin tipos de producto. Crea el primero.
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
           {types.map(t => (
-            <div key={t.id} className="flex items-center gap-2 rounded-xl bg-white border border-slate-100 px-3 py-2 shadow-sm">
+            <div key={t.id} className="flex items-center gap-2 rounded-xl bg-card border border-border px-3 py-2 ">
               <TypeBadge color={t.color} name={t.name} />
-              <button onClick={() => openEdit(t)} className="text-slate-400 hover:text-primary">
+              <button onClick={() => openEdit(t)} className="text-muted-foreground hover:text-primary">
                 <Pencil className="h-3.5 w-3.5" />
               </button>
-              <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-slate-400 hover:text-red-500">
+              <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-muted-foreground hover:text-red-500">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -182,7 +182,7 @@ function OrderTypesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Tipos de orden de compra para clasificar tus compras</p>
+        <p className="text-sm text-muted-foreground">Tipos de orden de compra para clasificar tus compras</p>
         <button
           onClick={openCreate}
           className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
@@ -195,23 +195,23 @@ function OrderTypesTab() {
         <form onSubmit={submit} className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Nombre *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre *</label>
               <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Color</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Color</label>
               <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                className="h-9 w-full rounded-lg border border-slate-200 cursor-pointer" />
+                className="h-9 w-full rounded-lg border border-border cursor-pointer" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-600 mb-1 block">Descripción</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Descripción</label>
             <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+              className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100">
+            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary">
               <X className="h-3.5 w-3.5" />
             </button>
             <button type="submit" disabled={create.isPending || update.isPending}
@@ -223,20 +223,20 @@ function OrderTypesTab() {
       )}
 
       {isLoading ? (
-        <div className="text-sm text-slate-400 py-4">Cargando...</div>
+        <div className="text-sm text-muted-foreground py-4">Cargando...</div>
       ) : types.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
+        <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           Sin tipos de orden. Crea el primero.
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
           {types.map(t => (
-            <div key={t.id} className="flex items-center gap-2 rounded-xl bg-white border border-slate-100 px-3 py-2 shadow-sm">
+            <div key={t.id} className="flex items-center gap-2 rounded-xl bg-card border border-border px-3 py-2 ">
               <TypeBadge color={t.color} name={t.name} />
-              <button onClick={() => openEdit(t)} className="text-slate-400 hover:text-emerald-600">
+              <button onClick={() => openEdit(t)} className="text-muted-foreground hover:text-emerald-600">
                 <Pencil className="h-3.5 w-3.5" />
               </button>
-              <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-slate-400 hover:text-red-500">
+              <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-muted-foreground hover:text-red-500">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -284,7 +284,7 @@ function SupplierTypesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Tipos de proveedor para clasificar tus contactos comerciales</p>
+        <p className="text-sm text-muted-foreground">Tipos de proveedor para clasificar tus contactos comerciales</p>
         <button
           onClick={openCreate}
           className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
@@ -297,23 +297,23 @@ function SupplierTypesTab() {
         <form onSubmit={submit} className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Nombre *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre *</label>
               <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Color</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Color</label>
               <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                className="h-9 w-full rounded-lg border border-slate-200 cursor-pointer" />
+                className="h-9 w-full rounded-lg border border-border cursor-pointer" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-600 mb-1 block">Descripción</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Descripción</label>
             <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100">
+            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary">
               <X className="h-3.5 w-3.5" />
             </button>
             <button type="submit" disabled={create.isPending || update.isPending}
@@ -325,20 +325,20 @@ function SupplierTypesTab() {
       )}
 
       {isLoading ? (
-        <div className="text-sm text-slate-400 py-4">Cargando...</div>
+        <div className="text-sm text-muted-foreground py-4">Cargando...</div>
       ) : types.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
+        <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           Sin tipos de proveedor. Crea el primero.
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
           {types.map(t => (
-            <div key={t.id} className="flex items-center gap-2 rounded-xl bg-white border border-slate-100 px-3 py-2 shadow-sm">
+            <div key={t.id} className="flex items-center gap-2 rounded-xl bg-card border border-border px-3 py-2 ">
               <TypeBadge color={t.color} name={t.name} />
-              <button onClick={() => openEdit(t)} className="text-slate-400 hover:text-amber-600">
+              <button onClick={() => openEdit(t)} className="text-muted-foreground hover:text-amber-600">
                 <Pencil className="h-3.5 w-3.5" />
               </button>
-              <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-slate-400 hover:text-red-500">
+              <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-muted-foreground hover:text-red-500">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -396,12 +396,12 @@ function MovementTypesTab() {
     setShowForm(false)
   }
 
-  const DIR_COLORS: Record<string, string> = { in: 'bg-emerald-100 text-emerald-700', out: 'bg-red-100 text-red-700', internal: 'bg-primary/15 text-primary', neutral: 'bg-slate-100 text-slate-600' }
+  const DIR_COLORS: Record<string, string> = { in: 'bg-emerald-100 text-emerald-700', out: 'bg-red-100 text-red-700', internal: 'bg-primary/15 text-primary', neutral: 'bg-secondary text-muted-foreground' }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Tipos de movimiento de inventario</p>
+        <p className="text-sm text-muted-foreground">Tipos de movimiento de inventario</p>
         <button onClick={openCreate} className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
           <Plus className="h-3.5 w-3.5" /> Nuevo tipo
         </button>
@@ -410,62 +410,62 @@ function MovementTypesTab() {
         <form onSubmit={submit} className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Nombre *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre *</label>
               <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Dirección</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Dirección</label>
               <select value={form.direction} onChange={e => setForm(f => ({ ...f, direction: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
                 {DIRECTIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Color</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Color</label>
               <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                className="h-9 w-full rounded-lg border border-slate-200 cursor-pointer" />
+                className="h-9 w-full rounded-lg border border-border cursor-pointer" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-600 mb-1 block">Descripción</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Descripción</label>
             <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+              className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
           </div>
           <div className="flex gap-4">
             <label className="flex items-center gap-1.5 text-xs cursor-pointer">
               <input type="checkbox" checked={form.affects_cost} onChange={e => setForm(f => ({ ...f, affects_cost: e.target.checked }))} className="rounded" />
-              <span className="font-medium text-slate-600">Afecta costo</span>
+              <span className="font-medium text-muted-foreground">Afecta costo</span>
             </label>
             <label className="flex items-center gap-1.5 text-xs cursor-pointer">
               <input type="checkbox" checked={form.requires_reference} onChange={e => setForm(f => ({ ...f, requires_reference: e.target.checked }))} className="rounded" />
-              <span className="font-medium text-slate-600">Requiere referencia</span>
+              <span className="font-medium text-muted-foreground">Requiere referencia</span>
             </label>
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100"><X className="h-3.5 w-3.5" /></button>
+            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary"><X className="h-3.5 w-3.5" /></button>
             <button type="submit" disabled={create.isPending || update.isPending} className="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
               {editing ? 'Guardar' : 'Crear'}
             </button>
           </div>
         </form>
       )}
-      {isLoading ? <div className="text-sm text-slate-400 py-4">Cargando...</div>
-        : types.length === 0 ? <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">Sin tipos de movimiento.</div>
+      {isLoading ? <div className="text-sm text-muted-foreground py-4">Cargando...</div>
+        : types.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">Sin tipos de movimiento.</div>
         : (
           <div className="space-y-2">
             {types.map(t => (
-              <div key={t.id} className="flex items-center gap-3 rounded-xl bg-white border border-slate-100 px-4 py-3 shadow-sm">
+              <div key={t.id} className="flex items-center gap-3 rounded-xl bg-card border border-border px-4 py-3 ">
                 <TypeBadge color={t.color} name={t.name} />
-                <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', DIR_COLORS[t.direction] ?? 'bg-slate-100')}>
+                <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', DIR_COLORS[t.direction] ?? 'bg-secondary')}>
                   {DIRECTIONS.find(d => d.value === t.direction)?.label ?? t.direction}
                 </span>
-                {t.is_system && <span className="rounded-full bg-slate-200 text-slate-500 px-2 py-0.5 text-[10px] font-medium">Sistema</span>}
+                {t.is_system && <span className="rounded-full bg-slate-200 text-muted-foreground px-2 py-0.5 text-[10px] font-medium">Sistema</span>}
                 <div className="flex-1" />
                 {!t.is_system && (
                   <>
-                    <button onClick={() => openEdit(t)} className="text-slate-400 hover:text-emerald-600"><Pencil className="h-3.5 w-3.5" /></button>
-                    <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-slate-400 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => openEdit(t)} className="text-muted-foreground hover:text-emerald-600"><Pencil className="h-3.5 w-3.5" /></button>
+                    <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
                   </>
                 )}
               </div>
@@ -501,7 +501,7 @@ function WarehouseTypesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Tipos de bodega para clasificar tus almacenes</p>
+        <p className="text-sm text-muted-foreground">Tipos de bodega para clasificar tus almacenes</p>
         <button onClick={openCreate} className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700">
           <Plus className="h-3.5 w-3.5" /> Nuevo tipo
         </button>
@@ -510,41 +510,41 @@ function WarehouseTypesTab() {
         <form onSubmit={submit} className="rounded-xl border border-violet-200 bg-violet-50 p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Nombre *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre *</label>
               <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Color</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Color</label>
               <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                className="h-9 w-full rounded-lg border border-slate-200 cursor-pointer" />
+                className="h-9 w-full rounded-lg border border-border cursor-pointer" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-600 mb-1 block">Descripción</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Descripción</label>
             <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+              className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100"><X className="h-3.5 w-3.5" /></button>
+            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary"><X className="h-3.5 w-3.5" /></button>
             <button type="submit" disabled={create.isPending || update.isPending} className="rounded-lg bg-violet-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-50">
               {editing ? 'Guardar' : 'Crear'}
             </button>
           </div>
         </form>
       )}
-      {isLoading ? <div className="text-sm text-slate-400 py-4">Cargando...</div>
-        : types.length === 0 ? <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">Sin tipos de bodega.</div>
+      {isLoading ? <div className="text-sm text-muted-foreground py-4">Cargando...</div>
+        : types.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">Sin tipos de bodega.</div>
         : (
           <div className="flex flex-wrap gap-2">
             {types.map(t => (
-              <div key={t.id} className="flex items-center gap-2 rounded-xl bg-white border border-slate-100 px-3 py-2 shadow-sm">
+              <div key={t.id} className="flex items-center gap-2 rounded-xl bg-card border border-border px-3 py-2 ">
                 <TypeBadge color={t.color} name={t.name} />
-                {t.is_system && <span className="rounded-full bg-slate-200 text-slate-500 px-2 py-0.5 text-[10px] font-medium">Sistema</span>}
+                {t.is_system && <span className="rounded-full bg-slate-200 text-muted-foreground px-2 py-0.5 text-[10px] font-medium">Sistema</span>}
                 {!t.is_system && (
                   <>
-                    <button onClick={() => openEdit(t)} className="text-slate-400 hover:text-violet-600"><Pencil className="h-3.5 w-3.5" /></button>
-                    <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-slate-400 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => openEdit(t)} className="text-muted-foreground hover:text-violet-600"><Pencil className="h-3.5 w-3.5" /></button>
+                    <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
                   </>
                 )}
               </div>
@@ -586,7 +586,7 @@ function EventTypesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Tipos de evento de inventario</p>
+        <p className="text-sm text-muted-foreground">Tipos de evento de inventario</p>
         <button onClick={openCreate} className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">
           <Plus className="h-3.5 w-3.5" /> Nuevo tipo
         </button>
@@ -595,46 +595,46 @@ function EventTypesTab() {
         <form onSubmit={submit} className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Nombre *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre *</label>
               <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Color</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Color</label>
               <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                className="h-9 w-full rounded-lg border border-slate-200 cursor-pointer" />
+                className="h-9 w-full rounded-lg border border-border cursor-pointer" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-600 mb-1 block">Descripción</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Descripción</label>
             <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400" />
+              className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400" />
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-600 mb-1 block">Auto-generar movimiento</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Auto-generar movimiento</label>
             <select value={form.auto_generate_movement_type_id} onChange={e => setForm(f => ({ ...f, auto_generate_movement_type_id: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">
+              className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">
               <option value="">Ninguno</option>
               {movementTypes.map(mt => <option key={mt.id} value={mt.id}>{mt.name}</option>)}
             </select>
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100"><X className="h-3.5 w-3.5" /></button>
+            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary"><X className="h-3.5 w-3.5" /></button>
             <button type="submit" disabled={create.isPending || update.isPending} className="rounded-lg bg-red-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50">
               {editing ? 'Guardar' : 'Crear'}
             </button>
           </div>
         </form>
       )}
-      {isLoading ? <div className="text-sm text-slate-400 py-4">Cargando...</div>
-        : types.length === 0 ? <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">Sin tipos de evento.</div>
+      {isLoading ? <div className="text-sm text-muted-foreground py-4">Cargando...</div>
+        : types.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">Sin tipos de evento.</div>
         : (
           <div className="flex flex-wrap gap-2">
             {types.map(t => (
-              <div key={t.id} className="flex items-center gap-2 rounded-xl bg-white border border-slate-100 px-3 py-2 shadow-sm">
+              <div key={t.id} className="flex items-center gap-2 rounded-xl bg-card border border-border px-3 py-2 ">
                 <TypeBadge color={t.color} name={t.name} />
-                <button onClick={() => openEdit(t)} className="text-slate-400 hover:text-red-600"><Pencil className="h-3.5 w-3.5" /></button>
-                <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-slate-400 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                <button onClick={() => openEdit(t)} className="text-muted-foreground hover:text-red-600"><Pencil className="h-3.5 w-3.5" /></button>
+                <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
             ))}
           </div>
@@ -668,7 +668,7 @@ function SeveritiesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Niveles de severidad para eventos</p>
+        <p className="text-sm text-muted-foreground">Niveles de severidad para eventos</p>
         <button onClick={openCreate} className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600">
           <Plus className="h-3.5 w-3.5" /> Nueva severidad
         </button>
@@ -677,39 +677,39 @@ function SeveritiesTab() {
         <form onSubmit={submit} className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Nombre *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre *</label>
               <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Peso</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Peso</label>
               <input type="number" min="1" value={form.weight} onChange={e => setForm(f => ({ ...f, weight: Number(e.target.value) }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Color</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Color</label>
               <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                className="h-9 w-full rounded-lg border border-slate-200 cursor-pointer" />
+                className="h-9 w-full rounded-lg border border-border cursor-pointer" />
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100"><X className="h-3.5 w-3.5" /></button>
+            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary"><X className="h-3.5 w-3.5" /></button>
             <button type="submit" disabled={create.isPending || update.isPending} className="rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-50">
               {editing ? 'Guardar' : 'Crear'}
             </button>
           </div>
         </form>
       )}
-      {isLoading ? <div className="text-sm text-slate-400 py-4">Cargando...</div>
-        : items.length === 0 ? <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">Sin severidades.</div>
+      {isLoading ? <div className="text-sm text-muted-foreground py-4">Cargando...</div>
+        : items.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">Sin severidades.</div>
         : (
           <div className="flex flex-wrap gap-2">
             {items.map(t => (
-              <div key={t.id} className="flex items-center gap-2 rounded-xl bg-white border border-slate-100 px-3 py-2 shadow-sm">
+              <div key={t.id} className="flex items-center gap-2 rounded-xl bg-card border border-border px-3 py-2 ">
                 <TypeBadge color={t.color} name={t.name} />
-                <span className="text-[10px] text-slate-400">peso: {t.weight}</span>
-                <button onClick={() => openEdit(t)} className="text-slate-400 hover:text-amber-600"><Pencil className="h-3.5 w-3.5" /></button>
-                <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-slate-400 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                <span className="text-[10px] text-muted-foreground">peso: {t.weight}</span>
+                <button onClick={() => openEdit(t)} className="text-muted-foreground hover:text-amber-600"><Pencil className="h-3.5 w-3.5" /></button>
+                <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
             ))}
           </div>
@@ -743,7 +743,7 @@ function EventStatusesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Estados para el flujo de eventos</p>
+        <p className="text-sm text-muted-foreground">Estados para el flujo de eventos</p>
         <button onClick={openCreate} className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90">
           <Plus className="h-3.5 w-3.5" /> Nuevo estado
         </button>
@@ -752,43 +752,43 @@ function EventStatusesTab() {
         <form onSubmit={submit} className="rounded-xl border border-primary/30 bg-primary/10 p-4 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Nombre *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre *</label>
               <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Orden</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Orden</label>
               <input type="number" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: Number(e.target.value) }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Color</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Color</label>
               <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                className="h-9 w-full rounded-lg border border-slate-200 cursor-pointer" />
+                className="h-9 w-full rounded-lg border border-border cursor-pointer" />
             </div>
           </div>
           <label className="flex items-center gap-1.5 text-xs cursor-pointer">
             <input type="checkbox" checked={form.is_final} onChange={e => setForm(f => ({ ...f, is_final: e.target.checked }))} className="rounded" />
-            <span className="font-medium text-slate-600">Estado final (cierra el evento)</span>
+            <span className="font-medium text-muted-foreground">Estado final (cierra el evento)</span>
           </label>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100"><X className="h-3.5 w-3.5" /></button>
+            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary"><X className="h-3.5 w-3.5" /></button>
             <button type="submit" disabled={create.isPending || update.isPending} className="rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-50">
               {editing ? 'Guardar' : 'Crear'}
             </button>
           </div>
         </form>
       )}
-      {isLoading ? <div className="text-sm text-slate-400 py-4">Cargando...</div>
-        : items.length === 0 ? <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">Sin estados de evento.</div>
+      {isLoading ? <div className="text-sm text-muted-foreground py-4">Cargando...</div>
+        : items.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">Sin estados de evento.</div>
         : (
           <div className="flex flex-wrap gap-2">
             {items.map(t => (
-              <div key={t.id} className="flex items-center gap-2 rounded-xl bg-white border border-slate-100 px-3 py-2 shadow-sm">
+              <div key={t.id} className="flex items-center gap-2 rounded-xl bg-card border border-border px-3 py-2 ">
                 <TypeBadge color={t.color} name={t.name} />
-                {t.is_final && <span className="rounded-full bg-slate-200 text-slate-500 px-2 py-0.5 text-[10px] font-medium">Final</span>}
-                <button onClick={() => openEdit(t)} className="text-slate-400 hover:text-primary"><Pencil className="h-3.5 w-3.5" /></button>
-                <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-slate-400 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                {t.is_final && <span className="rounded-full bg-slate-200 text-muted-foreground px-2 py-0.5 text-[10px] font-medium">Final</span>}
+                <button onClick={() => openEdit(t)} className="text-muted-foreground hover:text-primary"><Pencil className="h-3.5 w-3.5" /></button>
+                <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
             ))}
           </div>
@@ -822,7 +822,7 @@ function SerialStatusesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Estados de seguimiento de seriales</p>
+        <p className="text-sm text-muted-foreground">Estados de seguimiento de seriales</p>
         <button onClick={openCreate} className="flex items-center gap-1.5 rounded-xl bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-700">
           <Plus className="h-3.5 w-3.5" /> Nuevo estado
         </button>
@@ -831,38 +831,38 @@ function SerialStatusesTab() {
         <form onSubmit={submit} className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Nombre *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre *</label>
               <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Color</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Color</label>
               <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                className="h-9 w-full rounded-lg border border-slate-200 cursor-pointer" />
+                className="h-9 w-full rounded-lg border border-border cursor-pointer" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-600 mb-1 block">Descripción</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Descripción</label>
             <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400" />
+              className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400" />
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100"><X className="h-3.5 w-3.5" /></button>
+            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary"><X className="h-3.5 w-3.5" /></button>
             <button type="submit" disabled={create.isPending || update.isPending} className="rounded-lg bg-cyan-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-cyan-700 disabled:opacity-50">
               {editing ? 'Guardar' : 'Crear'}
             </button>
           </div>
         </form>
       )}
-      {isLoading ? <div className="text-sm text-slate-400 py-4">Cargando...</div>
-        : items.length === 0 ? <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">Sin estados de serial.</div>
+      {isLoading ? <div className="text-sm text-muted-foreground py-4">Cargando...</div>
+        : items.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">Sin estados de serial.</div>
         : (
           <div className="flex flex-wrap gap-2">
             {items.map(t => (
-              <div key={t.id} className="flex items-center gap-2 rounded-xl bg-white border border-slate-100 px-3 py-2 shadow-sm">
+              <div key={t.id} className="flex items-center gap-2 rounded-xl bg-card border border-border px-3 py-2 ">
                 <TypeBadge color={t.color} name={t.name} />
-                <button onClick={() => openEdit(t)} className="text-slate-400 hover:text-cyan-600"><Pencil className="h-3.5 w-3.5" /></button>
-                <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-slate-400 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                <button onClick={() => openEdit(t)} className="text-muted-foreground hover:text-cyan-600"><Pencil className="h-3.5 w-3.5" /></button>
+                <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
             ))}
           </div>
@@ -908,7 +908,7 @@ function CustomerTypesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Tipos de cliente para clasificar tus compradores</p>
+        <p className="text-sm text-muted-foreground">Tipos de cliente para clasificar tus compradores</p>
         <button
           onClick={openCreate}
           className="flex items-center gap-1.5 rounded-xl bg-sky-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-600"
@@ -921,23 +921,23 @@ function CustomerTypesTab() {
         <form onSubmit={submit} className="rounded-xl border border-sky-200 bg-sky-50 p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Nombre *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre *</label>
               <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Color</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Color</label>
               <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                className="h-9 w-full rounded-lg border border-slate-200 cursor-pointer" />
+                className="h-9 w-full rounded-lg border border-border cursor-pointer" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-600 mb-1 block">Descripcion</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Descripcion</label>
             <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400" />
+              className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400" />
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100">
+            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary">
               <X className="h-3.5 w-3.5" />
             </button>
             <button type="submit" disabled={create.isPending || update.isPending}
@@ -949,20 +949,20 @@ function CustomerTypesTab() {
       )}
 
       {isLoading ? (
-        <div className="text-sm text-slate-400 py-4">Cargando...</div>
+        <div className="text-sm text-muted-foreground py-4">Cargando...</div>
       ) : types.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
+        <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           Sin tipos de cliente. Crea el primero.
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
           {types.map(t => (
-            <div key={t.id} className="flex items-center gap-2 rounded-xl bg-white border border-slate-100 px-3 py-2 shadow-sm">
+            <div key={t.id} className="flex items-center gap-2 rounded-xl bg-card border border-border px-3 py-2 ">
               <TypeBadge color={t.color} name={t.name} />
-              <button onClick={() => openEdit(t)} className="text-slate-400 hover:text-sky-600">
+              <button onClick={() => openEdit(t)} className="text-muted-foreground hover:text-sky-600">
                 <Pencil className="h-3.5 w-3.5" />
               </button>
-              <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-slate-400 hover:text-red-500">
+              <button onClick={async () => { if (await confirm({ message: `¿Eliminar "${t.name}"?`, confirmLabel: 'Eliminar' })) del.mutate(t.id) }} disabled={del.isPending} className="text-muted-foreground hover:text-red-500">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -998,11 +998,11 @@ function ApprovalThresholdTab() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="font-semibold text-slate-900">Umbral de Aprobacion de Ordenes de Venta</h3>
-        <p className="text-sm text-slate-500 mt-1">Las ordenes de venta que superen este monto requeriran aprobacion.</p>
+        <h3 className="font-semibold text-foreground">Umbral de Aprobacion de Ordenes de Venta</h3>
+        <p className="text-sm text-muted-foreground mt-1">Las ordenes de venta que superen este monto requeriran aprobacion.</p>
       </div>
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5 space-y-4 max-w-md">
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+      <div className="bg-card rounded-2xl border border-border/60  p-5 space-y-4 max-w-md">
+        <label className="flex items-center gap-2 text-sm text-foreground">
           <input type="checkbox" checked={noThreshold}
             onChange={e => setNoThreshold(e.target.checked)}
             className="rounded border-slate-300" />
@@ -1010,11 +1010,11 @@ function ApprovalThresholdTab() {
         </label>
         {!noThreshold && (
           <div>
-            <label className="text-xs text-slate-500 mb-1 block">Monto minimo para requerir aprobacion ($)</label>
+            <label className="text-xs text-muted-foreground mb-1 block">Monto minimo para requerir aprobacion ($)</label>
             <input type="number" step="0.01" min="0" value={value}
               onChange={e => setValue(e.target.value)}
               placeholder="Ej: 5000"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
         )}
         <button
@@ -1054,32 +1054,32 @@ function MarginsTab() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="font-semibold text-slate-900">Precios y Márgenes</h3>
-        <p className="text-sm text-slate-500 mt-1">Configuración global de márgenes. Cada producto puede sobreescribir estos valores.</p>
+        <h3 className="font-semibold text-foreground">Precios y Márgenes</h3>
+        <p className="text-sm text-muted-foreground mt-1">Configuración global de márgenes. Cada producto puede sobreescribir estos valores.</p>
       </div>
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5 space-y-4 max-w-md">
+      <div className="bg-card rounded-2xl border border-border/60  p-5 space-y-4 max-w-md">
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">Margen objetivo global (%)</label>
+          <label className="text-xs text-muted-foreground mb-1 block">Margen objetivo global (%)</label>
           <input type="number" step="0.01" min="0" max="99" value={target}
             onChange={e => setTarget(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
         </div>
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">Margen mínimo global (%)</label>
+          <label className="text-xs text-muted-foreground mb-1 block">Margen mínimo global (%)</label>
           <input type="number" step="0.01" min="0" max="99" value={minimum}
             onChange={e => setMinimum(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
         </div>
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">Método de costo base</label>
+          <label className="text-xs text-muted-foreground mb-1 block">Método de costo base</label>
           <select value={method} onChange={e => setMethod(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+            className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="last_purchase">Última compra</option>
             <option value="weighted_avg">Promedio ponderado</option>
             <option value="avg_last_3">Promedio últimas 3 compras</option>
           </select>
         </div>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 text-sm text-foreground">
           <input type="checkbox" checked={requireAuth} onChange={e => setRequireAuth(e.target.checked)}
             className="rounded border-slate-300" />
           Bloquear ventas por debajo del mínimo (requiere autorización)
@@ -1128,22 +1128,22 @@ function FeaturesTab() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="font-semibold text-slate-900">Funcionalidades</h3>
-        <p className="text-sm text-slate-500 mt-1">Activa o desactiva funcionalidades segun las necesidades de tu negocio. Las desactivadas no apareceran en el menu.</p>
+        <h3 className="font-semibold text-foreground">Funcionalidades</h3>
+        <p className="text-sm text-muted-foreground mt-1">Activa o desactiva funcionalidades segun las necesidades de tu negocio. Las desactivadas no apareceran en el menu.</p>
       </div>
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm divide-y divide-slate-100 overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border/60  divide-y divide-slate-100 overflow-hidden">
         {toggles.map(t => (
           <div key={t.key} className="flex items-center justify-between px-5 py-4">
             <div>
-              <p className="text-sm font-medium text-slate-900">{t.label}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{t.desc}</p>
+              <p className="text-sm font-medium text-foreground">{t.label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t.desc}</p>
             </div>
             <button
               onClick={() => toggle(t.key)}
               disabled={updateFeatures.isPending}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${features?.[t.key] !== false ? 'bg-primary' : 'bg-slate-200'}`}
             >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${features?.[t.key] !== false ? 'translate-x-6' : 'translate-x-1'}`} />
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-card shadow transition-transform ${features?.[t.key] !== false ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
           </div>
         ))}
@@ -1195,32 +1195,32 @@ export function InventoryConfigPage() {
     <div className="p-8 space-y-8 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100">
-          <Settings2 className="h-5 w-5 text-slate-600" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
+          <Settings2 className="h-5 w-5 text-muted-foreground" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Configuración</h1>
-          <p className="text-sm text-slate-500">Tipos y parámetros del módulo de inventario</p>
+          <h1 className="text-2xl font-bold text-foreground">Configuración</h1>
+          <p className="text-sm text-muted-foreground">Tipos y parámetros del módulo de inventario</p>
         </div>
       </div>
 
       {/* ─── Config sections directory ────────────────────────────────── */}
       <div className="space-y-3">
-        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wide">Configuraciones</h2>
+        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wide">Configuraciones</h2>
 
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm divide-y divide-slate-100 overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border  divide-y divide-slate-100 overflow-hidden">
           {CONFIG_SECTIONS.map(item => (
             <Link
               key={item.id}
               to={`/inventario/configuracion/${item.id}`}
-              className="flex items-center gap-3 px-5 py-4 hover:bg-slate-50/50 transition-colors group"
+              className="flex items-center gap-3 px-5 py-4 hover:bg-muted/50 transition-colors group"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 shrink-0">
-                <item.icon className="h-4 w-4 text-slate-500" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary shrink-0">
+                <item.icon className="h-4 w-4 text-muted-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <span className="text-sm font-semibold text-slate-900">{item.label}</span>
-                <p className="text-xs text-slate-400 mt-0.5">{item.description}</p>
+                <span className="text-sm font-semibold text-foreground">{item.label}</span>
+                <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
               </div>
               <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-primary/70 transition-colors" />
             </Link>

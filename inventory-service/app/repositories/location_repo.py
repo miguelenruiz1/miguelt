@@ -51,5 +51,5 @@ class LocationRepository:
         return obj
 
     async def delete(self, obj: WarehouseLocation) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()

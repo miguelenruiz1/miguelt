@@ -68,7 +68,7 @@ export function BlockchainStatusBadge({ status }: { status: string }) {
     case 'PENDING':    return <Badge className="bg-amber-500/15 text-amber-700 border-0">Certificando...</Badge>
     case 'FAILED':     return <Badge className="bg-red-500/15 text-red-700 border-0">Fallido</Badge>
     case 'SIMULATED':  return <Badge className="bg-blue-500/15 text-blue-700 border-0">Simulado</Badge>
-    case 'SKIPPED':    return <Badge className="bg-gray-500/10 text-gray-500 border-0">Sin anclar</Badge>
+    case 'SKIPPED':    return <Badge className="bg-muted0/10 text-muted-foreground border-0">Sin anclar</Badge>
     default:           return <Badge variant="outline">{status}</Badge>
   }
 }

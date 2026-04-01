@@ -3,11 +3,11 @@ import { useProductionRuns } from '@/hooks/useInventory'
 import type { ProductionRun, ProductionRunStatus } from '@/types/inventory'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-  planned: { label: 'Planificadas', color: 'bg-slate-100 text-slate-700', icon: Clock },
+  planned: { label: 'Planificadas', color: 'bg-secondary text-foreground', icon: Clock },
   released: { label: 'Liberadas', color: 'bg-blue-100 text-blue-700', icon: Play },
   in_progress: { label: 'En produccion', color: 'bg-amber-100 text-amber-700', icon: Factory },
   completed: { label: 'Completadas', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle2 },
-  closed: { label: 'Cerradas', color: 'bg-gray-100 text-gray-600', icon: Lock },
+  closed: { label: 'Cerradas', color: 'bg-secondary text-muted-foreground', icon: Lock },
   canceled: { label: 'Canceladas', color: 'bg-red-100 text-red-600', icon: XCircle },
 }
 
@@ -15,13 +15,13 @@ function KpiCard({ icon: Icon, label, value, sub, color = 'text-indigo-600' }: {
   icon: typeof Factory; label: string; value: string; sub?: string; color?: string
 }) {
   return (
-    <div className="bg-white rounded-xl border p-5">
+    <div className="bg-card rounded-xl border p-5">
       <div className="flex items-center gap-3 mb-3">
-        <div className="p-2 rounded-lg bg-gray-50"><Icon className={`h-5 w-5 ${color}`} /></div>
-        <span className="text-sm font-medium text-gray-500">{label}</span>
+        <div className="p-2 rounded-lg bg-muted"><Icon className={`h-5 w-5 ${color}`} /></div>
+        <span className="text-sm font-medium text-muted-foreground">{label}</span>
       </div>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+      <p className="text-2xl font-bold text-foreground">{value}</p>
+      {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
     </div>
   )
 }
@@ -43,10 +43,10 @@ export default function ProductionDashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Factory className="h-6 w-6 text-gray-700" />
+        <Factory className="h-6 w-6 text-foreground" />
         <div>
           <h1 className="text-2xl font-bold">Produccion</h1>
-          <p className="text-sm text-gray-500">Panel de control del modulo de produccion</p>
+          <p className="text-sm text-muted-foreground">Panel de control del modulo de produccion</p>
         </div>
       </div>
 
@@ -60,8 +60,8 @@ export default function ProductionDashboardPage() {
 
       {/* Status breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="bg-card rounded-xl border p-6">
+          <h2 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-indigo-600" /> Ordenes por Estado
           </h2>
           <div className="space-y-3">
@@ -71,39 +71,39 @@ export default function ProductionDashboardPage() {
               const Icon = cfg.icon
               return (
                 <div key={status} className="flex items-center gap-3">
-                  <Icon className="h-4 w-4 text-gray-400 shrink-0" />
-                  <span className="w-28 text-xs text-gray-500">{cfg.label}</span>
-                  <div className="flex-1 bg-gray-100 rounded-full h-2.5">
+                  <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="w-28 text-xs text-muted-foreground">{cfg.label}</span>
+                  <div className="flex-1 bg-secondary rounded-full h-2.5">
                     <div className={`${cfg.color.split(' ')[0]} h-2.5 rounded-full`} style={{ width: `${pct}%` }} />
                   </div>
-                  <span className="w-8 text-right text-sm font-bold text-gray-700">{count}</span>
+                  <span className="w-8 text-right text-sm font-bold text-foreground">{count}</span>
                 </div>
               )
             })}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="bg-card rounded-xl border p-6">
+          <h2 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-emerald-600" /> Indicadores
           </h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">Tasa de completado</span>
+              <span className="text-sm text-muted-foreground">Tasa de completado</span>
               <span className="text-lg font-bold">{totalRuns > 0 ? ((completedRuns / totalRuns) * 100).toFixed(0) : 0}%</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">Costo total produccion</span>
+              <span className="text-sm text-muted-foreground">Costo total produccion</span>
               <span className="text-lg font-bold">${totalCost.toLocaleString('es-CO')}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">Variacion total (cerradas)</span>
+              <span className="text-sm text-muted-foreground">Variacion total (cerradas)</span>
               <span className={`text-lg font-bold ${totalVariance === 0 ? 'text-emerald-600' : totalVariance > 0 ? 'text-red-600' : 'text-blue-600'}`}>
                 ${totalVariance.toLocaleString('es-CO')}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">Unidades producidas</span>
+              <span className="text-sm text-muted-foreground">Unidades producidas</span>
               <span className="text-lg font-bold">{totalOutput.toLocaleString('es-CO')}</span>
             </div>
           </div>
@@ -112,8 +112,8 @@ export default function ProductionDashboardPage() {
 
       {/* Recent orders */}
       {runs.length > 0 && (
-        <div className="bg-white rounded-xl border p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Ordenes recientes</h2>
+        <div className="bg-card rounded-xl border p-6">
+          <h2 className="text-base font-semibold text-foreground mb-4">Ordenes recientes</h2>
           <div className="space-y-2">
             {runs.slice(0, 10).map(run => {
               const cfg = STATUS_CONFIG[run.status]
@@ -124,8 +124,8 @@ export default function ProductionDashboardPage() {
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${cfg?.color ?? ''}`}>
                     <Icon className="h-2.5 w-2.5" /> {cfg?.label ?? run.status}
                   </span>
-                  <span className="text-gray-400 text-xs flex-1">{run.order_type}</span>
-                  <span className="text-gray-400 text-xs">{new Date(run.created_at).toLocaleDateString('es-CO')}</span>
+                  <span className="text-muted-foreground text-xs flex-1">{run.order_type}</span>
+                  <span className="text-muted-foreground text-xs">{new Date(run.created_at).toLocaleDateString('es-CO')}</span>
                 </div>
               )
             })}

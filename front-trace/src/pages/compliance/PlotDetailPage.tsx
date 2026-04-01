@@ -25,8 +25,8 @@ function ComplianceFlag({ label, value }: { label: string; value: boolean }) {
 function InfoField({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div>
-      <dt className="text-xs font-medium text-slate-400 uppercase tracking-wide">{label}</dt>
-      <dd className="mt-0.5 text-sm text-slate-800 font-medium">{value || '—'}</dd>
+      <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</dt>
+      <dd className="mt-0.5 text-sm text-foreground font-medium">{value || '—'}</dd>
     </div>
   )
 }
@@ -44,8 +44,8 @@ export function PlotDetailPage() {
   const [showGeojsonPicker, setShowGeojsonPicker] = useState(false)
   const [linkingGeojson, setLinkingGeojson] = useState(false)
 
-  if (isLoading) return <div className="flex justify-center py-20 text-slate-400">Cargando...</div>
-  if (!plot) return <div className="flex justify-center py-20 text-slate-400">Parcela no encontrada</div>
+  if (isLoading) return <div className="flex justify-center py-20 text-muted-foreground">Cargando...</div>
+  if (!plot) return <div className="flex justify-center py-20 text-muted-foreground">Parcela no encontrada</div>
 
   const gfwScreening = (plot as any).metadata_?.gfw_screening
 
@@ -68,7 +68,7 @@ export function PlotDetailPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <Link to="/cumplimiento/parcelas" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-primary mb-3">
+        <Link to="/cumplimiento/parcelas" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary mb-3">
           <ArrowLeft className="h-3.5 w-3.5" /> Volver a Parcelas
         </Link>
         <div className="flex items-center justify-between">
@@ -77,8 +77,8 @@ export function PlotDetailPage() {
               <MapPin className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-900">{plot.plot_code}</h1>
-              <p className="text-sm text-slate-500">
+              <h1 className="text-xl font-bold text-foreground">{plot.plot_code}</h1>
+              <p className="text-sm text-muted-foreground">
                 {[plot.municipality, plot.region, plot.country_code].filter(Boolean).join(', ')}
               </p>
             </div>
@@ -115,23 +115,23 @@ export function PlotDetailPage() {
               </div>
               <div className="grid grid-cols-4 gap-4 text-sm">
                 <div>
-                  <span className="text-xs text-slate-500">Alertas</span>
+                  <span className="text-xs text-muted-foreground">Alertas</span>
                   <p className="font-bold text-lg">{gfwScreening.alerts_count}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500">Alta confianza</span>
+                  <span className="text-xs text-muted-foreground">Alta confianza</span>
                   <p className="font-bold text-lg">{gfwScreening.high_confidence}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500">Fuente</span>
+                  <span className="text-xs text-muted-foreground">Fuente</span>
                   <p className="font-medium">{gfwScreening.source}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500">Fecha corte</span>
+                  <span className="text-xs text-muted-foreground">Fecha corte</span>
                   <p className="font-medium">{gfwScreening.cutoff_date}</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 mt-2">Verificado: {new Date(gfwScreening.checked_at).toLocaleString('es-CO')}</p>
+              <p className="text-xs text-muted-foreground mt-2">Verificado: {new Date(gfwScreening.checked_at).toLocaleString('es-CO')}</p>
             </div>
           )}
 
@@ -152,8 +152,8 @@ export function PlotDetailPage() {
         {/* Right: Details */}
         <div className="space-y-4">
           {/* Info card */}
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 space-y-4">
-            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">Informacion de la Parcela</h3>
+          <div className="bg-card rounded-xl border border-border  p-5 space-y-4">
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Informacion de la Parcela</h3>
             <dl className="space-y-3">
               <InfoField label="Codigo" value={plot.plot_code} />
               <InfoField label="Area" value={plot.plot_area_ha ? `${Number(plot.plot_area_ha).toFixed(2)} ha` : null} />
@@ -167,16 +167,16 @@ export function PlotDetailPage() {
           </div>
 
           {/* Risk */}
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 space-y-3">
-            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">Nivel de Riesgo</h3>
+          <div className="bg-card rounded-xl border border-border  p-5 space-y-3">
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Nivel de Riesgo</h3>
             <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold ${riskColor[plot.risk_level] || riskColor.standard}`}>
               {riskLabel[plot.risk_level] || plot.risk_level}
             </span>
           </div>
 
           {/* Crop info */}
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 space-y-3">
-            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">Cultivo</h3>
+          <div className="bg-card rounded-xl border border-border  p-5 space-y-3">
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Cultivo</h3>
             <dl className="space-y-3">
               <InfoField label="Tipo de cultivo" value={(plot as any).crop_type} />
               <InfoField label="Fecha de establecimiento" value={(plot as any).establishment_date} />
@@ -186,8 +186,8 @@ export function PlotDetailPage() {
           </div>
 
           {/* Land title */}
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 space-y-3">
-            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">Titulo de Propiedad</h3>
+          <div className="bg-card rounded-xl border border-border  p-5 space-y-3">
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Titulo de Propiedad</h3>
             <dl className="space-y-3">
               <InfoField label="Numero de titulo" value={plot.land_title_number} />
               <InfoField label="Hash del titulo" value={plot.land_title_hash} />
@@ -196,21 +196,21 @@ export function PlotDetailPage() {
 
           {/* Satellite */}
           {plot.satellite_report_url && (
-            <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 space-y-3">
-              <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">Reporte Satelital</h3>
+            <div className="bg-card rounded-xl border border-border  p-5 space-y-3">
+              <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Reporte Satelital</h3>
               <a href={plot.satellite_report_url} target="_blank" rel="noopener noreferrer"
                 className="text-sm text-primary hover:underline">
                 Ver reporte
               </a>
               {plot.satellite_verified_at && (
-                <p className="text-xs text-slate-400">Verificado: {new Date(plot.satellite_verified_at).toLocaleString('es-CO')}</p>
+                <p className="text-xs text-muted-foreground">Verificado: {new Date(plot.satellite_verified_at).toLocaleString('es-CO')}</p>
               )}
             </div>
           )}
 
           {/* GeoJSON — pick from media library */}
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 space-y-3">
-            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">Poligono GeoJSON</h3>
+          <div className="bg-card rounded-xl border border-border  p-5 space-y-3">
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Poligono GeoJSON</h3>
             {plot.geojson_arweave_url ? (
               <div className="space-y-2">
                 <p className="text-xs text-emerald-600 font-medium">Poligono cargado</p>
@@ -223,11 +223,11 @@ export function PlotDetailPage() {
                   {plot.geojson_arweave_url}
                 </a>
                 {plot.geojson_hash && (
-                  <p className="text-xs text-slate-400">SHA: {plot.geojson_hash.slice(0, 16)}...</p>
+                  <p className="text-xs text-muted-foreground">SHA: {plot.geojson_hash.slice(0, 16)}...</p>
                 )}
                 <button
                   onClick={() => setShowGeojsonPicker(true)}
-                  className="text-xs text-slate-500 hover:text-primary hover:underline"
+                  className="text-xs text-muted-foreground hover:text-primary hover:underline"
                 >
                   Cambiar archivo
                 </button>
@@ -243,7 +243,7 @@ export function PlotDetailPage() {
                 <button
                   onClick={() => setShowGeojsonPicker(true)}
                   disabled={linkingGeojson}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600 hover:border-primary hover:bg-primary/5 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-muted px-4 py-3 text-sm text-muted-foreground hover:border-primary hover:bg-primary/5 transition-colors"
                 >
                   <FolderOpen className="h-4 w-4" />
                   {linkingGeojson ? 'Vinculando...' : 'Seleccionar desde Media'}
@@ -300,7 +300,7 @@ export function PlotDetailPage() {
       </div>
 
       {/* Evidence Documents */}
-      <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+      <div className="bg-card rounded-xl border border-border  p-5">
         <DocumentUploader
           documents={plotDocs}
           isLoading={docsLoading}

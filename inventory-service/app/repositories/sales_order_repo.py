@@ -121,7 +121,7 @@ class SalesOrderRepository:
         return line
 
     async def delete(self, order: SalesOrder) -> None:
-        self.db.delete(order)
+        await self.db.delete(order)
         await self.db.flush()
 
     async def count_by_status(self, tenant_id: str) -> dict[str, int]:

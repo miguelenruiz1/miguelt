@@ -81,7 +81,7 @@ function PickQueue({ onSelect }: { onSelect: (id: string) => void }) {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <ClipboardList className="h-7 w-7 text-amber-600" />
-        <h1 className="text-2xl font-bold text-slate-900">Cola de Picking</h1>
+        <h1 className="text-2xl font-bold text-foreground">Cola de Picking</h1>
       </div>
 
       {isLoading && (
@@ -91,7 +91,7 @@ function PickQueue({ onSelect }: { onSelect: (id: string) => void }) {
       )}
 
       {!isLoading && orders.length === 0 && (
-        <div className="text-center py-20 text-slate-400">
+        <div className="text-center py-20 text-muted-foreground">
           <Package className="h-12 w-12 mx-auto mb-3 opacity-40" />
           <p className="text-lg font-medium">Sin ordenes pendientes de picking</p>
         </div>
@@ -103,13 +103,13 @@ function PickQueue({ onSelect }: { onSelect: (id: string) => void }) {
           return (
             <div
               key={order.id}
-              className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5 flex flex-col gap-3"
+              className="bg-card rounded-2xl border border-border/60  p-5 flex flex-col gap-3"
             >
               {/* Header */}
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-lg font-bold text-slate-900">{order.order_number}</p>
-                  <p className="text-sm text-slate-500 mt-0.5">
+                  <p className="text-lg font-bold text-foreground">{order.order_number}</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">
                     {customerMap.get(order.customer_id) ?? order.customer_id.slice(0, 8)}
                   </p>
                 </div>
@@ -119,9 +119,9 @@ function PickQueue({ onSelect }: { onSelect: (id: string) => void }) {
               </div>
 
               {/* Info row */}
-              <div className="flex items-center gap-4 text-sm text-slate-500">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span>{order.lines.length} linea{order.lines.length !== 1 ? 's' : ''}</span>
-                <span className="font-semibold text-slate-700">
+                <span className="font-semibold text-foreground">
                   ${order.total.toLocaleString()} {order.currency}
                 </span>
                 <span className="ml-auto text-xs">{fmtDate(order.created_at)}</span>
@@ -280,42 +280,42 @@ function ActivePicking({ orderId, onBack }: { orderId: string; onBack: () => voi
   }
 
   if (!order) {
-    return <p className="text-center text-slate-400 py-20">Orden no encontrada</p>
+    return <p className="text-center text-muted-foreground py-20">Orden no encontrada</p>
   }
 
   // ── Packing summary view ──
   if (showPacking) {
     return (
       <div className="space-y-6">
-        <button onClick={() => setShowPacking(false)} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
+        <button onClick={() => setShowPacking(false)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Volver al checklist
         </button>
 
         <div className="flex items-center gap-3">
           <Truck className="h-7 w-7 text-primary" />
-          <h1 className="text-2xl font-bold text-slate-900">Resumen de Packing</h1>
+          <h1 className="text-2xl font-bold text-foreground">Resumen de Packing</h1>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5">
-          <p className="text-sm text-slate-500 mb-1">Orden</p>
+        <div className="bg-card rounded-2xl border border-border/60  p-5">
+          <p className="text-sm text-muted-foreground mb-1">Orden</p>
           <p className="text-lg font-bold">{order.order_number}</p>
-          <p className="text-sm text-slate-500 mt-1">Cliente: <span className="font-semibold text-slate-700">{customerName}</span></p>
+          <p className="text-sm text-muted-foreground mt-1">Cliente: <span className="font-semibold text-foreground">{customerName}</span></p>
         </div>
 
         {packingGroups.map(g => (
-          <div key={g.location} className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-            <div className="px-5 py-3 bg-slate-50 flex items-center gap-2 border-b border-slate-200/60">
-              <MapPin className="h-4 w-4 text-slate-400" />
-              <span className="text-sm font-bold text-slate-700">{g.location}</span>
+          <div key={g.location} className="bg-card rounded-2xl border border-border/60  overflow-hidden">
+            <div className="px-5 py-3 bg-muted flex items-center gap-2 border-b border-border/60">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-bold text-foreground">{g.location}</span>
             </div>
             <ul className="divide-y divide-slate-100">
               {g.lines.map(l => (
                 <li key={l.id} className="px-5 py-3 flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">{l.prodName}</p>
-                    <p className="text-xs text-slate-400">{productMap.get(l.product_id)?.sku ?? '--'}</p>
+                    <p className="text-sm font-semibold text-foreground">{l.prodName}</p>
+                    <p className="text-xs text-muted-foreground">{productMap.get(l.product_id)?.sku ?? '--'}</p>
                   </div>
-                  <span className="text-sm font-bold text-slate-700">x{l.qty_ordered}</span>
+                  <span className="text-sm font-bold text-foreground">x{l.qty_ordered}</span>
                 </li>
               ))}
             </ul>
@@ -337,34 +337,34 @@ function ActivePicking({ orderId, onBack }: { orderId: string; onBack: () => voi
   // ── Picking checklist view ──
   return (
     <div className="space-y-6">
-      <button onClick={onBack} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
+      <button onClick={onBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> Cola de Picking
       </button>
 
       {/* Order header */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-card rounded-2xl border border-border/60  p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <p className="text-xs text-slate-400 uppercase font-bold">Picking Activo</p>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">{order.order_number}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Cliente: <span className="font-semibold text-slate-700">{customerName}</span>
+          <p className="text-xs text-muted-foreground uppercase font-bold">Picking Activo</p>
+          <h1 className="text-2xl font-bold text-foreground mt-1">{order.order_number}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Cliente: <span className="font-semibold text-foreground">{customerName}</span>
           </p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-slate-400">{fmtDate(order.expected_date)}</p>
+          <p className="text-xs text-muted-foreground">{fmtDate(order.expected_date)}</p>
           <p className="text-lg font-bold text-primary mt-1">${order.total.toLocaleString()} {order.currency}</p>
         </div>
       </div>
 
       {/* Progress bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5">
+      <div className="bg-card rounded-2xl border border-border/60  p-5">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-semibold text-slate-700">Progreso</span>
-          <span className="text-sm font-bold text-slate-900">
+          <span className="text-sm font-semibold text-foreground">Progreso</span>
+          <span className="text-sm font-bold text-foreground">
             {pickedSet.size} / {order.lines.length}
           </span>
         </div>
-        <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+        <div className="h-3 bg-secondary rounded-full overflow-hidden">
           <div
             className={cn(
               'h-full rounded-full transition-all duration-300',
@@ -388,10 +388,10 @@ function ActivePicking({ orderId, onBack }: { orderId: string; onBack: () => voi
               type="button"
               onClick={() => togglePicked(line.id)}
               className={cn(
-                'w-full text-left bg-white rounded-2xl border shadow-sm p-5 flex items-start gap-4 transition-colors',
+                'w-full text-left bg-card rounded-2xl border  p-5 flex items-start gap-4 transition-colors',
                 picked
                   ? 'border-emerald-300 bg-emerald-50/40'
-                  : 'border-slate-200/60 hover:border-amber-300',
+                  : 'border-border/60 hover:border-amber-300',
               )}
             >
               {/* Checkbox */}
@@ -405,19 +405,19 @@ function ActivePicking({ orderId, onBack }: { orderId: string; onBack: () => voi
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className={cn('text-base font-semibold', picked ? 'text-emerald-700 line-through' : 'text-slate-900')}>
+                <p className={cn('text-base font-semibold', picked ? 'text-emerald-700 line-through' : 'text-foreground')}>
                   {prod?.name ?? line.product_id.slice(0, 8)}
                 </p>
-                <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-500">
+                <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-muted-foreground">
                   {prod?.sku && (
-                    <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">{prod.sku}</span>
+                    <span className="font-mono bg-secondary px-1.5 py-0.5 rounded">{prod.sku}</span>
                   )}
                   {line.variant_id && (
-                    <span className="italic text-slate-400">Variante: {line.variant_id.slice(0, 8)}</span>
+                    <span className="italic text-muted-foreground">Variante: {line.variant_id.slice(0, 8)}</span>
                   )}
                 </div>
                 {(line.warehouse_name || (order.warehouse_name && !line.warehouse_id)) && (
-                  <p className="flex items-center gap-1 text-xs text-slate-500 mt-1.5">
+                  <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5">
                     <Warehouse className="h-3.5 w-3.5" /> {line.warehouse_name ?? order.warehouse_name}
                     {line.warehouse_id && line.warehouse_id !== order.warehouse_id && (
                       <span className="ml-1 rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600">Específica</span>
@@ -430,7 +430,7 @@ function ActivePicking({ orderId, onBack }: { orderId: string; onBack: () => voi
                   </p>
                 )}
                 {prod?.barcode && (
-                  <p className="text-xs text-slate-400 mt-1 font-mono">
+                  <p className="text-xs text-muted-foreground mt-1 font-mono">
                     Codigo: {prod.barcode}
                   </p>
                 )}
@@ -438,8 +438,8 @@ function ActivePicking({ orderId, onBack }: { orderId: string; onBack: () => voi
 
               {/* Quantity */}
               <div className="shrink-0 text-right">
-                <p className="text-2xl font-bold text-slate-900">{line.qty_ordered}</p>
-                <p className="text-xs text-slate-400">unidades</p>
+                <p className="text-2xl font-bold text-foreground">{line.qty_ordered}</p>
+                <p className="text-xs text-muted-foreground">unidades</p>
               </div>
             </button>
           )

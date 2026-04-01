@@ -49,16 +49,16 @@ export function PlatformAnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <Link to="/platform" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-primary mb-2">
+          <Link to="/platform" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-2">
             <ArrowLeft className="h-4 w-4" /> Panel
           </Link>
-          <h1 className="text-2xl font-bold text-slate-900">Analitica de Plataforma</h1>
-          <p className="text-sm text-slate-500 mt-1">Tendencias, crecimiento y adopcion de modulos.</p>
+          <h1 className="text-2xl font-bold text-foreground">Analitica de Plataforma</h1>
+          <p className="text-sm text-muted-foreground mt-1">Tendencias, crecimiento y adopcion de modulos.</p>
         </div>
         <select
           value={months}
           onChange={e => setMonths(Number(e.target.value))}
-          className="px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl"
+          className="px-3 py-2 text-sm bg-card border border-border rounded-xl"
         >
           <option value={3}>3 meses</option>
           <option value={6}>6 meses</option>
@@ -67,8 +67,8 @@ export function PlatformAnalyticsPage() {
       </div>
 
       {/* Subscription Growth */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+      <div className="bg-card rounded-2xl border border-border/60 p-6 ">
+        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-primary" /> Crecimiento de Suscripciones
         </h3>
         <ResponsiveContainer width="100%" height={280}>
@@ -90,8 +90,8 @@ export function PlatformAnalyticsPage() {
       </div>
 
       {/* Revenue Trend */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+      <div className="bg-card rounded-2xl border border-border/60 p-6 ">
+        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
           <DollarSign className="h-4 w-4 text-emerald-500" /> Ingresos Mensuales
         </h3>
         <ResponsiveContainer width="100%" height={280}>
@@ -108,8 +108,8 @@ export function PlatformAnalyticsPage() {
       {/* Row: Status distribution + Module adoption */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status pie */}
-        <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+        <div className="bg-card rounded-2xl border border-border/60 p-6 ">
+          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
             <Building2 className="h-4 w-4 text-primary" /> Distribucion por Estado
           </h3>
           {pieData.length > 0 ? (
@@ -128,20 +128,20 @@ export function PlatformAnalyticsPage() {
                 {pieData.map(d => (
                   <div key={d.name} className="flex items-center gap-2 text-sm">
                     <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
-                    <span className="text-slate-600">{d.name}</span>
-                    <span className="font-semibold text-slate-900 ml-auto">{d.value}</span>
+                    <span className="text-muted-foreground">{d.name}</span>
+                    <span className="font-semibold text-foreground ml-auto">{d.value}</span>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <p className="text-sm text-slate-400">Sin datos</p>
+            <p className="text-sm text-muted-foreground">Sin datos</p>
           )}
         </div>
 
         {/* Module adoption */}
-        <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+        <div className="bg-card rounded-2xl border border-border/60 p-6 ">
+          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
             <Layers className="h-4 w-4 text-orange-500" /> Adopcion de Modulos
           </h3>
           {data.module_adoption.length > 0 ? (
@@ -151,12 +151,12 @@ export function PlatformAnalyticsPage() {
                 return (
                   <div key={m.slug}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-slate-700 capitalize">{m.slug}</span>
-                      <span className="text-sm text-slate-500">
+                      <span className="text-sm font-medium text-foreground capitalize">{m.slug}</span>
+                      <span className="text-sm text-muted-foreground">
                         {m.active} activos / {m.total} total ({pct}%)
                       </span>
                     </div>
-                    <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-3 bg-secondary rounded-full overflow-hidden">
                       <div
                         className="h-full bg-primary rounded-full transition-all"
                         style={{ width: `${pct}%` }}
@@ -167,28 +167,28 @@ export function PlatformAnalyticsPage() {
               })}
             </div>
           ) : (
-            <p className="text-sm text-slate-400">Sin datos de modulos</p>
+            <p className="text-sm text-muted-foreground">Sin datos de modulos</p>
           )}
         </div>
       </div>
 
       {/* Recent events */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-          <Activity className="h-4 w-4 text-slate-500" /> Eventos Recientes
+      <div className="bg-card rounded-2xl border border-border/60 p-6 ">
+        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+          <Activity className="h-4 w-4 text-muted-foreground" /> Eventos Recientes
         </h3>
         {data.recent_events.length === 0 ? (
-          <p className="text-sm text-slate-400">Sin eventos recientes</p>
+          <p className="text-sm text-muted-foreground">Sin eventos recientes</p>
         ) : (
           <div className="divide-y divide-slate-100">
             {data.recent_events.map(ev => (
               <div key={ev.id} className="py-3 flex items-center gap-4">
-                <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                  <Activity className="h-4 w-4 text-slate-500" />
+                <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                  <Activity className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-slate-700">{ev.event_type.replace(/_/g, ' ')}</span>
+                    <span className="text-sm font-medium text-foreground">{ev.event_type.replace(/_/g, ' ')}</span>
                     <Link
                       to={`/platform/tenants/${encodeURIComponent(ev.tenant_id)}`}
                       className="text-xs text-primary hover:underline"
@@ -196,7 +196,7 @@ export function PlatformAnalyticsPage() {
                       {ev.tenant_id}
                     </Link>
                   </div>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-muted-foreground">
                     {ev.created_at ? new Date(ev.created_at).toLocaleString('es') : ''}
                     {ev.performed_by ? ` - por ${ev.performed_by}` : ''}
                   </span>

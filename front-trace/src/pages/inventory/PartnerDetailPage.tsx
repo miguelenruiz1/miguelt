@@ -36,7 +36,7 @@ export function PartnerDetailPage() {
   const sos = sosData?.items ?? []
 
   if (isLoading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>
-  if (!partner) return <p className="text-center text-slate-400 py-20">Socio no encontrado</p>
+  if (!partner) return <p className="text-center text-muted-foreground py-20">Socio no encontrado</p>
 
   const supplierTypeName = (supplierTypes as any)?.items?.find((t: any) => t.id === partner.supplier_type_id)?.name
   const customerTypeName = (customerTypes as any)?.items?.find((t: any) => t.id === partner.customer_type_id)?.name
@@ -60,20 +60,20 @@ export function PartnerDetailPage() {
 
   return (
     <div className="space-y-6">
-      <button onClick={() => navigate('/inventario/socios')} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
+      <button onClick={() => navigate('/inventario/socios')} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> Socios Comerciales
       </button>
 
       {/* Header */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
+      <div className="bg-card rounded-2xl border border-border/60  p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div className="h-14 w-14 rounded-2xl bg-primary/15 flex items-center justify-center">
               <Building2 className="h-7 w-7 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">{partner.name}</h1>
-              <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
+              <h1 className="text-2xl font-bold text-foreground">{partner.name}</h1>
+              <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
                 <span className="font-mono">{partner.code}</span>
                 {partner.tax_id && <span>NIT: {partner.tax_id}</span>}
                 {!partner.is_active && <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-xs font-semibold">Inactivo</span>}
@@ -81,7 +81,7 @@ export function PartnerDetailPage() {
               <div className="mt-2">{roleBadges}</div>
             </div>
           </div>
-          <button onClick={() => setShowEdit(true)} className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg">
+          <button onClick={() => setShowEdit(true)} className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg">
             <Pencil className="h-4 w-4" />
           </button>
         </div>
@@ -89,24 +89,24 @@ export function PartnerDetailPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200/60 p-4">
-          <p className="text-xs text-slate-400 mb-1">Terminos de Pago</p>
+        <div className="bg-card rounded-xl border border-border/60 p-4">
+          <p className="text-xs text-muted-foreground mb-1">Terminos de Pago</p>
           <p className="text-xl font-bold">{partner.payment_terms_days} dias</p>
         </div>
         {partner.is_supplier && (
-          <div className="bg-white rounded-xl border border-slate-200/60 p-4">
-            <p className="text-xs text-slate-400 mb-1">Lead Time</p>
+          <div className="bg-card rounded-xl border border-border/60 p-4">
+            <p className="text-xs text-muted-foreground mb-1">Lead Time</p>
             <p className="text-xl font-bold text-blue-600">{partner.lead_time_days} dias</p>
           </div>
         )}
         {partner.is_customer && (
           <>
-            <div className="bg-white rounded-xl border border-slate-200/60 p-4">
-              <p className="text-xs text-slate-400 mb-1">Limite de Credito</p>
+            <div className="bg-card rounded-xl border border-border/60 p-4">
+              <p className="text-xs text-muted-foreground mb-1">Limite de Credito</p>
               <p className="text-xl font-bold text-emerald-600">${partner.credit_limit.toLocaleString()}</p>
             </div>
-            <div className="bg-white rounded-xl border border-slate-200/60 p-4">
-              <p className="text-xs text-slate-400 mb-1">Descuento</p>
+            <div className="bg-card rounded-xl border border-border/60 p-4">
+              <p className="text-xs text-muted-foreground mb-1">Descuento</p>
               <p className="text-xl font-bold">{partner.discount_percent}%</p>
             </div>
           </>
@@ -114,34 +114,34 @@ export function PartnerDetailPage() {
       </div>
 
       {/* Contact & Address */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6">
-        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Informacion de Contacto</h2>
+      <div className="bg-card rounded-2xl border border-border/60  p-6">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Informacion de Contacto</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {partner.contact_name && (
-            <div className="flex items-center gap-2 text-sm"><Building2 className="h-4 w-4 text-slate-400 shrink-0" /> <span className="text-slate-700">{partner.contact_name}</span></div>
+            <div className="flex items-center gap-2 text-sm"><Building2 className="h-4 w-4 text-muted-foreground shrink-0" /> <span className="text-foreground">{partner.contact_name}</span></div>
           )}
           {partner.email && (
-            <div className="flex items-center gap-2 text-sm"><Mail className="h-4 w-4 text-slate-400 shrink-0" /> <a href={`mailto:${partner.email}`} className="text-primary hover:underline">{partner.email}</a></div>
+            <div className="flex items-center gap-2 text-sm"><Mail className="h-4 w-4 text-muted-foreground shrink-0" /> <a href={`mailto:${partner.email}`} className="text-primary hover:underline">{partner.email}</a></div>
           )}
           {partner.phone && (
-            <div className="flex items-center gap-2 text-sm"><Phone className="h-4 w-4 text-slate-400 shrink-0" /> <span className="text-slate-700">{partner.phone}</span></div>
+            <div className="flex items-center gap-2 text-sm"><Phone className="h-4 w-4 text-muted-foreground shrink-0" /> <span className="text-foreground">{partner.phone}</span></div>
           )}
         </div>
         {(addressStr || shippingStr) && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-border">
             {addressStr && (
               <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Direccion</p>
-                <div className="flex items-start gap-2 text-sm text-slate-700">
-                  <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Direccion</p>
+                <div className="flex items-start gap-2 text-sm text-foreground">
+                  <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                   <span>{addressStr}</span>
                 </div>
               </div>
             )}
             {shippingStr && (
               <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Direccion de Envio</p>
-                <div className="flex items-start gap-2 text-sm text-slate-700">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Direccion de Envio</p>
+                <div className="flex items-start gap-2 text-sm text-foreground">
                   <MapPin className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
                   <span>{shippingStr}</span>
                 </div>
@@ -152,19 +152,19 @@ export function PartnerDetailPage() {
       </div>
 
       {partner.notes && (
-        <div className="bg-white rounded-xl border border-slate-200/60 p-4">
-          <p className="text-xs font-bold text-slate-400 uppercase mb-2">Notas</p>
-          <p className="text-sm text-slate-700 whitespace-pre-wrap">{partner.notes}</p>
+        <div className="bg-card rounded-xl border border-border/60 p-4">
+          <p className="text-xs font-bold text-muted-foreground uppercase mb-2">Notas</p>
+          <p className="text-sm text-foreground whitespace-pre-wrap">{partner.notes}</p>
         </div>
       )}
 
       {/* Purchase Orders (supplier) */}
       {partner.is_supplier && (
         <div className="space-y-3">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2"><ShoppingCart className="h-5 w-5 text-blue-500" /> Ordenes de Compra</h2>
-          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><ShoppingCart className="h-5 w-5 text-blue-500" /> Ordenes de Compra</h2>
+          <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
             <table className="w-full text-sm">
-              <thead><tr className="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase">
+              <thead><tr className="bg-muted text-left text-xs font-semibold text-muted-foreground uppercase">
                 <th className="px-6 py-3"># Orden</th>
                 <th className="px-6 py-3">Estado</th>
                 <th className="px-6 py-3 text-right">Total</th>
@@ -172,18 +172,18 @@ export function PartnerDetailPage() {
               </tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {pos.map(o => (
-                  <tr key={o.id} className="hover:bg-slate-50/60 cursor-pointer" onClick={() => navigate(`/inventario/compras/${o.id}`)}>
+                  <tr key={o.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => navigate(`/inventario/compras/${o.id}`)}>
                     <td className="px-6 py-3 font-mono text-xs">{o.po_number}</td>
                     <td className="px-6 py-3"><span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold',
                       o.status === 'received' ? 'bg-emerald-50 text-emerald-700' :
                       o.status === 'canceled' ? 'bg-red-50 text-red-600' :
-                      'bg-slate-100 text-slate-600'
+                      'bg-secondary text-muted-foreground'
                     )}>{o.status}</span></td>
                     <td className="px-6 py-3 text-right font-mono">${Number(o.total ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-3 text-xs text-slate-400">{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</td>
+                    <td className="px-6 py-3 text-xs text-muted-foreground">{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</td>
                   </tr>
                 ))}
-                {pos.length === 0 && <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-400">Sin ordenes de compra</td></tr>}
+                {pos.length === 0 && <tr><td colSpan={4} className="px-6 py-12 text-center text-muted-foreground">Sin ordenes de compra</td></tr>}
               </tbody>
             </table>
           </div>
@@ -193,10 +193,10 @@ export function PartnerDetailPage() {
       {/* Sales Orders (customer) */}
       {partner.is_customer && (
         <div className="space-y-3">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2"><ShoppingBag className="h-5 w-5 text-green-500" /> Ordenes de Venta</h2>
-          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><ShoppingBag className="h-5 w-5 text-green-500" /> Ordenes de Venta</h2>
+          <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
             <table className="w-full text-sm">
-              <thead><tr className="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase">
+              <thead><tr className="bg-muted text-left text-xs font-semibold text-muted-foreground uppercase">
                 <th className="px-6 py-3"># Orden</th>
                 <th className="px-6 py-3">Estado</th>
                 <th className="px-6 py-3 text-right">Total</th>
@@ -204,19 +204,19 @@ export function PartnerDetailPage() {
               </tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {sos.map(o => (
-                  <tr key={o.id} className="hover:bg-slate-50/60 cursor-pointer" onClick={() => navigate(`/inventario/ventas/${o.id}`)}>
+                  <tr key={o.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => navigate(`/inventario/ventas/${o.id}`)}>
                     <td className="px-6 py-3 font-mono text-xs">{o.order_number}</td>
                     <td className="px-6 py-3"><span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold',
                       o.status === 'delivered' ? 'bg-emerald-50 text-emerald-700' :
                       o.status === 'canceled' ? 'bg-red-50 text-red-600' :
                       o.status === 'shipped' ? 'bg-primary/10 text-primary' :
-                      'bg-slate-100 text-slate-600'
+                      'bg-secondary text-muted-foreground'
                     )}>{o.status}</span></td>
                     <td className="px-6 py-3 text-right font-mono">${Number(o.total ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-3 text-xs text-slate-400">{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</td>
+                    <td className="px-6 py-3 text-xs text-muted-foreground">{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</td>
                   </tr>
                 ))}
-                {sos.length === 0 && <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-400">Sin ordenes de venta</td></tr>}
+                {sos.length === 0 && <tr><td colSpan={4} className="px-6 py-12 text-center text-muted-foreground">Sin ordenes de venta</td></tr>}
               </tbody>
             </table>
           </div>
@@ -288,56 +288,56 @@ function EditPartnerModal({ partner, supplierTypes, customerTypes, updateMut, to
     onClose()
   }
 
-  const inputCls = "w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none"
+  const inputCls = "w-full bg-muted border border-border rounded-xl px-3 py-2.5 text-sm focus:bg-card focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none"
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <form onSubmit={handleSave} className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+      <form onSubmit={handleSave} className="bg-card rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Editar socio</h3>
-          <button type="button" onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600"><X className="h-5 w-5" /></button>
+          <button type="button" onClick={onClose} className="p-1 text-muted-foreground hover:text-muted-foreground"><X className="h-5 w-5" /></button>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2"><label className="text-xs text-gray-500">Nombre *</label><input required value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-gray-500">Codigo *</label><input required value={form.code} onChange={e => setForm(f => ({...f, code: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-gray-500">NIT / RUT</label><input value={form.tax_id} onChange={e => setForm(f => ({...f, tax_id: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-gray-500">Contacto</label><input value={form.contact_name} onChange={e => setForm(f => ({...f, contact_name: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-gray-500">Email</label><input type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-gray-500">Telefono</label><input value={form.phone} onChange={e => setForm(f => ({...f, phone: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-gray-500">Plazo pago (dias)</label><input type="number" value={form.payment_terms_days} onChange={e => setForm(f => ({...f, payment_terms_days: e.target.value}))} className={inputCls} /></div>
+          <div className="col-span-2"><label className="text-xs text-muted-foreground">Nombre *</label><input required value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Codigo *</label><input required value={form.code} onChange={e => setForm(f => ({...f, code: e.target.value}))} className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">NIT / RUT</label><input value={form.tax_id} onChange={e => setForm(f => ({...f, tax_id: e.target.value}))} className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Contacto</label><input value={form.contact_name} onChange={e => setForm(f => ({...f, contact_name: e.target.value}))} className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Email</label><input type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Telefono</label><input value={form.phone} onChange={e => setForm(f => ({...f, phone: e.target.value}))} className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Plazo pago (dias)</label><input type="number" value={form.payment_terms_days} onChange={e => setForm(f => ({...f, payment_terms_days: e.target.value}))} className={inputCls} /></div>
           {partner.is_supplier && (<>
-            <div><label className="text-xs text-gray-500">Tipo proveedor</label><select value={form.supplier_type_id} onChange={e => setForm(f => ({...f, supplier_type_id: e.target.value}))} className={inputCls}><option value="">Sin tipo</option>{(supplierTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
-            <div><label className="text-xs text-gray-500">Lead time (dias)</label><input type="number" value={form.lead_time_days} onChange={e => setForm(f => ({...f, lead_time_days: e.target.value}))} className={inputCls} /></div>
+            <div><label className="text-xs text-muted-foreground">Tipo proveedor</label><select value={form.supplier_type_id} onChange={e => setForm(f => ({...f, supplier_type_id: e.target.value}))} className={inputCls}><option value="">Sin tipo</option>{(supplierTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
+            <div><label className="text-xs text-muted-foreground">Lead time (dias)</label><input type="number" value={form.lead_time_days} onChange={e => setForm(f => ({...f, lead_time_days: e.target.value}))} className={inputCls} /></div>
           </>)}
           {partner.is_customer && (<>
-            <div><label className="text-xs text-gray-500">Tipo cliente</label><select value={form.customer_type_id} onChange={e => setForm(f => ({...f, customer_type_id: e.target.value}))} className={inputCls}><option value="">Sin tipo</option>{(customerTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
-            <div><label className="text-xs text-gray-500">Limite credito</label><input type="number" value={form.credit_limit} onChange={e => setForm(f => ({...f, credit_limit: e.target.value}))} className={inputCls} /></div>
-            <div><label className="text-xs text-gray-500">Descuento %</label><input type="number" min="0" max="100" value={form.discount_percent} onChange={e => setForm(f => ({...f, discount_percent: e.target.value}))} className={inputCls} /></div>
+            <div><label className="text-xs text-muted-foreground">Tipo cliente</label><select value={form.customer_type_id} onChange={e => setForm(f => ({...f, customer_type_id: e.target.value}))} className={inputCls}><option value="">Sin tipo</option>{(customerTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
+            <div><label className="text-xs text-muted-foreground">Limite credito</label><input type="number" value={form.credit_limit} onChange={e => setForm(f => ({...f, credit_limit: e.target.value}))} className={inputCls} /></div>
+            <div><label className="text-xs text-muted-foreground">Descuento %</label><input type="number" min="0" max="100" value={form.discount_percent} onChange={e => setForm(f => ({...f, discount_percent: e.target.value}))} className={inputCls} /></div>
           </>)}
 
           {/* Address */}
-          <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Direccion</p></div>
-          <div className="col-span-2"><label className="text-xs text-gray-500">Linea 1</label><input value={form.address_line1} onChange={e => setForm(f => ({...f, address_line1: e.target.value}))} placeholder="Calle, carrera, numero" className={inputCls} /></div>
-          <div className="col-span-2"><label className="text-xs text-gray-500">Linea 2</label><input value={form.address_line2} onChange={e => setForm(f => ({...f, address_line2: e.target.value}))} placeholder="Barrio, vereda (opcional)" className={inputCls} /></div>
-          <div><label className="text-xs text-gray-500">Ciudad</label><input value={form.address_city} onChange={e => setForm(f => ({...f, address_city: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-gray-500">Depto / Estado</label><input value={form.address_state} onChange={e => setForm(f => ({...f, address_state: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-gray-500">Codigo postal</label><input value={form.address_zip} onChange={e => setForm(f => ({...f, address_zip: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-gray-500">Pais</label><input value={form.address_country} onChange={e => setForm(f => ({...f, address_country: e.target.value}))} placeholder="CO, DE, US..." className={inputCls} /></div>
+          <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Direccion</p></div>
+          <div className="col-span-2"><label className="text-xs text-muted-foreground">Linea 1</label><input value={form.address_line1} onChange={e => setForm(f => ({...f, address_line1: e.target.value}))} placeholder="Calle, carrera, numero" className={inputCls} /></div>
+          <div className="col-span-2"><label className="text-xs text-muted-foreground">Linea 2</label><input value={form.address_line2} onChange={e => setForm(f => ({...f, address_line2: e.target.value}))} placeholder="Barrio, vereda (opcional)" className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Ciudad</label><input value={form.address_city} onChange={e => setForm(f => ({...f, address_city: e.target.value}))} className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Depto / Estado</label><input value={form.address_state} onChange={e => setForm(f => ({...f, address_state: e.target.value}))} className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Codigo postal</label><input value={form.address_zip} onChange={e => setForm(f => ({...f, address_zip: e.target.value}))} className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Pais</label><input value={form.address_country} onChange={e => setForm(f => ({...f, address_country: e.target.value}))} placeholder="CO, DE, US..." className={inputCls} /></div>
 
           {partner.is_customer && (<>
-            <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Direccion de envio</p></div>
-            <div className="col-span-2"><label className="text-xs text-gray-500">Linea 1</label><input value={form.shipping_line1} onChange={e => setForm(f => ({...f, shipping_line1: e.target.value}))} className={inputCls} /></div>
-            <div className="col-span-2"><label className="text-xs text-gray-500">Linea 2</label><input value={form.shipping_line2} onChange={e => setForm(f => ({...f, shipping_line2: e.target.value}))} className={inputCls} /></div>
-            <div><label className="text-xs text-gray-500">Ciudad</label><input value={form.shipping_city} onChange={e => setForm(f => ({...f, shipping_city: e.target.value}))} className={inputCls} /></div>
-            <div><label className="text-xs text-gray-500">Depto / Estado</label><input value={form.shipping_state} onChange={e => setForm(f => ({...f, shipping_state: e.target.value}))} className={inputCls} /></div>
-            <div><label className="text-xs text-gray-500">Codigo postal</label><input value={form.shipping_zip} onChange={e => setForm(f => ({...f, shipping_zip: e.target.value}))} className={inputCls} /></div>
-            <div><label className="text-xs text-gray-500">Pais</label><input value={form.shipping_country} onChange={e => setForm(f => ({...f, shipping_country: e.target.value}))} placeholder="CO, DE, US..." className={inputCls} /></div>
+            <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Direccion de envio</p></div>
+            <div className="col-span-2"><label className="text-xs text-muted-foreground">Linea 1</label><input value={form.shipping_line1} onChange={e => setForm(f => ({...f, shipping_line1: e.target.value}))} className={inputCls} /></div>
+            <div className="col-span-2"><label className="text-xs text-muted-foreground">Linea 2</label><input value={form.shipping_line2} onChange={e => setForm(f => ({...f, shipping_line2: e.target.value}))} className={inputCls} /></div>
+            <div><label className="text-xs text-muted-foreground">Ciudad</label><input value={form.shipping_city} onChange={e => setForm(f => ({...f, shipping_city: e.target.value}))} className={inputCls} /></div>
+            <div><label className="text-xs text-muted-foreground">Depto / Estado</label><input value={form.shipping_state} onChange={e => setForm(f => ({...f, shipping_state: e.target.value}))} className={inputCls} /></div>
+            <div><label className="text-xs text-muted-foreground">Codigo postal</label><input value={form.shipping_zip} onChange={e => setForm(f => ({...f, shipping_zip: e.target.value}))} className={inputCls} /></div>
+            <div><label className="text-xs text-muted-foreground">Pais</label><input value={form.shipping_country} onChange={e => setForm(f => ({...f, shipping_country: e.target.value}))} placeholder="CO, DE, US..." className={inputCls} /></div>
           </>)}
 
-          <div className="col-span-2"><label className="text-xs text-gray-500">Notas</label><textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className={inputCls} /></div>
+          <div className="col-span-2"><label className="text-xs text-muted-foreground">Notas</label><textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className={inputCls} /></div>
         </div>
         <div className="flex gap-3 mt-4">
-          <button type="button" onClick={onClose} className="flex-1 bg-gray-100 text-gray-700 rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-gray-200 transition-colors">Cancelar</button>
+          <button type="button" onClick={onClose} className="flex-1 bg-secondary text-foreground rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-gray-200 transition-colors">Cancelar</button>
           <button type="submit" disabled={updateMut.isPending} className="flex-1 bg-gray-900 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 transition-colors">Guardar</button>
         </div>
       </form>

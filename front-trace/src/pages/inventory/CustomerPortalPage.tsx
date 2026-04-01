@@ -18,7 +18,7 @@ import { useCustomer, usePortalStock, usePortalOrders, usePortalOrderDetail } fr
 import type { SalesOrderStatus, PortalOrder } from '@/types/inventory'
 
 const STATUS_CONFIG: Record<SalesOrderStatus, { label: string; color: string }> = {
-  draft: { label: 'Borrador', color: 'bg-slate-100 text-slate-600' },
+  draft: { label: 'Borrador', color: 'bg-secondary text-muted-foreground' },
   confirmed: { label: 'Confirmada', color: 'bg-blue-50 text-blue-700' },
   picking: { label: 'Picking', color: 'bg-amber-50 text-amber-700' },
   shipped: { label: 'Enviada', color: 'bg-primary/10 text-primary' },
@@ -48,15 +48,15 @@ function KpiCard({ icon: Icon, label, value, sub, color }: {
   color: string
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+    <div className="bg-card rounded-2xl border border-border  p-5">
       <div className="flex items-center gap-3">
         <div className={cn('h-10 w-10 rounded-xl flex items-center justify-center', color)}>
           <Icon className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-xs text-slate-400 font-medium">{label}</p>
-          <p className="text-xl font-bold text-slate-900">{value}</p>
-          {sub && <p className="text-xs text-slate-400">{sub}</p>}
+          <p className="text-xs text-muted-foreground font-medium">{label}</p>
+          <p className="text-xl font-bold text-foreground">{value}</p>
+          {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
         </div>
       </div>
     </div>
@@ -69,7 +69,7 @@ function OrderDetailRow({ order, customerId }: { order: PortalOrder; customerId:
   if (isLoading) {
     return (
       <div className="px-5 pb-4 pl-14">
-        <p className="text-xs text-slate-400">Cargando detalle...</p>
+        <p className="text-xs text-muted-foreground">Cargando detalle...</p>
       </div>
     )
   }
@@ -77,7 +77,7 @@ function OrderDetailRow({ order, customerId }: { order: PortalOrder; customerId:
   if (!detail || !detail.lines || detail.lines.length === 0) {
     return (
       <div className="px-5 pb-4 pl-14">
-        <p className="text-xs text-slate-400">Sin lineas</p>
+        <p className="text-xs text-muted-foreground">Sin lineas</p>
       </div>
     )
   }
@@ -86,7 +86,7 @@ function OrderDetailRow({ order, customerId }: { order: PortalOrder; customerId:
     <div className="px-5 pb-4 pl-14">
       <table className="w-full text-xs">
         <thead>
-          <tr className="text-slate-400 uppercase tracking-wide">
+          <tr className="text-muted-foreground uppercase tracking-wide">
             <th className="py-1.5 text-left">Producto</th>
             <th className="py-1.5 text-left">SKU</th>
             <th className="py-1.5 text-right">Pedido</th>
@@ -98,9 +98,9 @@ function OrderDetailRow({ order, customerId }: { order: PortalOrder; customerId:
         <tbody className="divide-y divide-slate-50">
           {detail.lines.map(line => (
             <tr key={line.id}>
-              <td className="py-1.5 text-slate-700">{line.product_name ?? line.product_id.slice(0, 8)}</td>
-              <td className="py-1.5 font-mono text-slate-400">{line.sku ?? '\u2014'}</td>
-              <td className="py-1.5 text-right text-slate-600">{line.qty_ordered}</td>
+              <td className="py-1.5 text-foreground">{line.product_name ?? line.product_id.slice(0, 8)}</td>
+              <td className="py-1.5 font-mono text-muted-foreground">{line.sku ?? '\u2014'}</td>
+              <td className="py-1.5 text-right text-muted-foreground">{line.qty_ordered}</td>
               <td className="py-1.5 text-right">
                 <span className={cn(
                   'font-medium',
@@ -110,15 +110,15 @@ function OrderDetailRow({ order, customerId }: { order: PortalOrder; customerId:
                 </span>
               </td>
               <td className="py-1.5 text-right">
-                <span className="text-slate-600">${line.unit_price.toLocaleString()}</span>
+                <span className="text-muted-foreground">${line.unit_price.toLocaleString()}</span>
                 {line.price_source === 'customer_special' && line.original_unit_price != null && line.original_unit_price > line.unit_price && (
                   <div className="text-[9px]">
-                    <span className="text-slate-400 line-through">${line.original_unit_price.toLocaleString()}</span>
+                    <span className="text-muted-foreground line-through">${line.original_unit_price.toLocaleString()}</span>
                     <span className="ml-1 text-blue-600 font-semibold">{Math.round((1 - line.unit_price / line.original_unit_price) * 100)}% dto.</span>
                   </div>
                 )}
               </td>
-              <td className="py-1.5 text-right font-semibold text-slate-800">${line.line_total.toLocaleString()}</td>
+              <td className="py-1.5 text-right font-semibold text-foreground">${line.line_total.toLocaleString()}</td>
             </tr>
           ))}
         </tbody>
@@ -138,40 +138,40 @@ function OrderDetailRow({ order, customerId }: { order: PortalOrder; customerId:
               </tr>
             ) : null
           })()}
-          <tr className="border-t border-slate-200">
+          <tr className="border-t border-border">
             <td colSpan={4} />
-            <td className="py-2 text-right text-xs text-slate-400">Subtotal</td>
+            <td className="py-2 text-right text-xs text-muted-foreground">Subtotal</td>
             <td className="py-2 text-right text-sm font-semibold">${detail.subtotal.toLocaleString()}</td>
           </tr>
           {detail.tax_amount > 0 && (
             <tr>
               <td colSpan={4} />
-              <td className="py-1 text-right text-xs text-slate-400">Impuestos</td>
+              <td className="py-1 text-right text-xs text-muted-foreground">Impuestos</td>
               <td className="py-1 text-right text-sm">${detail.tax_amount.toLocaleString()}</td>
             </tr>
           )}
           {detail.discount_amount > 0 && (
             <tr>
               <td colSpan={4} />
-              <td className="py-1 text-right text-xs text-slate-400">Descuento</td>
+              <td className="py-1 text-right text-xs text-muted-foreground">Descuento</td>
               <td className="py-1 text-right text-sm text-emerald-600">-${detail.discount_amount.toLocaleString()}</td>
             </tr>
           )}
           <tr>
             <td colSpan={4} />
-            <td className="py-1 text-right text-xs font-semibold text-slate-600">Total</td>
-            <td className="py-1 text-right text-sm font-bold text-slate-900">${detail.total.toLocaleString()}</td>
+            <td className="py-1 text-right text-xs font-semibold text-muted-foreground">Total</td>
+            <td className="py-1 text-right text-sm font-bold text-foreground">${detail.total.toLocaleString()}</td>
           </tr>
         </tfoot>
       </table>
 
       {/* Dates */}
-      <div className="flex gap-4 mt-3 text-xs text-slate-400">
+      <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
         {detail.expected_date && <span>Esperada: {new Date(detail.expected_date).toLocaleDateString()}</span>}
         {detail.shipped_date && <span>Enviada: {new Date(detail.shipped_date).toLocaleDateString()}</span>}
         {detail.delivered_date && <span>Entregada: {new Date(detail.delivered_date).toLocaleDateString()}</span>}
       </div>
-      {detail.notes && <p className="mt-2 text-xs text-slate-500 italic">{detail.notes}</p>}
+      {detail.notes && <p className="mt-2 text-xs text-muted-foreground italic">{detail.notes}</p>}
     </div>
   )
 }
@@ -218,7 +218,7 @@ export function CustomerPortalPage() {
   }
 
   if (!customer) {
-    return <p className="text-center text-slate-400 py-20">Cliente no encontrado</p>
+    return <p className="text-center text-muted-foreground py-20">Cliente no encontrado</p>
   }
 
   return (
@@ -226,43 +226,43 @@ export function CustomerPortalPage() {
       {/* Back */}
       <button
         onClick={() => navigate(`/inventario/socios`)}
-        className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"
+        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" /> Volver a clientes
       </button>
 
       {/* Header */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <div className="bg-card rounded-2xl border border-border  p-6">
         <div className="flex items-center gap-4">
           <div className="h-12 w-12 rounded-2xl bg-primary/15 flex items-center justify-center">
             <Package className="h-6 w-6 text-primary" />
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-slate-900">Portal de Autogestion</h1>
-            <p className="text-sm text-slate-500 mt-0.5">
-              <span className="font-semibold text-slate-700">{customer.name}</span>
-              <span className="font-mono text-xs ml-2 text-slate-400">{customer.code}</span>
+            <h1 className="text-2xl font-bold text-foreground">Portal de Autogestion</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              <span className="font-semibold text-foreground">{customer.name}</span>
+              <span className="font-mono text-xs ml-2 text-muted-foreground">{customer.code}</span>
               {customer.email && <span className="ml-3">{customer.email}</span>}
             </p>
           </div>
           {customer.credit_limit > 0 && (
             <div className="text-right">
-              <p className="text-xs text-slate-400">Credito</p>
-              <p className="text-lg font-bold text-slate-900">${customer.credit_limit.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">Credito</p>
+              <p className="text-lg font-bold text-foreground">${customer.credit_limit.toLocaleString()}</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
+      <div className="flex gap-1 bg-secondary rounded-xl p-1">
         <button
           onClick={() => setActiveTab('stock')}
           className={cn(
             'flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
             activeTab === 'stock'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700',
+              ? 'bg-card text-foreground '
+              : 'text-muted-foreground hover:text-foreground',
           )}
         >
           <Package className="h-4 w-4" />
@@ -273,8 +273,8 @@ export function CustomerPortalPage() {
           className={cn(
             'flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
             activeTab === 'pedidos'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700',
+              ? 'bg-card text-foreground '
+              : 'text-muted-foreground hover:text-foreground',
           )}
         >
           <ShoppingBag className="h-4 w-4" />
@@ -305,27 +305,27 @@ export function CustomerPortalPage() {
               placeholder="Buscar por producto, SKU o bodega..."
               value={stockSearch}
               onChange={e => setStockSearch(e.target.value)}
-              className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring"
+              className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring"
             />
           </div>
 
           {/* Table */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="bg-card rounded-2xl border border-border  overflow-hidden">
             {stockLoading ? (
-              <div className="p-8 text-center text-slate-400">Cargando stock...</div>
+              <div className="p-8 text-center text-muted-foreground">Cargando stock...</div>
             ) : filteredStock.length === 0 ? (
               <div className="p-12 text-center">
                 <Package className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-muted-foreground">
                   {stockSearch ? 'Sin resultados para la busqueda' : 'Sin productos en stock para este cliente'}
                 </p>
               </div>
             ) : (
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-100">
+                <thead className="bg-muted border-b border-border">
                   <tr>
                     {['Producto', 'SKU', 'Bodega', 'Disponible', 'Reservado', 'QC'].map(h => (
-                      <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
+                      <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -333,16 +333,16 @@ export function CustomerPortalPage() {
                   {filteredStock.map((sl, i) => {
                     const qty = sl.qty_on_hand
                     return (
-                      <tr key={`${sl.product_id}-${sl.warehouse_id}-${i}`} className="hover:bg-slate-50">
-                        <td className="px-5 py-3 font-medium text-slate-800">{sl.product_name ?? sl.product_id.slice(0, 8)}</td>
-                        <td className="px-5 py-3 font-mono text-xs text-slate-500">{sl.sku ?? '\u2014'}</td>
-                        <td className="px-5 py-3 text-sm text-slate-600">{sl.warehouse_name ?? '\u2014'}</td>
+                      <tr key={`${sl.product_id}-${sl.warehouse_id}-${i}`} className="hover:bg-muted">
+                        <td className="px-5 py-3 font-medium text-foreground">{sl.product_name ?? sl.product_id.slice(0, 8)}</td>
+                        <td className="px-5 py-3 font-mono text-xs text-muted-foreground">{sl.sku ?? '\u2014'}</td>
+                        <td className="px-5 py-3 text-sm text-muted-foreground">{sl.warehouse_name ?? '\u2014'}</td>
                         <td className="px-5 py-3">
-                          <span className={cn('font-bold', qty <= 0 ? 'text-red-500' : 'text-slate-900')}>
+                          <span className={cn('font-bold', qty <= 0 ? 'text-red-500' : 'text-foreground')}>
                             {qty.toLocaleString()}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-slate-500">{sl.qty_reserved.toLocaleString()}</td>
+                        <td className="px-5 py-3 text-muted-foreground">{sl.qty_reserved.toLocaleString()}</td>
                         <td className="px-5 py-3">
                           {sl.qc_status && (
                             <span className={cn(
@@ -379,7 +379,7 @@ export function CustomerPortalPage() {
 
           {/* Status filter */}
           <div className="flex items-center gap-2 flex-wrap">
-            <Filter className="h-4 w-4 text-slate-400" />
+            <Filter className="h-4 w-4 text-muted-foreground" />
             {STATUS_FILTERS.map(f => (
               <button
                 key={f.value}
@@ -388,7 +388,7 @@ export function CustomerPortalPage() {
                   'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                   statusFilter === f.value
                     ? 'bg-primary/15 text-primary'
-                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200',
+                    : 'bg-secondary text-muted-foreground hover:bg-slate-200',
                 )}
               >
                 {f.label}
@@ -397,13 +397,13 @@ export function CustomerPortalPage() {
           </div>
 
           {/* Orders list */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="bg-card rounded-2xl border border-border  overflow-hidden">
             {ordersLoading ? (
-              <div className="p-8 text-center text-slate-400">Cargando pedidos...</div>
+              <div className="p-8 text-center text-muted-foreground">Cargando pedidos...</div>
             ) : orders.length === 0 ? (
               <div className="p-12 text-center">
                 <ShoppingBag className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-muted-foreground">
                   {statusFilter ? 'Sin pedidos con ese estado' : 'Sin pedidos para este cliente'}
                 </p>
               </div>
@@ -415,16 +415,16 @@ export function CustomerPortalPage() {
                     <div key={order.id}>
                       <button
                         onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
-                        className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-slate-50/60 transition-colors"
+                        className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-muted/60 transition-colors"
                       >
                         <div className="flex-none">
                           {isExpanded
-                            ? <ChevronDown className="h-4 w-4 text-slate-400" />
-                            : <ChevronRight className="h-4 w-4 text-slate-400" />}
+                            ? <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className="font-mono text-xs text-slate-700 font-semibold">{order.order_number}</span>
-                          <span className="text-xs text-slate-400 ml-3">
+                          <span className="font-mono text-xs text-foreground font-semibold">{order.order_number}</span>
+                          <span className="text-xs text-muted-foreground ml-3">
                             {order.created_at ? new Date(order.created_at).toLocaleDateString() : ''}
                           </span>
                           <span className="text-xs text-slate-300 ml-2">
@@ -434,7 +434,7 @@ export function CustomerPortalPage() {
                         <span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold', STATUS_CONFIG[order.status]?.color)}>
                           {STATUS_CONFIG[order.status]?.label}
                         </span>
-                        <span className="font-mono text-sm font-bold text-slate-900 min-w-[80px] text-right">
+                        <span className="font-mono text-sm font-bold text-foreground min-w-[80px] text-right">
                           ${order.total.toLocaleString()}
                         </span>
                       </button>

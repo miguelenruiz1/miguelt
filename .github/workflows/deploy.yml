@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 name: Build & Deploy
 
 on:
@@ -173,3 +174,6 @@ jobs:
           channelId: live
           projectId: ${{ secrets.GCP_PROJECT_ID }}
           entryPoint: front-trace
+=======
+
+>>>>>>> 1a052d98f3b3e117789d94921f963a6f91a2c554

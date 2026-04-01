@@ -75,7 +75,7 @@ export function CustomerPricesPage() {
   })
 
   function getStatus(sp: CustomerPrice): { label: string; color: string } {
-    if (!sp.is_active) return { label: 'Inactivo', color: 'bg-slate-100 text-slate-500' }
+    if (!sp.is_active) return { label: 'Inactivo', color: 'bg-secondary text-muted-foreground' }
     if (sp.valid_to) {
       const validTo = new Date(sp.valid_to)
       if (validTo < now) return { label: 'Vencido', color: 'bg-red-50 text-red-600' }
@@ -88,8 +88,8 @@ export function CustomerPricesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Precios Especiales por Cliente</h1>
-          <p className="text-sm text-slate-500 mt-1">Gestiona precios preferenciales para clientes individuales</p>
+          <h1 className="text-2xl font-bold text-foreground">Precios Especiales por Cliente</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gestiona precios preferenciales para clientes individuales</p>
         </div>
         <button onClick={() => { setRenewFrom(null); setShowCreate(true) }} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition">
           <Plus className="h-4 w-4" /> Nuevo Precio
@@ -99,30 +99,30 @@ export function CustomerPricesPage() {
       {/* Metrics */}
       {metrics && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl border border-slate-200/60 p-4">
+          <div className="bg-card rounded-xl border border-border/60 p-4">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center"><DollarSign className="h-5 w-5 text-blue-600" /></div>
               <div>
-                <p className="text-xs text-slate-400">Precios especiales activos</p>
-                <p className="text-2xl font-bold text-slate-900">{metrics.active_count}</p>
+                <p className="text-xs text-muted-foreground">Precios especiales activos</p>
+                <p className="text-2xl font-bold text-foreground">{metrics.active_count}</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200/60 p-4">
+          <div className="bg-card rounded-xl border border-border/60 p-4">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-yellow-50 flex items-center justify-center"><AlertTriangle className="h-5 w-5 text-yellow-600" /></div>
               <div>
-                <p className="text-xs text-slate-400">Vencen en 30 dias</p>
+                <p className="text-xs text-muted-foreground">Vencen en 30 dias</p>
                 <p className="text-2xl font-bold text-yellow-600">{metrics.expiring_soon}</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200/60 p-4">
+          <div className="bg-card rounded-xl border border-border/60 p-4">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center"><Users className="h-5 w-5 text-primary" /></div>
               <div>
-                <p className="text-xs text-slate-400">Clientes con precio especial</p>
-                <p className="text-2xl font-bold text-slate-900">{metrics.customers_with_prices}</p>
+                <p className="text-xs text-muted-foreground">Clientes con precio especial</p>
+                <p className="text-2xl font-bold text-foreground">{metrics.customers_with_prices}</p>
               </div>
             </div>
           </div>
@@ -131,18 +131,18 @@ export function CustomerPricesPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
-        <select value={customerFilter} onChange={e => setCustomerFilter(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <select value={customerFilter} onChange={e => setCustomerFilter(e.target.value)} className="rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
           <option value="">Todos los clientes</option>
           {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
         </select>
-        <select value={productFilter} onChange={e => setProductFilter(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <select value={productFilter} onChange={e => setProductFilter(e.target.value)} className="rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
           <option value="">Todos los productos</option>
           {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name}</option>)}
         </select>
-        <div className="flex rounded-lg overflow-hidden border border-slate-200">
+        <div className="flex rounded-lg overflow-hidden border border-border">
           {(['active', 'expired', 'all'] as const).map(v => (
             <button key={v} onClick={() => setActiveFilter(v)}
-              className={cn('px-3 py-1.5 text-xs font-medium transition', activeFilter === v ? 'bg-blue-100 text-blue-700' : 'bg-white text-slate-600 hover:bg-slate-50')}
+              className={cn('px-3 py-1.5 text-xs font-medium transition', activeFilter === v ? 'bg-blue-100 text-blue-700' : 'bg-card text-muted-foreground hover:bg-muted')}
             >
               {v === 'active' ? 'Activos' : v === 'expired' ? 'Vencidos' : 'Todos'}
             </button>
@@ -154,10 +154,10 @@ export function CustomerPricesPage() {
       {isLoading ? (
         <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" /></div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[900px]">
-              <thead><tr className="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase">
+              <thead><tr className="bg-muted text-left text-xs font-semibold text-muted-foreground uppercase">
                 <th className="px-6 py-3">Cliente</th>
                 <th className="px-6 py-3">Producto</th>
                 <th className="px-6 py-3 text-right">Precio esp.</th>
@@ -174,27 +174,27 @@ export function CustomerPricesPage() {
                   const savingsPct = basePrice > 0 ? ((basePrice - sp.price) / basePrice * 100) : 0
                   const status = getStatus(sp)
                   return (
-                    <tr key={sp.id} className="hover:bg-slate-50/60">
-                      <td className="px-6 py-3 font-semibold text-slate-900">{sp.customer_name ?? sp.customer_id.slice(0, 8)}</td>
+                    <tr key={sp.id} className="hover:bg-muted/60">
+                      <td className="px-6 py-3 font-semibold text-foreground">{sp.customer_name ?? sp.customer_id.slice(0, 8)}</td>
                       <td className="px-6 py-3">
-                        <span className="text-slate-900">{sp.product_name ?? prod?.name ?? sp.product_id.slice(0, 8)}</span>
-                        {(sp.product_sku || prod?.sku) && <span className="ml-1.5 text-xs text-slate-400 font-mono">{sp.product_sku ?? prod?.sku}</span>}
+                        <span className="text-foreground">{sp.product_name ?? prod?.name ?? sp.product_id.slice(0, 8)}</span>
+                        {(sp.product_sku || prod?.sku) && <span className="ml-1.5 text-xs text-muted-foreground font-mono">{sp.product_sku ?? prod?.sku}</span>}
                       </td>
                       <td className="px-6 py-3 text-right font-mono font-bold text-blue-700">${sp.price.toLocaleString()}</td>
-                      <td className="px-6 py-3 text-right font-mono text-slate-500">${basePrice.toLocaleString()}</td>
+                      <td className="px-6 py-3 text-right font-mono text-muted-foreground">${basePrice.toLocaleString()}</td>
                       <td className="px-6 py-3 text-right">
                         {savingsPct > 0 ? (
                           <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">{savingsPct.toFixed(1)}%</span>
                         ) : <span className="text-slate-300">--</span>}
                       </td>
-                      <td className="px-6 py-3 text-xs text-slate-500">
+                      <td className="px-6 py-3 text-xs text-muted-foreground">
                         {new Date(sp.valid_from).toLocaleDateString()}
                         {sp.valid_to ? ` — ${new Date(sp.valid_to).toLocaleDateString()}` : ' — Sin limite'}
                       </td>
                       <td className="px-6 py-3"><span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold', status.color)}>{status.label}</span></td>
                       <td className="px-6 py-3 text-right">
                         <div className="flex gap-1 justify-end">
-                          <button onClick={() => setDetailId(sp.id)} className="p-1 text-slate-400 hover:text-primary" title="Ver detalle">
+                          <button onClick={() => setDetailId(sp.id)} className="p-1 text-muted-foreground hover:text-primary" title="Ver detalle">
                             <Eye className="h-3.5 w-3.5" />
                           </button>
                           {sp.is_active && (
@@ -213,42 +213,42 @@ export function CustomerPricesPage() {
                     </tr>
                   )
                 })}
-                {pagePrices.length === 0 && <tr><td colSpan={8} className="px-6 py-12 text-center text-slate-400">Sin precios especiales</td></tr>}
+                {pagePrices.length === 0 && <tr><td colSpan={8} className="px-6 py-12 text-center text-muted-foreground">Sin precios especiales</td></tr>}
               </tbody>
             </table>
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-muted-foreground">
                 Mostrando {startIdx + 1}–{endIdx} de {prices.length}
               </span>
               <div className="flex items-center gap-1">
                 <button
                   disabled={safePage <= 1}
                   onClick={() => setCurrentPage(1)}
-                  className="h-8 w-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none"
+                  className="h-8 w-8 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <ChevronsLeft className="w-4 h-4" />
                 </button>
                 <button
                   disabled={safePage <= 1}
                   onClick={() => setCurrentPage(p => p - 1)}
-                  className="h-8 w-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none"
+                  className="h-8 w-8 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <span className="px-3 text-sm text-gray-600">{safePage} / {totalPages}</span>
+                <span className="px-3 text-sm text-muted-foreground">{safePage} / {totalPages}</span>
                 <button
                   disabled={safePage >= totalPages}
                   onClick={() => setCurrentPage(p => p + 1)}
-                  className="h-8 w-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none"
+                  className="h-8 w-8 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
                 <button
                   disabled={safePage >= totalPages}
                   onClick={() => setCurrentPage(totalPages)}
-                  className="h-8 w-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none"
+                  className="h-8 w-8 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <ChevronsRight className="w-4 h-4" />
                 </button>
@@ -291,52 +291,52 @@ export function CustomerPricesPage() {
       {/* Create / Renew modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowCreate(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-card rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-slate-900">{renewFrom ? 'Renovar Precio Especial' : 'Nuevo Precio Especial'}</h3>
-              <button onClick={() => setShowCreate(false)} className="p-1 text-slate-400 hover:text-slate-600"><X className="h-5 w-5" /></button>
+              <h3 className="text-lg font-bold text-foreground">{renewFrom ? 'Renovar Precio Especial' : 'Nuevo Precio Especial'}</h3>
+              <button onClick={() => setShowCreate(false)} className="p-1 text-muted-foreground hover:text-muted-foreground"><X className="h-5 w-5" /></button>
             </div>
             <form ref={createFormRef} onSubmit={validateAndSubmitPrice} noValidate className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Cliente *</label>
-                <select name="customer_id" required defaultValue={renewFrom?.customer_id ?? ''} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none">
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Cliente *</label>
+                <select name="customer_id" required defaultValue={renewFrom?.customer_id ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none">
                   <option value="">Seleccionar cliente</option>
                   {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Producto *</label>
-                <select name="product_id" required defaultValue={renewFrom?.product_id ?? ''} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none">
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Producto *</label>
+                <select name="product_id" required defaultValue={renewFrom?.product_id ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none">
                   <option value="">Seleccionar producto</option>
                   {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name} (${Number(p.suggested_sale_price ?? 0).toLocaleString()})</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Precio especial ($) *</label>
-                  <input name="price" type="number" step="0.01" required defaultValue={renewFrom?.price ?? ''} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Precio especial ($) *</label>
+                  <input name="price" type="number" step="0.01" required defaultValue={renewFrom?.price ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Cantidad minima</label>
-                  <input name="min_quantity" type="number" min={1} defaultValue={renewFrom?.min_quantity ?? 1} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Cantidad minima</label>
+                  <input name="min_quantity" type="number" min={1} defaultValue={renewFrom?.min_quantity ?? 1} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Vigente desde</label>
-                  <input name="valid_from" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Vigente desde</label>
+                  <input name="valid_from" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Vigente hasta</label>
-                  <input name="valid_to" type="date" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Vigente hasta</label>
+                  <input name="valid_to" type="date" className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Motivo</label>
-                <input name="reason" defaultValue={renewFrom?.reason ?? ''} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" placeholder="Ej: Renovacion acuerdo 2026" />
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Motivo</label>
+                <input name="reason" defaultValue={renewFrom?.reason ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" placeholder="Ej: Renovacion acuerdo 2026" />
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => { setShowCreate(false); setRenewFrom(null) }} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+                <button type="button" onClick={() => { setShowCreate(false); setRenewFrom(null) }} className="px-4 py-2 text-sm text-muted-foreground hover:bg-secondary rounded-xl transition">Cancelar</button>
                 <button type="submit" disabled={createMut.isPending} className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl disabled:opacity-50 transition">{renewFrom ? 'Renovar' : 'Crear'}</button>
               </div>
             </form>
@@ -352,68 +352,68 @@ function PriceDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-lg bg-card rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-900">Detalle de Precio Especial</h2>
-          <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600"><X className="h-5 w-5" /></button>
+          <h2 className="text-lg font-bold text-foreground">Detalle de Precio Especial</h2>
+          <button onClick={onClose} className="p-1 text-muted-foreground hover:text-muted-foreground"><X className="h-5 w-5" /></button>
         </div>
 
         {isLoading ? (
           <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" /></div>
         ) : !detail ? (
-          <p className="text-center text-slate-400 py-8">No se encontro el detalle</p>
+          <p className="text-center text-muted-foreground py-8">No se encontro el detalle</p>
         ) : (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-xs text-slate-400">Cliente</p>
-                <p className="text-sm font-semibold text-slate-900">{detail.customer_name ?? detail.customer_id?.slice(0, 8)}</p>
+                <p className="text-xs text-muted-foreground">Cliente</p>
+                <p className="text-sm font-semibold text-foreground">{detail.customer_name ?? detail.customer_id?.slice(0, 8)}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Producto</p>
-                <p className="text-sm font-semibold text-slate-900">{detail.product_name ?? detail.product_id?.slice(0, 8)}</p>
+                <p className="text-xs text-muted-foreground">Producto</p>
+                <p className="text-sm font-semibold text-foreground">{detail.product_name ?? detail.product_id?.slice(0, 8)}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Precio especial</p>
+                <p className="text-xs text-muted-foreground">Precio especial</p>
                 <p className="text-sm font-bold text-blue-700">${detail.price?.toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Cantidad minima</p>
-                <p className="text-sm text-slate-700">{detail.min_quantity ?? 1}</p>
+                <p className="text-xs text-muted-foreground">Cantidad minima</p>
+                <p className="text-sm text-foreground">{detail.min_quantity ?? 1}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Vigente desde</p>
-                <p className="text-sm text-slate-700">{detail.valid_from ? new Date(detail.valid_from).toLocaleDateString() : '--'}</p>
+                <p className="text-xs text-muted-foreground">Vigente desde</p>
+                <p className="text-sm text-foreground">{detail.valid_from ? new Date(detail.valid_from).toLocaleDateString() : '--'}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Vigente hasta</p>
-                <p className="text-sm text-slate-700">{detail.valid_to ? new Date(detail.valid_to).toLocaleDateString() : 'Sin limite'}</p>
+                <p className="text-xs text-muted-foreground">Vigente hasta</p>
+                <p className="text-sm text-foreground">{detail.valid_to ? new Date(detail.valid_to).toLocaleDateString() : 'Sin limite'}</p>
               </div>
             </div>
 
             {detail.reason && (
               <div>
-                <p className="text-xs text-slate-400">Motivo</p>
-                <p className="text-sm text-slate-700">{detail.reason}</p>
+                <p className="text-xs text-muted-foreground">Motivo</p>
+                <p className="text-sm text-foreground">{detail.reason}</p>
               </div>
             )}
 
             {/* Price change history */}
             {detail.history && detail.history.length > 0 && (
               <div>
-                <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5 mb-3">
-                  <History className="h-4 w-4 text-slate-400" /> Historial de cambios
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5 mb-3">
+                  <History className="h-4 w-4 text-muted-foreground" /> Historial de cambios
                 </h3>
                 <div className="space-y-2">
                   {detail.history.map((h: any, idx: number) => (
                     <div key={idx} className="flex items-center gap-3 text-sm border-l-2 border-primary/30 pl-3 py-1">
                       <div className="flex-1">
-                        <span className="font-mono text-slate-500">${h.old_price?.toLocaleString()}</span>
+                        <span className="font-mono text-muted-foreground">${h.old_price?.toLocaleString()}</span>
                         <span className="mx-1.5 text-slate-300">&rarr;</span>
                         <span className="font-mono font-semibold text-primary">${h.new_price?.toLocaleString()}</span>
-                        {h.reason && <span className="ml-2 text-xs text-slate-400">({h.reason})</span>}
+                        {h.reason && <span className="ml-2 text-xs text-muted-foreground">({h.reason})</span>}
                       </div>
-                      <span className="text-xs text-slate-400 whitespace-nowrap">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
                         {h.changed_at ? new Date(h.changed_at).toLocaleDateString() : ''}
                       </span>
                     </div>

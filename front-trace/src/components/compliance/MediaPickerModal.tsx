@@ -116,14 +116,14 @@ export default function MediaPickerModal({ open, onClose, onSelect, excludeIds =
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
           <div className="flex items-center gap-2">
             <FolderOpen className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-bold text-slate-900">Biblioteca de Media</h2>
+            <h2 className="text-lg font-bold text-foreground">Biblioteca de Media</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+          <button onClick={onClose} className="p-1.5 text-muted-foreground hover:text-muted-foreground rounded-lg hover:bg-secondary">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -132,12 +132,12 @@ export default function MediaPickerModal({ open, onClose, onSelect, excludeIds =
         <div className="px-6 py-3 border-b space-y-3 shrink-0">
           <div className="flex gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar por nombre..."
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none"
+                className="w-full pl-9 pr-3 py-2 bg-muted border border-border rounded-lg text-sm focus:bg-card focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none"
               />
             </div>
             {/* Upload from PC — one click, opens file picker, uploads to media, auto-selects */}
@@ -171,7 +171,7 @@ export default function MediaPickerModal({ open, onClose, onSelect, excludeIds =
                   'px-3 py-1 text-xs font-medium rounded-full border transition-colors',
                   category === c.key
                     ? 'bg-primary text-white border-primary'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-primary/30'
+                    : 'bg-card text-muted-foreground border-border hover:border-primary/30'
                 )}
               >
                 {c.label}
@@ -192,8 +192,8 @@ export default function MediaPickerModal({ open, onClose, onSelect, excludeIds =
               className="w-full py-16 text-center group"
             >
               <Upload className="h-10 w-10 text-slate-200 mx-auto mb-3 group-hover:text-primary/40 transition-colors" />
-              <p className="text-sm text-slate-500 group-hover:text-slate-700">No hay archivos{category ? ` en "${CATEGORIES.find(c => c.key === category)?.label}"` : ''}</p>
-              <p className="text-xs text-slate-400 mt-1 group-hover:text-primary">Haz click aqui para subir un archivo desde tu PC</p>
+              <p className="text-sm text-muted-foreground group-hover:text-foreground">No hay archivos{category ? ` en "${CATEGORIES.find(c => c.key === category)?.label}"` : ''}</p>
+              <p className="text-xs text-muted-foreground mt-1 group-hover:text-primary">Haz click aqui para subir un archivo desde tu PC</p>
             </button>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -201,14 +201,14 @@ export default function MediaPickerModal({ open, onClose, onSelect, excludeIds =
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadMut.isPending}
-                className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 p-2 hover:border-primary/40 hover:bg-primary/5 transition-all group min-h-[140px]"
+                className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border p-2 hover:border-primary/40 hover:bg-primary/5 transition-all group min-h-[140px]"
               >
                 {uploadMut.isPending ? (
                   <Loader2 className="h-8 w-8 text-primary animate-spin mb-2" />
                 ) : (
                   <Upload className="h-8 w-8 text-slate-300 group-hover:text-primary/60 mb-2 transition-colors" />
                 )}
-                <p className="text-[11px] font-medium text-slate-500 group-hover:text-primary">
+                <p className="text-[11px] font-medium text-muted-foreground group-hover:text-primary">
                   {uploadMut.isPending ? 'Subiendo...' : 'Subir desde PC'}
                 </p>
               </button>
@@ -226,20 +226,20 @@ export default function MediaPickerModal({ open, onClose, onSelect, excludeIds =
                       'relative flex flex-col items-center rounded-xl border-2 p-2 transition-all text-left group',
                       isSelected
                         ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                        : 'border-slate-100 hover:border-slate-300 bg-white'
+                        : 'border-border hover:border-slate-300 bg-card'
                     )}
                   >
-                    <div className="w-full aspect-square rounded-lg overflow-hidden bg-slate-50 flex items-center justify-center mb-2">
+                    <div className="w-full aspect-square rounded-lg overflow-hidden bg-muted flex items-center justify-center mb-2">
                       {isImg ? (
                         <img src={fullUrl} alt={f.original_filename} className="w-full h-full object-cover" />
                       ) : (
                         <FileText className="h-8 w-8 text-slate-300" />
                       )}
                     </div>
-                    <p className="text-[11px] font-medium text-slate-800 truncate w-full">{f.original_filename}</p>
+                    <p className="text-[11px] font-medium text-foreground truncate w-full">{f.original_filename}</p>
                     <div className="flex items-center gap-1.5 w-full mt-0.5">
-                      <span className="text-[9px] text-slate-400">{fmtSize(f.file_size)}</span>
-                      <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">{f.category}</span>
+                      <span className="text-[9px] text-muted-foreground">{fmtSize(f.file_size)}</span>
+                      <span className="text-[9px] px-1.5 py-0.5 bg-secondary text-muted-foreground rounded">{f.category}</span>
                     </div>
                     {isSelected && (
                       <div className="absolute top-1.5 right-1.5 bg-primary text-white rounded-full p-0.5">
@@ -255,26 +255,26 @@ export default function MediaPickerModal({ open, onClose, onSelect, excludeIds =
 
         {/* Footer: document type + confirm */}
         {selected && (
-          <div className="px-6 py-4 border-t bg-slate-50 shrink-0">
+          <div className="px-6 py-4 border-t bg-muted shrink-0">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 {isImage(selected) ? (
                   <img src={mediaFileUrl(selected.url)} alt="" className="h-10 w-10 rounded-lg object-cover border shrink-0" />
                 ) : (
                   <div className="h-10 w-10 rounded-lg bg-slate-200 flex items-center justify-center shrink-0">
-                    <FileText className="h-4 w-4 text-slate-500" />
+                    <FileText className="h-4 w-4 text-muted-foreground" />
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-800 truncate">{selected.original_filename}</p>
-                  <p className="text-[10px] text-slate-400">SHA: {selected.file_hash.slice(0, 12)}...</p>
+                  <p className="text-sm font-medium text-foreground truncate">{selected.original_filename}</p>
+                  <p className="text-[10px] text-muted-foreground">SHA: {selected.file_hash.slice(0, 12)}...</p>
                 </div>
               </div>
 
               <select
                 value={docType}
                 onChange={e => setDocType(e.target.value as EvidenceDocumentType)}
-                className="text-sm border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20"
+                className="text-sm border border-border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20"
               >
                 {DOC_TYPES.map(d => (
                   <option key={d.value} value={d.value}>{d.label}</option>
@@ -285,7 +285,7 @@ export default function MediaPickerModal({ open, onClose, onSelect, excludeIds =
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="Descripcion (opcional)"
-                className="text-sm border border-slate-200 rounded-lg px-3 py-2 w-40 outline-none focus:ring-2 focus:ring-primary/20"
+                className="text-sm border border-border rounded-lg px-3 py-2 w-40 outline-none focus:ring-2 focus:ring-primary/20"
               />
 
               <button

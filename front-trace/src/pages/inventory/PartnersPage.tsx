@@ -96,7 +96,7 @@ export function PartnersPage() {
     setEditPartner(p)
   }
 
-  const inputCls = "w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none"
+  const inputCls = "w-full bg-muted border border-border rounded-xl px-3 py-2.5 text-sm focus:bg-card focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none"
   const hasAddress = (a: typeof emptyAddress) => Object.values(a).some(v => v.trim() !== '')
 
   async function doSubmit() {
@@ -141,7 +141,7 @@ export function PartnersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Users className="h-6 w-6 text-gray-700" />
+          <Users className="h-6 w-6 text-foreground" />
           <h1 className="text-2xl font-bold">Socios Comerciales</h1>
         </div>
         <button onClick={() => { resetForm(); setShowCreate(true) }}
@@ -158,18 +158,18 @@ export function PartnersPage() {
           onChange={(k) => setRoleTab(k as RoleTab)}
         />
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por nombre, codigo, email..."
-            className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all" />
+            className="w-full pl-9 pr-3 py-2 bg-muted border border-border rounded-xl text-sm focus:bg-card focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all" />
         </div>
       </div>
 
       {/* Table */}
-      {isLoading ? <div className="text-center py-10 text-gray-400">Cargando...</div> : (
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      {isLoading ? <div className="text-center py-10 text-muted-foreground">Cargando...</div> : (
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-gray-100">
+            <thead><tr className="border-b border-border">
               <th className="p-3 text-left">Nombre</th>
               <th className="p-3 text-left">Codigo</th>
               <th className="p-3 text-left">Rol</th>
@@ -181,14 +181,14 @@ export function PartnersPage() {
             </tr></thead>
             <tbody>
               {filtered.map(p => (
-                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50 cursor-pointer transition-colors" onClick={() => navigate(`/inventario/socios/${p.id}`)}>
+                <tr key={p.id} className="border-b border-gray-50 hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => navigate(`/inventario/socios/${p.id}`)}>
                   <td className="p-3 font-medium">{p.name}</td>
-                  <td className="p-3 font-mono text-xs text-gray-500">{p.code}</td>
+                  <td className="p-3 font-mono text-xs text-muted-foreground">{p.code}</td>
                   <td className="p-3">{roleBadge(p)}</td>
-                  <td className="p-3 text-gray-600">{p.contact_name || '\u2014'}</td>
-                  <td className="p-3 text-gray-600">{p.email || '\u2014'}</td>
+                  <td className="p-3 text-muted-foreground">{p.contact_name || '\u2014'}</td>
+                  <td className="p-3 text-muted-foreground">{p.email || '\u2014'}</td>
                   <td className="p-3 text-right">{p.payment_terms_days}d</td>
-                  <td className="p-3 text-center">{p.is_active ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Activo</span> : <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Inactivo</span>}</td>
+                  <td className="p-3 text-center">{p.is_active ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Activo</span> : <span className="text-xs bg-secondary text-muted-foreground px-2 py-0.5 rounded-full">Inactivo</span>}</td>
                   <td className="p-3 text-right" onClick={e => e.stopPropagation()}>
                     <button onClick={() => openEdit(p)} className="text-xs text-primary hover:underline mr-2">Editar</button>
                     <button onClick={async () => { const ok = await confirm({ title: 'Desactivar socio', message: `¿Desactivar ${p.name}?`, confirmLabel: 'Desactivar' }); if (ok) deleteMut.mutate(p.id) }}
@@ -198,14 +198,14 @@ export function PartnersPage() {
               ))}
             </tbody>
           </table>
-          {filtered.length === 0 && <div className="text-center py-10 text-gray-400">No se encontraron socios comerciales</div>}
+          {filtered.length === 0 && <div className="text-center py-10 text-muted-foreground">No se encontraron socios comerciales</div>}
         </div>
       )}
 
       {/* Create/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+          <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="bg-card rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
             <h3 className="text-lg font-semibold mb-4">{editPartner ? 'Editar socio' : 'Nuevo socio comercial'}</h3>
 
             {/* Role checkboxes */}
@@ -222,19 +222,19 @@ export function PartnersPage() {
 
             <div className="grid grid-cols-2 gap-3">
               {/* ── Identificacion ── */}
-              <div className="col-span-2"><label className="text-xs text-gray-500">Nombre *</label><input required value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} className={inputCls} /></div>
-              <div><label className="text-xs text-gray-500">Codigo *</label><input required value={form.code} onChange={e => setForm(f => ({...f, code: e.target.value}))} className={inputCls} /></div>
-              <div><label className="text-xs text-gray-500">NIT / RUT</label><input value={form.tax_id} onChange={e => setForm(f => ({...f, tax_id: e.target.value}))} className={inputCls} /></div>
+              <div className="col-span-2"><label className="text-xs text-muted-foreground">Nombre *</label><input required value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} className={inputCls} /></div>
+              <div><label className="text-xs text-muted-foreground">Codigo *</label><input required value={form.code} onChange={e => setForm(f => ({...f, code: e.target.value}))} className={inputCls} /></div>
+              <div><label className="text-xs text-muted-foreground">NIT / RUT</label><input value={form.tax_id} onChange={e => setForm(f => ({...f, tax_id: e.target.value}))} className={inputCls} /></div>
 
               {/* ── Contacto ── */}
-              <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Contacto</p></div>
-              <div><label className="text-xs text-gray-500">Nombre contacto</label><input value={form.contact_name} onChange={e => setForm(f => ({...f, contact_name: e.target.value}))} className={inputCls} /></div>
-              <div><label className="text-xs text-gray-500">Email</label><input type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} className={inputCls} /></div>
-              <div><label className="text-xs text-gray-500">Telefono</label><input value={form.phone} onChange={e => setForm(f => ({...f, phone: e.target.value}))} className={inputCls} /></div>
-              <div><label className="text-xs text-gray-500">Plazo pago (dias)</label><input type="number" value={form.payment_terms_days} onChange={e => setForm(f => ({...f, payment_terms_days: e.target.value}))} className={inputCls} /></div>
+              <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contacto</p></div>
+              <div><label className="text-xs text-muted-foreground">Nombre contacto</label><input value={form.contact_name} onChange={e => setForm(f => ({...f, contact_name: e.target.value}))} className={inputCls} /></div>
+              <div><label className="text-xs text-muted-foreground">Email</label><input type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} className={inputCls} /></div>
+              <div><label className="text-xs text-muted-foreground">Telefono</label><input value={form.phone} onChange={e => setForm(f => ({...f, phone: e.target.value}))} className={inputCls} /></div>
+              <div><label className="text-xs text-muted-foreground">Plazo pago (dias)</label><input type="number" value={form.payment_terms_days} onChange={e => setForm(f => ({...f, payment_terms_days: e.target.value}))} className={inputCls} /></div>
 
               {/* ── Direccion ── */}
-              <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Direccion</p></div>
+              <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Direccion</p></div>
               <div className="col-span-2"><input value={form.address.line1} onChange={e => setForm(f => ({...f, address: {...f.address, line1: e.target.value}}))} placeholder="Calle, carrera, numero" className={inputCls} /></div>
               <div><input value={form.address.city} onChange={e => setForm(f => ({...f, address: {...f.address, city: e.target.value}}))} placeholder="Ciudad" className={inputCls} /></div>
               <div><input value={form.address.state} onChange={e => setForm(f => ({...f, address: {...f.address, state: e.target.value}}))} placeholder="Departamento / Estado" className={inputCls} /></div>
@@ -244,7 +244,7 @@ export function PartnersPage() {
               {/* Shipping address toggle (customer only) */}
               {form.is_customer && (
                 <div className="col-span-2 pt-1">
-                  <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
                     <input type="checkbox" checked={form.differentShippingAddress} onChange={e => setForm(f => ({...f, differentShippingAddress: e.target.checked}))} className="rounded" />
                     Direccion de envio diferente
                   </label>
@@ -261,34 +261,34 @@ export function PartnersPage() {
               {/* ── Proveedor ── */}
               {form.is_supplier && (<>
                 <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Proveedor</p></div>
-                <div><label className="text-xs text-gray-500">Tipo</label>
+                <div><label className="text-xs text-muted-foreground">Tipo</label>
                   <select value={form.supplier_type_id} onChange={e => setForm(f => ({...f, supplier_type_id: e.target.value}))} className={inputCls}>
                     <option value="">Sin tipo</option>
                     {(supplierTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
-                <div><label className="text-xs text-gray-500">Lead time (dias)</label><input type="number" value={form.lead_time_days} onChange={e => setForm(f => ({...f, lead_time_days: e.target.value}))} className={inputCls} /></div>
+                <div><label className="text-xs text-muted-foreground">Lead time (dias)</label><input type="number" value={form.lead_time_days} onChange={e => setForm(f => ({...f, lead_time_days: e.target.value}))} className={inputCls} /></div>
               </>)}
 
               {/* ── Cliente ── */}
               {form.is_customer && (<>
                 <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-green-400 uppercase tracking-wider">Cliente</p></div>
-                <div><label className="text-xs text-gray-500">Tipo</label>
+                <div><label className="text-xs text-muted-foreground">Tipo</label>
                   <select value={form.customer_type_id} onChange={e => setForm(f => ({...f, customer_type_id: e.target.value}))} className={inputCls}>
                     <option value="">Sin tipo</option>
                     {(customerTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
-                <div><label className="text-xs text-gray-500">Limite credito</label><input type="number" value={form.credit_limit} onChange={e => setForm(f => ({...f, credit_limit: e.target.value}))} className={inputCls} /></div>
-                <div><label className="text-xs text-gray-500">Descuento %</label><input type="number" min="0" max="100" value={form.discount_percent} onChange={e => setForm(f => ({...f, discount_percent: e.target.value}))} className={inputCls} /></div>
+                <div><label className="text-xs text-muted-foreground">Limite credito</label><input type="number" value={form.credit_limit} onChange={e => setForm(f => ({...f, credit_limit: e.target.value}))} className={inputCls} /></div>
+                <div><label className="text-xs text-muted-foreground">Descuento %</label><input type="number" min="0" max="100" value={form.discount_percent} onChange={e => setForm(f => ({...f, discount_percent: e.target.value}))} className={inputCls} /></div>
               </>)}
 
-              <div className="col-span-2"><label className="text-xs text-gray-500">Notas</label><textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className={inputCls} /></div>
+              <div className="col-span-2"><label className="text-xs text-muted-foreground">Notas</label><textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className={inputCls} /></div>
             </div>
 
             <div className="flex gap-3 mt-4">
               <button type="button" onClick={() => { setShowCreate(false); setEditPartner(null); resetForm() }}
-                className="flex-1 bg-gray-100 text-gray-700 rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-gray-200 transition-colors">Cancelar</button>
+                className="flex-1 bg-secondary text-foreground rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-gray-200 transition-colors">Cancelar</button>
               <button type="submit" disabled={createMut.isPending || updateMut.isPending || (!form.is_supplier && !form.is_customer)}
                 className="flex-1 bg-gray-900 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 transition-colors">
                 {editPartner ? 'Guardar' : 'Crear'}

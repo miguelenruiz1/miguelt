@@ -114,8 +114,16 @@ import { PlatformUsersPage } from '@/pages/platform/PlatformUsersPage'
 import { PlatformAiSettingsPage } from '@/pages/platform/PlatformAiSettingsPage'
 import { BillingPage } from '@/pages/settings/BillingPage'
 import { PlanLimitModal } from '@/components/PlanLimitModal'
+import { LandingPage } from '@/pages/LandingPage'
+import { useAuthStore } from '@/store/auth'
+import { EudrLandingPage } from '@/pages/EudrLandingPage'
 
+// Show landing if not logged in, dashboard if logged in
 const router = createBrowserRouter([
+  // ─── Landing (public) ───────────────────────────────────────────────────────
+  { path: '/home',               element: <LandingPage /> },
+  { path: '/eudr',               element: <EudrLandingPage /> },
+
   // ─── Public routes (no layout) ──────────────────────────────────────────────
   { path: '/login',              element: <LoginPage /> },
   { path: '/register',           element: <RegisterPage /> },

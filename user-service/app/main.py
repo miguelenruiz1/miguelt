@@ -48,7 +48,7 @@ def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
 
-    app = FastAPI(
+    app = FastAPI(redirect_slashes=False, 
         title="Trace — User Service",
         description="Authentication, RBAC, and audit for the Trace platform.",
         version=settings.APP_VERSION,

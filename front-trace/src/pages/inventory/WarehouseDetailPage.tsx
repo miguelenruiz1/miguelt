@@ -115,51 +115,51 @@ function LocationForm({ initial, locations, existingTypes, onSubmit, onCancel, s
   const parentOptions = locations.filter(l => !('id' in initial) || l.id !== (initial as WarehouseLocation).id)
 
   return (
-    <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">
+    <div className="bg-muted rounded-xl border border-border p-4 space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">Nombre *</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Nombre *</label>
           <input
             value={form.name}
             onChange={e => set('name', e.target.value)}
             placeholder="Zona A"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">Codigo *</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Codigo *</label>
           <input
             value={form.code}
             onChange={e => set('code', e.target.value)}
             placeholder="ZA-001"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">Tipo *</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Tipo *</label>
           <input
             list="location-types"
             value={form.location_type}
             onChange={e => set('location_type', e.target.value)}
             placeholder="Ej: zona, pasillo, estante, bin..."
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <datalist id="location-types">
             {existingTypes.map(t => (
               <option key={t} value={t} />
             ))}
           </datalist>
-          <p className="text-[10px] text-slate-400 mt-0.5">Escribe un tipo nuevo o selecciona uno existente</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">Escribe un tipo nuevo o selecciona uno existente</p>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">Ubicacion padre</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Ubicacion padre</label>
           <select
             value={form.parent_location_id ?? ''}
             onChange={e => set('parent_location_id', e.target.value || null)}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">— Ninguna (raiz) —</option>
             {parentOptions.map(l => (
@@ -171,21 +171,21 @@ function LocationForm({ initial, locations, existingTypes, onSubmit, onCancel, s
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">Descripcion</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Descripcion</label>
           <input
             value={form.description}
             onChange={e => set('description', e.target.value)}
             placeholder="Opcional"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">Orden</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Orden</label>
           <input
             type="number"
             value={form.sort_order}
             onChange={e => set('sort_order', Number(e.target.value))}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
       </div>
@@ -201,7 +201,7 @@ function LocationForm({ initial, locations, existingTypes, onSubmit, onCancel, s
         </button>
         <button
           onClick={onCancel}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-card border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors"
         >
           <X className="h-3.5 w-3.5" />
           Cancelar
@@ -235,7 +235,7 @@ function LocationRow({ node, expanded, allTypes, onToggle, onEdit, onDelete, onT
   return (
     <div
       className={cn(
-        'flex items-center gap-2 py-2.5 px-3 border-l-4 rounded-lg bg-white hover:bg-slate-50 transition-colors',
+        'flex items-center gap-2 py-2.5 px-3 border-l-4 rounded-lg bg-card hover:bg-muted transition-colors',
         colors.border,
         DEPTH_INDENT[Math.min(node.depth, DEPTH_INDENT.length - 1)],
       )}
@@ -245,7 +245,7 @@ function LocationRow({ node, expanded, allTypes, onToggle, onEdit, onDelete, onT
         onClick={onToggle}
         className={cn(
           'flex-none h-6 w-6 flex items-center justify-center rounded transition-colors',
-          hasChildren ? 'hover:bg-slate-200 text-slate-500' : 'text-transparent cursor-default',
+          hasChildren ? 'hover:bg-slate-200 text-muted-foreground' : 'text-transparent cursor-default',
         )}
         disabled={!hasChildren}
       >
@@ -256,12 +256,12 @@ function LocationRow({ node, expanded, allTypes, onToggle, onEdit, onDelete, onT
       </button>
 
       {/* Icon */}
-      <MapPin className="h-4 w-4 flex-none text-slate-400" />
+      <MapPin className="h-4 w-4 flex-none text-muted-foreground" />
 
       {/* Name + code */}
       <div className="flex-1 min-w-0">
-        <span className="font-medium text-sm text-slate-800">{loc.name}</span>
-        <span className="ml-2 font-mono text-xs text-slate-400">{loc.code}</span>
+        <span className="font-medium text-sm text-foreground">{loc.name}</span>
+        <span className="ml-2 font-mono text-xs text-muted-foreground">{loc.code}</span>
       </div>
 
       {/* Type badge */}
@@ -274,7 +274,7 @@ function LocationRow({ node, expanded, allTypes, onToggle, onEdit, onDelete, onT
 
       {/* Stock count */}
       {stockCount > 0 && (
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+        <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
           {stockCount} items
         </span>
       )}
@@ -286,7 +286,7 @@ function LocationRow({ node, expanded, allTypes, onToggle, onEdit, onDelete, onT
           'rounded-full px-2 py-0.5 text-[11px] font-semibold transition-colors',
           loc.is_active
             ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-            : 'bg-slate-100 text-slate-500 hover:bg-slate-200',
+            : 'bg-secondary text-muted-foreground hover:bg-slate-200',
         )}
       >
         {loc.is_active ? 'Activa' : 'Inactiva'}
@@ -295,13 +295,13 @@ function LocationRow({ node, expanded, allTypes, onToggle, onEdit, onDelete, onT
       {/* Actions */}
       <button
         onClick={onEdit}
-        className="flex-none h-7 w-7 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors"
+        className="flex-none h-7 w-7 flex items-center justify-center rounded-lg hover:bg-slate-200 text-muted-foreground hover:text-foreground transition-colors"
       >
         <Pencil className="h-3.5 w-3.5" />
       </button>
       <button
         onClick={onDelete}
-        className="flex-none h-7 w-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
+        className="flex-none h-7 w-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors"
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>
@@ -391,7 +391,7 @@ function LocationsTab({ warehouseId, stockLocationCounts }: LocationsTabProps) {
   }
 
   if (isLoading) {
-    return <div className="p-8 text-center text-slate-400">Cargando ubicaciones...</div>
+    return <div className="p-8 text-center text-muted-foreground">Cargando ubicaciones...</div>
   }
 
   return (
@@ -399,7 +399,7 @@ function LocationsTab({ warehouseId, stockLocationCounts }: LocationsTabProps) {
       {/* Toolbar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-muted-foreground">
             {locations.length} ubicacion{locations.length !== 1 ? 'es' : ''}
           </span>
           {locations.length > 0 && (
@@ -447,7 +447,7 @@ function LocationsTab({ warehouseId, stockLocationCounts }: LocationsTabProps) {
       {locations.length === 0 && !showCreateForm ? (
         <div className="py-12 text-center">
           <FolderTree className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-          <p className="text-sm text-slate-400">No hay ubicaciones definidas para esta bodega</p>
+          <p className="text-sm text-muted-foreground">No hay ubicaciones definidas para esta bodega</p>
           <button
             onClick={() => setShowCreateForm(true)}
             className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 transition-colors"
@@ -586,7 +586,7 @@ export function WarehouseDetailPage() {
         </Link>
         <div className="py-16 text-center">
           <WarehouseIcon className="h-12 w-12 text-slate-200 mx-auto mb-3" />
-          <p className="text-sm text-slate-400">Bodega no encontrada</p>
+          <p className="text-sm text-muted-foreground">Bodega no encontrada</p>
         </div>
       </div>
     )
@@ -602,11 +602,11 @@ export function WarehouseDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <div className="bg-card rounded-2xl border border-border  p-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">{warehouse.name}</h1>
-            <p className="text-sm font-mono text-slate-400 mt-0.5">{warehouse.code}</p>
+            <h1 className="text-2xl font-bold text-foreground">{warehouse.name}</h1>
+            <p className="text-sm font-mono text-muted-foreground mt-0.5">{warehouse.code}</p>
           </div>
           <div className="flex items-center gap-2">
             {whType ? (
@@ -615,13 +615,13 @@ export function WarehouseDetailPage() {
                 {whType.name}
               </span>
             ) : (
-              <span className="rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-600">
+              <span className="rounded-full px-2.5 py-1 text-xs font-semibold bg-secondary text-muted-foreground">
                 {warehouse.type}
               </span>
             )}
             <span className={cn(
               'rounded-full px-2.5 py-1 text-xs font-semibold',
-              warehouse.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500',
+              warehouse.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-secondary text-muted-foreground',
             )}>
               {warehouse.is_active ? 'Activa' : 'Inactiva'}
             </span>
@@ -632,20 +632,20 @@ export function WarehouseDetailPage() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-4 mt-4 text-sm text-slate-500">
-          <span><strong className="text-slate-900">{stockLevels.length}</strong> productos en stock</span>
+        <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
+          <span><strong className="text-foreground">{stockLevels.length}</strong> productos en stock</span>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
+      <div className="flex gap-1 bg-secondary rounded-xl p-1">
         <button
           onClick={() => setActiveTab('inventario')}
           className={cn(
             'flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
             activeTab === 'inventario'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700',
+              ? 'bg-card text-foreground '
+              : 'text-muted-foreground hover:text-foreground',
           )}
         >
           <Package className="h-4 w-4" />
@@ -656,8 +656,8 @@ export function WarehouseDetailPage() {
           className={cn(
             'flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
             activeTab === 'ubicaciones'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700',
+              ? 'bg-card text-foreground '
+              : 'text-muted-foreground hover:text-foreground',
           )}
         >
           <FolderTree className="h-4 w-4" />
@@ -670,12 +670,12 @@ export function WarehouseDetailPage() {
         <>
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar por nombre, SKU o codigo de barras..."
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full pl-9 pr-3 py-2 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
@@ -686,7 +686,7 @@ export function WarehouseDetailPage() {
                 onClick={() => setTypeFilter('')}
                 className={cn(
                   'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
-                  !typeFilter ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                  !typeFilter ? 'bg-primary text-white' : 'bg-secondary text-muted-foreground hover:bg-slate-200',
                 )}
               >
                 Todos
@@ -699,7 +699,7 @@ export function WarehouseDetailPage() {
                     'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
                     typeFilter === pt.id
                       ? 'text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                      : 'bg-secondary text-muted-foreground hover:bg-slate-200',
                   )}
                   style={typeFilter === pt.id ? { backgroundColor: pt.color ?? '#6366f1' } : undefined}
                 >
@@ -712,12 +712,12 @@ export function WarehouseDetailPage() {
           {/* Location filter */}
           {locations.length > 0 && (
             <div className="flex gap-2 flex-wrap items-center">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide mr-1">Ubicacion:</span>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mr-1">Ubicacion:</span>
               <button
                 onClick={() => setLocationFilter('')}
                 className={cn(
                   'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
-                  !locationFilter ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                  !locationFilter ? 'bg-teal-600 text-white' : 'bg-secondary text-muted-foreground hover:bg-slate-200',
                 )}
               >
                 Todas
@@ -726,7 +726,7 @@ export function WarehouseDetailPage() {
                 onClick={() => setLocationFilter(locationFilter === '__none__' ? '' : '__none__')}
                 className={cn(
                   'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
-                  locationFilter === '__none__' ? 'bg-slate-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                  locationFilter === '__none__' ? 'bg-slate-600 text-white' : 'bg-secondary text-muted-foreground hover:bg-slate-200',
                 )}
               >
                 Sin ubicacion
@@ -737,7 +737,7 @@ export function WarehouseDetailPage() {
                   onClick={() => setLocationFilter(locationFilter === loc.id ? '' : loc.id)}
                   className={cn(
                     'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
-                    locationFilter === loc.id ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                    locationFilter === loc.id ? 'bg-teal-600 text-white' : 'bg-secondary text-muted-foreground hover:bg-slate-200',
                   )}
                 >
                   {loc.name}
@@ -753,13 +753,13 @@ export function WarehouseDetailPage() {
             if (showQcCol) headers.push('QC', 'Acciones QC')
 
             return (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div className="bg-card rounded-2xl border border-border  overflow-hidden">
                 {stockLoading ? (
-                  <div className="p-8 text-center text-slate-400">Cargando inventario...</div>
+                  <div className="p-8 text-center text-muted-foreground">Cargando inventario...</div>
                 ) : rows.length === 0 ? (
                   <div className="p-8 text-center">
                     <Package className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-muted-foreground">
                       {stockLevels.length === 0
                         ? 'Esta bodega no tiene productos en stock'
                         : 'Sin resultados para los filtros aplicados'}
@@ -767,10 +767,10 @@ export function WarehouseDetailPage() {
                   </div>
                 ) : (
                   <table className="w-full text-sm">
-                    <thead className="bg-slate-50 border-b border-slate-100">
+                    <thead className="bg-muted border-b border-border">
                       <tr>
                         {headers.map(h => (
-                          <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
+                          <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -782,11 +782,11 @@ export function WarehouseDetailPage() {
                         const reserved = Number(row.qty_reserved)
                         const inTransit = Number(row.qty_in_transit)
                         return (
-                          <tr key={row.id} className="hover:bg-slate-50">
-                            <td className="px-4 py-3 font-medium text-slate-800">
+                          <tr key={row.id} className="hover:bg-muted">
+                            <td className="px-4 py-3 font-medium text-foreground">
                               {p?.name ?? row.product_id.slice(0, 8)}
                             </td>
-                            <td className="px-4 py-3 font-mono text-xs text-slate-500">
+                            <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                               {p?.sku ?? '\u2014'}
                             </td>
                             <td className="px-4 py-3">
@@ -807,7 +807,7 @@ export function WarehouseDetailPage() {
                                     const newLoc = e.target.value || null
                                     assignLocation.mutate({ levelId: row.id, locationId: newLoc })
                                   }}
-                                  className="rounded-lg border border-slate-200 px-2 py-1 text-xs focus:ring-2 focus:ring-teal-400 outline-none min-w-[120px]"
+                                  className="rounded-lg border border-border px-2 py-1 text-xs focus:ring-2 focus:ring-teal-400 outline-none min-w-[120px]"
                                 >
                                   <option value="">— Sin ubicacion —</option>
                                   {locations.filter(l => l.is_active).map(loc => (
@@ -823,7 +823,7 @@ export function WarehouseDetailPage() {
                                 {qty.toFixed(2)}
                               </span>
                               {p?.unit_of_measure && (
-                                <span className="text-xs text-slate-400 ml-1">{p.unit_of_measure}</span>
+                                <span className="text-xs text-muted-foreground ml-1">{p.unit_of_measure}</span>
                               )}
                             </td>
                             <td className="px-4 py-3">
@@ -849,7 +849,7 @@ export function WarehouseDetailPage() {
                                 )
                               })()}
                             </td>
-                            <td className="px-4 py-3 text-slate-500">{inTransit.toFixed(2)}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{inTransit.toFixed(2)}</td>
                             {showQcCol && (
                               <>
                                 <td className="px-4 py-3">
@@ -907,7 +907,7 @@ export function WarehouseDetailPage() {
       )}
 
       {activeTab === 'ubicaciones' && id && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <div className="bg-card rounded-2xl border border-border  p-6">
           <LocationsTab warehouseId={id} stockLocationCounts={stockLocationCounts} />
         </div>
       )}

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { FileCheck, Download, Copy, RefreshCw, Search } from 'lucide-react'
 import { useCertificates, useRegenerateCertificate } from '@/hooks/useCompliance'
 import { useToast } from '@/store/toast'
-import { DataTable, type Column } from '@/components/ui/DataTable'
+import { DataTable, type Column } from '@/components/ui/datatable'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { ComplianceCertificate, CertificateStatus } from '@/types/compliance'
@@ -84,14 +84,14 @@ export default function CertificatesPage() {
       header: 'Numero',
       sortable: true,
       render: (row) => (
-        <span className="font-mono text-xs font-medium text-gray-900">{row.certificate_number}</span>
+        <span className="font-mono text-xs font-medium text-foreground">{row.certificate_number}</span>
       ),
     },
     {
       key: 'asset_id',
       header: 'Asset',
       render: (row) => (
-        <span className="text-xs text-gray-500 font-mono truncate max-w-[120px] inline-block" title={row.asset_id}>
+        <span className="text-xs text-muted-foreground font-mono truncate max-w-[120px] inline-block" title={row.asset_id}>
           {row.asset_id.slice(0, 8)}...
         </span>
       ),
@@ -110,8 +110,8 @@ export default function CertificatesPage() {
       render: (row) => {
         const commodity = (row.metadata as any)?.commodity_type
         return commodity
-          ? <span className="text-sm text-gray-600 capitalize">{commodity}</span>
-          : <span className="text-xs text-gray-400">--</span>
+          ? <span className="text-sm text-muted-foreground capitalize">{commodity}</span>
+          : <span className="text-xs text-muted-foreground">--</span>
       },
     },
     {
@@ -120,8 +120,8 @@ export default function CertificatesPage() {
       render: (row) => {
         const qty = (row.metadata as any)?.quantity_kg
         return qty != null
-          ? <span className="text-sm text-gray-600 tabular-nums">{Number(qty).toLocaleString()} kg</span>
-          : <span className="text-xs text-gray-400">--</span>
+          ? <span className="text-sm text-muted-foreground tabular-nums">{Number(qty).toLocaleString()} kg</span>
+          : <span className="text-xs text-muted-foreground">--</span>
       },
     },
     {
@@ -139,7 +139,7 @@ export default function CertificatesPage() {
       header: 'Valido hasta',
       sortable: true,
       render: (row) => (
-        <span className="text-sm text-gray-600 tabular-nums">
+        <span className="text-sm text-muted-foreground tabular-nums">
           {new Date(row.valid_until).toLocaleDateString('es-CO', {
             year: 'numeric', month: 'short', day: 'numeric',
           })}
@@ -153,21 +153,21 @@ export default function CertificatesPage() {
         <div className="flex items-center gap-1 justify-end">
           <button
             onClick={() => handleDownload(row)}
-            className="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-muted-foreground hover:bg-secondary transition-colors"
             title="Descargar PDF"
           >
             <Download className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => handleCopyVerifyUrl(row)}
-            className="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-muted-foreground hover:bg-secondary transition-colors"
             title="Copiar URL de verificacion"
           >
             <Copy className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => handleRegenerate(row.id)}
-            className="rounded-lg p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 transition-colors"
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
             title="Regenerar"
             disabled={regenerate.isPending}
           >
@@ -190,8 +190,8 @@ export default function CertificatesPage() {
             <FileCheck className="h-5 w-5 text-violet-600" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Certificados</h1>
-            <p className="text-sm text-gray-500">Certificados de cumplimiento emitidos</p>
+            <h1 className="text-lg font-semibold text-foreground">Certificados</h1>
+            <p className="text-sm text-muted-foreground">Certificados de cumplimiento emitidos</p>
           </div>
         </div>
       </div>
@@ -199,7 +199,7 @@ export default function CertificatesPage() {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             type="text"
             value={filterSlug}

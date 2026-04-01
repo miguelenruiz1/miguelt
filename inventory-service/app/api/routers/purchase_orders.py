@@ -66,7 +66,7 @@ async def create_po(
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     svc = POService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     data = body.model_dump()
     lines_raw = data.pop("lines", [])
     lines = [
@@ -113,7 +113,7 @@ async def consolidate_purchase_orders(
 ) -> ORJSONResponse:
     svc = POConsolidationService(db)
     result = await svc.consolidate(body.po_ids, current_user["tenant_id"], current_user.get("id", ""))
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await audit.log(
         tenant_id=current_user["tenant_id"], user=current_user,
         action="inventory.po.consolidate", resource_type="purchase_order",
@@ -161,7 +161,7 @@ async def delete_po(
     db: AsyncSession = Depends(get_db_session),
 ) -> Response:
     svc = POService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     po = await svc.get(po_id, current_user["tenant_id"])
     await audit.log(
         tenant_id=current_user["tenant_id"], user=current_user,
@@ -197,7 +197,7 @@ async def update_po(
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     svc = POService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     old = await svc.get(po_id, current_user["tenant_id"])
     old_data = POOut.model_validate(old).model_dump(mode="json")
     update_data = body.model_dump(exclude_none=True)
@@ -223,7 +223,7 @@ async def send_po(
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     svc = POService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     old_po = await svc.get(po_id, current_user["tenant_id"])
     old_status = old_po.status.value if hasattr(old_po.status, "value") else str(old_po.status)
     po = await svc.send(po_id, current_user["tenant_id"], current_user.get("id"))
@@ -248,7 +248,7 @@ async def confirm_po(
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     svc = POService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     old_po = await svc.get(po_id, current_user["tenant_id"])
     old_status = old_po.status.value if hasattr(old_po.status, "value") else str(old_po.status)
     po = await svc.confirm(po_id, current_user["tenant_id"], current_user.get("id"))
@@ -273,7 +273,7 @@ async def cancel_po(
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     svc = POService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     old_po = await svc.get(po_id, current_user["tenant_id"])
     old_status = old_po.status.value if hasattr(old_po.status, "value") else str(old_po.status)
     po = await svc.cancel(po_id, current_user["tenant_id"])
@@ -299,7 +299,7 @@ async def receive_po(
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     svc = POService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     po = await svc.receive_items(
         po_id=po_id,
         tenant_id=current_user["tenant_id"],
@@ -358,7 +358,7 @@ async def submit_po_for_approval(
 ) -> ORJSONResponse:
     svc = POService(db)
     approval_svc = POApprovalService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     po = await svc.get(po_id, current_user["tenant_id"])
     po = await approval_svc.submit_for_approval(
         po, current_user.get("id", ""), current_user.get("full_name"),
@@ -384,7 +384,7 @@ async def approve_po(
 ) -> ORJSONResponse:
     svc = POService(db)
     approval_svc = POApprovalService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     po = await svc.get(po_id, current_user["tenant_id"])
     po = await approval_svc.approve(
         po, current_user.get("id", ""), current_user.get("full_name"),
@@ -411,7 +411,7 @@ async def reject_po(
 ) -> ORJSONResponse:
     svc = POService(db)
     approval_svc = POApprovalService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     po = await svc.get(po_id, current_user["tenant_id"])
     po = await approval_svc.reject(
         po, current_user.get("id", ""), body.reason, current_user.get("full_name"),
@@ -526,7 +526,7 @@ async def deconsolidate_purchase_order(
 ) -> ORJSONResponse:
     svc = POConsolidationService(db)
     originals = await svc.deconsolidate(po_id, current_user["tenant_id"])
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await audit.log(
         tenant_id=current_user["tenant_id"], user=current_user,
         action="inventory.po.deconsolidate", resource_type="purchase_order",

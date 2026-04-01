@@ -17,14 +17,14 @@ export default function EmissionsPage() {
         <Send className="h-6 w-6 text-amber-600" />
         <div>
           <h1 className="text-2xl font-bold">Emisiones de Material</h1>
-          <p className="text-sm text-gray-500">Historial de componentes emitidos a produccion</p>
+          <p className="text-sm text-muted-foreground">Historial de componentes emitidos a produccion</p>
         </div>
       </div>
 
       {runsLoading ? (
-        <div className="text-center py-16"><Loader2 className="h-6 w-6 animate-spin mx-auto text-gray-400" /></div>
+        <div className="text-center py-16"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>
       ) : runsWithEmissions.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">Sin emisiones registradas — emite componentes desde una orden liberada</div>
+        <div className="text-center py-16 text-muted-foreground">Sin emisiones registradas — emite componentes desde una orden liberada</div>
       ) : (
         <div className="space-y-3">
           {runsWithEmissions.map(run => (
@@ -41,13 +41,13 @@ function RunEmissionsCard({ runId, runNumber, onNavigate }: { runId: string; run
   if (!emissions || emissions.length === 0) return null
 
   return (
-    <div className="bg-white rounded-xl border overflow-hidden">
-      <div className="px-4 py-3 bg-gray-50 border-b">
+    <div className="bg-card rounded-xl border overflow-hidden">
+      <div className="px-4 py-3 bg-muted border-b">
         <button onClick={onNavigate} className="text-sm font-bold text-primary hover:underline">{runNumber}</button>
-        <span className="text-xs text-gray-400 ml-2">{emissions.length} emision{emissions.length !== 1 ? 'es' : ''}</span>
+        <span className="text-xs text-muted-foreground ml-2">{emissions.length} emision{emissions.length !== 1 ? 'es' : ''}</span>
       </div>
       <table className="w-full text-xs">
-        <thead><tr className="text-gray-400 border-b">
+        <thead><tr className="text-muted-foreground border-b">
           <th className="px-4 py-2 text-left"># Emision</th>
           <th className="px-4 py-2 text-left">Fecha</th>
           <th className="px-4 py-2 text-right">Componentes</th>
@@ -58,12 +58,12 @@ function RunEmissionsCard({ runId, runNumber, onNavigate }: { runId: string; run
           {emissions.map(em => {
             const totalCost = em.lines.reduce((s, l) => s + Number(l.total_cost), 0)
             return (
-              <tr key={em.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+              <tr key={em.id} className="border-b border-gray-50 hover:bg-muted/50">
                 <td className="px-4 py-2 font-mono font-medium">{em.emission_number}</td>
-                <td className="px-4 py-2 text-gray-500">{new Date(em.emission_date).toLocaleString('es-CO')}</td>
+                <td className="px-4 py-2 text-muted-foreground">{new Date(em.emission_date).toLocaleString('es-CO')}</td>
                 <td className="px-4 py-2 text-right">{em.lines.length}</td>
                 <td className="px-4 py-2 text-right font-mono">${totalCost.toLocaleString('es-CO')}</td>
-                <td className="px-4 py-2 text-gray-400">{em.performed_by?.slice(0, 8) ?? '—'}</td>
+                <td className="px-4 py-2 text-muted-foreground">{em.performed_by?.slice(0, 8) ?? '—'}</td>
               </tr>
             )
           })}

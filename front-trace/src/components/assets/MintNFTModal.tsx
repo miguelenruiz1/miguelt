@@ -27,8 +27,8 @@ const PRODUCT_TYPES = [
 const UNITS = ['kg', 'ton', 'lb', 'quintal']
 
 const fieldCls =
-  'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20 transition-colors'
-const labelCls = 'text-xs font-medium text-slate-700 block mb-1.5'
+  'w-full rounded-lg border border-slate-300 bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground hover:border-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20 transition-colors'
+const labelCls = 'text-xs font-medium text-foreground block mb-1.5'
 
 interface Props {
   open: boolean
@@ -151,7 +151,7 @@ export function MintNFTModal({ open, onClose, preSelectedOrgId }: Props) {
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold border transition-all ${
                   productType === pt.value
                     ? 'bg-primary text-white border-primary shadow'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-primary/50 hover:bg-primary/10'
+                    : 'bg-card text-muted-foreground border-border hover:border-primary/50 hover:bg-primary/10'
                 }`}
               >
                 <span>{pt.emoji}</span>
@@ -256,17 +256,17 @@ export function MintNFTModal({ open, onClose, preSelectedOrgId }: Props) {
 
         {/* 6 — Image from Media */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">Imagen de la carga</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Imagen de la carga</label>
           {imageUrl ? (
             <div className="flex items-center gap-3">
               <img
                 src={imageUrl.startsWith('http') ? imageUrl : mediaFileUrl(imageUrl)}
                 alt="Preview"
-                className="h-20 w-20 rounded-xl object-cover border border-slate-200"
+                className="h-20 w-20 rounded-xl object-cover border border-border"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-slate-500 truncate">{imageUrl}</p>
+                <p className="text-xs text-muted-foreground truncate">{imageUrl}</p>
                 <div className="flex gap-2 mt-1.5">
                   <button type="button" onClick={() => setShowImagePicker(true)}
                     className="text-xs text-primary hover:underline">Cambiar</button>
@@ -279,13 +279,13 @@ export function MintNFTModal({ open, onClose, preSelectedOrgId }: Props) {
             <button
               type="button"
               onClick={() => setShowImagePicker(true)}
-              className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-4 text-sm text-slate-500 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
+              className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-4 text-sm text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
             >
               <FolderOpen className="h-4 w-4" />
               Seleccionar desde Media
             </button>
           )}
-          <p className="text-[11px] text-slate-400 mt-1">Se registra en el NFT on-chain. Si no provees una, se genera automaticamente.</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Se registra en el NFT on-chain. Si no provees una, se genera automaticamente.</p>
           <MediaPickerModal
             open={showImagePicker}
             onClose={() => setShowImagePicker(false)}

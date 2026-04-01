@@ -66,7 +66,7 @@ function ComplianceStatusBadge({ status, size = 'sm' }: { status: string; size?:
     <span className={cn(
       'inline-flex items-center rounded-full font-semibold border',
       size === 'lg' ? 'px-3 py-1 text-sm' : 'px-2 py-0.5 text-[11px]',
-      STATUS_COLORS[status] ?? 'bg-slate-50 text-slate-600 border-slate-200',
+      STATUS_COLORS[status] ?? 'bg-muted text-muted-foreground border-border',
     )}>
       {STATUS_LABELS[status] ?? status}
     </span>
@@ -139,7 +139,7 @@ function ProductTab({ record }: { record: ComplianceRecord }) {
     <form onSubmit={submit} className="space-y-8 max-w-2xl">
       {/* Identificacion */}
       <section>
-        <h3 className="text-sm font-bold text-slate-700 mb-3">Identificacion</h3>
+        <h3 className="text-sm font-bold text-foreground mb-3">Identificacion</h3>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Codigo HS" value={form.hs_code as string} onChange={v => set('hs_code', v)} placeholder="0901.21" />
           <Field label="Commodity" value={form.commodity_type as string} onChange={v => set('commodity_type', v)} />
@@ -155,7 +155,7 @@ function ProductTab({ record }: { record: ComplianceRecord }) {
 
       {/* Periodo */}
       <section>
-        <h3 className="text-sm font-bold text-slate-700 mb-3">Periodo</h3>
+        <h3 className="text-sm font-bold text-foreground mb-3">Periodo</h3>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Inicio del periodo" type="date" value={form.production_period_start as string} onChange={v => set('production_period_start', v)} />
           <Field label="Fin del periodo" type="date" value={form.production_period_end as string} onChange={v => set('production_period_end', v)} />
@@ -164,7 +164,7 @@ function ProductTab({ record }: { record: ComplianceRecord }) {
 
       {/* Proveedor */}
       <section>
-        <h3 className="text-sm font-bold text-slate-700 mb-3">Proveedor</h3>
+        <h3 className="text-sm font-bold text-foreground mb-3">Proveedor</h3>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Nombre" value={form.supplier_name as string} onChange={v => set('supplier_name', v)} />
           <Field label="Email" type="email" value={form.supplier_email as string} onChange={v => set('supplier_email', v)} />
@@ -174,7 +174,7 @@ function ProductTab({ record }: { record: ComplianceRecord }) {
 
       {/* Comprador */}
       <section>
-        <h3 className="text-sm font-bold text-slate-700 mb-3">Comprador</h3>
+        <h3 className="text-sm font-bold text-foreground mb-3">Comprador</h3>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Nombre" value={form.buyer_name as string} onChange={v => set('buyer_name', v)} />
           <Field label="Email" type="email" value={form.buyer_email as string} onChange={v => set('buyer_email', v)} />
@@ -184,11 +184,11 @@ function ProductTab({ record }: { record: ComplianceRecord }) {
 
       {/* Exportacion UE */}
       <section>
-        <h3 className="text-sm font-bold text-slate-700 mb-3">Exportacion UE — Anexo II</h3>
+        <h3 className="text-sm font-bold text-foreground mb-3">Exportacion UE — Anexo II</h3>
         <div className="grid grid-cols-2 gap-4">
           <Field label="EORI del operador" value={form.operator_eori as string} onChange={v => set('operator_eori', v)} placeholder="DE123456789012345" />
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Tipo de actividad</label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Tipo de actividad</label>
             <select value={form.activity_type as string} onChange={e => set('activity_type', e.target.value)}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-ring outline-none">
               <option value="export">Exportacion</option>
@@ -201,7 +201,7 @@ function ProductTab({ record }: { record: ComplianceRecord }) {
 
       {/* Firma del operador — Anexo II #10 */}
       <section>
-        <h3 className="text-sm font-bold text-slate-700 mb-3">Firma del operador — Anexo II, punto 10</h3>
+        <h3 className="text-sm font-bold text-foreground mb-3">Firma del operador — Anexo II, punto 10</h3>
         <div className="grid grid-cols-3 gap-4">
           <Field label="Nombre del firmante" value={form.signatory_name as string} onChange={v => set('signatory_name', v)} placeholder="Juan Perez" />
           <Field label="Cargo / funcion" value={form.signatory_role as string} onChange={v => set('signatory_role', v)} placeholder="Director de Exportaciones" />
@@ -211,19 +211,19 @@ function ProductTab({ record }: { record: ComplianceRecord }) {
 
       {/* Declaraciones */}
       <section>
-        <h3 className="text-sm font-bold text-slate-700 mb-3">Declaraciones</h3>
+        <h3 className="text-sm font-bold text-foreground mb-3">Declaraciones</h3>
         <div className="space-y-3">
           <label className="flex items-center gap-2.5 cursor-pointer">
             <input type="checkbox" checked={form.deforestation_free_declaration ?? false}
               onChange={e => set('deforestation_free_declaration', e.target.checked)}
               className="rounded border-slate-300" />
-            <span className="text-sm text-slate-700">Declaracion libre de deforestacion</span>
+            <span className="text-sm text-foreground">Declaracion libre de deforestacion</span>
           </label>
           <label className="flex items-center gap-2.5 cursor-pointer">
             <input type="checkbox" checked={form.legal_compliance_declaration ?? false}
               onChange={e => set('legal_compliance_declaration', e.target.checked)}
               className="rounded border-slate-300" />
-            <span className="text-sm text-slate-700">Declaracion de cumplimiento legal</span>
+            <span className="text-sm text-foreground">Declaracion de cumplimiento legal</span>
           </label>
         </div>
       </section>
@@ -247,9 +247,9 @@ function Field({
 }) {
   return (
     <div className={className}>
-      <label className="block text-xs font-medium text-slate-600 mb-1.5">{label}</label>
+      <label className="block text-xs font-medium text-muted-foreground mb-1.5">{label}</label>
       <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+        className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
     </div>
   )
 }
@@ -283,7 +283,7 @@ function PlotsTab({ recordId, frameworkSlug }: { recordId: string; frameworkSlug
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Parcelas vinculadas a este registro</p>
+        <p className="text-sm text-muted-foreground">Parcelas vinculadas a este registro</p>
         <button onClick={() => setShowLink(!showLink)}
           className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 transition-colors">
           <Plus className="h-3.5 w-3.5" /> Vincular Parcela
@@ -319,9 +319,9 @@ function PlotsTab({ recordId, frameworkSlug }: { recordId: string; frameworkSlug
         <form onSubmit={submitLink} className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Parcela *</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Parcela *</label>
               <select required value={linkForm.plot_id} onChange={e => setLinkForm(f => ({ ...f, plot_id: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Seleccionar...</option>
                 {availablePlots.map(p => (
                   <option key={p.id} value={p.id}>{p.plot_code} — {p.municipality ?? p.region ?? p.country_code}</option>
@@ -329,20 +329,20 @@ function PlotsTab({ recordId, frameworkSlug }: { recordId: string; frameworkSlug
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Cantidad (kg)</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Cantidad (kg)</label>
               <input type="number" step="0.01" value={linkForm.quantity_kg}
                 onChange={e => setLinkForm(f => ({ ...f, quantity_kg: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Porcentaje (%)</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Porcentaje (%)</label>
               <input type="number" step="0.1" min="0" max="100" value={linkForm.percentage}
                 onChange={e => setLinkForm(f => ({ ...f, percentage: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="w-full rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowLink(false)} className="rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100">Cancelar</button>
+            <button type="button" onClick={() => setShowLink(false)} className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary">Cancelar</button>
             <button type="submit" disabled={linkPlot.isPending}
               className="rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-50">
               {linkPlot.isPending ? 'Vinculando...' : 'Vincular'}
@@ -353,32 +353,32 @@ function PlotsTab({ recordId, frameworkSlug }: { recordId: string; frameworkSlug
 
       {/* Linked plots list */}
       {isLoading ? (
-        <div className="text-sm text-slate-400 py-6 text-center">Cargando...</div>
+        <div className="text-sm text-muted-foreground py-6 text-center">Cargando...</div>
       ) : linkedPlots.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-slate-200 p-10 text-center">
+        <div className="rounded-xl border-2 border-dashed border-border p-10 text-center">
           <MapPin className="h-8 w-8 text-slate-200 mx-auto mb-3" />
-          <p className="text-sm font-medium text-slate-600 mb-1">Sin parcelas vinculadas</p>
-          <p className="text-xs text-slate-400">Vincula parcelas de produccion a este registro.</p>
+          <p className="text-sm font-medium text-muted-foreground mb-1">Sin parcelas vinculadas</p>
+          <p className="text-xs text-muted-foreground">Vincula parcelas de produccion a este registro.</p>
         </div>
       ) : (
         <div className="space-y-2">
           {linkedPlots.map(lp => {
             const plot = allPlots.find(p => p.id === lp.plot_id)
             return (
-              <div key={lp.id} className="flex items-center gap-4 rounded-xl border border-slate-100 bg-white px-4 py-3">
+              <div key={lp.id} className="flex items-center gap-4 rounded-xl border border-border bg-card px-4 py-3">
                 <MapPin className="h-4 w-4 text-emerald-500 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900">{plot?.plot_code ?? lp.plot_id.slice(0, 8)}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-sm font-medium text-foreground">{plot?.plot_code ?? lp.plot_id.slice(0, 8)}</p>
+                  <p className="text-xs text-muted-foreground">
                     {plot?.municipality ?? plot?.region ?? ''}{plot?.country_code ? ` (${plot.country_code})` : ''}
                     {plot?.plot_area_ha ? ` — ${plot.plot_area_ha} ha` : ''}
                   </p>
                 </div>
                 {lp.quantity_from_plot_kg != null && (
-                  <span className="text-xs text-slate-600 tabular-nums">{Number(lp.quantity_from_plot_kg).toLocaleString('es-CO')} kg</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{Number(lp.quantity_from_plot_kg).toLocaleString('es-CO')} kg</span>
                 )}
                 {lp.percentage_from_plot != null && (
-                  <span className="text-xs text-slate-500 tabular-nums">{lp.percentage_from_plot}%</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{lp.percentage_from_plot}%</span>
                 )}
                 {/* Compliance badges */}
                 {plot && (
@@ -389,7 +389,7 @@ function PlotsTab({ recordId, frameworkSlug }: { recordId: string; frameworkSlug
                   </div>
                 )}
                 <button onClick={() => unlinkPlot.mutate(lp.plot_id)} disabled={unlinkPlot.isPending}
-                  className="rounded-lg p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50">
+                  className="rounded-lg p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50">
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -441,7 +441,7 @@ function ValidationTab({ recordId, record }: { recordId: string; record: Complia
       </div>
 
       {record.last_validated_at && (
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-muted-foreground">
           Ultima validacion: {new Date(record.last_validated_at).toLocaleString('es-CO')}
         </p>
       )}
@@ -463,7 +463,7 @@ function ValidationTab({ recordId, record }: { recordId: string; record: Complia
               <p className={cn('text-base font-bold', result.valid ? 'text-green-800' : 'text-red-800')}>
                 {result.valid ? 'Registro valido' : 'Registro incompleto'}
               </p>
-              <p className="text-sm text-slate-600 mt-0.5">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Framework: {result.framework} | Estado: {STATUS_LABELS[result.compliance_status] ?? result.compliance_status}
               </p>
             </div>
@@ -472,7 +472,7 @@ function ValidationTab({ recordId, record }: { recordId: string; record: Complia
           {/* Missing fields */}
           {result.missing_fields.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold text-slate-700 mb-2">Campos faltantes</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-2">Campos faltantes</h4>
               <ul className="space-y-1.5">
                 {result.missing_fields.map(f => (
                   <li key={f} className="flex items-center gap-2 text-sm text-red-700">
@@ -487,7 +487,7 @@ function ValidationTab({ recordId, record }: { recordId: string; record: Complia
           {/* Warnings */}
           {result.warnings.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold text-slate-700 mb-2">Advertencias</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-2">Advertencias</h4>
               <ul className="space-y-1.5">
                 {result.warnings.map((w, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm text-amber-700">
@@ -532,23 +532,23 @@ function DeclarationTab({ record }: { record: ComplianceRecord }) {
     <form onSubmit={submit} className="space-y-6 max-w-xl">
       <div className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">Referencia de declaracion</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Referencia de declaracion</label>
           <input value={form.declaration_reference ?? ''} onChange={e => setForm(f => ({ ...f, declaration_reference: e.target.value }))}
             placeholder="DDS-2026-XXXX"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">Fecha de envio</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Fecha de envio</label>
           <input type="date" value={form.declaration_submission_date ?? ''} onChange={e => setForm(f => ({ ...f, declaration_submission_date: e.target.value }))}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">Estado de la declaracion</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Estado de la declaracion</label>
           <select value={form.declaration_status ?? 'not_required'}
             onChange={e => setForm(f => ({ ...f, declaration_status: e.target.value }))}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
             {Object.entries(DECL_STATUS_LABELS).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
             ))}
@@ -556,10 +556,10 @@ function DeclarationTab({ record }: { record: ComplianceRecord }) {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">URL de la declaracion</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">URL de la declaracion</label>
           <input value={form.declaration_url ?? ''} onChange={e => setForm(f => ({ ...f, declaration_url: e.target.value }))}
             placeholder="https://webgate.ec.europa.eu/tracesnt/..."
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
         </div>
 
         {form.declaration_url && (
@@ -570,8 +570,8 @@ function DeclarationTab({ record }: { record: ComplianceRecord }) {
         )}
 
         {record.declaration_status && record.declaration_status !== 'not_required' && (
-          <div className="rounded-lg bg-slate-50 p-3">
-            <span className="text-xs font-medium text-slate-500 mr-2">Estado actual:</span>
+          <div className="rounded-lg bg-muted p-3">
+            <span className="text-xs font-medium text-muted-foreground mr-2">Estado actual:</span>
             <span className={cn(
               'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border',
               record.declaration_status === 'accepted' ? 'bg-green-50 text-green-700 border-green-200' :
@@ -633,7 +633,7 @@ function DdsExportButton({ recordId }: { recordId: string }) {
         }
       }}
       disabled={exportDds.isPending}
-      className="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50 transition-colors"
+      className="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-card px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50 transition-colors"
     >
       {exportDds.isPending ? 'Exportando...' : 'Exportar DDS (JSON)'}
     </button>
@@ -698,16 +698,16 @@ function CertificateTab({ recordId, record }: { recordId: string; record: Compli
   const isBlocked = isIncomplete || hasPolygonViolation
 
   if (isLoading) {
-    return <div className="text-sm text-slate-400 py-6 text-center">Cargando...</div>
+    return <div className="text-sm text-muted-foreground py-6 text-center">Cargando...</div>
   }
 
   // No certificate yet
   if (isError || !certificate) {
     return (
-      <div className="rounded-2xl border-2 border-dashed border-slate-200 p-10 text-center">
+      <div className="rounded-2xl border-2 border-dashed border-border p-10 text-center">
         <Award className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-        <p className="text-sm font-medium text-slate-600 mb-1">Sin certificado</p>
-        <p className="text-xs text-slate-400 mb-5">
+        <p className="text-sm font-medium text-muted-foreground mb-1">Sin certificado</p>
+        <p className="text-xs text-muted-foreground mb-5">
           {isIncomplete
             ? 'Completa todos los campos requeridos y valida el registro antes de generar un certificado.'
             : hasPolygonViolation
@@ -746,40 +746,40 @@ function CertificateTab({ recordId, record }: { recordId: string; record: Compli
 
       <div className="grid grid-cols-2 gap-6">
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Numero</label>
-          <p className="text-sm font-mono font-medium text-slate-900">{certificate.certificate_number}</p>
+          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Numero</label>
+          <p className="text-sm font-mono font-medium text-foreground">{certificate.certificate_number}</p>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Estado</label>
+          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Estado</label>
           <span className={cn(
             'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border',
             certificate.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' :
               certificate.status === 'revoked' ? 'bg-red-50 text-red-700 border-red-200' :
                 certificate.status === 'expired' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                  'bg-slate-50 text-slate-600 border-slate-200',
+                  'bg-muted text-muted-foreground border-border',
           )}>
             {certificate.status === 'active' ? 'Activo' : certificate.status === 'revoked' ? 'Revocado' : certificate.status === 'expired' ? 'Expirado' : certificate.status}
           </span>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Valido desde</label>
-          <p className="text-sm text-slate-700">{new Date(certificate.valid_from).toLocaleDateString('es-CO')}</p>
+          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Valido desde</label>
+          <p className="text-sm text-foreground">{new Date(certificate.valid_from).toLocaleDateString('es-CO')}</p>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Valido hasta</label>
-          <p className="text-sm text-slate-700">{new Date(certificate.valid_until).toLocaleDateString('es-CO')}</p>
+          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Valido hasta</label>
+          <p className="text-sm text-foreground">{new Date(certificate.valid_until).toLocaleDateString('es-CO')}</p>
         </div>
       </div>
 
       {/* Blockchain info */}
       {(certificate.solana_cnft_address || certificate.solana_tx_sig) && (
-        <div className="rounded-xl bg-slate-50 border border-slate-100 p-4 space-y-2">
-          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wide">Blockchain</h4>
+        <div className="rounded-xl bg-muted border border-border p-4 space-y-2">
+          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Blockchain</h4>
           {certificate.solana_cnft_address && (
-            <p className="text-xs text-slate-600">cNFT: <code className="font-mono text-primary">{certificate.solana_cnft_address}</code></p>
+            <p className="text-xs text-muted-foreground">cNFT: <code className="font-mono text-primary">{certificate.solana_cnft_address}</code></p>
           )}
           {certificate.solana_tx_sig && (
-            <p className="text-xs text-slate-600">TX: <code className="font-mono text-primary">{certificate.solana_tx_sig}</code></p>
+            <p className="text-xs text-muted-foreground">TX: <code className="font-mono text-primary">{certificate.solana_tx_sig}</code></p>
           )}
         </div>
       )}
@@ -804,11 +804,11 @@ function CertificateTab({ recordId, record }: { recordId: string; record: Compli
         <button onClick={() => {
           navigator.clipboard.writeText(certificate.verify_url)
         }}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+          className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted transition-colors">
           <Copy className="h-4 w-4" /> Copiar URL de verificacion
         </button>
         <button onClick={() => regenerate.mutate(certificate.id)} disabled={regenerate.isPending}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50">
+          className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted transition-colors disabled:opacity-50">
           <RefreshCw className={cn('h-4 w-4', regenerate.isPending && 'animate-spin')} /> Regenerar
         </button>
       </div>
@@ -816,8 +816,8 @@ function CertificateTab({ recordId, record }: { recordId: string; record: Compli
       {/* QR preview */}
       {certificate.qr_code_url && (
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">QR de verificacion</label>
-          <img src={certificate.qr_code_url} alt="QR Code" className="h-32 w-32 rounded-lg border border-slate-200" />
+          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">QR de verificacion</label>
+          <img src={certificate.qr_code_url} alt="QR Code" className="h-32 w-32 rounded-lg border border-border" />
         </div>
       )}
     </div>
@@ -869,7 +869,7 @@ export default function RecordDetailPage() {
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto p-6 lg:p-8">
-        <div className="text-sm text-slate-400 py-12 text-center">Cargando...</div>
+        <div className="text-sm text-muted-foreground py-12 text-center">Cargando...</div>
       </div>
     )
   }
@@ -879,12 +879,12 @@ export default function RecordDetailPage() {
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-1.5 text-xs text-slate-400">
-        <Link to="/cumplimiento/activaciones" className="hover:text-slate-600 transition-colors">Cumplimiento</Link>
+      <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Link to="/cumplimiento/activaciones" className="hover:text-muted-foreground transition-colors">Cumplimiento</Link>
         <ChevronRight className="h-3 w-3" />
-        <Link to="/cumplimiento/registros" className="hover:text-slate-600 transition-colors">Registros</Link>
+        <Link to="/cumplimiento/registros" className="hover:text-muted-foreground transition-colors">Registros</Link>
         <ChevronRight className="h-3 w-3" />
-        <span className="text-slate-700 font-medium">{record.id.slice(0, 8)}</span>
+        <span className="text-foreground font-medium">{record.id.slice(0, 8)}</span>
       </nav>
 
       {/* Header */}
@@ -893,10 +893,10 @@ export default function RecordDetailPage() {
           <ShieldCheck className="h-5 w-5 text-emerald-600" />
         </div>
         <div className="flex-1">
-          <h1 className="text-xl font-bold text-slate-900">
+          <h1 className="text-xl font-bold text-foreground">
             {FRAMEWORK_FLAGS[record.framework_slug] ?? ''} Registro {record.framework_slug.toUpperCase()}
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Asset: <Link to={`/assets/${record.asset_id}`} className="text-primary hover:underline font-mono">{record.asset_id.slice(0, 12)}...</Link>
           </p>
         </div>
@@ -918,7 +918,7 @@ export default function RecordDetailPage() {
       <Tabs tabs={TABS_DEF} value={activeTab} onChange={setActiveTab} />
 
       {/* Tab content */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <div className="bg-card rounded-2xl border border-border  p-6">
         {activeTab === 'product' && <ProductTab record={record} />}
         {activeTab === 'plots' && <PlotsTab recordId={record.id} frameworkSlug={record.framework_slug} />}
         {activeTab === 'supply_chain' && <SupplyChainEditor recordId={record.id} />}

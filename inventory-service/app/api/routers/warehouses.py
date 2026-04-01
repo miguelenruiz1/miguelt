@@ -47,7 +47,7 @@ async def create_warehouse(
 ) -> ORJSONResponse:
     tenant_id = current_user["tenant_id"]
     repo = WarehouseRepository(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     if await repo.get_by_code(body.code, tenant_id):
         raise ConflictError(f"Warehouse code {body.code!r} already exists")
     data = {"tenant_id": tenant_id, **body.model_dump(), "created_by": current_user.get("id")}
@@ -85,7 +85,7 @@ async def update_warehouse(
 ) -> ORJSONResponse:
     tenant_id = current_user["tenant_id"]
     repo = WarehouseRepository(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     wh = await repo.get_by_id(warehouse_id, tenant_id)
     if not wh:
         raise NotFoundError(f"Warehouse {warehouse_id!r} not found")
@@ -115,7 +115,7 @@ async def delete_warehouse(
 ) -> Response:
     tenant_id = current_user["tenant_id"]
     repo = WarehouseRepository(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     wh = await repo.get_by_id(warehouse_id, tenant_id)
     if not wh:
         raise NotFoundError(f"Warehouse {warehouse_id!r} not found")
@@ -130,4 +130,5 @@ async def delete_warehouse(
         action="inventory.warehouse.delete", resource_type="warehouse",
         resource_id=warehouse_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
     return Response(status_code=204)

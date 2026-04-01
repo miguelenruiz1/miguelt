@@ -52,8 +52,10 @@ async function request<T>(
   })
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: { code: 'UNKNOWN', message: res.statusText } }))
-    throw new UserApiError(res.status, err.error?.code ?? 'UNKNOWN', err.error?.message ?? res.statusText)
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    const msg = err.detail ?? err.error?.message ?? err.message ?? res.statusText
+    const code = err.error?.code ?? err.code ?? 'ERROR'
+    throw new UserApiError(res.status, code, msg)
   }
 
   if (res.status === 204) return undefined as T

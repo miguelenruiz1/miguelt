@@ -111,15 +111,15 @@ export default function RiskAssessmentForm({ recordId }: Props) {
     }
   }
 
-  if (isLoading) return <div className="text-sm text-slate-400 py-6 text-center">Cargando...</div>
+  if (isLoading) return <div className="text-sm text-muted-foreground py-6 text-center">Cargando...</div>
 
   // No assessment yet — create one
   if (isError || !assessment) {
     return (
-      <div className="rounded-2xl border-2 border-dashed border-slate-200 p-10 text-center">
+      <div className="rounded-2xl border-2 border-dashed border-border p-10 text-center">
         <ShieldAlert className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-        <p className="text-sm font-medium text-slate-600 mb-1">Sin evaluacion de riesgo</p>
-        <p className="text-xs text-slate-400 mb-5">EUDR Art. 10-11 requiere una evaluacion formal antes de declarar.</p>
+        <p className="text-sm font-medium text-muted-foreground mb-1">Sin evaluacion de riesgo</p>
+        <p className="text-xs text-muted-foreground mb-5">EUDR Art. 10-11 requiere una evaluacion formal antes de declarar.</p>
         <button onClick={handleCreate} disabled={createRA.isPending}
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50 transition-colors">
           {createRA.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldAlert className="h-4 w-4" />}
@@ -146,8 +146,8 @@ export default function RiskAssessmentForm({ recordId }: Props) {
               assessment.conclusion === 'conditional' ? 'text-amber-600' : 'text-red-600',
           )} />
           <div>
-            <p className="text-sm font-bold text-slate-800">Evaluacion completada</p>
-            <p className="text-xs text-slate-600 mt-0.5">
+            <p className="text-sm font-bold text-foreground">Evaluacion completada</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
               Conclusion: {CONCLUSIONS.find(c => c.value === assessment.conclusion)?.label ?? assessment.conclusion}
               {assessment.assessed_at && ` — ${new Date(assessment.assessed_at).toLocaleDateString('es-CO')}`}
             </p>
@@ -159,18 +159,18 @@ export default function RiskAssessmentForm({ recordId }: Props) {
       <section>
         <div className="flex items-center gap-2 mb-3">
           <Globe className="h-4 w-4 text-blue-600" />
-          <h3 className="text-sm font-bold text-slate-700">Paso 1 — Riesgo pais (Art. 29)</h3>
+          <h3 className="text-sm font-bold text-foreground">Paso 1 — Riesgo pais (Art. 29)</h3>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Nivel de riesgo del pais *</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Nivel de riesgo del pais *</label>
             <div className="flex gap-2">
               {RISK_LEVELS.map(rl => (
                 <button key={rl.value} type="button" disabled={isCompleted}
                   onClick={() => set('country_risk_level', rl.value)}
                   className={cn(
                     'px-4 py-2 rounded-lg text-sm font-medium border transition-colors',
-                    form.country_risk_level === rl.value ? rl.color + ' border-current' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50',
+                    form.country_risk_level === rl.value ? rl.color + ' border-current' : 'bg-card text-muted-foreground border-border hover:bg-muted',
                   )}>
                   {rl.label}
                 </button>
@@ -178,15 +178,15 @@ export default function RiskAssessmentForm({ recordId }: Props) {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Fuente de clasificacion</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Fuente de clasificacion</label>
             <input disabled={isCompleted} value={form.country_benchmarking_source ?? ''} onChange={e => set('country_benchmarking_source', e.target.value)}
               placeholder="EU Commission Benchmarking List 2025"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50" />
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-muted" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Notas</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Notas</label>
             <textarea disabled={isCompleted} value={form.country_risk_notes ?? ''} onChange={e => set('country_risk_notes', e.target.value)}
-              rows={2} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50" />
+              rows={2} className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-muted" />
           </div>
         </div>
       </section>
@@ -195,18 +195,18 @@ export default function RiskAssessmentForm({ recordId }: Props) {
       <section>
         <div className="flex items-center gap-2 mb-3">
           <Link2 className="h-4 w-4 text-purple-600" />
-          <h3 className="text-sm font-bold text-slate-700">Paso 2 — Riesgo cadena de suministro</h3>
+          <h3 className="text-sm font-bold text-foreground">Paso 2 — Riesgo cadena de suministro</h3>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Nivel de riesgo *</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Nivel de riesgo *</label>
             <div className="flex gap-2">
               {RISK_LEVELS.map(rl => (
                 <button key={rl.value} type="button" disabled={isCompleted}
                   onClick={() => set('supply_chain_risk_level', rl.value)}
                   className={cn(
                     'px-4 py-2 rounded-lg text-sm font-medium border transition-colors',
-                    form.supply_chain_risk_level === rl.value ? rl.color + ' border-current' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50',
+                    form.supply_chain_risk_level === rl.value ? rl.color + ' border-current' : 'bg-card text-muted-foreground border-border hover:bg-muted',
                   )}>
                   {rl.label}
                 </button>
@@ -215,24 +215,24 @@ export default function RiskAssessmentForm({ recordId }: Props) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Verificacion de proveedores</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Verificacion de proveedores</label>
               <select disabled={isCompleted} value={form.supplier_verification_status ?? 'not_started'} onChange={e => set('supplier_verification_status', e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50">
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-muted">
                 {VERIFICATION_STATUS.map(v => <option key={v.value} value={v.value}>{v.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Confianza en trazabilidad</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Confianza en trazabilidad</label>
               <select disabled={isCompleted} value={form.traceability_confidence ?? 'none'} onChange={e => set('traceability_confidence', e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50">
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-muted">
                 {TRACEABILITY.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Notas</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Notas</label>
             <textarea disabled={isCompleted} value={form.supply_chain_notes ?? ''} onChange={e => set('supply_chain_notes', e.target.value)}
-              rows={2} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50" />
+              rows={2} className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-muted" />
           </div>
         </div>
       </section>
@@ -241,18 +241,18 @@ export default function RiskAssessmentForm({ recordId }: Props) {
       <section>
         <div className="flex items-center gap-2 mb-3">
           <TreePine className="h-4 w-4 text-emerald-600" />
-          <h3 className="text-sm font-bold text-slate-700">Paso 3 — Riesgo regional / producto</h3>
+          <h3 className="text-sm font-bold text-foreground">Paso 3 — Riesgo regional / producto</h3>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Nivel de riesgo regional *</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Nivel de riesgo regional *</label>
             <div className="flex gap-2">
               {RISK_LEVELS.map(rl => (
                 <button key={rl.value} type="button" disabled={isCompleted}
                   onClick={() => set('regional_risk_level', rl.value)}
                   className={cn(
                     'px-4 py-2 rounded-lg text-sm font-medium border transition-colors',
-                    form.regional_risk_level === rl.value ? rl.color + ' border-current' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50',
+                    form.regional_risk_level === rl.value ? rl.color + ' border-current' : 'bg-card text-muted-foreground border-border hover:bg-muted',
                   )}>
                   {rl.label}
                 </button>
@@ -261,9 +261,9 @@ export default function RiskAssessmentForm({ recordId }: Props) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Prevalencia de deforestacion</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Prevalencia de deforestacion</label>
               <select disabled={isCompleted} value={form.deforestation_prevalence ?? ''} onChange={e => set('deforestation_prevalence', e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50">
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-muted">
                 <option value="">Seleccionar...</option>
                 {PREVALENCE.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
@@ -273,15 +273,15 @@ export default function RiskAssessmentForm({ recordId }: Props) {
                 <input type="checkbox" disabled={isCompleted} checked={form.indigenous_rights_risk ?? false}
                   onChange={e => set('indigenous_rights_risk', e.target.checked)}
                   className="rounded border-slate-300" />
-                <span className="text-sm text-slate-700">Riesgo de derechos indigenas</span>
+                <span className="text-sm text-foreground">Riesgo de derechos indigenas</span>
               </label>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Nota de indice de corrupcion</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Nota de indice de corrupcion</label>
             <input disabled={isCompleted} value={form.corruption_index_note ?? ''} onChange={e => set('corruption_index_note', e.target.value)}
               placeholder="Transparency International CPI score"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50" />
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-muted" />
           </div>
         </div>
       </section>
@@ -289,7 +289,7 @@ export default function RiskAssessmentForm({ recordId }: Props) {
       {/* Mitigation measures */}
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-slate-700">Medidas de mitigacion (Art. 11)</h3>
+          <h3 className="text-sm font-bold text-foreground">Medidas de mitigacion (Art. 11)</h3>
           {!isCompleted && (
             <button type="button" onClick={() => setMeasures(m => [...m, { measure: '', status: 'pending' }])}
               className="flex items-center gap-1 text-xs text-primary font-semibold hover:text-primary/80">
@@ -299,7 +299,7 @@ export default function RiskAssessmentForm({ recordId }: Props) {
         </div>
         <div className="space-y-2">
           {measures.map((m, i) => (
-            <div key={i} className="flex items-center gap-2 rounded-lg border border-slate-100 bg-white px-3 py-2">
+            <div key={i} className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
               <input disabled={isCompleted} value={m.measure} onChange={e => {
                 const next = [...measures]
                 next[i] = { ...next[i], measure: e.target.value }
@@ -312,21 +312,21 @@ export default function RiskAssessmentForm({ recordId }: Props) {
                 next[i] = { ...next[i], status: e.target.value }
                 setMeasures(next)
               }}
-                className="rounded-lg border border-slate-200 px-2 py-1 text-xs focus:outline-none disabled:bg-slate-50">
+                className="rounded-lg border border-border px-2 py-1 text-xs focus:outline-none disabled:bg-muted">
                 <option value="pending">Pendiente</option>
                 <option value="in_progress">En progreso</option>
                 <option value="completed">Completada</option>
               </select>
               {!isCompleted && (
                 <button type="button" onClick={() => setMeasures(m => m.filter((_, j) => j !== i))}
-                  className="p-1 text-slate-400 hover:text-red-500">
+                  className="p-1 text-muted-foreground hover:text-red-500">
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
           ))}
           {measures.length === 0 && (
-            <p className="text-xs text-slate-400 py-2">Sin medidas de mitigacion. Agrega si el riesgo no es negligible.</p>
+            <p className="text-xs text-muted-foreground py-2">Sin medidas de mitigacion. Agrega si el riesgo no es negligible.</p>
           )}
         </div>
 
@@ -334,29 +334,29 @@ export default function RiskAssessmentForm({ recordId }: Props) {
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" disabled={isCompleted} checked={form.additional_info_requested ?? false}
               onChange={e => set('additional_info_requested', e.target.checked)} className="rounded border-slate-300" />
-            <span className="text-sm text-slate-700">Informacion adicional solicitada</span>
+            <span className="text-sm text-foreground">Informacion adicional solicitada</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" disabled={isCompleted} checked={form.independent_audit_required ?? false}
               onChange={e => set('independent_audit_required', e.target.checked)} className="rounded border-slate-300" />
-            <span className="text-sm text-slate-700">Auditoria independiente requerida</span>
+            <span className="text-sm text-foreground">Auditoria independiente requerida</span>
           </label>
         </div>
       </section>
 
       {/* Conclusion */}
       <section>
-        <h3 className="text-sm font-bold text-slate-700 mb-3">Conclusion</h3>
+        <h3 className="text-sm font-bold text-foreground mb-3">Conclusion</h3>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Nivel de riesgo global *</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Nivel de riesgo global *</label>
             <div className="flex gap-2 flex-wrap">
               {OVERALL_LEVELS.map(ol => (
                 <button key={ol.value} type="button" disabled={isCompleted}
                   onClick={() => set('overall_risk_level', ol.value)}
                   className={cn(
                     'px-4 py-2 rounded-lg text-sm font-medium border transition-colors',
-                    form.overall_risk_level === ol.value ? ol.color + ' border-current' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50',
+                    form.overall_risk_level === ol.value ? ol.color + ' border-current' : 'bg-card text-muted-foreground border-border hover:bg-muted',
                   )}>
                   {ol.label}
                 </button>
@@ -364,7 +364,7 @@ export default function RiskAssessmentForm({ recordId }: Props) {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Dictamen *</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Dictamen *</label>
             <div className="space-y-2">
               {CONCLUSIONS.map(c => {
                 const Icon = c.icon
@@ -373,7 +373,7 @@ export default function RiskAssessmentForm({ recordId }: Props) {
                     onClick={() => set('conclusion', c.value)}
                     className={cn(
                       'flex items-center gap-2.5 w-full rounded-lg border px-4 py-2.5 text-left text-sm font-medium transition-colors',
-                      form.conclusion === c.value ? 'border-primary bg-primary/5 text-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50',
+                      form.conclusion === c.value ? 'border-primary bg-primary/5 text-foreground' : 'border-border text-muted-foreground hover:bg-muted',
                     )}>
                     <Icon className={cn('h-4 w-4 shrink-0', c.color)} />
                     {c.label}
@@ -383,9 +383,9 @@ export default function RiskAssessmentForm({ recordId }: Props) {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Notas de conclusion</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Notas de conclusion</label>
             <textarea disabled={isCompleted} value={form.conclusion_notes ?? ''} onChange={e => set('conclusion_notes', e.target.value)}
-              rows={2} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50" />
+              rows={2} className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-muted" />
           </div>
         </div>
       </section>

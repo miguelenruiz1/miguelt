@@ -39,7 +39,7 @@ class CustomerTypeRepository:
         return obj
 
     async def delete(self, obj: CustomerType) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()
 
 
@@ -100,7 +100,7 @@ class CustomerRepository:
         return obj
 
     async def delete(self, obj: Customer) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()
 
     async def count(self, tenant_id: str) -> int:

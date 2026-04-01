@@ -8,7 +8,7 @@ import { usePlots, useCreatePlot, useDeletePlot, useScreenDeforestation, usePlot
 import { useOrganizations } from '@/hooks/useTaxonomy'
 import { useConfirm } from '@/store/confirm'
 import { useToast } from '@/store/toast'
-import { DataTable, type Column } from '@/components/ui/DataTable'
+import { DataTable, type Column } from '@/components/ui/datatable'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
@@ -182,7 +182,7 @@ function CreatePlotModal({ onClose }: { onClose: () => void }) {
 
   const inputCls =
     'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-ring outline-none'
-  const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
+  const labelCls = 'block text-sm font-medium text-foreground mb-1'
   const errCls = 'mt-0.5 text-xs text-red-500'
 
   return (
@@ -233,7 +233,7 @@ function CreatePlotModal({ onClose }: { onClose: () => void }) {
               control={control}
               render={({ field }) => (
                 <div className="flex gap-3 pt-2">
-                  <label className="flex items-center gap-1.5 text-sm text-gray-700">
+                  <label className="flex items-center gap-1.5 text-sm text-foreground">
                     <input
                       type="radio"
                       value="point"
@@ -243,7 +243,7 @@ function CreatePlotModal({ onClose }: { onClose: () => void }) {
                     />
                     Punto
                   </label>
-                  <label className="flex items-center gap-1.5 text-sm text-gray-700">
+                  <label className="flex items-center gap-1.5 text-sm text-foreground">
                     <input
                       type="radio"
                       value="polygon"
@@ -330,17 +330,17 @@ function CreatePlotModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Row 6: Compliance checkboxes */}
-        <div className="rounded-lg border border-gray-200 p-4 space-y-3">
-          <p className="text-sm font-medium text-gray-700">Declaraciones de cumplimiento</p>
-          <label className="flex items-center gap-2 text-sm text-gray-600">
+        <div className="rounded-lg border border-border p-4 space-y-3">
+          <p className="text-sm font-medium text-foreground">Declaraciones de cumplimiento</p>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <input type="checkbox" {...register('deforestation_free')} className="accent-emerald-600 h-4 w-4" />
             Libre de deforestacion
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-600">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <input type="checkbox" {...register('cutoff_date_compliant')} className="accent-emerald-600 h-4 w-4" />
             Cumple fecha de corte
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-600">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <input type="checkbox" {...register('legal_land_use')} className="accent-emerald-600 h-4 w-4" />
             Uso legal del suelo
           </label>
@@ -396,7 +396,7 @@ export default function PlotsPage() {
       key: 'organization',
       header: 'Organizacion',
       render: (row) => (
-        <span className="text-sm text-gray-600">
+        <span className="text-sm text-muted-foreground">
           {row.organization_id ? (orgMap[row.organization_id] ?? 'Desconocida') : '—'}
         </span>
       ),
@@ -406,7 +406,7 @@ export default function PlotsPage() {
       header: 'Area (ha)',
       sortable: true,
       render: (row) => (
-        <span className="text-sm text-gray-600 tabular-nums">
+        <span className="text-sm text-muted-foreground tabular-nums">
           {row.plot_area_ha != null ? Number(row.plot_area_ha).toFixed(2) : '—'}
         </span>
       ),
@@ -415,7 +415,7 @@ export default function PlotsPage() {
       key: 'location',
       header: 'Municipio/Depto',
       render: (row) => (
-        <span className="text-sm text-gray-600">
+        <span className="text-sm text-muted-foreground">
           {[row.municipality, row.region].filter(Boolean).join(', ') || '—'}
         </span>
       ),
@@ -474,14 +474,14 @@ export default function PlotsPage() {
               }
             }}
             disabled={screenDeforestation.isPending}
-            className="rounded-lg p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
             title="Verificar deforestacion (Global Forest Watch)"
           >
             {screenDeforestation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Satellite className="h-3.5 w-3.5" />}
           </button>
           <button
             onClick={() => handleDelete(row.id)}
-            className="rounded-lg p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
             title="Eliminar"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -500,8 +500,8 @@ export default function PlotsPage() {
             <MapPin className="h-5 w-5 text-amber-600" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Parcelas de Produccion</h1>
-            <p className="text-sm text-gray-500">Predios registrados para trazabilidad y cumplimiento</p>
+            <h1 className="text-lg font-semibold text-foreground">Parcelas de Produccion</h1>
+            <p className="text-sm text-muted-foreground">Predios registrados para trazabilidad y cumplimiento</p>
           </div>
         </div>
         <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>

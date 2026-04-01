@@ -7,7 +7,7 @@ const STATUS_BADGES: Record<string, { color: string; label: string }> = {
   ok: { color: 'bg-green-100 text-green-700', label: 'Vigente' },
   expiring_soon: { color: 'bg-amber-100 text-amber-700', label: 'Pronto a vencer' },
   expired: { color: 'bg-red-100 text-red-700', label: 'Vencido' },
-  no_expiry: { color: 'bg-gray-100 text-gray-600', label: 'Sin vencimiento' },
+  no_expiry: { color: 'bg-secondary text-muted-foreground', label: 'Sin vencimiento' },
 }
 
 export default function PublicVerifyPage() {
@@ -27,15 +27,15 @@ export default function PublicVerifyPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-emerald-50">
       {/* Header */}
-      <div className="bg-white border-b">
+      <div className="bg-card border-b">
         <div className="max-w-3xl mx-auto px-4 py-6">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center">
               <Shield className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Trace</h1>
-              <p className="text-xs text-gray-500">Verificacion de trazabilidad blockchain</p>
+              <h1 className="text-xl font-bold text-foreground">Trace</h1>
+              <p className="text-xs text-muted-foreground">Verificacion de trazabilidad blockchain</p>
             </div>
           </div>
         </div>
@@ -43,9 +43,9 @@ export default function PublicVerifyPage() {
 
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Search */}
-        <div className="bg-white rounded-2xl shadow-sm border p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Verificar Lote</h2>
-          <p className="text-sm text-gray-500 mb-4">Ingrese el numero de lote o escanee el codigo QR del producto</p>
+        <div className="bg-card rounded-2xl  border p-6 mb-8">
+          <h2 className="text-lg font-semibold text-foreground mb-2">Verificar Lote</h2>
+          <p className="text-sm text-muted-foreground mb-4">Ingrese el numero de lote o escanee el codigo QR del producto</p>
           <div className="flex gap-2">
             <input
               value={batchInput}
@@ -64,7 +64,7 @@ export default function PublicVerifyPage() {
         {isLoading && (
           <div className="text-center py-12">
             <div className="h-8 w-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-gray-500">Consultando blockchain...</p>
+            <p className="text-muted-foreground">Consultando blockchain...</p>
           </div>
         )}
 
@@ -81,14 +81,14 @@ export default function PublicVerifyPage() {
         {verification && !isLoading && (
           <div className="space-y-6">
             {/* Product info */}
-            <div className="bg-white rounded-2xl shadow-sm border p-6">
+            <div className="bg-card rounded-2xl  border p-6">
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <Package className="h-5 w-5 text-indigo-600" />
-                    <h3 className="text-lg font-bold text-gray-900">{verification.product_name}</h3>
+                    <h3 className="text-lg font-bold text-foreground">{verification.product_name}</h3>
                   </div>
-                  <p className="text-sm text-gray-500">SKU: {verification.product_sku}</p>
+                  <p className="text-sm text-muted-foreground">SKU: {verification.product_sku}</p>
                 </div>
                 {verification.blockchain_status !== 'none' && (
                   <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium inline-flex items-center gap-1">
@@ -99,31 +99,31 @@ export default function PublicVerifyPage() {
 
               <div className="grid grid-cols-2 gap-4 mt-6">
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Lote</p>
-                  <p className="font-mono font-medium text-gray-900">{verification.batch_number}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Lote</p>
+                  <p className="font-mono font-medium text-foreground">{verification.batch_number}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Estado</p>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGES[verification.expiration_status]?.color || 'bg-gray-100'}`}>
+                  <p className="text-xs text-muted-foreground mb-1">Estado</p>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGES[verification.expiration_status]?.color || 'bg-secondary'}`}>
                     {STATUS_BADGES[verification.expiration_status]?.label || verification.expiration_status}
                   </span>
                 </div>
                 {verification.manufacture_date && (
                   <div>
-                    <p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><Calendar className="h-3 w-3" /> Fabricacion</p>
-                    <p className="text-sm text-gray-900">{verification.manufacture_date}</p>
+                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Calendar className="h-3 w-3" /> Fabricacion</p>
+                    <p className="text-sm text-foreground">{verification.manufacture_date}</p>
                   </div>
                 )}
                 {verification.expiration_date && (
                   <div>
-                    <p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><Calendar className="h-3 w-3" /> Vencimiento</p>
-                    <p className="text-sm text-gray-900">{verification.expiration_date}</p>
+                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Calendar className="h-3 w-3" /> Vencimiento</p>
+                    <p className="text-sm text-foreground">{verification.expiration_date}</p>
                   </div>
                 )}
                 {verification.origin_supplier && (
                   <div className="col-span-2">
-                    <p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><MapPin className="h-3 w-3" /> Origen</p>
-                    <p className="text-sm text-gray-900">{verification.origin_supplier}</p>
+                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><MapPin className="h-3 w-3" /> Origen</p>
+                    <p className="text-sm text-foreground">{verification.origin_supplier}</p>
                   </div>
                 )}
               </div>
@@ -131,9 +131,9 @@ export default function PublicVerifyPage() {
 
             {/* Proof chain */}
             {verification.proof_chain.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-sm border p-6">
+              <div className="bg-card rounded-2xl  border p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900">Cadena de Trazabilidad</h3>
+                  <h3 className="font-semibold text-foreground">Cadena de Trazabilidad</h3>
                   <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
                     {verification.total_events_anchored} eventos en blockchain
                   </span>
@@ -142,11 +142,11 @@ export default function PublicVerifyPage() {
                   {verification.proof_chain.map((entry, i) => (
                     <div key={i} className="flex gap-3">
                       <div className="flex flex-col items-center">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${entry.anchor_tx_sig ? 'bg-emerald-100' : 'bg-gray-100'}`}>
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${entry.anchor_tx_sig ? 'bg-emerald-100' : 'bg-secondary'}`}>
                           {entry.anchor_tx_sig ? (
                             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                           ) : (
-                            <Clock className="h-4 w-4 text-gray-400" />
+                            <Clock className="h-4 w-4 text-muted-foreground" />
                           )}
                         </div>
                         {i < verification.proof_chain.length - 1 && (
@@ -154,9 +154,9 @@ export default function PublicVerifyPage() {
                         )}
                       </div>
                       <div className="pb-6">
-                        <p className="text-sm font-medium text-gray-900">{entry.description}</p>
+                        <p className="text-sm font-medium text-foreground">{entry.description}</p>
                         {entry.timestamp && (
-                          <p className="text-xs text-gray-500 mt-0.5">{new Date(entry.timestamp).toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{new Date(entry.timestamp).toLocaleString()}</p>
                         )}
                         {entry.solana_explorer_url && (
                           <a href={entry.solana_explorer_url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 hover:underline mt-1 inline-flex items-center gap-1">
@@ -164,7 +164,7 @@ export default function PublicVerifyPage() {
                           </a>
                         )}
                         {entry.anchor_hash && (
-                          <p className="text-[10px] font-mono text-gray-400 mt-1 break-all">hash: {entry.anchor_hash}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground mt-1 break-all">hash: {entry.anchor_hash}</p>
                         )}
                       </div>
                     </div>
@@ -186,9 +186,9 @@ export default function PublicVerifyPage() {
       </div>
 
       {/* Footer */}
-      <div className="border-t bg-white mt-12">
+      <div className="border-t bg-card mt-12">
         <div className="max-w-3xl mx-auto px-4 py-4 text-center">
-          <p className="text-xs text-gray-400">Powered by Trace — Trazabilidad blockchain en Solana</p>
+          <p className="text-xs text-muted-foreground">Powered by Trace — Trazabilidad blockchain en Solana</p>
         </div>
       </div>
     </div>

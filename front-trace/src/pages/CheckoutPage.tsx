@@ -78,16 +78,16 @@ export function CheckoutPage() {
   if (paymentDone) {
     return (
       <div className="flex items-center justify-center p-6">
-        <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl p-10 text-center space-y-6">
+        <div className="w-full max-w-md rounded-3xl bg-card shadow-2xl p-10 text-center space-y-6">
           <div className="flex justify-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 ring-4 ring-emerald-100">
               <CheckCircle2 className="h-10 w-10 text-emerald-500" />
             </div>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">¡Pago procesado!</h1>
-            <p className="mt-2 text-sm text-slate-500 leading-relaxed">
-              Tu suscripción al plan <span className="font-semibold text-slate-700">{selectedPlan?.name}</span> está activa.
+            <h1 className="text-2xl font-bold text-foreground">¡Pago procesado!</h1>
+            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+              Tu suscripción al plan <span className="font-semibold text-foreground">{selectedPlan?.name}</span> está activa.
               Ahora tienes acceso completo a todos sus módulos.
             </p>
           </div>
@@ -109,7 +109,7 @@ export function CheckoutPage() {
         {/* Back */}
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+          className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" /> Volver
         </button>
@@ -121,9 +121,9 @@ export function CheckoutPage() {
               <CreditCard className="h-7 w-7 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-slate-900">Completa tu suscripción</h1>
+          <h1 className="text-3xl font-bold text-foreground">Completa tu suscripción</h1>
           {moduleSlug && (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               Para usar el módulo <span className="font-semibold text-primary capitalize">{moduleSlug}</span> necesitas un plan que lo incluya
             </p>
           )}
@@ -132,7 +132,7 @@ export function CheckoutPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-52 rounded-3xl bg-white/60 animate-pulse" />
+              <div key={i} className="h-52 rounded-3xl bg-card/60 animate-pulse" />
             ))}
           </div>
         ) : (
@@ -140,11 +140,11 @@ export function CheckoutPage() {
 
             {/* ── Plan selection ─────────────────────────────────────────────── */}
             <div className="lg:col-span-2 space-y-4">
-              <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Elige tu plan</h2>
+              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Elige tu plan</h2>
 
               {eligiblePlans.length === 0 ? (
-                <div className="rounded-3xl bg-white p-8 text-center shadow-sm">
-                  <p className="text-slate-500 text-sm">No hay planes disponibles para este módulo.</p>
+                <div className="rounded-3xl bg-card p-8 text-center ">
+                  <p className="text-muted-foreground text-sm">No hay planes disponibles para este módulo.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -158,50 +158,50 @@ export function CheckoutPage() {
                         key={plan.id}
                         onClick={() => setSelectedPlanId(plan.id)}
                         className={cn(
-                          'w-full text-left rounded-3xl border bg-white p-5 transition-all duration-200 shadow-sm',
+                          'w-full text-left rounded-3xl border bg-card p-5 transition-all duration-200 ',
                           isSelected
                             ? 'border-primary/70 ring-2 ring-ring/30 shadow-primary/10'
-                            : 'border-slate-200 hover:border-slate-300 hover:shadow-md',
+                            : 'border-border hover:border-slate-300 hover:shadow-md',
                         )}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className={cn(
-                              'flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br text-white text-sm font-bold shadow-sm',
+                              'flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br text-white text-sm font-bold ',
                               gradient,
                             )}>
                               {plan.name[0]}
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-slate-900">{plan.name}</span>
+                                <span className="font-bold text-foreground">{plan.name}</span>
                                 {isHighlighted && (
                                   <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">
                                     Recomendado
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-slate-400">
+                              <p className="text-xs text-muted-foreground">
                                 Incluye: {plan.modules.join(', ')}
                               </p>
                             </div>
                           </div>
                           <div className="text-right">
                             {plan.price_monthly === 0 ? (
-                              <span className="text-lg font-bold text-slate-900">Gratis</span>
+                              <span className="text-lg font-bold text-foreground">Gratis</span>
                             ) : (
                               <>
-                                <span className="text-lg font-bold text-slate-900">
+                                <span className="text-lg font-bold text-foreground">
                                   ${plan.price_monthly.toLocaleString()}
                                 </span>
-                                <span className="text-xs text-slate-400 block">{plan.currency}/mes</span>
+                                <span className="text-xs text-muted-foreground block">{plan.currency}/mes</span>
                               </>
                             )}
                           </div>
                         </div>
 
                         {isSelected && (
-                          <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-3 gap-2 text-xs text-slate-500">
+                          <div className="mt-3 pt-3 border-t border-border grid grid-cols-3 gap-2 text-xs text-muted-foreground">
                             <span>👥 Hasta {plan.max_users} usuarios</span>
                             <span>📦 {plan.max_assets} activos</span>
                             <span>👛 {plan.max_wallets} custodios</span>
@@ -216,26 +216,26 @@ export function CheckoutPage() {
 
             {/* ── Order summary + Payment ─────────────────────────────────────── */}
             <div className="space-y-4">
-              <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Resumen</h2>
+              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Resumen</h2>
 
-              <div className="rounded-3xl bg-white shadow-sm border border-slate-200 overflow-hidden">
+              <div className="rounded-3xl bg-card  border border-border overflow-hidden">
                 {/* Plan summary */}
                 <div className="p-5 space-y-3">
                   {selectedPlan ? (
                     <>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">Plan {selectedPlan.name}</span>
-                        <span className="font-bold text-slate-900">
+                        <span className="text-sm text-muted-foreground">Plan {selectedPlan.name}</span>
+                        <span className="font-bold text-foreground">
                           {selectedPlan.price_monthly === 0
                             ? 'Gratis'
                             : `$${selectedPlan.price_monthly.toLocaleString()} ${selectedPlan.currency}`}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-xs text-slate-400">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>Facturación mensual</span>
                       </div>
-                      <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
-                        <span className="font-semibold text-slate-800">Total / mes</span>
+                      <div className="border-t border-border pt-3 flex items-center justify-between">
+                        <span className="font-semibold text-foreground">Total / mes</span>
                         <span className="text-xl font-bold text-primary">
                           {selectedPlan.price_monthly === 0
                             ? '$0'
@@ -244,18 +244,18 @@ export function CheckoutPage() {
                       </div>
                     </>
                   ) : (
-                    <p className="text-sm text-slate-400">Selecciona un plan</p>
+                    <p className="text-sm text-muted-foreground">Selecciona un plan</p>
                   )}
                 </div>
 
                 {/* Payment method */}
-                <div className="border-t border-slate-100 p-5 space-y-3">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Método de pago</p>
+                <div className="border-t border-border p-5 space-y-3">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Método de pago</p>
 
                   {gatewayLoading ? (
-                    <div className="h-10 rounded-xl bg-slate-100 animate-pulse" />
+                    <div className="h-10 rounded-xl bg-secondary animate-pulse" />
                   ) : activeGateway ? (
-                    <div className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+                    <div className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
                       <div
                         className="flex h-9 w-9 items-center justify-center rounded-xl text-white text-sm font-bold shrink-0"
                         style={{ backgroundColor: activeGateway.color }}
@@ -263,8 +263,8 @@ export function CheckoutPage() {
                         {activeGateway.display_name[0]}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-800">{activeGateway.display_name}</p>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-sm font-semibold text-foreground">{activeGateway.display_name}</p>
+                        <p className="text-[10px] text-muted-foreground">
                           {activeGateway.is_test_mode ? '⚡ Modo test' : '✅ Producción'}
                         </p>
                       </div>
@@ -285,7 +285,7 @@ export function CheckoutPage() {
                     onClick={handlePay}
                     disabled={!selectedPlan || !activeGateway || selectedPlan.price_monthly === 0 || checkoutMut.isPending}
                     className={cn(
-                      'w-full rounded-2xl py-3.5 text-sm font-bold text-white transition-all shadow-sm',
+                      'w-full rounded-2xl py-3.5 text-sm font-bold text-white transition-all ',
                       selectedPlan && activeGateway && selectedPlan.price_monthly > 0
                         ? 'bg-[#5C2D91] hover:bg-[#5C2D91]/90 hover:shadow-md'
                         : 'bg-slate-300 cursor-not-allowed',
@@ -313,13 +313,13 @@ export function CheckoutPage() {
                   {selectedPlan?.price_monthly === 0 && (
                     <button
                       onClick={() => navigate('/marketplace')}
-                      className="mt-2 w-full rounded-2xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                      className="mt-2 w-full rounded-2xl border border-border py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted transition-colors"
                     >
                       Continuar con plan gratuito
                     </button>
                   )}
 
-                  <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-slate-400">
+                  <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                     <ShieldCheck className="h-3.5 w-3.5" />
                     <span>Pago seguro procesado por {activeGateway?.display_name ?? 'pasarela'}</span>
                   </div>
@@ -328,10 +328,10 @@ export function CheckoutPage() {
 
               {/* User info */}
               {user && (
-                <div className="rounded-2xl bg-white/70 border border-slate-200 px-4 py-3">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Facturar a</p>
-                  <p className="text-sm font-semibold text-slate-700">{user.full_name}</p>
-                  <p className="text-xs text-slate-400">{user.email}</p>
+                <div className="rounded-2xl bg-card/70 border border-border px-4 py-3">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Facturar a</p>
+                  <p className="text-sm font-semibold text-foreground">{user.full_name}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
               )}
             </div>

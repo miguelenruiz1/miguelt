@@ -37,30 +37,30 @@ export function ActivityTimeline({ resourceType, resourceId }: ActivityTimelineP
   const [limit, setLimit] = useState(10)
   const { data, isLoading } = useEntityTimeline(resourceType, resourceId, { limit })
 
-  if (isLoading) return <div className="text-sm text-slate-400 py-4">Cargando actividad...</div>
+  if (isLoading) return <div className="text-sm text-muted-foreground py-4">Cargando actividad...</div>
 
   const items = data?.items ?? []
-  if (items.length === 0) return <div className="text-sm text-slate-400 py-4">Sin actividad registrada</div>
+  if (items.length === 0) return <div className="text-sm text-muted-foreground py-4">Sin actividad registrada</div>
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-        <Clock className="h-4 w-4 text-slate-400" />
+      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+        <Clock className="h-4 w-4 text-muted-foreground" />
         Actividad reciente
       </h3>
-      <div className="relative pl-4 border-l-2 border-slate-200 space-y-4">
+      <div className="relative pl-4 border-l-2 border-border space-y-4">
         {items.map((entry) => (
           <div key={entry.id} className="relative">
             <div className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary/70 border-2 border-white" />
-            <div className="text-xs text-slate-500 mb-0.5">
+            <div className="text-xs text-muted-foreground mb-0.5">
               {format(new Date(entry.created_at), 'dd/MM/yyyy HH:mm')}
             </div>
-            <div className="text-sm text-slate-700">
-              <span className="font-mono text-xs bg-slate-100 text-slate-600 rounded px-1 py-0.5 mr-1.5">
+            <div className="text-sm text-foreground">
+              <span className="font-mono text-xs bg-secondary text-muted-foreground rounded px-1 py-0.5 mr-1.5">
                 {getActionLabel(entry.action)}
               </span>
               {entry.user_email && (
-                <span className="text-slate-500">por {entry.user_email}</span>
+                <span className="text-muted-foreground">por {entry.user_email}</span>
               )}
             </div>
           </div>
@@ -78,7 +78,7 @@ export function ActivityTimeline({ resourceType, resourceId }: ActivityTimelineP
       {limit > 10 && (
         <button
           onClick={() => setLimit(10)}
-          className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+          className="text-xs text-muted-foreground hover:text-muted-foreground flex items-center gap-1"
         >
           <ChevronUp className="h-3 w-3" />
           Mostrar menos

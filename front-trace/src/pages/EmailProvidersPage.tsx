@@ -27,8 +27,8 @@ export function EmailProvidersPage() {
       {/* Breadcrumb */}
       <nav className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
-          <li className="text-gray-500">Plataforma</li>
-          <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
+          <li className="text-muted-foreground">Plataforma</li>
+          <li><ChevronRight className="h-4 w-4 text-muted-foreground" /></li>
           <li className="text-primary">Correo Electrónico</li>
         </ol>
       </nav>
@@ -39,17 +39,17 @@ export function EmailProvidersPage() {
           <Mail className="h-6 w-6 text-white" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-gray-800">Correo Electrónico</h1>
-          <p className="text-sm text-gray-500">Configura el proveedor de correo y personaliza las plantillas</p>
+          <h1 className="text-xl font-semibold text-foreground">Correo Electrónico</h1>
+          <p className="text-sm text-muted-foreground">Configura el proveedor de correo y personaliza las plantillas</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-slate-100 rounded-xl p-1 w-fit">
+      <div className="flex gap-1 mb-6 bg-secondary rounded-xl p-1 w-fit">
         <button
           onClick={() => setTab('templates')}
           className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-            tab === 'templates' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            tab === 'templates' ? 'bg-card text-foreground ' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <Mail className="h-4 w-4 inline-block mr-1.5 -mt-0.5" />
@@ -58,7 +58,7 @@ export function EmailProvidersPage() {
         <button
           onClick={() => setTab('config')}
           className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-            tab === 'config' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            tab === 'config' ? 'bg-card text-foreground ' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <Settings className="h-4 w-4 inline-block mr-1.5 -mt-0.5" />
@@ -140,7 +140,7 @@ function ResendConfigTab() {
     }
   }
 
-  const inputCls = 'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20'
+  const inputCls = 'h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-foreground  placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20'
 
   return (
     <div className="max-w-xl space-y-6">
@@ -156,7 +156,7 @@ function ResendConfigTab() {
         <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <XCircle className="h-4 w-4 shrink-0" />
           {error}
-          <button onClick={() => setError(null)} className="ml-auto text-gray-400 hover:text-gray-600">
+          <button onClick={() => setError(null)} className="ml-auto text-muted-foreground hover:text-muted-foreground">
             <XCircle className="h-4 w-4" />
           </button>
         </div>
@@ -170,12 +170,12 @@ function ResendConfigTab() {
       )}
 
       {isLoading ? (
-        <div className="h-64 rounded-2xl border border-gray-200 bg-gray-50 animate-pulse" />
+        <div className="h-64 rounded-2xl border border-border bg-muted animate-pulse" />
       ) : (
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
+        <div className="rounded-2xl border border-border bg-card p-6  space-y-5">
           {/* API Key */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
               API Key <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -189,20 +189,20 @@ function ResendConfigTab() {
               <button
                 type="button"
                 onClick={() => setShowKey((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground"
               >
                 {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1 text-xs text-muted-foreground">
               Obtén tu API key en{' '}
-              <span className="text-gray-500 font-medium">resend.com/api-keys</span>
+              <span className="text-muted-foreground font-medium">resend.com/api-keys</span>
             </p>
           </div>
 
           {/* From Email */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
               Correo de envío <span className="text-red-500">*</span>
             </label>
             <input
@@ -212,7 +212,7 @@ function ResendConfigTab() {
               placeholder={isConfigured ? '(dejar vacío para mantener el actual)' : 'noreply@tudominio.com'}
               className={inputCls}
             />
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1 text-xs text-muted-foreground">
               Debe ser un dominio verificado en tu cuenta de Resend
             </p>
           </div>
@@ -221,7 +221,7 @@ function ResendConfigTab() {
           <button
             onClick={handleSave}
             disabled={saveMut.isPending || activateMut.isPending}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary/90 transition disabled:opacity-50 shadow-sm"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary/90 transition disabled:opacity-50 "
           >
             <Save className="h-4 w-4" />
             {saveMut.isPending || activateMut.isPending ? 'Guardando...' : 'Guardar configuración'}
@@ -231,10 +231,10 @@ function ResendConfigTab() {
 
       {/* Test send */}
       {isConfigured && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-6  space-y-4">
           <div>
-            <h3 className="text-sm font-semibold text-gray-800">Probar envío</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Envía un correo de prueba para verificar la configuración</p>
+            <h3 className="text-sm font-semibold text-foreground">Probar envío</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Envía un correo de prueba para verificar la configuración</p>
           </div>
           <div className="flex gap-2">
             <input
@@ -247,7 +247,7 @@ function ResendConfigTab() {
             <button
               onClick={handleTest}
               disabled={testMut.isPending}
-              className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition disabled:opacity-50 shadow-sm"
+              className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition disabled:opacity-50 "
             >
               <Send className="h-4 w-4" />
               {testMut.isPending ? 'Enviando...' : 'Enviar prueba'}
@@ -296,21 +296,21 @@ function TemplatesTab() {
         <button
           key={tpl.id}
           onClick={() => setSelectedId(tpl.id)}
-          className="text-left bg-white rounded-2xl border border-slate-200 p-5 hover:border-primary/50 hover:shadow-md transition-all"
+          className="text-left bg-card rounded-2xl border border-border p-5 hover:border-primary/50 hover:shadow-md transition-all"
         >
           <div className="flex items-center gap-3 mb-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
               <Mail className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="font-semibold text-slate-800 text-sm">{tpl.slug.replace(/_/g, ' ')}</p>
-              <p className={`text-xs ${tpl.is_active ? 'text-green-600' : 'text-slate-400'}`}>
+              <p className="font-semibold text-foreground text-sm">{tpl.slug.replace(/_/g, ' ')}</p>
+              <p className={`text-xs ${tpl.is_active ? 'text-green-600' : 'text-muted-foreground'}`}>
                 {tpl.is_active ? 'Activa' : 'Inactiva'}
               </p>
             </div>
           </div>
-          <p className="text-xs text-slate-500 line-clamp-2">{tpl.description}</p>
-          <p className="text-xs text-slate-400 mt-2 truncate">Asunto: {tpl.subject}</p>
+          <p className="text-xs text-muted-foreground line-clamp-2">{tpl.description}</p>
+          <p className="text-xs text-muted-foreground mt-2 truncate">Asunto: {tpl.subject}</p>
         </button>
       ))}
     </div>
@@ -362,7 +362,7 @@ function TemplateEditor({ template, onBack }: { template: EmailTemplate; onBack:
     <div>
       <button
         onClick={onBack}
-        className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4"
+        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
       >
         <ChevronLeft className="h-4 w-4" />
         Volver
@@ -370,13 +370,13 @@ function TemplateEditor({ template, onBack }: { template: EmailTemplate; onBack:
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-slate-800">{template.slug.replace(/_/g, ' ')}</h2>
-          <p className="text-sm text-slate-500">{template.description}</p>
+          <h2 className="text-lg font-semibold text-foreground">{template.slug.replace(/_/g, ' ')}</h2>
+          <p className="text-sm text-muted-foreground">{template.description}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowPreview((p) => !p)}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
           >
             {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             {showPreview ? 'Editor' : 'Vista previa'}
@@ -384,7 +384,7 @@ function TemplateEditor({ template, onBack }: { template: EmailTemplate; onBack:
           <button
             onClick={handleTest}
             disabled={testSend.isPending}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50"
             title={`Enviar a ${currentUser?.email}`}
           >
             <Send className="h-4 w-4" />
@@ -422,19 +422,19 @@ function TemplateEditor({ template, onBack }: { template: EmailTemplate; onBack:
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
         {showPreview ? (
           <div className="p-6">
-            <p className="text-xs text-slate-400 mb-2">Vista previa del correo:</p>
+            <p className="text-xs text-muted-foreground mb-2">Vista previa del correo:</p>
             <div
-              className="border border-slate-100 rounded-xl p-4"
+              className="border border-border rounded-xl p-4"
               dangerouslySetInnerHTML={{ __html: previewHtml }}
             />
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
             <div className="p-4 flex items-center gap-4">
-              <label className="text-sm font-medium text-slate-700 w-24 shrink-0">Activa</label>
+              <label className="text-sm font-medium text-foreground w-24 shrink-0">Activa</label>
               <button
                 onClick={() => setIsActive((p) => !p)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -442,37 +442,37 @@ function TemplateEditor({ template, onBack }: { template: EmailTemplate; onBack:
                 }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  className={`inline-block h-4 w-4 transform rounded-full bg-card transition-transform ${
                     isActive ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
               </button>
             </div>
             <div className="p-4 flex items-center gap-4">
-              <label className="text-sm font-medium text-slate-700 w-24 shrink-0">Descripción</label>
+              <label className="text-sm font-medium text-foreground w-24 shrink-0">Descripción</label>
               <input
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <div className="p-4 flex items-center gap-4">
-              <label className="text-sm font-medium text-slate-700 w-24 shrink-0">Asunto</label>
+              <label className="text-sm font-medium text-foreground w-24 shrink-0">Asunto</label>
               <input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <div className="p-4">
-              <label className="text-sm font-medium text-slate-700 mb-2 block">Cuerpo HTML</label>
+              <label className="text-sm font-medium text-foreground mb-2 block">Cuerpo HTML</label>
               <textarea
                 value={htmlBody}
                 onChange={(e) => setHtmlBody(e.target.value)}
                 rows={20}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-xl border border-border bg-muted px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
               />
-              <p className="text-xs text-slate-400 mt-2">
+              <p className="text-xs text-muted-foreground mt-2">
                 Variables disponibles: $user_name, $user_email, $link, $app_name, $tenant_name
               </p>
             </div>

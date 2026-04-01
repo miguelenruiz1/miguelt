@@ -99,7 +99,7 @@ function Section({
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-border px-3 py-2 text-xs">
+    <div className="bg-card rounded-xl shadow-lg border border-border px-3 py-2 text-xs">
       <p className="font-semibold text-foreground mb-1">{label}</p>
       {payload.map((p: any) => (
         <p key={p.name} style={{ color: p.color }}>
@@ -301,7 +301,7 @@ function ABCSection() {
               </div>
               <p className={cn('text-2xl font-extrabold mt-2', c.text)}>{s.count}</p>
               <p className="text-[10px] text-muted-foreground">{c.desc}</p>
-              <p className="text-xs font-semibold text-slate-600 mt-1">{s.value_pct.toFixed(0)}% del valor</p>
+              <p className="text-xs font-semibold text-muted-foreground mt-1">{s.value_pct.toFixed(0)}% del valor</p>
               <p className="text-[10px] text-muted-foreground">${fmt(s.value)}</p>
             </div>
           )
@@ -319,7 +319,7 @@ function ABCSection() {
       {/* Top items */}
       {data.items.length > 0 && (
         <div className="mt-4 rounded-xl bg-muted/50 p-4">
-          <p className="text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">Top 10 productos por valor</p>
+          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Top 10 productos por valor</p>
           <div className="space-y-1.5">
             {data.items.slice(0, 10).map((it, i) => (
               <div key={it.product_id} className="flex items-center gap-2 text-xs">
@@ -349,7 +349,7 @@ function StockPolicySection() {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Rotacion por tipo</h3>
+      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Rotacion por tipo</h3>
       {data.items.map(it => {
         const pct = it.months_on_hand != null && it.target_months > 0
           ? Math.min((it.months_on_hand / it.target_months) * 100, 150) : 0
@@ -387,7 +387,7 @@ function StorageValuationSection() {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Costo de almacenamiento</h3>
+      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Costo de almacenamiento</h3>
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-xl bg-primary/10 p-3 text-center">
           <p className="text-[10px] text-primary font-semibold">$/mes</p>
@@ -544,7 +544,7 @@ function DemoDataSection() {
               onClick={() => { toggle(ind.key); setConfirmDelete(false) }}
               className={cn(
                 'flex items-center gap-3 rounded-2xl border p-4 text-left transition-all',
-                isChecked ? 'border-primary bg-primary/10 shadow-sm' : 'border-border hover:border-border hover:bg-muted/50/50',
+                isChecked ? 'border-primary bg-primary/10 ' : 'border-border hover:border-border hover:bg-muted/50/50',
               )}
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: ind.color + '20' }}>
@@ -728,21 +728,21 @@ export function InventoryDashboardPage() {
           <p className="text-[10px] text-muted-foreground mt-1">Conteos pendientes</p>
         </div>
         {(data?.expiring_batches_count ?? 0) > 0 && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm p-5 text-center">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50  p-5 text-center">
             <Layers className="h-6 w-6 mx-auto mb-2 text-amber-500" />
             <p className="text-2xl font-extrabold text-amber-800">{data?.expiring_batches_count}</p>
             <p className="text-[10px] text-amber-500 mt-1">Lotes por vencer (30 dias)</p>
           </div>
         )}
         {(data?.production_runs_this_month ?? 0) > 0 && (
-          <div className="rounded-2xl border border-primary/30 bg-primary/10 shadow-sm p-5 text-center">
+          <div className="rounded-2xl border border-primary/30 bg-primary/10  p-5 text-center">
             <Factory className="h-6 w-6 mx-auto mb-2 text-primary" />
             <p className="text-2xl font-extrabold text-primary">{data?.production_runs_this_month}</p>
             <p className="text-[10px] text-primary mt-1">Corridas este mes</p>
           </div>
         )}
         {(data?.pending_pos ?? 0) > 0 && (
-          <div className="rounded-2xl border border-blue-200 bg-blue-50 shadow-sm p-5 text-center">
+          <div className="rounded-2xl border border-blue-200 bg-blue-50  p-5 text-center">
             <ShoppingCart className="h-6 w-6 mx-auto mb-2 text-blue-500" />
             <p className="text-2xl font-extrabold text-blue-800">{data?.pending_pos}</p>
             <p className="text-[10px] text-blue-500 mt-1">OCs pendientes</p>
@@ -827,7 +827,7 @@ export function InventoryDashboardPage() {
         {/* Alerts */}
         <Section title="Alertas de stock" icon={AlertTriangle} iconColor="bg-amber-500"
           actions={
-            <button onClick={() => setShowAlerts(!showAlerts)} className="text-muted-foreground hover:text-slate-600">
+            <button onClick={() => setShowAlerts(!showAlerts)} className="text-muted-foreground hover:text-muted-foreground">
               {showAlerts ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           }
@@ -844,7 +844,7 @@ export function InventoryDashboardPage() {
                     )}>
                     <div>
                       <p className="text-xs font-semibold text-foreground">{alert.product_name ?? alert.sku}</p>
-                      <p className="text-[11px] text-slate-600 font-medium flex items-center gap-1">
+                      <p className="text-[11px] text-muted-foreground font-medium flex items-center gap-1">
                         <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400" />
                         {alert.warehouse_name ?? 'Sin bodega'}
                       </p>

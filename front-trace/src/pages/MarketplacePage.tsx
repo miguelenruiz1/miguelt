@@ -56,7 +56,7 @@ function Toggle({
     >
       <span
         className={cn(
-          'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transform transition duration-150 ease-linear',
+          'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-card  transform transition duration-150 ease-linear',
           checked ? 'translate-x-full' : 'translate-x-0',
         )}
       />
@@ -101,16 +101,16 @@ export function MarketplacePage() {
       {/* Breadcrumb */}
       <nav className="mb-4">
         <ol className="flex items-center gap-2 text-sm">
-          <li className="text-gray-500">Inicio</li>
-          <li><ChevronRight className="h-4 w-4 text-gray-400" /></li>
+          <li className="text-muted-foreground">Inicio</li>
+          <li><ChevronRight className="h-4 w-4 text-muted-foreground" /></li>
           <li className="text-primary">Marketplace</li>
         </ol>
       </nav>
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold text-gray-800">Marketplace de Módulos</h1>
-        <p className="text-sm text-gray-500 mt-1">Activa o desactiva módulos para tu organización</p>
+        <h1 className="text-2xl font-semibold text-foreground">Marketplace de Módulos</h1>
+        <p className="text-sm text-muted-foreground mt-1">Activa o desactiva módulos para tu organización</p>
       </div>
 
       {/* Error alert */}
@@ -118,7 +118,7 @@ export function MarketplacePage() {
         <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <XCircle className="h-4 w-4 shrink-0" />
           {error ?? (fetchError as Error)?.message ?? 'No se pudieron cargar los módulos. Verifica que el servicio está corriendo.'}
-          <button onClick={() => setError(null)} className="ml-auto text-gray-400 hover:text-gray-600">
+          <button onClick={() => setError(null)} className="ml-auto text-muted-foreground hover:text-muted-foreground">
             <XCircle className="h-4 w-4" />
           </button>
         </div>
@@ -128,14 +128,14 @@ export function MarketplacePage() {
       {isLoading ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-52 rounded-2xl border border-gray-200 bg-gray-50 animate-pulse" />
+            <div key={i} className="h-52 rounded-2xl border border-border bg-muted animate-pulse" />
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {modules.map((mod) => {
             const Icon = MODULE_ICONS[mod.slug] ?? Package
-            const colors = MODULE_COLORS[mod.slug] ?? { bg: 'bg-gray-50', text: 'text-gray-600' }
+            const colors = MODULE_COLORS[mod.slug] ?? { bg: 'bg-muted', text: 'text-muted-foreground' }
             const isActive = mod.is_active
             const isToggling = toggling === mod.slug
             const requiresSlug = mod.requires as string | undefined
@@ -146,7 +146,7 @@ export function MarketplacePage() {
             return (
               <div
                 key={mod.slug}
-                className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
+                className="rounded-2xl border border-border bg-card p-5 "
               >
                 {/* Top: icon + toggle */}
                 <div className="flex items-start justify-between">
@@ -165,21 +165,21 @@ export function MarketplacePage() {
 
                 {/* Title + badge */}
                 <div className="mt-4 flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-gray-800">{mod.name}</h3>
+                  <h3 className="text-sm font-semibold text-foreground">{mod.name}</h3>
                   {isActive ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
                       <CheckCircle2 className="h-3 w-3" /> Activo
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                       Inactivo
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5 capitalize">{mod.slug}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 capitalize">{mod.slug}</p>
 
                 {/* Description */}
-                <p className="mt-2 text-sm text-gray-500 leading-relaxed">{mod.description}</p>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{mod.description}</p>
 
                 {/* Dependency warning */}
                 {requiresSlug && depMissing && !isActive && (
@@ -193,7 +193,7 @@ export function MarketplacePage() {
 
                 {/* Footer */}
                 {!canManage && (
-                  <p className="mt-3 text-xs text-gray-400 border-t border-gray-100 pt-3">
+                  <p className="mt-3 text-xs text-muted-foreground border-t border-border pt-3">
                     Contacta a un administrador para activar este módulo.
                   </p>
                 )}
@@ -207,16 +207,16 @@ export function MarketplacePage() {
       {activatedModule && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-gray-900/50" onClick={() => setActivatedModule(null)} />
-          <div className="relative w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-8 shadow-xl text-center space-y-5">
+          <div className="relative w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-xl text-center space-y-5">
             <div className="flex justify-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
                 <CheckCircle2 className="h-7 w-7 text-emerald-500" />
               </div>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-800">¡Módulo habilitado!</h2>
-              <p className="mt-2 text-sm text-gray-500 leading-relaxed">
-                <span className="font-medium text-gray-800">"{activatedModule.name}"</span> está listo.
+              <h2 className="text-lg font-semibold text-foreground">¡Módulo habilitado!</h2>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                <span className="font-medium text-foreground">"{activatedModule.name}"</span> está listo.
                 Completa el pago de tu suscripción para mantener el acceso.
               </p>
             </div>
@@ -227,14 +227,14 @@ export function MarketplacePage() {
                   setActivatedModule(null)
                   navigate(`/checkout?module=${slug}`)
                 }}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-primary"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-medium text-white  transition hover:bg-primary"
               >
                 <CreditCard className="h-4 w-4" />
                 Completar suscripción
               </button>
               <button
                 onClick={() => setActivatedModule(null)}
-                className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted"
               >
                 Hacerlo después
               </button>

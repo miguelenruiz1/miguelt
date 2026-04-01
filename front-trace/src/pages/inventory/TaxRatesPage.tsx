@@ -27,21 +27,21 @@ export function TaxRatesPage() {
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Receipt className="h-6 w-6 text-primary" /> Tarifas de Impuesto
           </h1>
-          <p className="text-sm text-slate-500 mt-1">Configura IVA, retención en la fuente y otros impuestos.</p>
+          <p className="text-sm text-muted-foreground mt-1">Configura IVA, retención en la fuente y otros impuestos.</p>
         </div>
         <div className="flex gap-2">
           {rates.length === 0 && (
             <button onClick={async () => { await initialize.mutateAsync() }}
               disabled={initialize.isPending}
-              className="flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 shadow-sm disabled:opacity-60">
+              className="flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700  disabled:opacity-60">
               <Zap className="h-4 w-4" /> {initialize.isPending ? 'Creando...' : 'Inicializar Colombia'}
             </button>
           )}
           <button onClick={() => { setEditingRate(null); setShowCreate(true) }}
-            className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm">
+            className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 ">
             <Plus className="h-4 w-4" /> Nueva tarifa
           </button>
         </div>
@@ -79,22 +79,22 @@ function TaxSection({ title, rates, onEdit }: {
 
   return (
     <div>
-      <h2 className="text-lg font-bold text-slate-800 mb-3">{title}</h2>
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <h2 className="text-lg font-bold text-foreground mb-3">{title}</h2>
+      <div className="bg-card rounded-2xl border border-border  overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 border-b border-slate-100">
+          <thead className="bg-muted border-b border-border">
             <tr>
               {['Nombre', 'Tarifa', 'Código DIAN', 'Por defecto', 'Descripción', 'Acciones'].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
             {rates.map(r => (
-              <tr key={r.id} className="hover:bg-slate-50">
-                <td className="px-4 py-3 font-semibold text-slate-900">{r.name}</td>
+              <tr key={r.id} className="hover:bg-muted">
+                <td className="px-4 py-3 font-semibold text-foreground">{r.name}</td>
                 <td className="px-4 py-3 font-mono text-primary font-bold">{formatPct(r.rate)}</td>
-                <td className="px-4 py-3 text-slate-500 font-mono text-xs">{r.dian_code ?? '—'}</td>
+                <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{r.dian_code ?? '—'}</td>
                 <td className="px-4 py-3">
                   {r.is_default && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
@@ -102,15 +102,15 @@ function TaxSection({ title, rates, onEdit }: {
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-slate-400 text-xs max-w-[200px] truncate">{r.description ?? '—'}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs max-w-[200px] truncate">{r.description ?? '—'}</td>
                 <td className="px-4 py-3 text-right">
-                  <button onClick={() => onEdit(r)} className="p-1 text-slate-400 hover:text-primary">
+                  <button onClick={() => onEdit(r)} className="p-1 text-muted-foreground hover:text-primary">
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
                   {!r.is_default && (
                     <button
                       onClick={async () => { if (confirm(`¿Desactivar tarifa "${r.name}"?`)) await deactivate.mutateAsync(r.id) }}
-                      className="p-1 text-slate-400 hover:text-red-600 ml-1">
+                      className="p-1 text-muted-foreground hover:text-red-600 ml-1">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   )}
@@ -161,37 +161,37 @@ function TaxRateModal({ rate, onClose }: { rate: TaxRate | null; onClose: () => 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
-        <h2 className="text-lg font-bold text-slate-900 mb-4">
+      <div className="w-full max-w-md bg-card rounded-3xl shadow-2xl p-6">
+        <h2 className="text-lg font-bold text-foreground mb-4">
           {isEdit ? 'Editar Tarifa' : 'Nueva Tarifa'}
         </h2>
         <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
           <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder="Nombre *" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            placeholder="Nombre *" className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <div className="grid grid-cols-2 gap-3">
             <select value={form.tax_type} onChange={e => setForm(f => ({ ...f, tax_type: e.target.value }))}
               disabled={isEdit}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60">
+              className="rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60">
               <option value="iva">IVA</option>
               <option value="retention">Retención</option>
               <option value="ica">ICA</option>
             </select>
             <input required type="number" step="0.01" min="0" max="100" value={form.rate}
               onChange={e => setForm(f => ({ ...f, rate: e.target.value }))}
-              placeholder="Tarifa % *" className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              placeholder="Tarifa % *" className="rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <input value={form.dian_code} onChange={e => setForm(f => ({ ...f, dian_code: e.target.value }))}
-            placeholder="Código DIAN (opcional)" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            placeholder="Código DIAN (opcional)" className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-            placeholder="Descripción (opcional)" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-          <label className="flex items-center gap-2 text-sm text-slate-700">
+            placeholder="Descripción (opcional)" className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+          <label className="flex items-center gap-2 text-sm text-foreground">
             <input type="checkbox" checked={form.is_default} onChange={e => setForm(f => ({ ...f, is_default: e.target.checked }))}
               className="rounded border-slate-300" />
             Tarifa por defecto (para este tipo)
           </label>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose}
-              className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+              className="flex-1 rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-muted">Cancelar</button>
             <button type="submit" disabled={pending}
               className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
               {pending ? 'Guardando...' : 'Guardar'}

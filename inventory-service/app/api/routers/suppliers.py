@@ -54,7 +54,7 @@ async def create_supplier(
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     svc = SupplierService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     data = body.model_dump()
     data["created_by"] = current_user.get("id")
     supplier = await svc.create(current_user["tenant_id"], data)
@@ -88,7 +88,7 @@ async def update_supplier(
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     svc = SupplierService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     old = await svc.get(supplier_id, current_user["tenant_id"])
     old_data = SupplierOut.model_validate(old).model_dump(mode="json")
     update_data = body.model_dump(exclude_none=True)
@@ -112,11 +112,12 @@ async def delete_supplier(
     db: AsyncSession = Depends(get_db_session),
 ) -> Response:
     svc = SupplierService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete(supplier_id, current_user["tenant_id"])
     await audit.log(
         tenant_id=current_user["tenant_id"], user=current_user,
         action="inventory.supplier.delete", resource_type="supplier",
         resource_id=supplier_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
     return Response(status_code=204)

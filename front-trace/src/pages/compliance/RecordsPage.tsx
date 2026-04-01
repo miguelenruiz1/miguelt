@@ -34,7 +34,7 @@ function ComplianceStatusBadge({ status }: { status: string }) {
   return (
     <span className={cn(
       'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border',
-      STATUS_COLORS[status] ?? 'bg-slate-50 text-slate-600 border-slate-200',
+      STATUS_COLORS[status] ?? 'bg-muted text-muted-foreground border-border',
     )}>
       {STATUS_LABELS[status] ?? status}
     </span>
@@ -48,7 +48,7 @@ const COMMODITY_COLORS: Record<string, string> = {
   cocoa: 'bg-yellow-100 text-yellow-800',
   palm_oil: 'bg-orange-100 text-orange-800',
   soy: 'bg-lime-100 text-lime-800',
-  rubber: 'bg-slate-100 text-slate-700',
+  rubber: 'bg-secondary text-foreground',
   cattle: 'bg-rose-100 text-rose-800',
   wood: 'bg-emerald-100 text-emerald-800',
 }
@@ -116,14 +116,14 @@ function CreateRecordModal({ onClose, onCreated, lockedAssetId }: { onClose: () 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="text-base font-bold text-slate-900">Nuevo Registro de Cumplimiento</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X className="h-5 w-5" /></button>
+      <div className="bg-card rounded-2xl shadow-xl w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h2 className="text-base font-bold text-foreground">Nuevo Registro de Cumplimiento</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-muted-foreground"><X className="h-5 w-5" /></button>
         </div>
         <form onSubmit={submit} className="px-6 py-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Carga *</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Carga *</label>
             {lockedAssetId ? (
               <>
                 <div className="w-full rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
@@ -137,7 +137,7 @@ function CreateRecordModal({ onClose, onCreated, lockedAssetId }: { onClose: () 
               <>
                 <select required value={form.asset_id}
                   onChange={e => setForm(f => ({ ...f, asset_id: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                   <option value="">Seleccionar carga...</option>
                   {assets.map(a => (
                     <option key={a.id} value={a.id}>
@@ -153,10 +153,10 @@ function CreateRecordModal({ onClose, onCreated, lockedAssetId }: { onClose: () 
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Framework *</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Framework *</label>
             <select required value={form.framework_slug}
               onChange={e => setForm(f => ({ ...f, framework_slug: e.target.value, commodity_type: '' }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               <option value="">Seleccionar framework</option>
               {activeFrameworks.map(fw => (
                 <option key={fw.slug} value={fw.slug}>
@@ -168,10 +168,10 @@ function CreateRecordModal({ onClose, onCreated, lockedAssetId }: { onClose: () 
 
           {selectedFramework && selectedFramework.commodities.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Commodity</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Commodity</label>
               <select value={form.commodity_type}
                 onChange={e => setForm(f => ({ ...f, commodity_type: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Seleccionar commodity</option>
                 {selectedFramework.commodities.map(c => (
                   <option key={c} value={c}>{COMMODITY_LABELS[c] ?? c}</option>
@@ -182,23 +182,23 @@ function CreateRecordModal({ onClose, onCreated, lockedAssetId }: { onClose: () 
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Cantidad (kg)</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Cantidad (kg)</label>
               <input type="number" step="0.01" min="0" value={form.quantity_kg}
                 onChange={e => setForm(f => ({ ...f, quantity_kg: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Pais de produccion</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Pais de produccion</label>
               <input value={form.country_of_production}
                 onChange={e => setForm(f => ({ ...f, country_of_production: e.target.value }))}
                 placeholder="CO"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
+              className="rounded-lg px-4 py-2 text-sm text-muted-foreground hover:bg-secondary transition-colors">Cancelar</button>
             <button type="submit" disabled={create.isPending}
               className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50 transition-colors">
               {create.isPending ? 'Creando...' : 'Crear registro'}
@@ -246,20 +246,20 @@ export default function RecordsPage() {
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-1.5 text-xs text-slate-400">
-        <Link to="/cumplimiento/activaciones" className="hover:text-slate-600 transition-colors">Cumplimiento</Link>
+      <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Link to="/cumplimiento/activaciones" className="hover:text-muted-foreground transition-colors">Cumplimiento</Link>
         <ChevronRight className="h-3 w-3" />
-        <span className="text-slate-700 font-medium">Registros</span>
+        <span className="text-foreground font-medium">Registros</span>
       </nav>
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Registros de Cumplimiento</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Gestiona los registros de due diligence por carga</p>
+          <h1 className="text-xl font-bold text-foreground">Registros de Cumplimiento</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Gestiona los registros de due diligence por carga</p>
         </div>
         <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 shadow-sm transition-colors">
+          className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90  transition-colors">
           <Plus className="h-4 w-4" /> Nuevo Registro
         </button>
       </div>
@@ -268,7 +268,7 @@ export default function RecordsPage() {
       <div className="flex flex-wrap items-center gap-3">
         <select value={frameworkSlug}
           onChange={e => setFrameworkSlug(e.target.value)}
-          className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+          className="rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Todos los frameworks</option>
           {frameworks.map(fw => (
             <option key={fw.slug} value={fw.slug}>
@@ -279,7 +279,7 @@ export default function RecordsPage() {
 
         <select value={status}
           onChange={e => setStatus(e.target.value)}
-          className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+          className="rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Todos los estados</option>
           {Object.entries(STATUS_LABELS).map(([k, v]) => (
             <option key={k} value={k}>{v}</option>
@@ -288,7 +288,7 @@ export default function RecordsPage() {
 
         <select value={commodity}
           onChange={e => setCommodity(e.target.value)}
-          className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+          className="rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Todas las commodities</option>
           {Object.entries(COMMODITY_LABELS).map(([k, v]) => (
             <option key={k} value={k}>{v}</option>
@@ -297,7 +297,7 @@ export default function RecordsPage() {
 
         {(frameworkSlug || status || commodity) && (
           <button onClick={() => { setFrameworkSlug(''); setStatus(''); setCommodity('') }}
-            className="text-xs text-slate-500 hover:text-slate-700 underline">
+            className="text-xs text-muted-foreground hover:text-foreground underline">
             Limpiar filtros
           </button>
         )}
@@ -305,37 +305,37 @@ export default function RecordsPage() {
 
       {/* Table */}
       {isLoading ? (
-        <div className="text-sm text-slate-400 py-12 text-center">Cargando...</div>
+        <div className="text-sm text-muted-foreground py-12 text-center">Cargando...</div>
       ) : records.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-slate-200 p-14 text-center">
+        <div className="rounded-2xl border-2 border-dashed border-border p-14 text-center">
           <FileText className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-          <p className="text-sm font-medium text-slate-600 mb-1">Sin registros</p>
-          <p className="text-xs text-slate-400 mb-5">Crea un registro de cumplimiento para una carga.</p>
+          <p className="text-sm font-medium text-muted-foreground mb-1">Sin registros</p>
+          <p className="text-xs text-muted-foreground mb-5">Crea un registro de cumplimiento para una carga.</p>
           <button onClick={() => setShowCreate(true)}
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90">
             <Plus className="h-3.5 w-3.5" /> Nuevo Registro
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border  overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-100">
+            <thead className="bg-muted border-b border-border">
               <tr>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Asset ID</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Framework</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Commodity</th>
-                <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Cantidad kg</th>
-                <th className="px-5 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">Estado</th>
-                <th className="px-5 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">Parcelas</th>
-                <th className="px-5 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">Certificado</th>
-                <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Acciones</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Asset ID</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Framework</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Commodity</th>
+                <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cantidad kg</th>
+                <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wide">Estado</th>
+                <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wide">Parcelas</th>
+                <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wide">Certificado</th>
+                <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {records.map(r => {
                 const fw = frameworks.find(f => f.slug === r.framework_slug)
                 return (
-                  <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={r.id} className="hover:bg-muted/50 transition-colors">
                     <td className="px-5 py-3">
                       <Link to={`/assets/${r.asset_id}`}
                         className="font-mono text-xs text-primary hover:underline" title={r.asset_id}>
@@ -352,7 +352,7 @@ export default function RecordsPage() {
                       {r.commodity_type ? (
                         <span className={cn(
                           'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium',
-                          COMMODITY_COLORS[r.commodity_type] ?? 'bg-slate-100 text-slate-600',
+                          COMMODITY_COLORS[r.commodity_type] ?? 'bg-secondary text-muted-foreground',
                         )}>
                           {COMMODITY_LABELS[r.commodity_type] ?? r.commodity_type}
                         </span>
@@ -360,13 +360,13 @@ export default function RecordsPage() {
                         <span className="text-slate-300">--</span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-right tabular-nums text-slate-700">
+                    <td className="px-5 py-3 text-right tabular-nums text-foreground">
                       {r.quantity_kg != null ? Number(r.quantity_kg).toLocaleString('es-CO') : '--'}
                     </td>
                     <td className="px-5 py-3 text-center">
                       <ComplianceStatusBadge status={r.compliance_status} />
                     </td>
-                    <td className="px-5 py-3 text-center text-xs text-slate-500">
+                    <td className="px-5 py-3 text-center text-xs text-muted-foreground">
                       {(r.missing_fields ?? []).length === 0 ? '--' : '--'}
                     </td>
                     <td className="px-5 py-3 text-center">

@@ -71,7 +71,7 @@ async def create_product(
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     svc = ProductService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     data = body.model_dump()
     data["created_by"] = current_user.get("id")
     product = await svc.create(current_user["tenant_id"], data)
@@ -106,7 +106,7 @@ async def update_product(
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     svc = ProductService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     old = await svc.get(product_id, current_user["tenant_id"])
     old_data = ProductOut.model_validate(old).model_dump(mode="json")
     update_data = body.model_dump(exclude_none=True)
@@ -131,13 +131,14 @@ async def delete_product(
     db: AsyncSession = Depends(get_db_session),
 ) -> Response:
     svc = ProductService(db)
-    audit = InventoryAuditService(db)
+    audit = InventoryAuditService(svc.db)
     await svc.delete(product_id, current_user["tenant_id"])
     await audit.log(
         tenant_id=current_user["tenant_id"], user=current_user,
         action="inventory.product.delete", resource_type="product",
         resource_id=product_id, ip_address=_ip(request),
     )
+    await svc.db.commit()
     return Response(status_code=204)
 
 
@@ -414,7 +415,7 @@ async def fix_zero_costs(
 
     # Audit
     if fixed:
-        audit = InventoryAuditService(db)
+        audit = InventoryAuditService(svc.db)
         await audit.log(
             tenant_id=tenant_id,
             user=current_user,

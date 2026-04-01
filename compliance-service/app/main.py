@@ -65,7 +65,7 @@ def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
 
-    app = FastAPI(
+    app = FastAPI(redirect_slashes=False, 
         title="Trace — Compliance Service",
         description="Regulatory compliance: EUDR, frameworks, plots, records and validation.",
         version=settings.APP_VERSION,

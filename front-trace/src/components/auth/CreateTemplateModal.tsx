@@ -80,18 +80,18 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl flex flex-col max-h-[85vh]">
+      <div className="w-full max-w-2xl rounded-2xl bg-card shadow-2xl flex flex-col max-h-[85vh]">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4 shrink-0">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Crear plantilla de rol</h2>
-            <p className="text-sm text-slate-500">
+            <h2 className="text-lg font-bold text-foreground">Crear plantilla de rol</h2>
+            <p className="text-sm text-muted-foreground">
               Define un perfil reutilizable con permisos preconfigurados
             </p>
           </div>
           <button
             onClick={() => { reset(); onClose() }}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-muted-foreground"
           >
             <X className="h-5 w-5" />
           </button>
@@ -102,7 +102,7 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
           {/* Basic info */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Nombre</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre</label>
               <input
                 value={name}
                 onChange={(e) => {
@@ -110,33 +110,33 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
                   setSlug(e.target.value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''))
                 }}
                 placeholder="Ej: Jefe de bodega"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Slug</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Slug</label>
               <input
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
                 placeholder="jefe_bodega"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-medium text-slate-600 mb-1 block">Descripción</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Descripción</label>
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Breve descripción del perfil..."
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
           {/* Icon picker */}
           <div>
-            <label className="text-xs font-medium text-slate-600 mb-1 block">Icono</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Icono</label>
             <div className="flex flex-wrap gap-1.5">
               {ICON_OPTIONS.map((key) => {
                 const Ic = ICON_MAP[key]
@@ -147,7 +147,7 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
                     className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-all ${
                       icon === key
                         ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-slate-200 text-slate-400 hover:border-slate-300'
+                        : 'border-border text-muted-foreground hover:border-slate-300'
                     }`}
                     title={key}
                   >
@@ -160,17 +160,17 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
 
           {/* Permission picker */}
           <div>
-            <label className="text-xs font-medium text-slate-600 mb-2 block">
+            <label className="text-xs font-medium text-muted-foreground mb-2 block">
               Permisos ({selected.size} seleccionados)
             </label>
-            <div className="rounded-xl border border-slate-200 divide-y divide-slate-100 max-h-[40vh] overflow-y-auto">
+            <div className="rounded-xl border border-border divide-y divide-slate-100 max-h-[40vh] overflow-y-auto">
               {Object.entries(modules).map(([module, perms]) => {
                 const allChecked = perms.every((p) => selected.has(p.slug))
                 const someChecked = perms.some((p) => selected.has(p.slug))
                 return (
                   <Fragment key={module}>
                     <div
-                      className="flex items-center gap-2 px-3 py-2 bg-slate-50 cursor-pointer hover:bg-slate-100"
+                      className="flex items-center gap-2 px-3 py-2 bg-muted cursor-pointer hover:bg-secondary"
                       onClick={() => toggleModule(perms)}
                     >
                       <input
@@ -180,12 +180,12 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
                         onChange={() => toggleModule(perms)}
                         className="h-3.5 w-3.5 rounded border-slate-300 text-primary"
                       />
-                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{module}</span>
+                      <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{module}</span>
                     </div>
                     {perms.map((p) => (
                       <label
                         key={p.slug}
-                        className="flex items-center gap-2 px-3 py-1.5 pl-7 cursor-pointer hover:bg-slate-50"
+                        className="flex items-center gap-2 px-3 py-1.5 pl-7 cursor-pointer hover:bg-muted"
                       >
                         <input
                           type="checkbox"
@@ -193,8 +193,8 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
                           onChange={() => toggle(p.slug)}
                           className="h-3.5 w-3.5 rounded border-slate-300 text-primary"
                         />
-                        <span className="text-xs text-slate-700">{p.name}</span>
-                        <span className="text-[10px] text-slate-400 font-mono ml-auto">{p.slug}</span>
+                        <span className="text-xs text-foreground">{p.name}</span>
+                        <span className="text-[10px] text-muted-foreground font-mono ml-auto">{p.slug}</span>
                       </label>
                     ))}
                   </Fragment>
@@ -205,10 +205,10 @@ export function CreateTemplateModal({ open, onClose }: { open: boolean; onClose:
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-100 px-6 py-4 flex items-center justify-end gap-3 shrink-0">
+        <div className="border-t border-border px-6 py-4 flex items-center justify-end gap-3 shrink-0">
           <button
             onClick={() => { reset(); onClose() }}
-            className="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+            className="rounded-lg px-4 py-2 text-sm text-muted-foreground hover:bg-secondary"
           >
             Cancelar
           </button>

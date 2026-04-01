@@ -46,5 +46,5 @@ class WarehouseTypeRepository:
         return obj
 
     async def delete(self, obj: DynamicWarehouseType) -> None:
-        self.db.delete(obj)
+        await self.db.delete(obj)
         await self.db.flush()
