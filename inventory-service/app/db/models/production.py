@@ -31,7 +31,7 @@ class EntityRecipe(Base):
     output_entity_id: Mapped[str]        = mapped_column(
         String(36), ForeignKey("entities.id", ondelete="RESTRICT"), nullable=False
     )
-    output_quantity:  Mapped[Decimal]    = mapped_column(Numeric(12, 4), nullable=False, server_default="1")
+    output_quantity:  Mapped[Decimal]    = mapped_column(Numeric(18, 4), nullable=False, server_default="1")
     description:      Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active:        Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="true")
 
@@ -76,7 +76,7 @@ class RecipeComponent(Base):
     component_entity_id:  Mapped[str]        = mapped_column(
         String(36), ForeignKey("entities.id", ondelete="RESTRICT"), nullable=False
     )
-    quantity_required:    Mapped[Decimal]    = mapped_column(Numeric(12, 4), nullable=False)
+    quantity_required:    Mapped[Decimal]    = mapped_column(Numeric(18, 4), nullable=False)
     notes:                Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # v2 fields
@@ -106,7 +106,7 @@ class ProductionRun(Base):
     output_warehouse_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=True
     )
-    multiplier:   Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False, server_default="1")
+    multiplier:   Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False, server_default="1")
     status:       Mapped[str]            = mapped_column(String(20), nullable=False, server_default="planned")
 
     # v2: order type and priority
@@ -124,7 +124,7 @@ class ProductionRun(Base):
     completed_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # v2: actual output and costs
-    actual_output_quantity: Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True)
+    actual_output_quantity: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
     total_component_cost:   Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
     total_production_cost:  Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
     unit_production_cost:   Mapped[Decimal | None] = mapped_column(Numeric(14, 6), nullable=True)
@@ -204,9 +204,9 @@ class ProductionEmissionLine(Base):
     component_entity_id: Mapped[str]            = mapped_column(
         String(36), ForeignKey("entities.id", ondelete="RESTRICT"), nullable=False
     )
-    planned_quantity:    Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False)
-    actual_quantity:     Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False)
-    unit_cost:           Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
+    planned_quantity:    Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False)
+    actual_quantity:     Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False)
+    unit_cost:           Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False, server_default="0")
     total_cost:          Mapped[Decimal]        = mapped_column(Numeric(14, 2), nullable=False, server_default="0")
     batch_id:            Mapped[str | None]     = mapped_column(
         String(36), ForeignKey("entity_batches.id", ondelete="SET NULL"), nullable=True
@@ -214,7 +214,7 @@ class ProductionEmissionLine(Base):
     warehouse_id:        Mapped[str | None]     = mapped_column(
         String(36), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=True
     )
-    variance_quantity:   Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
+    variance_quantity:   Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False, server_default="0")
 
     emission:         Mapped[ProductionEmission] = relationship("ProductionEmission", back_populates="lines")
     component_entity: Mapped[Product]           = relationship("Product")
@@ -267,8 +267,8 @@ class ProductionReceiptLine(Base):
     entity_id:         Mapped[str]            = mapped_column(
         String(36), ForeignKey("entities.id", ondelete="RESTRICT"), nullable=False
     )
-    planned_quantity:  Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False)
-    received_quantity: Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False)
+    planned_quantity:  Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False)
+    received_quantity: Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False)
     unit_cost:         Mapped[Decimal]        = mapped_column(Numeric(14, 6), nullable=False, server_default="0")
     total_cost:        Mapped[Decimal]        = mapped_column(Numeric(14, 2), nullable=False, server_default="0")
     batch_id:          Mapped[str | None]     = mapped_column(
@@ -294,8 +294,8 @@ class ProductionResource(Base):
     tenant_id:               Mapped[str]            = mapped_column(String(255), nullable=False)
     name:                    Mapped[str]            = mapped_column(String(255), nullable=False)
     resource_type:           Mapped[str]            = mapped_column(String(20), nullable=False, server_default="labor")
-    cost_per_hour:           Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
-    cost_per_unit:           Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
+    cost_per_hour:           Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False, server_default="0")
+    cost_per_unit:           Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False, server_default="0")
     capacity_hours_per_day:  Mapped[Decimal]        = mapped_column(Numeric(6, 2), nullable=False, server_default="8")
     efficiency_pct:          Mapped[Decimal]        = mapped_column(Numeric(5, 2), nullable=False, server_default="100")
     shifts_per_day:          Mapped[int]            = mapped_column(Integer, nullable=False, server_default="1")
@@ -342,7 +342,7 @@ class ProductionRunResourceCost(Base):
     resource_id:        Mapped[str]            = mapped_column(String(36), ForeignKey("production_resources.id", ondelete="RESTRICT"), nullable=False)
     planned_hours:      Mapped[Decimal]        = mapped_column(Numeric(8, 4), nullable=False)
     actual_hours:       Mapped[Decimal | None] = mapped_column(Numeric(8, 4), nullable=True)
-    cost_per_hour:      Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False)
+    cost_per_hour:      Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False)
     total_cost:         Mapped[Decimal]        = mapped_column(Numeric(14, 2), nullable=False)
     created_at:         Mapped[DateTime]       = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -371,9 +371,9 @@ class StockLayer(Base):
     movement_id:        Mapped[str | None]     = mapped_column(
         String(36), ForeignKey("stock_movements.id", ondelete="SET NULL"), nullable=True
     )
-    quantity_initial:   Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False)
-    quantity_remaining: Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False)
-    unit_cost:          Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False)
+    quantity_initial:   Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False)
+    quantity_remaining: Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False)
+    unit_cost:          Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False)
     batch_id:           Mapped[str | None]     = mapped_column(
         String(36), ForeignKey("entity_batches.id", ondelete="SET NULL"), nullable=True
     )

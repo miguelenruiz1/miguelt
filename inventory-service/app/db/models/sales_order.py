@@ -148,14 +148,14 @@ class SalesOrderLine(Base):
     warehouse_id:  Mapped[str | None] = mapped_column(
         String(36), ForeignKey("warehouses.id", ondelete="SET NULL"), nullable=True
     )
-    qty_ordered:       Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False)
-    qty_shipped:       Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
-    original_quantity: Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True)
-    unit_price:        Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False)
-    original_unit_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True)
+    qty_ordered:       Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False)
+    qty_shipped:       Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False, server_default="0")
+    original_quantity: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
+    unit_price:        Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False)
+    original_unit_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
     discount_pct:      Mapped[Decimal]        = mapped_column(Numeric(5, 2), nullable=False, server_default="0")
-    discount_amount:   Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
-    line_subtotal:     Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
+    discount_amount:   Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False, server_default="0")
+    line_subtotal:     Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False, server_default="0")
     tax_rate:          Mapped[Decimal]        = mapped_column(Numeric(5, 2), nullable=False, server_default="0")
     tax_rate_id:       Mapped[str | None]     = mapped_column(
         String(36), ForeignKey("tax_rates.id", ondelete="SET NULL"), nullable=True

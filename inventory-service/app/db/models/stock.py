@@ -45,13 +45,13 @@ class StockLevel(Base):
     variant_id:    Mapped[str | None] = mapped_column(
         String(36), ForeignKey("product_variants.id", ondelete="SET NULL"), nullable=True
     )
-    qty_on_hand:   Mapped[Decimal] = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
-    qty_reserved:  Mapped[Decimal] = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
-    qty_in_transit: Mapped[Decimal] = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
+    qty_on_hand:   Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False, server_default="0")
+    qty_reserved:  Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False, server_default="0")
+    qty_in_transit: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False, server_default="0")
     reorder_point: Mapped[int]     = mapped_column(Integer, nullable=False, server_default="0")
     max_stock:         Mapped[int]     = mapped_column(Integer, nullable=False, server_default="-1")
     qc_status:         Mapped[str]     = mapped_column(String(20), nullable=False, server_default="approved")
-    weighted_avg_cost: Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True)
+    weighted_avg_cost: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
     last_count_at:     Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at:    Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -96,10 +96,10 @@ class StockMovement(Base):
     to_warehouse_id:   Mapped[str | None]     = mapped_column(
         String(36), ForeignKey("warehouses.id", ondelete="SET NULL"), nullable=True
     )
-    quantity:          Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False)
-    original_qty:      Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True)
+    quantity:          Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False)
+    original_qty:      Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
     uom:               Mapped[str]            = mapped_column(String(20), nullable=False, server_default="primary")
-    unit_cost:         Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True)
+    unit_cost:         Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
     reference:         Mapped[str | None]     = mapped_column(String(255), nullable=True)
     notes:             Mapped[str | None]     = mapped_column(Text, nullable=True)
     variant_id:        Mapped[str | None]     = mapped_column(
@@ -162,7 +162,7 @@ class StockReservation(Base):
     warehouse_id:         Mapped[str]            = mapped_column(
         String(36), ForeignKey("warehouses.id", ondelete="CASCADE"), nullable=False
     )
-    quantity:             Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False)
+    quantity:             Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False)
     status:               Mapped[str]            = mapped_column(String(20), nullable=False, server_default="active")
     reserved_at:          Mapped[DateTime]       = mapped_column(DateTime(timezone=True), server_default=func.now())
     released_at:          Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
