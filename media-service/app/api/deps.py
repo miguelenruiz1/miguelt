@@ -11,7 +11,7 @@ from app.core.settings import get_settings
 async def get_tenant_id(
     x_tenant_id: str = Header(..., alias="X-Tenant-Id"),
 ) -> uuid.UUID:
-    """Resolve X-Tenant-Id header to UUID. Accepts UUID or slug 'default'."""
+    """Resolve X-Tenant-Id header to UUID. Accepts UUID or any tenant slug."""
     if not x_tenant_id or len(x_tenant_id) > 255:
         raise HTTPException(status_code=400, detail="Invalid X-Tenant-Id")
     try:
@@ -21,7 +21,8 @@ async def get_tenant_id(
     # For slug 'default', return the well-known UUID
     if x_tenant_id == "default":
         return uuid.UUID("00000000-0000-0000-0000-000000000001")
-    raise HTTPException(status_code=400, detail=f"Cannot resolve tenant slug: {x_tenant_id}")
+    # For any other slug, generate a deterministic UUID from the slug
+    return uuid.uuid5(uuid.NAMESPACE_DNS, x_tenant_id)
 
 
 async def verify_service_token(

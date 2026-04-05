@@ -243,7 +243,7 @@ export const inventoryStockApi = {
     request<StockMovement>('/api/v1/stock/receive', { method: 'POST', body: JSON.stringify(data) }),
   issue: (data: { product_id: string; warehouse_id: string; quantity: string; reference?: string; variant_id?: string }) =>
     request<StockMovement>('/api/v1/stock/issue', { method: 'POST', body: JSON.stringify(data) }),
-  transfer: (data: { product_id: string; from_warehouse_id: string; to_warehouse_id: string; quantity: string; variant_id?: string }) =>
+  transfer: (data: { product_id: string; from_warehouse_id: string; to_warehouse_id: string; quantity: string; variant_id?: string; from_location_id?: string; to_location_id?: string }) =>
     request<StockMovement>('/api/v1/stock/transfer', { method: 'POST', body: JSON.stringify(data) }),
   adjust: (data: { product_id: string; warehouse_id: string; new_qty: string; reason?: string; variant_id?: string }) =>
     request<StockMovement>('/api/v1/stock/adjust', { method: 'POST', body: JSON.stringify(data) }),
@@ -259,7 +259,7 @@ export const inventoryStockApi = {
     request<StockLevel>('/api/v1/stock/qc-approve', { method: 'POST', body: JSON.stringify(data) }),
   qcReject: (data: { product_id: string; warehouse_id: string; batch_id?: string; variant_id?: string; notes?: string }) =>
     request<StockLevel>('/api/v1/stock/qc-reject', { method: 'POST', body: JSON.stringify(data) }),
-  initiateTransfer: (data: { product_id: string; from_warehouse_id: string; to_warehouse_id: string; quantity: number; variant_id?: string; notes?: string }) =>
+  initiateTransfer: (data: { product_id: string; from_warehouse_id: string; to_warehouse_id: string; quantity: number; variant_id?: string; notes?: string; from_location_id?: string; to_location_id?: string }) =>
     request<StockMovement>('/api/v1/stock/transfer/initiate', { method: 'POST', body: JSON.stringify(data) }),
   completeTransfer: (movementId: string) =>
     request<StockMovement>(`/api/v1/stock/transfer/${movementId}/complete`, { method: 'POST' }),
@@ -323,7 +323,7 @@ export const inventoryPOApi = {
   cancel: (id: string) =>
     request<PurchaseOrder>(`/api/v1/purchase-orders/${id}/cancel`, { method: 'POST' }),
   receive: (id: string, data: {
-    lines: Array<{ line_id: string; qty_received: string }>;
+    lines: Array<{ line_id: string; qty_received: string; batch_number?: string; manufacture_date?: string; expiration_date?: string }>;
     supplier_invoice_number?: string | null;
     supplier_invoice_date?: string | null;
     supplier_invoice_total?: number | null;

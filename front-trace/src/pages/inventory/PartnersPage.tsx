@@ -264,7 +264,7 @@ export function PartnersPage() {
                 <div><label className="text-xs text-muted-foreground">Tipo</label>
                   <select value={form.supplier_type_id} onChange={e => setForm(f => ({...f, supplier_type_id: e.target.value}))} className={inputCls}>
                     <option value="">Sin tipo</option>
-                    {(supplierTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    {(Array.isArray(supplierTypes) ? supplierTypes : (supplierTypes as any)?.items ?? []).map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
                 <div><label className="text-xs text-muted-foreground">Lead time (dias)</label><input type="number" value={form.lead_time_days} onChange={e => setForm(f => ({...f, lead_time_days: e.target.value}))} className={inputCls} /></div>
@@ -276,7 +276,7 @@ export function PartnersPage() {
                 <div><label className="text-xs text-muted-foreground">Tipo</label>
                   <select value={form.customer_type_id} onChange={e => setForm(f => ({...f, customer_type_id: e.target.value}))} className={inputCls}>
                     <option value="">Sin tipo</option>
-                    {(customerTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    {(Array.isArray(customerTypes) ? customerTypes : (customerTypes as any)?.items ?? []).map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
                 <div><label className="text-xs text-muted-foreground">Limite credito</label><input type="number" value={form.credit_limit} onChange={e => setForm(f => ({...f, credit_limit: e.target.value}))} className={inputCls} /></div>

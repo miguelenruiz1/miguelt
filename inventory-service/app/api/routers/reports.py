@@ -5,7 +5,7 @@ from datetime import date
 from typing import Annotated
 
 import redis.asyncio as aioredis
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -189,6 +189,7 @@ async def download_pnl_pdf(
 
 @router.get("/pnl/analysis")
 async def get_pnl_ai_analysis(
+    request: Request,
     current_user: ModuleUser,
     _: Annotated[dict, Depends(require_permission("reports.view"))],
     date_from: date | None = None,
@@ -244,7 +245,8 @@ async def get_pnl_ai_analysis(
         "proveedores_activos": suppliers,
     }
 
-    # 3. Call ai-service
+    # 3. Call ai-service (forward user's Bearer token)
+    auth_header = request.headers.get("authorization", "")
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
@@ -257,6 +259,7 @@ async def get_pnl_ai_analysis(
                     "pnl_data": pnl,
                     "business_context": biz_context,
                 },
+                headers={"Authorization": auth_header} if auth_header else {},
             )
         if resp.status_code == 200:
             return resp.json()

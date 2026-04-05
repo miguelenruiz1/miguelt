@@ -1154,6 +1154,7 @@ export function SalesOrderDetailPage() {
                 <td className="px-6 py-3">
                   <span className="text-sm font-medium text-foreground">{l.product_name ?? l.product_id.slice(0, 8)}</span>
                   {l.product_sku && <span className="ml-2 text-xs text-muted-foreground">{l.product_sku}</span>}
+                  {l.variant_name && <span className="block text-xs text-primary/80 mt-0.5">{l.variant_name}</span>}
                 </td>
                 <td className="px-6 py-3">
                   {isDraftOrConfirmed ? (

@@ -106,6 +106,9 @@ class LineReceiptIn(BaseModel):
     line_id: str
     qty_received: Decimal = Field(..., gt=0)
     uom: str = "primary"
+    batch_number: str | None = None
+    manufacture_date: date | None = None
+    expiration_date: date | None = None
 
 
 class ReceivePOIn(BaseModel):

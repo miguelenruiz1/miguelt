@@ -47,14 +47,14 @@
     --chart-4: #6ee7b7;
     --chart-5: #a7f3d0;
 
-    /* Sidebar — dark premium (contrasts with white app background) */
-    --sidebar: #080B0F;
-    --sidebar-foreground: #6B7A8D;
+    /* Sidebar — dark premium (readable in daylight, contrasts with white app) */
+    --sidebar: #1A1F27;
+    --sidebar-foreground: #94A3B8;
     --sidebar-primary: #00E87A;
     --sidebar-primary-foreground: #000000;
-    --sidebar-accent: #0E1318;
+    --sidebar-accent: #252B35;
     --sidebar-accent-foreground: #F0F4F8;
-    --sidebar-border: rgba(255,255,255,0.06);
+    --sidebar-border: rgba(255,255,255,0.08);
     --sidebar-ring: #00C264;
   }
 

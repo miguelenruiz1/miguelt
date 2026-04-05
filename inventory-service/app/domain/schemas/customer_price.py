@@ -62,6 +62,9 @@ class CustomerPriceOut(OrmBase):
     customer_name: str | None = None
     product_name: str | None = None
     product_sku: str | None = None
+    variant_name: str | None = None
+    variant_sku: str | None = None
+    base_price: float | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -76,6 +79,21 @@ class CustomerPriceOut(OrmBase):
                 data.product_name = product.name
             if not getattr(data, "product_sku", None):
                 data.product_sku = product.sku
+        variant = _loaded_rel(data, "variant")
+        if variant is not None:
+            if not getattr(data, "variant_name", None):
+                data.variant_name = getattr(variant, "name", None) or getattr(variant, "sku", None)
+            if not getattr(data, "variant_sku", None):
+                data.variant_sku = getattr(variant, "sku", None)
+            # Use variant sale_price as base price when available
+            variant_sale = getattr(variant, "sale_price", None)
+            if variant_sale and float(variant_sale) > 0:
+                data.base_price = float(variant_sale)
+        # Fallback: product suggested_sale_price as base price
+        if not getattr(data, "base_price", None) and product is not None:
+            suggested = getattr(product, "suggested_sale_price", None)
+            if suggested and float(suggested) > 0:
+                data.base_price = float(suggested)
         return data
 
 

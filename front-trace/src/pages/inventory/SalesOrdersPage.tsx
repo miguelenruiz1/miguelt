@@ -35,9 +35,11 @@ function PriceSemaphore({ productId, unitPrice }: { productId: string; unitPrice
   let color = 'bg-green-50 text-green-700 border-green-200'
   let icon = '🟢'
   let msg = `Margen ${margin.toFixed(1)}% — Por encima del objetivo`
-  if (unitPrice < minimum && minimum > 0) {
+  if (margin < 0 || (unitPrice < minimum && minimum > 0)) {
     color = 'bg-red-50 text-red-700 border-red-200'; icon = '🔴'
-    msg = `Margen ${margin.toFixed(1)}% — Por debajo del mínimo. Requiere autorización.`
+    msg = margin < 0
+      ? `Margen ${margin.toFixed(1)}% — Vendiendo por debajo del costo`
+      : `Margen ${margin.toFixed(1)}% — Por debajo del mínimo. Requiere autorización.`
   } else if (unitPrice < suggested && suggested > 0) {
     color = 'bg-orange-50 text-orange-700 border-orange-200'; icon = '🟡'
     msg = `Margen ${margin.toFixed(1)}% — Por debajo del objetivo (mín: $${minimum.toLocaleString('es-CO')})`

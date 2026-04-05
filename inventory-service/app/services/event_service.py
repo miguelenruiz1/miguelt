@@ -56,6 +56,7 @@ class EventService:
 
         # Log initial status
         await self.repo.create_status_log({
+            "tenant_id": tenant_id,
             "event_id": event.id,
             "from_status_id": None,
             "to_status_id": data["status_id"],
@@ -93,6 +94,7 @@ class EventService:
                             movement_id = mov.id
 
                 await self.repo.create_impact({
+                    "tenant_id": tenant_id,
                     "event_id": event.id,
                     "entity_id": imp["entity_id"],
                     "quantity_impact": imp.get("quantity_impact", 0),
@@ -118,6 +120,7 @@ class EventService:
 
         # Create status log entry
         await self.repo.create_status_log({
+            "tenant_id": tenant_id,
             "event_id": event_id,
             "from_status_id": from_status_id,
             "to_status_id": status_id,
@@ -135,6 +138,7 @@ class EventService:
         if not event:
             raise NotFoundError("Evento no encontrado")
         return await self.repo.create_impact({
+            "tenant_id": tenant_id,
             "event_id": event_id,
             **impact_data,
         })

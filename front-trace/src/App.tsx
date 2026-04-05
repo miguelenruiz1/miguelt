@@ -117,12 +117,17 @@ import { PlanLimitModal } from '@/components/PlanLimitModal'
 import { LandingPage } from '@/pages/LandingPage'
 import { useAuthStore } from '@/store/auth'
 import { EudrLandingPage } from '@/pages/EudrLandingPage'
+import { CmsPublicPage } from '@/pages/CmsPublicPage'
+import { PlatformCmsPage } from '@/pages/platform/PlatformCmsPage'
+import { PlatformCmsEditorPage } from '@/pages/platform/PlatformCmsEditorPage'
 
 // Show landing if not logged in, dashboard if logged in
 const router = createBrowserRouter([
   // ─── Landing (public) ───────────────────────────────────────────────────────
   { path: '/home',               element: <LandingPage /> },
   { path: '/eudr',               element: <EudrLandingPage /> },
+  { path: '/landing',            element: <LandingPage /> },
+  { path: '/p/:slug',            element: <CmsPublicPage /> },
 
   // ─── Public routes (no layout) ──────────────────────────────────────────────
   { path: '/login',              element: <LoginPage /> },
@@ -377,6 +382,22 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute superuserOnly>
             <SettingsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'platform/cms',
+        element: (
+          <ProtectedRoute superuserOnly>
+            <PlatformCmsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'platform/cms/:pageId',
+        element: (
+          <ProtectedRoute superuserOnly>
+            <PlatformCmsEditorPage />
           </ProtectedRoute>
         ),
       },
