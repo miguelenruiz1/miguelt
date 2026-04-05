@@ -170,7 +170,7 @@ class EventImpact(Base):
     entity_id:       Mapped[str]            = mapped_column(
         String(36), ForeignKey("entities.id", ondelete="CASCADE"), nullable=False
     )
-    quantity_impact: Mapped[Decimal]        = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
+    quantity_impact: Mapped[Decimal]        = mapped_column(Numeric(18, 4), nullable=False, server_default="0")
     batch_id:        Mapped[str | None]     = mapped_column(String(36), nullable=True)
     serial_id:       Mapped[str | None]     = mapped_column(String(36), nullable=True)
     movement_id:     Mapped[str | None]     = mapped_column(
