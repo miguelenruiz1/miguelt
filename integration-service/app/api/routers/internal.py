@@ -86,7 +86,12 @@ async def create_invoice_internal(
                         break
             if config and config.credentials_enc:
                 credentials = _json.loads(decrypt_credentials(config.credentials_enc))
-                _log.info("credentials_loaded tenant=%s provider=%s", x_tenant_id, provider_slug)
+                # Inherit simulation_mode from config if not in credentials
+                if config.simulation_mode and "simulation_mode" not in credentials:
+                    credentials["simulation_mode"] = True
+                elif config.simulation_mode:
+                    credentials["simulation_mode"] = True
+                _log.info("credentials_loaded tenant=%s provider=%s simulation=%s", x_tenant_id, provider_slug, credentials.get("simulation_mode", False))
             else:
                 _log.warning("no_credentials_found tenant=%s provider=%s", x_tenant_id, provider_slug)
         except Exception as exc:
