@@ -216,7 +216,7 @@ async def get_pnl_ai_analysis(
     from app.db.models.category import Category
     from app.db.models.config import ProductType
     from app.db.models.warehouse import Warehouse
-    from app.db.models.partner import Partner
+    from app.db.models.partner import BusinessPartner as Partner
     from sqlalchemy import select as sa_select
 
     categories = [r[0] for r in (await db.execute(sa_select(Category.name).where(Category.tenant_id == tenant_id).limit(20))).all()]
