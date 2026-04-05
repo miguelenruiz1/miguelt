@@ -85,11 +85,11 @@ class CycleCountItem(Base):
     batch_id:       Mapped[str | None]       = mapped_column(
         String(36), ForeignKey("entity_batches.id", ondelete="SET NULL"), nullable=True
     )
-    system_qty:     Mapped[Decimal]          = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
-    counted_qty:    Mapped[Decimal | None]   = mapped_column(Numeric(12, 4), nullable=True)
-    discrepancy:    Mapped[Decimal | None]   = mapped_column(Numeric(12, 4), nullable=True)
-    recount_qty:    Mapped[Decimal | None]   = mapped_column(Numeric(12, 4), nullable=True)
-    recount_discrepancy: Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True)
+    system_qty:     Mapped[Decimal]          = mapped_column(Numeric(18, 4), nullable=False, server_default="0")
+    counted_qty:    Mapped[Decimal | None]   = mapped_column(Numeric(18, 4), nullable=True)
+    discrepancy:    Mapped[Decimal | None]   = mapped_column(Numeric(18, 4), nullable=True)
+    recount_qty:    Mapped[Decimal | None]   = mapped_column(Numeric(18, 4), nullable=True)
+    recount_discrepancy: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
     root_cause:     Mapped[str | None]       = mapped_column(String(500), nullable=True)
     counted_by:     Mapped[str | None]       = mapped_column(String(255), nullable=True)
     counted_at:     Mapped[datetime | None]  = mapped_column(DateTime(timezone=True), nullable=True)

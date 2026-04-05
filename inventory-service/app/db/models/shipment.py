@@ -53,8 +53,8 @@ class ShipmentDocument(Base):
 
     # Cargo
     total_packages:   Mapped[int | None]     = mapped_column(Integer, nullable=True)
-    total_weight_kg:  Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True)
-    total_volume_m3:  Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True)
+    total_weight_kg:  Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
+    total_volume_m3:  Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
     cargo_description: Mapped[str | None]    = mapped_column(Text, nullable=True)
     declared_value:   Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
     declared_currency: Mapped[str | None]    = mapped_column(String(3), nullable=True)

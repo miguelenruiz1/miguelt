@@ -44,7 +44,7 @@ class PurchaseOrder(Base):
     expected_date: Mapped[Date | None] = mapped_column(Date, nullable=True)
     received_date: Mapped[Date | None] = mapped_column(Date, nullable=True)
     is_auto_generated:   Mapped[bool]        = mapped_column(Boolean, nullable=False, server_default="false")
-    reorder_trigger_stock: Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True)
+    reorder_trigger_stock: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
     notes:         Mapped[str | None]  = mapped_column(Text, nullable=True)
     attachments:   Mapped[list | None] = mapped_column(JSONB, nullable=True, server_default="[]")
 
@@ -120,10 +120,10 @@ class PurchaseOrderLine(Base):
     variant_id:   Mapped[str | None] = mapped_column(
         String(36), ForeignKey("product_variants.id", ondelete="SET NULL"), nullable=True
     )
-    qty_ordered:  Mapped[Decimal] = mapped_column(Numeric(12, 4), nullable=False)
-    qty_received: Mapped[Decimal] = mapped_column(Numeric(12, 4), nullable=False, server_default="0")
-    unit_cost:    Mapped[Decimal] = mapped_column(Numeric(12, 4), nullable=False)
-    line_total:   Mapped[Decimal] = mapped_column(Numeric(12, 4), nullable=False)
+    qty_ordered:  Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False)
+    qty_received: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False, server_default="0")
+    unit_cost:    Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False)
+    line_total:   Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False)
     location_id:  Mapped[str | None] = mapped_column(
         String(36), ForeignKey("warehouse_locations.id", ondelete="SET NULL"), nullable=True
     )
