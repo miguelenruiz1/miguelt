@@ -22,6 +22,7 @@ import {
   Bell,
 } from 'lucide-react'
 import { usePnL, useDownloadPnLPdf, usePnLAnalysis } from '@/hooks/useInventory'
+import { inventoryPnLApi } from '@/lib/inventory-api'
 import { useQueryClient } from '@tanstack/react-query'
 import { SegmentedControl } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
@@ -336,8 +337,9 @@ const PRIORITY_BADGE = {
 } as const
 
 function AiInsightsPanelInner({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
-  const { data: analysis, isLoading, isError, error } = usePnLAnalysis(dateFrom, dateTo)
+  const { data: analysis, isLoading, isError, error, refetch } = usePnLAnalysis(dateFrom, dateTo)
   const [expanded, setExpanded] = useState(true)
+  const [regenerating, setRegenerating] = useState(false)
   const qc = useQueryClient()
 
   const errorStatus = isError ? (error as any)?.status : null
@@ -345,12 +347,17 @@ function AiInsightsPanelInner({ dateFrom, dateTo }: { dateFrom: string; dateTo: 
   const is429 = errorStatus === 429
   const is503 = errorStatus === 503
 
-  function handleRegenerate() {
-    qc.removeQueries({ queryKey: ['inventory', 'pnl', 'analysis', dateFrom, dateTo] })
-    qc.fetchQuery({
-      queryKey: ['inventory', 'pnl', 'analysis', dateFrom, dateTo],
-      queryFn: () => import('@/lib/inventory-api').then(m => m.inventoryPnLApi.getAiAnalysis(dateFrom, dateTo, true)),
-    })
+  async function handleRegenerate() {
+    setRegenerating(true)
+    try {
+      const fresh = await inventoryPnLApi.getAiAnalysis(dateFrom, dateTo, true)
+      qc.setQueryData(['inventory', 'pnl', 'analysis', dateFrom, dateTo], fresh)
+    } catch {
+      // Si falla el force, al menos refetch normal
+      await refetch()
+    } finally {
+      setRegenerating(false)
+    }
   }
 
   // State A/C: not configured or not purchased → hide completely
@@ -396,12 +403,12 @@ function AiInsightsPanelInner({ dateFrom, dateTo }: { dateFrom: string; dateTo: 
             </div>
           )}
 
-          {isLoading ? (
+          {isLoading || regenerating ? (
             <div className="space-y-3 animate-pulse">
               <div className="h-4 w-3/4 rounded bg-muted" />
               <div className="h-4 w-1/2 rounded bg-muted" />
               <div className="h-20 rounded-lg bg-muted" />
-              <p className="text-xs text-muted-foreground text-center pt-1">Analizando rentabilidad...</p>
+              <p className="text-xs text-muted-foreground text-center pt-1">{regenerating ? 'Regenerando analisis...' : 'Analizando rentabilidad...'}</p>
             </div>
           ) : is429 ? (
             <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
