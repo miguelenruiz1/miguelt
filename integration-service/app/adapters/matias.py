@@ -141,7 +141,7 @@ class MatiasAdapter(BaseAdapter):
     def _build_invoice_payload(self, data: dict) -> dict:
         """Build MATIAS API UBL 2.1 compatible payload."""
         items = []
-        for line in data.get("lines", []):
+        for line in data.get("items", data.get("lines", [])):
             items.append({
                 "code": line.get("sku", ""),
                 "description": line.get("name", line.get("product_name", "")),
