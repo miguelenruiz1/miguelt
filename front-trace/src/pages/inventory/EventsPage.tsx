@@ -10,36 +10,71 @@ import {
 import { useUserLookup } from '@/hooks/useUserLookup'
 import { useAuthStore } from '@/store/auth'
 
+interface ImpactLine { entity_id: string; quantity_impact: string; batch_id: string; serial_id: string; notes: string }
+
 function CreateEventModal({ onClose }: { onClose: () => void }) {
   const { data: eventTypes = [] } = useEventTypes()
   const { data: severities = [] } = useEventSeverities()
   const { data: statuses = [] } = useEventStatuses()
   const { data: warehouses = [] } = useWarehouses()
+  const { data: productsData } = useProducts({ limit: 200 })
   const create = useCreateEvent()
   const [error, setError] = useState('')
+  const products = productsData?.items ?? []
 
-  // Auto-select first "Abierto" status
   const defaultStatus = statuses.find(s => !s.is_final)?.id ?? ''
 
   const [form, setForm] = useState({
     title: '', description: '', event_type_id: '', severity_id: '',
     status_id: '', warehouse_id: '', occurred_at: new Date().toISOString().slice(0, 16),
+    reference_type: '' as '' | 'purchase_order' | 'sales_order',
+    reference_id: '',
   })
+  const [impacts, setImpacts] = useState<ImpactLine[]>([])
 
-  // Set default status once loaded
-  if (!form.status_id && defaultStatus) {
-    setForm(f => ({ ...f, status_id: defaultStatus }))
+  useEffect(() => {
+    if (!form.status_id && defaultStatus) {
+      setForm(f => ({ ...f, status_id: defaultStatus }))
+    }
+  }, [defaultStatus, form.status_id])
+
+  function addImpact() {
+    setImpacts(p => [...p, { entity_id: '', quantity_impact: '0', batch_id: '', serial_id: '', notes: '' }])
+  }
+  function removeImpact(i: number) {
+    setImpacts(p => p.filter((_, idx) => idx !== i))
+  }
+  function updateImpact(i: number, key: keyof ImpactLine, value: string) {
+    setImpacts(p => p.map((imp, idx) => idx === i ? { ...imp, [key]: value } : imp))
   }
 
   async function doSubmit() {
     setError('')
     try {
+      const metadata: Record<string, string> = {}
+      if (form.reference_type && form.reference_id) {
+        metadata.reference_type = form.reference_type
+        metadata.reference_id = form.reference_id
+      }
       await create.mutateAsync({
-        ...form,
+        title: form.title,
+        description: form.description || null,
+        event_type_id: form.event_type_id,
+        severity_id: form.severity_id,
+        status_id: form.status_id,
         warehouse_id: form.warehouse_id || null,
         occurred_at: new Date(form.occurred_at).toISOString(),
         reported_by: useAuthStore.getState().user?.id ?? null,
-        impacts: [],
+        metadata,
+        impacts: impacts
+          .filter(imp => imp.entity_id)
+          .map(imp => ({
+            entity_id: imp.entity_id,
+            quantity_impact: imp.quantity_impact || '0',
+            batch_id: imp.batch_id || null,
+            serial_id: imp.serial_id || null,
+            notes: imp.notes || null,
+          })),
       })
       onClose()
     } catch (err: unknown) {
@@ -48,43 +83,81 @@ function CreateEventModal({ onClose }: { onClose: () => void }) {
   }
 
   const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
+  const cls = 'w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-card rounded-3xl shadow-2xl p-6">
+      <div className="w-full max-w-2xl bg-card rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-bold text-foreground mb-4">Nuevo Evento</h2>
         <form ref={formRef} onSubmit={validateAndSubmit} noValidate className="space-y-3">
           <input required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-            placeholder="Título *" className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            placeholder="Título del evento *" className={cls} />
           <div className="grid grid-cols-2 gap-3">
-            <select required value={form.event_type_id} onChange={e => setForm(f => ({ ...f, event_type_id: e.target.value }))}
-              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+            <select required value={form.event_type_id} onChange={e => setForm(f => ({ ...f, event_type_id: e.target.value }))} className={cls}>
               <option value="">Tipo *</option>
               {eventTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
-            <select required value={form.severity_id} onChange={e => setForm(f => ({ ...f, severity_id: e.target.value }))}
-              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+            <select required value={form.severity_id} onChange={e => setForm(f => ({ ...f, severity_id: e.target.value }))} className={cls}>
               <option value="">Severidad *</option>
               {severities.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <select required value={form.status_id} onChange={e => setForm(f => ({ ...f, status_id: e.target.value }))}
-              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+            <select required value={form.status_id} onChange={e => setForm(f => ({ ...f, status_id: e.target.value }))} className={cls}>
               <option value="">Estado *</option>
               {statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
-            <select value={form.warehouse_id} onChange={e => setForm(f => ({ ...f, warehouse_id: e.target.value }))}
-              className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+            <select value={form.warehouse_id} onChange={e => setForm(f => ({ ...f, warehouse_id: e.target.value }))} className={cls}>
               <option value="">Bodega (opcional)</option>
               {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
           </div>
-          <input type="datetime-local" value={form.occurred_at} onChange={e => setForm(f => ({ ...f, occurred_at: e.target.value }))}
-            className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+          <input type="datetime-local" value={form.occurred_at} onChange={e => setForm(f => ({ ...f, occurred_at: e.target.value }))} className={cls} />
           <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-            placeholder="Descripción" rows={2}
-            className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            placeholder="Descripción" rows={2} className={cls} />
+
+          {/* Reference to PO/SO */}
+          <div className="border-t border-border pt-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Referencia (opcional)</p>
+            <div className="grid grid-cols-2 gap-3">
+              <select value={form.reference_type} onChange={e => setForm(f => ({ ...f, reference_type: e.target.value as any }))} className={cls}>
+                <option value="">Sin referencia</option>
+                <option value="purchase_order">Orden de compra</option>
+                <option value="sales_order">Orden de venta</option>
+              </select>
+              {form.reference_type && (
+                <input value={form.reference_id} onChange={e => setForm(f => ({ ...f, reference_id: e.target.value }))}
+                  placeholder={form.reference_type === 'purchase_order' ? 'N° OC (ej: PO-2026-001)' : 'N° OV (ej: SO-2026-001)'}
+                  className={cls} />
+              )}
+            </div>
+          </div>
+
+          {/* Impacts (products affected) */}
+          <div className="border-t border-border pt-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Productos afectados</p>
+              <button type="button" onClick={addImpact} className="text-xs text-primary hover:text-primary/80 font-semibold">+ Agregar producto</button>
+            </div>
+            {impacts.length === 0 && (
+              <p className="text-xs text-muted-foreground py-2">Sin productos afectados. Puedes agregarlos ahora o después.</p>
+            )}
+            {impacts.map((imp, i) => (
+              <div key={i} className="flex gap-2 items-start mb-2">
+                <select required value={imp.entity_id} onChange={e => updateImpact(i, 'entity_id', e.target.value)}
+                  className="flex-1 rounded-xl border border-border px-2 py-1.5 text-xs focus:ring-2 focus:ring-ring">
+                  <option value="">Producto *</option>
+                  {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name}</option>)}
+                </select>
+                <input type="number" step="0.01" value={imp.quantity_impact} onChange={e => updateImpact(i, 'quantity_impact', e.target.value)}
+                  placeholder="Cant." className="w-20 rounded-xl border border-border px-2 py-1.5 text-xs focus:ring-2 focus:ring-ring" />
+                <input value={imp.notes} onChange={e => updateImpact(i, 'notes', e.target.value)}
+                  placeholder="Nota" className="w-28 rounded-xl border border-border px-2 py-1.5 text-xs focus:ring-2 focus:ring-ring" />
+                <button type="button" onClick={() => removeImpact(i)} className="text-red-400 hover:text-red-600 text-xs px-1 py-1.5">✕</button>
+              </div>
+            ))}
+          </div>
+
           {error && (
             <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{error}</div>
           )}
@@ -240,6 +313,16 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
             <div className="bg-muted rounded-xl p-3">
               <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Descripción</p>
               <p className="text-sm text-muted-foreground">{event.description}</p>
+            </div>
+          )}
+
+          {/* Reference to PO/SO */}
+          {event.metadata_?.reference_type && (
+            <div className="bg-blue-50 rounded-xl p-3">
+              <p className="text-[10px] font-bold text-blue-500 uppercase mb-1">
+                {event.metadata_.reference_type === 'purchase_order' ? 'Orden de compra' : 'Orden de venta'}
+              </p>
+              <p className="text-sm font-semibold text-blue-700">{event.metadata_.reference_id}</p>
             </div>
           )}
 

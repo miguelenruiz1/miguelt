@@ -8,7 +8,7 @@ import {
   usePurchaseOrders,
   useCreatePO,
   useReceivePO,
-  useSuppliers,
+  usePartners,
   useProducts,
   useWarehouses,
   useConsolidatePOs,
@@ -56,7 +56,7 @@ interface POLine {
 }
 
 function CreatePOModal({ onClose }: { onClose: () => void }) {
-  const { data: suppliers = [] } = useSuppliers()
+  const { data: suppliersData } = usePartners({ is_supplier: true, limit: 200 }); const suppliers = suppliersData?.items ?? []
   const { data: productsData } = useProducts()
   const { data: warehouses = [] } = useWarehouses()
   const create = useCreatePO()
@@ -462,7 +462,7 @@ export function PurchaseOrdersPage() {
   const navigate = useNavigate()
   const { hasPermission } = useAuthStore()
   const { data, isLoading } = usePurchaseOrders()
-  const { data: suppliers = [] } = useSuppliers()
+  const { data: suppliersData } = usePartners({ is_supplier: true, limit: 200 }); const suppliers = suppliersData?.items ?? []
   const { data: productsData } = useProducts({ limit: 200 })
   const { data: candidates } = useConsolidationCandidates()
   const [showCreate, setShowCreate] = useState(false)

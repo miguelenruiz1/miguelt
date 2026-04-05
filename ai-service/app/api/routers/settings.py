@@ -1,14 +1,16 @@
 """Platform AI settings endpoints — superuser only."""
 from __future__ import annotations
 
+import json
+from datetime import datetime, timezone
 from typing import Annotated
 
 import redis.asyncio as aioredis
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import SuperUser, get_redis
+from app.api.deps import ServiceToken, SuperUser, get_redis
 from app.db.session import get_db_session
 from app.services.settings_service import AISettingsService
 
@@ -66,7 +68,28 @@ async def test_connection(_user: SuperUser, svc: AISettingsService = Depends(_sv
 
 
 @router.get("/config")
-async def get_config_internal(db: AsyncSession = Depends(get_db_session), redis: aioredis.Redis = Depends(get_redis)):
-    """Internal endpoint for other services to read AI config. No auth."""
+async def get_config_internal(
+    _token: ServiceToken,
+    db: AsyncSession = Depends(get_db_session),
+    redis: aioredis.Redis = Depends(get_redis),
+):
+    """Internal endpoint for other services to read AI config. Requires service token."""
     svc = AISettingsService(db, redis)
     return await svc.get_full_config()
+
+
+@router.get("/audit/cross-tenant")
+async def get_cross_tenant_audit(
+    _user: SuperUser,
+    redis: aioredis.Redis = Depends(get_redis),
+    month: str | None = Query(None, description="YYYY-MM format, defaults to current month"),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+):
+    """List all superuser cross-tenant access events. Superuser only."""
+    target_month = month or datetime.now(timezone.utc).strftime("%Y-%m")
+    key = f"audit:cross_tenant:{target_month}"
+    total = await redis.llen(key)
+    raw = await redis.lrange(key, offset, offset + limit - 1)
+    items = [json.loads(r) for r in raw]
+    return {"items": items, "total": total, "month": target_month, "offset": offset, "limit": limit}

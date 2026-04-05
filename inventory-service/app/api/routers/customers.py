@@ -50,7 +50,7 @@ async def create_customer_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = CustomerService(db)
-    audit = InventoryAuditService(svc.db)
+    audit = InventoryAuditService(db)
     ct = await svc.create_type(user["tenant_id"], body.model_dump())
     await audit.log(
         tenant_id=user["tenant_id"], user=user,
@@ -72,7 +72,7 @@ async def update_customer_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = CustomerService(db)
-    audit = InventoryAuditService(svc.db)
+    audit = InventoryAuditService(db)
     result = await svc.update_type(type_id, user["tenant_id"], body.model_dump(exclude_unset=True))
     await audit.log(
         tenant_id=user["tenant_id"], user=user,
@@ -93,14 +93,14 @@ async def delete_customer_type(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = CustomerService(db)
-    audit = InventoryAuditService(svc.db)
+    audit = InventoryAuditService(db)
     await audit.log(
         tenant_id=user["tenant_id"], user=user,
         action="inventory.customer_type.delete", resource_type="customer_type",
         resource_id=type_id,
         ip_address=_ip(request),
     )
-    await svc.db.commit()
+    await db.commit()
     await svc.delete_type(type_id, user["tenant_id"])
 
 
@@ -148,7 +148,7 @@ async def create_customer(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = CustomerService(db)
-    audit = InventoryAuditService(svc.db)
+    audit = InventoryAuditService(db)
     data = body.model_dump()
     data["created_by"] = user.get("id")
     customer = await svc.create_customer(user["tenant_id"], data)
@@ -172,7 +172,7 @@ async def update_customer(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = CustomerService(db)
-    audit = InventoryAuditService(svc.db)
+    audit = InventoryAuditService(db)
     data = body.model_dump(exclude_unset=True)
     data["updated_by"] = user.get("id")
     result = await svc.update_customer(customer_id, user["tenant_id"], data)
@@ -195,7 +195,7 @@ async def delete_customer(
     db: AsyncSession = Depends(get_db_session),
 ):
     svc = CustomerService(db)
-    audit = InventoryAuditService(svc.db)
+    audit = InventoryAuditService(db)
     customer = await svc.get_customer(customer_id, user["tenant_id"])
     await audit.log(
         tenant_id=user["tenant_id"], user=user,
@@ -204,7 +204,7 @@ async def delete_customer(
         old_data={"name": customer.name},
         ip_address=_ip(request),
     )
-    await svc.db.commit()
+    await db.commit()
     await svc.delete_customer(customer_id, user["tenant_id"])
 
 

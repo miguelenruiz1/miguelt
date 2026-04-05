@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Sparkles, Eye, EyeOff, Zap, Loader2, CheckCircle, XCircle, Trash2,
-  Activity, DollarSign, TrendingUp, Building2, Bell, Settings, BarChart3,
+  Activity, DollarSign, TrendingUp, Building2, Bell, Settings, BarChart3, Shield,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { useToast } from '@/store/toast'
 
-const AI_API = import.meta.env.VITE_AI_API_URL ?? 'http://localhost:9006'
+const AI_API = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 function subRequest<T>(path: string, opts?: RequestInit): Promise<T> {
   const token = useAuthStore.getState().accessToken
@@ -83,6 +83,25 @@ function useTestConnection() {
 }
 function useClearCache() {
   return useMutation({ mutationFn: () => subRequest('/api/v1/metrics/cache', { method: 'DELETE', body: JSON.stringify({ confirm: true }) }) })
+}
+
+interface AuditEntry {
+  timestamp: string
+  superuser_id: string
+  superuser_email: string
+  superuser_tenant: string
+  target_tenant: string
+  action: string
+  resource: string | null
+}
+interface AuditResponse { items: AuditEntry[]; total: number; month: string }
+function useCrossTenantAudit(month?: string) {
+  const m = month || new Date().toISOString().slice(0, 7)
+  return useQuery<AuditResponse>({
+    queryKey: ['platform', 'ai', 'audit', m],
+    queryFn: () => subRequest(`/api/v1/settings/audit/cross-tenant?month=${m}&limit=200`),
+    staleTime: 15_000,
+  })
 }
 
 // ─── Tab: Configuración ──────────────────────────────────────────────────────
@@ -404,13 +423,226 @@ function MetricsTab() {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
+// ─── Tab: Auditoría de accesos cross-tenant ─────────────────────────────────
+
+const ACTION_LABELS: Record<string, string> = {
+  'ai.analyze_pnl': 'Análisis P&L',
+  'ai.memory.read': 'Lectura de memoria',
+  'ai.memory.delete': 'Borrado de memoria',
+  'ai.memory.delete_last': 'Borrado último análisis',
+}
+
+function AuditTab() {
+  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
+  const { data, isLoading } = useCrossTenantAudit(month)
+
+  return (
+    <div className="space-y-5">
+      <div className="bg-card rounded-2xl border border-border p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+              <Shield className="h-4 w-4 text-amber-500" /> Accesos cross-tenant
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Registro de cada vez que un superusuario accedió a datos de IA de otro tenant.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="month"
+              value={month}
+              onChange={e => setMonth(e.target.value)}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : !data?.items.length ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Shield className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <p className="text-sm">Sin accesos cross-tenant en {month}</p>
+            <p className="text-xs mt-1">Esto es bueno — significa que no se accedió a datos de otros tenants.</p>
+          </div>
+        ) : (
+          <>
+            <div className="mb-3 flex items-center gap-2">
+              <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                {data.total} acceso{data.total !== 1 ? 's' : ''}
+              </span>
+              <span className="text-xs text-muted-foreground">en {month}</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-muted-foreground uppercase border-b border-border">
+                    <th className="text-left px-3 py-2">Fecha</th>
+                    <th className="text-left px-3 py-2">Superusuario</th>
+                    <th className="text-left px-3 py-2">Tenant consultado</th>
+                    <th className="text-left px-3 py-2">Acción</th>
+                    <th className="text-left px-3 py-2">Recurso</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {data.items.map((entry, i) => (
+                    <tr key={i} className="hover:bg-muted/40">
+                      <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(entry.timestamp).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span className="text-xs font-medium text-foreground">{entry.superuser_email}</span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                          {entry.target_tenant}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-xs text-foreground">{ACTION_LABELS[entry.action] ?? entry.action}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground font-mono">{entry.resource ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Tenant memory inspector */}
+      <TenantMemoryInspector />
+
+      {/* Legal note */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <p className="text-xs text-amber-800">
+          <strong>Nota legal:</strong> Este registro cumple con la Ley 1581 de 2012 (Habeas Data) de Colombia.
+          Cualquier titular de datos puede solicitar evidencia de quién accedió a su información.
+          Conservar estos registros es obligatorio por un mínimo de 5 años.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function TenantMemoryInspector() {
+  const [tenantId, setTenantId] = useState('')
+  const [query, setQuery] = useState('')
+  const { data: memory, isLoading, refetch } = useQuery<Record<string, unknown>>({
+    queryKey: ['platform', 'ai', 'memory', query],
+    queryFn: () => subRequest(`/api/v1/memory/${query}`),
+    enabled: !!query,
+    staleTime: 10_000,
+  })
+
+  function doSearch() {
+    if (tenantId.trim()) setQuery(tenantId.trim())
+  }
+
+  return (
+    <div className="bg-card rounded-2xl border border-border p-5">
+      <h3 className="text-base font-bold text-foreground flex items-center gap-2 mb-1">
+        <Building2 className="h-4 w-4 text-blue-500" /> Consultar contexto de IA por tenant
+      </h3>
+      <p className="text-xs text-muted-foreground mb-4">
+        Inspecciona la memoria de IA almacenada para un tenant específico. Este acceso queda registrado en auditoría.
+      </p>
+
+      <div className="flex gap-2 mb-4">
+        <input
+          value={tenantId}
+          onChange={e => setTenantId(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && doSearch()}
+          placeholder="ID del tenant (ej: chape-5f2a09, platform)"
+          className="flex-1 rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        <button
+          onClick={doSearch}
+          disabled={!tenantId.trim() || isLoading}
+          className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 transition"
+        >
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Consultar'}
+        </button>
+      </div>
+
+      {query && !isLoading && memory && (
+        <div className="space-y-3">
+          {Object.keys(memory).length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">Sin memoria de IA para este tenant.</p>
+          ) : (
+            <div className="bg-muted rounded-xl p-4 space-y-3">
+              {memory.industria_detectada && (
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Industria detectada</p>
+                  <p className="text-sm text-foreground">{String(memory.industria_detectada)}</p>
+                </div>
+              )}
+              {memory.total_analisis != null && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Total análisis</p>
+                    <p className="text-sm font-semibold text-foreground">{String(memory.total_analisis)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Primer análisis</p>
+                    <p className="text-sm text-foreground">{String(memory.primer_analisis ?? '—')}</p>
+                  </div>
+                </div>
+              )}
+              {Array.isArray(memory.productos_estrella_historicos) && (memory.productos_estrella_historicos as string[]).length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Productos estrella históricos</p>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {(memory.productos_estrella_historicos as string[]).map((p, i) => (
+                      <span key={i} className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">{p}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {Array.isArray(memory.alertas_recurrentes) && (memory.alertas_recurrentes as Array<{alerta: string; veces: number}>).length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Alertas recurrentes</p>
+                  <div className="space-y-1 mt-1">
+                    {(memory.alertas_recurrentes as Array<{alerta: string; veces: number}>).map((a, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs">
+                        <span className="text-foreground">{a.alerta}</span>
+                        <span className="text-amber-600 font-semibold">{a.veces}x</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {Array.isArray(memory.patrones_detectados) && (memory.patrones_detectados as string[]).length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Patrones detectados</p>
+                  <ul className="text-xs text-foreground mt-1 space-y-0.5">
+                    {(memory.patrones_detectados as string[]).map((p, i) => <li key={i}>• {p}</li>)}
+                  </ul>
+                </div>
+              )}
+              {/* Raw JSON fallback */}
+              <details className="text-xs">
+                <summary className="text-muted-foreground cursor-pointer hover:text-foreground">Ver JSON completo</summary>
+                <pre className="mt-2 bg-card rounded-lg p-3 overflow-x-auto text-[10px] text-muted-foreground border border-border">
+                  {JSON.stringify(memory, null, 2)}
+                </pre>
+              </details>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const TABS = [
   { key: 'config', label: 'Configuración', icon: Settings },
   { key: 'metrics', label: 'Métricas de Uso', icon: BarChart3 },
+  { key: 'audit', label: 'Auditoría', icon: Shield },
 ] as const
 
 export function PlatformAiSettingsPage() {
-  const [tab, setTab] = useState<'config' | 'metrics'>('config')
+  const [tab, setTab] = useState<'config' | 'metrics' | 'audit'>('config')
   const { data: settings, isLoading } = useAISettings()
 
   return (
@@ -442,6 +674,8 @@ export function PlatformAiSettingsPage() {
         <ConfigTab settings={settings} />
       ) : tab === 'metrics' ? (
         <MetricsTab />
+      ) : tab === 'audit' ? (
+        <AuditTab />
       ) : null}
     </div>
   )

@@ -22,6 +22,8 @@ export function TaxRatesPage() {
 
   const ivaRates = rates.filter(r => r.tax_type === 'iva')
   const retentionRates = rates.filter(r => r.tax_type === 'retention')
+  const icaRates = rates.filter(r => r.tax_type === 'ica')
+  const otherRates = rates.filter(r => !['iva', 'retention', 'ica'].includes(r.tax_type))
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
@@ -55,6 +57,8 @@ export function TaxRatesPage() {
         <>
           <TaxSection title="IVA (Impuesto al Valor Agregado)" rates={ivaRates} onEdit={setEditingRate} />
           <TaxSection title="Retención en la Fuente" rates={retentionRates} onEdit={setEditingRate} />
+          <TaxSection title="ICA (Industria y Comercio)" rates={icaRates} onEdit={setEditingRate} />
+          <TaxSection title="Otros Impuestos" rates={otherRates} onEdit={setEditingRate} />
         </>
       )}
 

@@ -189,7 +189,7 @@ class CustomerPriceService:
         session = db or self.db
         stmt = (
             select(CustomerPrice)
-            .options(joinedload(CustomerPrice.product), joinedload(CustomerPrice.customer))
+            .options(joinedload(CustomerPrice.product), joinedload(CustomerPrice.customer), joinedload(CustomerPrice.variant))
             .where(CustomerPrice.tenant_id == tenant_id, CustomerPrice.customer_id == customer_id)
         )
         if active_only:
@@ -205,7 +205,7 @@ class CustomerPriceService:
         session = db or self.db
         stmt = (
             select(CustomerPrice)
-            .options(joinedload(CustomerPrice.product), joinedload(CustomerPrice.customer))
+            .options(joinedload(CustomerPrice.product), joinedload(CustomerPrice.customer), joinedload(CustomerPrice.variant))
             .where(CustomerPrice.tenant_id == tenant_id, CustomerPrice.product_id == product_id)
         )
         if active_only:
@@ -228,7 +228,7 @@ class CustomerPriceService:
         session = db or self.db
         stmt = (
             select(CustomerPrice)
-            .options(joinedload(CustomerPrice.product), joinedload(CustomerPrice.customer))
+            .options(joinedload(CustomerPrice.product), joinedload(CustomerPrice.customer), joinedload(CustomerPrice.variant))
             .where(CustomerPrice.tenant_id == tenant_id)
         )
         if customer_id:

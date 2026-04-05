@@ -20,13 +20,13 @@ router = APIRouter(
 
 
 def _resolve_tenant(tenant_id: str) -> uuid.UUID:
-    """Resolve tenant_id string to UUID. Accepts UUID or slug 'default'."""
+    """Resolve tenant_id string to UUID. Accepts UUID or any tenant slug."""
     try:
         return uuid.UUID(tenant_id)
     except ValueError:
         if tenant_id == "default":
             return uuid.UUID("00000000-0000-0000-0000-000000000001")
-        raise HTTPException(status_code=400, detail=f"Cannot resolve tenant: {tenant_id}")
+        return uuid.uuid5(uuid.NAMESPACE_DNS, tenant_id)
 
 
 def _file_resp(mf) -> dict:

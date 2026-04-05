@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useSearchParams, useLocation } from 'react-router-dom'
-import { Plus, Search, Package, Tag, ArrowLeft, Upload, Download, X, FileText, Trash2, Pencil, Lock, Save, ChevronRight, ChevronLeft, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, TrendingDown, Camera, ImageIcon, Loader2, ZoomIn, DollarSign, Sliders, Receipt, Warehouse } from 'lucide-react'
+import { Plus, Search, Package, Tag, ArrowLeft, Upload, Download, X, FileText, Trash2, Pencil, Lock, Save, ChevronRight, ChevronLeft, ChevronsLeft, ChevronsRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, TrendingDown, Camera, ImageIcon, Loader2, ZoomIn, DollarSign, Sliders, Receipt, Warehouse } from 'lucide-react'
 import {
   useProducts, useProduct, useCreateProduct, useUpdateProduct, useDeleteProduct,
   useStockByProduct, useWarehouses, useProductTypes, useCustomFields, useCategories,
@@ -12,10 +12,14 @@ import {
   useProductVariantsForProduct,
   useCreateVariant, useUpdateVariant, useDeleteVariant,
   useInventoryAnalytics,
+  useSerials, useBatches, usePurchaseOrders, useSalesOrders,
 } from '@/hooks/useInventory'
+import { useQuery } from '@tanstack/react-query'
+import { inventoryUoMApi } from '@/lib/inventory-api'
 import { useToast } from '@/store/toast'
 import { useFormValidation } from '@/hooks/useFormValidation'
 import { cn } from '@/lib/utils'
+import { SafeSelect } from '@/components/ui/safeselect'
 import { CopyableId } from '@/components/inventory/CopyableId'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import type { CustomField, Product, ProductType, ProductVariant } from '@/types/inventory'
@@ -277,6 +281,7 @@ function CreateProductForm({
 
   const { data: categoriesData } = useCategories()
   const categories = categoriesData?.items ?? []
+  const { data: uoms = [] } = useQuery({ queryKey: ['inventory', 'uom'], queryFn: () => inventoryUoMApi.list() })
   const { data: taxRates = [] } = useTaxRates({ is_active: true })
   const ivaRates = taxRates.filter(r => r.tax_type === 'iva')
   const retentionRates = taxRates.filter(r => r.tax_type === 'retention')
@@ -356,9 +361,21 @@ function CreateProductForm({
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Categoría</label>
                 <select value={form.category_id} onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))} className={cls}>
                   <option value="">Sin categoría</option>
-                  {categories.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
+                  {(() => {
+                    const roots = categories.filter(c => !c.parent_id)
+                    const opts: { id: string; label: string }[] = []
+                    for (const r of roots) {
+                      opts.push({ id: r.id, label: r.name })
+                      for (const ch of categories.filter(c => c.parent_id === r.id)) {
+                        opts.push({ id: ch.id, label: `  ↳ ${ch.name}` })
+                        for (const gc of categories.filter(c => c.parent_id === ch.id))
+                          opts.push({ id: gc.id, label: `    ↳ ${gc.name}` })
+                      }
+                    }
+                    const listed = new Set(opts.map(o => o.id))
+                    for (const c of categories) if (!listed.has(c.id)) opts.push({ id: c.id, label: c.name })
+                    return opts.map(o => <option key={o.id} value={o.id}>{o.label}</option>)
+                  })()}
                 </select>
               </div>
 
@@ -417,8 +434,10 @@ function CreateProductForm({
 
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Unidad de medida</label>
-                <select value={form.unit_of_measure} onChange={e => setForm(f => ({ ...f, unit_of_measure: e.target.value }))} className={cls}>
-                  {['un', 'kg', 'lt', 'm', 'm2', 'caja', 'palet'].map(u => <option key={u}>{u}</option>)}
+                <select autoComplete="off" value={form.unit_of_measure} onChange={e => setForm(f => ({ ...f, unit_of_measure: e.target.value }))} className={cls}>
+                  <option value="">Seleccionar unidad...</option>
+                  {uoms.map((u: any) => <option key={u.id} value={u.symbol}>{u.symbol} — {u.name}</option>)}
+                  {uoms.length === 0 && ['un', 'kg', 'lb', 'L', 'ml', 'm'].map(u => <option key={u} value={u}>{u}</option>)}
                 </select>
               </div>
 
@@ -784,6 +803,170 @@ function ProductVariantsTab({ product }: { product: Product }) {
   )
 }
 
+// ─── Traceability Tab (view-only) ─────────────────────────────────────────────
+
+function TraceSection({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
+  const [open, setOpen] = useState(count > 0)
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors">
+        <span>{title} <span className="text-muted-foreground font-normal">({count})</span></span>
+        <ChevronDown className={cn('h-3.5 w-3.5 text-muted-foreground transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && <div className="border-t border-border">{children}</div>}
+    </div>
+  )
+}
+
+function ProductTraceabilityTab({ productId, warehouseMap }: { productId: string; warehouseMap: Record<string, string> }) {
+  const { data: serialsData, isLoading: serialsLoading } = useSerials({ entity_id: productId, limit: 100 })
+  const { data: batchesData, isLoading: batchesLoading } = useBatches({ entity_id: productId, limit: 100 })
+  const { data: posData, isLoading: posLoading } = usePurchaseOrders({ limit: 200 })
+  const { data: sosData, isLoading: sosLoading } = useSalesOrders({ limit: 200 })
+
+  const serials = serialsData?.items ?? []
+  const batches = batchesData?.items ?? []
+
+  // Filter POs/SOs that contain lines referencing this product
+  const pos = useMemo(() => {
+    const all = posData?.items ?? []
+    return all.filter(po => po.lines?.some(l => l.product_id === productId))
+  }, [posData, productId])
+
+  const sos = useMemo(() => {
+    const all = sosData?.items ?? []
+    return all.filter(so => so.lines?.some(l => l.product_id === productId))
+  }, [sosData, productId])
+
+  const loading = serialsLoading || batchesLoading || posLoading || sosLoading
+
+  if (loading) return <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+
+  const fmtDate = (d?: string | null) => d ? new Date(d).toLocaleDateString('es-CO') : '—'
+  const noData = <p className="px-3 py-3 text-xs text-muted-foreground">Sin datos</p>
+
+  return (
+    <div className="space-y-3">
+      {/* Seriales */}
+      <TraceSection title="Seriales" count={serials.length}>
+        {serials.length === 0 ? noData : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead><tr className="bg-muted/30 text-muted-foreground">
+                <th className="px-3 py-1.5 text-left font-medium">Serial</th>
+                <th className="px-3 py-1.5 text-left font-medium">Estado</th>
+                <th className="px-3 py-1.5 text-left font-medium">Bodega</th>
+                <th className="px-3 py-1.5 text-left font-medium">Creado</th>
+              </tr></thead>
+              <tbody className="divide-y divide-border">
+                {serials.map(s => (
+                  <tr key={s.id} className="hover:bg-muted/20">
+                    <td className="px-3 py-1.5 font-mono">{s.serial_number}</td>
+                    <td className="px-3 py-1.5">{s.status_id}</td>
+                    <td className="px-3 py-1.5">{s.warehouse_id ? (warehouseMap[s.warehouse_id] ?? s.warehouse_id.slice(0, 8)) : '—'}</td>
+                    <td className="px-3 py-1.5">{fmtDate(s.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </TraceSection>
+
+      {/* Lotes */}
+      <TraceSection title="Lotes" count={batches.length}>
+        {batches.length === 0 ? noData : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead><tr className="bg-muted/30 text-muted-foreground">
+                <th className="px-3 py-1.5 text-left font-medium">Lote</th>
+                <th className="px-3 py-1.5 text-right font-medium">Cantidad</th>
+                <th className="px-3 py-1.5 text-left font-medium">Vencimiento</th>
+                <th className="px-3 py-1.5 text-left font-medium">Activo</th>
+              </tr></thead>
+              <tbody className="divide-y divide-border">
+                {batches.map(b => (
+                  <tr key={b.id} className="hover:bg-muted/20">
+                    <td className="px-3 py-1.5 font-mono">{b.batch_number}</td>
+                    <td className="px-3 py-1.5 text-right">{Number(b.quantity).toLocaleString('es-CO')}</td>
+                    <td className="px-3 py-1.5">{fmtDate(b.expiration_date)}</td>
+                    <td className="px-3 py-1.5">{b.is_active ? <span className="text-emerald-600">Si</span> : <span className="text-muted-foreground">No</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </TraceSection>
+
+      {/* Ordenes de compra */}
+      <TraceSection title="Ordenes de compra" count={pos.length}>
+        {pos.length === 0 ? noData : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead><tr className="bg-muted/30 text-muted-foreground">
+                <th className="px-3 py-1.5 text-left font-medium">OC</th>
+                <th className="px-3 py-1.5 text-right font-medium">Pedido</th>
+                <th className="px-3 py-1.5 text-right font-medium">Recibido</th>
+                <th className="px-3 py-1.5 text-right font-medium">Costo</th>
+                <th className="px-3 py-1.5 text-left font-medium">Estado</th>
+              </tr></thead>
+              <tbody className="divide-y divide-border">
+                {pos.map(po => {
+                  const line = po.lines?.find(l => l.product_id === productId)
+                  if (!line) return null
+                  return (
+                    <tr key={po.id} className="hover:bg-muted/20">
+                      <td className="px-3 py-1.5 font-mono">{po.po_number}</td>
+                      <td className="px-3 py-1.5 text-right">{Number(line.qty_ordered).toLocaleString('es-CO')}</td>
+                      <td className="px-3 py-1.5 text-right">{Number(line.qty_received).toLocaleString('es-CO')}</td>
+                      <td className="px-3 py-1.5 text-right">${Number(line.unit_cost).toLocaleString('es-CO')}</td>
+                      <td className="px-3 py-1.5"><span className="capitalize">{po.status}</span></td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </TraceSection>
+
+      {/* Ordenes de venta */}
+      <TraceSection title="Ordenes de venta" count={sos.length}>
+        {sos.length === 0 ? noData : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead><tr className="bg-muted/30 text-muted-foreground">
+                <th className="px-3 py-1.5 text-left font-medium">OV</th>
+                <th className="px-3 py-1.5 text-right font-medium">Pedido</th>
+                <th className="px-3 py-1.5 text-right font-medium">Enviado</th>
+                <th className="px-3 py-1.5 text-right font-medium">Precio</th>
+                <th className="px-3 py-1.5 text-left font-medium">Estado</th>
+              </tr></thead>
+              <tbody className="divide-y divide-border">
+                {sos.map(so => {
+                  const line = so.lines?.find(l => l.product_id === productId)
+                  if (!line) return null
+                  return (
+                    <tr key={so.id} className="hover:bg-muted/20">
+                      <td className="px-3 py-1.5 font-mono">{so.order_number}</td>
+                      <td className="px-3 py-1.5 text-right">{Number(line.qty_ordered).toLocaleString('es-CO')}</td>
+                      <td className="px-3 py-1.5 text-right">{Number(line.qty_shipped).toLocaleString('es-CO')}</td>
+                      <td className="px-3 py-1.5 text-right">${Number(line.unit_price).toLocaleString('es-CO')}</td>
+                      <td className="px-3 py-1.5"><span className="capitalize">{so.status}</span></td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </TraceSection>
+    </div>
+  )
+}
+
 // ─── Product Drawer ───────────────────────────────────────────────────────────
 
 function ProductDrawer({
@@ -819,9 +1002,20 @@ function ProductDrawer({
   const whMap = Object.fromEntries(warehouses.map(w => [w.id, w.name]))
   const typeName = productTypes.find(t => t.id === product.product_type_id)?.name
 
-  const { data: taxRates = [] } = useTaxRates({ is_active: true })
+  const { data: taxRates = [], isLoading: taxLoading } = useTaxRates({ is_active: true })
   const ivaRates = taxRates.filter(r => r.tax_type === 'iva')
   const retentionRates = taxRates.filter(r => r.tax_type === 'retention')
+
+  // Load categories for THIS tenant (not from parent which may be a different tenant)
+  const { data: drawerCategoriesData, isLoading: catsLoading } = useCategories()
+  const drawerCategories = drawerCategoriesData?.items ?? []
+  const localCategoryMap = useMemo(() => new Map(drawerCategories.map(c => [c.id, c.name])), [drawerCategories])
+
+  // Use local categories if available, fallback to parent's
+  const effectiveCategoryMap = localCategoryMap.size > 0 ? localCategoryMap : categoryMap
+
+  // Prevent React removeChild crash
+  const selectsReady = !catsLoading && !taxLoading
 
   const { data: availability } = useStockAvailability(product.id)
 
@@ -1115,16 +1309,28 @@ function ProductDrawer({
                     {/* Category */}
                     <div>
                       <label className="text-xs font-medium text-muted-foreground mb-1 block">Categoría</label>
-                      <select
-                        value={form.category_id}
-                        onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))}
-                        className={cls}
-                      >
-                        <option value="">Sin categoría</option>
-                        {Array.from(categoryMap.entries()).map(([id, name]) => (
-                          <option key={id} value={id}>{name}</option>
-                        ))}
-                      </select>
+                      <SafeSelect
+                          value={form.category_id}
+                          onChange={v => setForm(f => ({ ...f, category_id: v }))}
+                          placeholder="Sin categoría"
+                          className={cls}
+                          options={(() => {
+                            const cats = drawerCategories
+                            const roots = cats.filter(c => !c.parent_id)
+                            const opts: { value: string; label: string }[] = []
+                            for (const r of roots) {
+                              opts.push({ value: r.id, label: r.name })
+                              for (const ch of cats.filter(c => c.parent_id === r.id)) {
+                                opts.push({ value: ch.id, label: `↳ ${ch.name}` })
+                                for (const gc of cats.filter(c => c.parent_id === ch.id))
+                                  opts.push({ value: gc.id, label: `  ↳ ${gc.name}` })
+                              }
+                            }
+                            const listed = new Set(opts.map(o => o.value))
+                            for (const c of cats) if (!listed.has(c.id)) opts.push({ value: c.id, label: c.name })
+                            return opts
+                          })()}
+                        />
                     </div>
 
                     {/* Active toggle */}
@@ -1280,16 +1486,13 @@ function ProductDrawer({
                       {!form.is_tax_exempt && (
                         <div>
                           <label className="text-xs font-medium text-muted-foreground mb-1 block">Tarifa IVA</label>
-                          <select
+                          <SafeSelect
                             value={form.tax_rate_id}
-                            onChange={e => setForm(f => ({ ...f, tax_rate_id: e.target.value }))}
+                            onChange={v => setForm(f => ({ ...f, tax_rate_id: v }))}
+                            placeholder="IVA por defecto del tenant"
                             className={cls}
-                          >
-                            <option value="">IVA por defecto del tenant</option>
-                            {ivaRates.map(r => (
-                              <option key={r.id} value={r.id}>{r.name} ({(Number(r.rate) * 100).toFixed(0)}%)</option>
-                            ))}
-                          </select>
+                            options={ivaRates.map(r => ({ value: r.id, label: `${r.name} (${(Number(r.rate) * 100).toFixed(0)}%)` }))}
+                          />
                         </div>
                       )}
                       <div>
@@ -1433,10 +1636,10 @@ function ProductDrawer({
                         <div className="relative">
                           <select
                             value={product.unit_of_measure}
-                            disabled={hasMovements}
-                            className={cn(cls, hasMovements && 'bg-muted text-muted-foreground cursor-not-allowed')}
+                            disabled
+                            className={cn(cls, 'bg-muted text-muted-foreground cursor-not-allowed')}
                           >
-                            {['un', 'kg', 'lt', 'm', 'm2', 'caja', 'palet'].map(u => <option key={u}>{u}</option>)}
+                            <option value={product.unit_of_measure}>{product.unit_of_measure}</option>
                           </select>
                           {hasMovements && (
                             <div className="absolute right-8 top-1/2 -translate-y-1/2" title="Bloqueado — tiene movimientos">
@@ -1503,6 +1706,7 @@ function ProductDrawer({
                   { key: 'finanzas', label: 'Finanzas' },
                   { key: 'inventario', label: 'Inventario' },
                   { key: 'variantes', label: 'Variantes' },
+                  { key: 'trazabilidad', label: 'Trazabilidad' },
                 ].map(t => (
                   <button key={t.key} type="button" onClick={() => setDrawerTab(t.key)}
                     className={cn('px-4 py-2 text-xs font-medium border-b-2 -mb-px transition-colors',
@@ -1520,7 +1724,7 @@ function ProductDrawer({
                     <div className="flex justify-between text-sm"><span className="text-muted-foreground">Código de barras</span><span className="font-mono">{product.barcode}</span></div>
                   )}
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Tipo</span><span className="font-medium">{typeName ?? '—'}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Categoría</span><span className="font-medium">{categoryMap.get(product.category_id ?? '') ?? '—'}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Categoría</span><span className="font-medium">{effectiveCategoryMap.get(product.category_id ?? '') ?? '—'}</span></div>
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Unidad</span><span className="font-medium">{product.unit_of_measure}</span></div>
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Estado</span><span className={product.is_active ? 'text-emerald-600 font-medium' : 'text-muted-foreground'}>
                     {product.is_active ? 'Activo' : 'Inactivo'}
@@ -1631,6 +1835,9 @@ function ProductDrawer({
                               <div className="flex justify-between text-sm mb-1">
                                 <span className="font-medium">{whMap[lv.warehouse_id] ?? lv.warehouse_id}</span>
                               </div>
+                              {lv.location_name && (
+                                <p className="text-xs text-muted-foreground mb-1">Ubicación: {lv.location_name}</p>
+                              )}
                               <div className="flex gap-4 text-xs">
                                 <span className="text-muted-foreground">Físico: <span className="font-medium text-foreground">{qty.toFixed(0)}</span></span>
                                 {reserved > 0 && <span className="text-amber-600">Reservado: <span className="font-medium">{reserved.toFixed(0)}</span></span>}
@@ -1652,6 +1859,11 @@ function ProductDrawer({
               {/* View mode variantes tab */}
               {drawerTab === 'variantes' && (
                 <ProductVariantsTab product={product} />
+              )}
+
+              {/* View mode trazabilidad tab */}
+              {drawerTab === 'trazabilidad' && (
+                <ProductTraceabilityTab productId={product.id} warehouseMap={whMap} />
               )}
 
               {/* Quick actions */}
@@ -2117,6 +2329,7 @@ export function ProductsPage() {
   if (selected) {
     return (
       <ProductDrawer
+        key={`drawer-${selected.id}-${categoryMap.size}`}
         product={selected}
         productTypes={productTypes}
         categoryMap={categoryMap}

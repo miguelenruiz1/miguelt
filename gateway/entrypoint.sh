@@ -57,6 +57,8 @@ server {
     location /api/v1/admin           { proxy_pass https://${SUBS_UPSTREAM}; proxy_set_header Host ${SUBS_UPSTREAM}; }
     location /api/v1/usage           { proxy_pass https://${SUBS_UPSTREAM}; proxy_set_header Host ${SUBS_UPSTREAM}; }
     location /api/v1/enforcement     { proxy_pass https://${SUBS_UPSTREAM}; proxy_set_header Host ${SUBS_UPSTREAM}; }
+    location /api/v1/cms             { proxy_pass https://${SUBS_UPSTREAM}; proxy_set_header Host ${SUBS_UPSTREAM}; }
+    location /api/v1/pages           { proxy_pass https://${SUBS_UPSTREAM}; proxy_set_header Host ${SUBS_UPSTREAM}; }
 
     # Inventory analytics & audit
     location /api/v1/analytics       { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }

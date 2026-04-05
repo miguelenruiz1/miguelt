@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -9,12 +10,23 @@ from decimal import Decimal
 import anthropic
 import redis.asyncio as aioredis
 import structlog
+from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.settings import get_settings
 from app.db.models import PlatformAISettings
 
 log = structlog.get_logger(__name__)
+
+
+def _get_fernet() -> Fernet:
+    """Derive a Fernet key from JWT_SECRET (deterministic, 32-byte URL-safe base64)."""
+    secret = get_settings().JWT_SECRET.encode()
+    # SHA-256 produces 32 bytes; Fernet needs url-safe base64 of 32 bytes
+    key_bytes = hashlib.sha256(secret).digest()
+    fernet_key = base64.urlsafe_b64encode(key_bytes)
+    return Fernet(fernet_key)
 
 
 def _mask_key(key: str | None) -> str:
@@ -26,11 +38,22 @@ def _mask_key(key: str | None) -> str:
 
 
 def _encrypt(value: str) -> str:
-    return base64.b64encode(value.encode()).decode()
+    """Encrypt a string value using Fernet (symmetric, AES-128-CBC + HMAC)."""
+    return _get_fernet().encrypt(value.encode()).decode()
 
 
 def _decrypt(value: str) -> str:
-    return base64.b64decode(value.encode()).decode()
+    """Decrypt a Fernet-encrypted value. Falls back to legacy base64 for migration."""
+    try:
+        return _get_fernet().decrypt(value.encode()).decode()
+    except (InvalidToken, Exception):
+        # Legacy fallback: old values stored as plain base64
+        try:
+            decoded = base64.b64decode(value.encode()).decode()
+            log.warning("decrypted_legacy_base64_key", hint="Re-save the API key to upgrade encryption")
+            return decoded
+        except Exception:
+            raise ValueError("Could not decrypt API key")
 
 
 class AISettingsService:

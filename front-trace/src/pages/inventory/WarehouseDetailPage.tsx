@@ -37,7 +37,7 @@ const DEPTH_INDENT = ['pl-3', 'pl-8', 'pl-14', 'pl-20', 'pl-26', 'pl-32']
 const EMPTY_FORM = {
   name: '',
   code: '',
-  location_type: '',
+  location_type: 'bin',
   parent_location_id: null as string | null,
   description: '',
   sort_order: 0,
@@ -115,7 +115,7 @@ function LocationForm({ initial, locations, existingTypes, onSubmit, onCancel, s
   const parentOptions = locations.filter(l => !('id' in initial) || l.id !== (initial as WarehouseLocation).id)
 
   return (
-    <div className="bg-muted rounded-xl border border-border p-4 space-y-3">
+    <div className="bg-muted rounded-xl border-2 border-primary/30 p-4 space-y-3 scroll-mt-4" ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-muted-foreground mb-1">Nombre *</label>

@@ -72,6 +72,7 @@ export interface StockLevel {
   product_id: string
   warehouse_id: string
   location_id: string | null
+  location_name: string | null
   batch_id: string | null
   qty_on_hand: string
   qty_reserved: string
@@ -1084,6 +1085,7 @@ export interface SalesOrderLine {
   product_name: string | null
   product_sku: string | null
   variant_id: string | null
+  variant_name: string | null
   warehouse_id: string | null
   warehouse_name: string | null
   qty_ordered: number
@@ -1476,6 +1478,9 @@ export interface CustomerPrice {
   product_name?: string
   product_sku?: string
   variant_id: string | null
+  variant_name?: string | null
+  variant_sku?: string | null
+  base_price?: number | null
   price: number
   min_quantity: number
   currency: string

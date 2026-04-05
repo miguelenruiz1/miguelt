@@ -41,6 +41,16 @@ class BatchRepository:
         )
         return result.scalar_one_or_none()
 
+    async def find_by_number(self, tenant_id: str, entity_id: str, batch_number: str) -> EntityBatch | None:
+        result = await self.db.execute(
+            select(EntityBatch).where(
+                EntityBatch.tenant_id == tenant_id,
+                EntityBatch.entity_id == entity_id,
+                EntityBatch.batch_number == batch_number,
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def create(self, tenant_id: str, data: dict) -> EntityBatch:
         obj = EntityBatch(id=str(uuid.uuid4()), tenant_id=tenant_id, **data)
         self.db.add(obj)
