@@ -66,16 +66,29 @@ async def create_invoice_internal(
         )
 
     # Get credentials from DB (internal calls don't include them in body)
+    import logging as _logging
+    _log = _logging.getLogger("integration.internal")
     credentials = body.pop("credentials", {})
     if not credentials:
-        from app.repositories.integration_repo import IntegrationConfigRepository
-        from app.core.security import decrypt_credentials
-        import json as _json
-        repo = IntegrationConfigRepository(db)
-        config = await repo.get_by_provider(x_tenant_id, provider_slug)
-        if config and config.credentials_enc:
-            credentials = _json.loads(decrypt_credentials(config.credentials_enc))
-    result = await adapter.create_invoice(credentials, body)
+        try:
+            from app.repositories.integration_repo import IntegrationConfigRepository
+            from app.core.security import decrypt_credentials
+            import json as _json
+            repo = IntegrationConfigRepository(db)
+            config = await repo.get_by_provider(x_tenant_id, provider_slug)
+            if config and config.credentials_enc:
+                credentials = _json.loads(decrypt_credentials(config.credentials_enc))
+                _log.info("credentials_loaded tenant=%s provider=%s", x_tenant_id, provider_slug)
+            else:
+                _log.warning("no_credentials_found tenant=%s provider=%s config=%s", x_tenant_id, provider_slug, config is not None)
+        except Exception as exc:
+            _log.exception("credentials_load_error tenant=%s provider=%s", x_tenant_id, provider_slug)
+            raise HTTPException(status_code=500, detail=f"Failed to load credentials: {exc}")
+    try:
+        result = await adapter.create_invoice(credentials, body)
+    except Exception as exc:
+        _log.exception("adapter_create_invoice_error tenant=%s provider=%s", x_tenant_id, provider_slug)
+        raise HTTPException(status_code=502, detail=f"Invoice creation failed: {exc}")
 
     # Inject invoice_number into the response
     if invoice_number:
