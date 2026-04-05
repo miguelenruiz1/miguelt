@@ -326,7 +326,17 @@ export function EInvoicingResolutionPage() {
                 </button>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">No hay resolución sandbox configurada. Se creará automáticamente al simular la primera factura.</p>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">No hay resolución sandbox configurada.</p>
+                <button
+                  onClick={handleResetSandbox}
+                  disabled={createMut.isPending}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
+                >
+                  <RefreshCw className={cn('h-4 w-4', createMut.isPending && 'animate-spin')} />
+                  {createMut.isPending ? 'Creando...' : 'Crear resolución sandbox'}
+                </button>
+              </div>
             )}
           </div>
         )}

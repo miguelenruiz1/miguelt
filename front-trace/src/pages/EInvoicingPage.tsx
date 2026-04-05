@@ -7,7 +7,7 @@ import {
 import { cn } from '@/lib/utils'
 import {
   useIntegrationCatalog, useIntegrationConfigs, useCreateIntegration,
-  useDeleteIntegration, useTestConnection, useResolution,
+  useUpdateIntegration, useDeleteIntegration, useTestConnection, useResolution,
 } from '@/hooks/useIntegrations'
 import { useSalesOrders } from '@/hooks/useInventory'
 
@@ -21,6 +21,7 @@ const INVOICE_STATUS_COLORS: Record<string, string> = {
 export function EInvoicingPage() {
   const { data: configs = [] } = useIntegrationConfigs()
   const createMut = useCreateIntegration()
+  const updateMut = useUpdateIntegration()
   const deleteMut = useDeleteIntegration()
   const testMut = useTestConnection()
   const { data: ordersData } = useSalesOrders({ status: 'delivered', limit: 100 })
@@ -179,6 +180,38 @@ export function EInvoicingPage() {
           </div>
         </div>
       </div>
+
+      {/* Simulation toggle (when connected) */}
+      {isConnected && matiasConfig && (
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Modo Simulación (Sandbox)</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {matiasConfig.simulation_mode
+                  ? 'Las facturas se generan como prueba, sin enviar a la DIAN.'
+                  : 'Las facturas se envían a la DIAN en modo producción.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={matiasConfig.simulation_mode}
+              disabled={updateMut.isPending}
+              onClick={() => updateMut.mutate({ id: matiasConfig.id, data: { simulation_mode: !matiasConfig.simulation_mode } })}
+              className={cn(
+                'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition duration-150 ease-linear disabled:opacity-50',
+                matiasConfig.simulation_mode ? 'bg-amber-500' : 'bg-emerald-500',
+              )}
+            >
+              <span className={cn(
+                'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transform transition duration-150 ease-linear',
+                matiasConfig.simulation_mode ? 'translate-x-5' : 'translate-x-0',
+              )} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Section C: Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
