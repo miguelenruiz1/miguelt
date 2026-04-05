@@ -110,6 +110,18 @@ export function PartnersPage() {
   const hasAddress = (a: typeof emptyAddress) => Object.values(a).some(v => v.trim() !== '')
 
   async function doSubmit() {
+    if (form.is_customer && !form.tax_id.trim()) {
+      alert('El número de documento (NIT/Cédula) es obligatorio para clientes.')
+      return
+    }
+    if (form.is_customer && !form.address.city.trim()) {
+      alert('La ciudad es obligatoria para clientes (requerida para facturación electrónica).')
+      return
+    }
+    if (form.document_type === 'NIT' && !form.dv.trim()) {
+      alert('El dígito de verificación (DV) es obligatorio para NIT.')
+      return
+    }
     const payload: Record<string, unknown> = {
       name: form.name, code: form.code,
       is_supplier: form.is_supplier, is_customer: form.is_customer,
@@ -251,9 +263,9 @@ export function PartnersPage() {
                   <option value="TI">Tarjeta Identidad</option>
                 </select>
               </div>
-              <div><label className="text-xs text-muted-foreground">{form.document_type === 'NIT' ? 'NIT' : 'Nº Documento'}</label><input value={form.tax_id} onChange={e => setForm(f => ({...f, tax_id: e.target.value}))} className={inputCls} /></div>
+              <div><label className="text-xs text-muted-foreground">{form.document_type === 'NIT' ? 'NIT *' : 'Nº Documento *'}</label><input value={form.tax_id} onChange={e => setForm(f => ({...f, tax_id: e.target.value}))} className={inputCls} required /></div>
               {form.document_type === 'NIT' && (
-                <div><label className="text-xs text-muted-foreground">DV</label><input maxLength={1} value={form.dv} onChange={e => setForm(f => ({...f, dv: e.target.value}))} className={inputCls} placeholder="0-9" /></div>
+                <div><label className="text-xs text-muted-foreground">DV *</label><input maxLength={1} value={form.dv} onChange={e => setForm(f => ({...f, dv: e.target.value}))} className={inputCls} placeholder="0-9" required /></div>
               )}
               {form.document_type === 'NIT' && (
                 <>
@@ -277,8 +289,8 @@ export function PartnersPage() {
 
               {/* ── Direccion ── */}
               <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Direccion</p></div>
-              <div className="col-span-2"><input value={form.address.line1} onChange={e => setForm(f => ({...f, address: {...f.address, line1: e.target.value}}))} placeholder="Calle, carrera, numero" className={inputCls} /></div>
-              <div><input value={form.address.city} onChange={e => setForm(f => ({...f, address: {...f.address, city: e.target.value}}))} placeholder="Ciudad" className={inputCls} /></div>
+              <div className="col-span-2"><label className="text-xs text-muted-foreground">Dirección</label><input value={form.address.line1} onChange={e => setForm(f => ({...f, address: {...f.address, line1: e.target.value}}))} placeholder="Calle, carrera, numero" className={inputCls} /></div>
+              <div><label className="text-xs text-muted-foreground">Ciudad *</label><input value={form.address.city} onChange={e => setForm(f => ({...f, address: {...f.address, city: e.target.value}}))} placeholder="Ciudad" className={inputCls} required /></div>
               <div><input value={form.address.state} onChange={e => setForm(f => ({...f, address: {...f.address, state: e.target.value}}))} placeholder="Departamento / Estado" className={inputCls} /></div>
               <div><input value={form.address.country} onChange={e => setForm(f => ({...f, address: {...f.address, country: e.target.value}}))} placeholder="Pais (CO, DE...)" className={inputCls} /></div>
               <div><input value={form.address.zip} onChange={e => setForm(f => ({...f, address: {...f.address, zip: e.target.value}}))} placeholder="Codigo postal" className={inputCls} /></div>

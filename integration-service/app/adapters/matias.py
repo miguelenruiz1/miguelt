@@ -146,6 +146,19 @@ class MatiasAdapter(BaseAdapter):
         cleaned = re.sub(r'[^a-zA-Z0-9]', '', str(value or "").strip())
         return cleaned or "222222222"
 
+    @staticmethod
+    def _calc_due_date(data: dict) -> str:
+        """Calculate payment due date from date + payment_terms_days."""
+        if data.get("due_date"):
+            return data["due_date"]
+        base_date = data.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+        terms = data.get("payment_terms_days", 0) or 0
+        if terms > 0:
+            from datetime import timedelta
+            d = datetime.strptime(base_date, "%Y-%m-%d")
+            return (d + timedelta(days=terms)).strftime("%Y-%m-%d")
+        return base_date
+
     def _build_customer(self, customer: dict) -> dict:
         """Build UBL 2.1 customer from Trace customer data with smart defaults."""
         doc_type = customer.get("document_type", "CC")
@@ -165,10 +178,10 @@ class MatiasAdapter(BaseAdapter):
             regime = customer.get("tax_regime", 2)  # No responsable IVA
             liability = customer.get("tax_liability", 7)  # No aplica
 
-        # Address extraction
+        # Address extraction — prefer flat fields, fallback to nested address dict
         addr = customer.get("address", {}) or {}
-        addr_line = addr.get("line1", "")
-        city = addr.get("city", "")
+        addr_line = customer.get("address_line") or addr.get("line1", "")
+        city = customer.get("city") or addr.get("city", "")
 
         result = {
             "identification_number": nit,
@@ -251,10 +264,10 @@ class MatiasAdapter(BaseAdapter):
                 "taxable_amount": f"{subtotal:.2f}",
             }] if tax_amount > 0 else [],
             "payments": [{
-                "payment_form_id": 1,  # Contado
+                "payment_form_id": data.get("payment_form", 1),  # 1=Contado, 2=Crédito
                 "payment_method_id": 1,  # Instrumento no definido
                 "means_payment_id": 10,  # Efectivo
-                "payment_due_date": data.get("due_date", data.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))),
+                "payment_due_date": self._calc_due_date(data),
                 "value_paid": f"{total:.2f}",
             }],
             "lines": invoice_lines,
