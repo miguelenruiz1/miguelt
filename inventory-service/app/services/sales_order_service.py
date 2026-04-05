@@ -635,7 +635,8 @@ class SalesOrderService:
                 "number": order.order_number,
                 "date": order.confirmed_at.strftime("%Y-%m-%d") if order.confirmed_at else None,
                 "currency": order.currency,
-                "payment_form": payment_form,
+                "payment_form": getattr(order, "payment_form", None) or payment_form,
+                "payment_method": getattr(order, "payment_method", 10),
                 "payment_terms_days": payment_terms,
                 "customer": {
                     "nit": getattr(src, "tax_id", "") or "222222222",

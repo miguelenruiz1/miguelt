@@ -52,6 +52,8 @@ class SalesOrder(Base):
     total_with_tax:   Mapped[Decimal]           = mapped_column(Numeric(14, 2), nullable=False, server_default="0")
     total_payable:    Mapped[Decimal]           = mapped_column(Numeric(14, 2), nullable=False, server_default="0")
     currency:         Mapped[str]              = mapped_column(String(3), nullable=False, server_default="USD")
+    payment_form:     Mapped[int]              = mapped_column(Integer, nullable=False, server_default="1")  # 1=Contado, 2=Crédito
+    payment_method:   Mapped[int]              = mapped_column(Integer, nullable=False, server_default="10")  # 10=Efectivo
     notes:            Mapped[str | None]       = mapped_column(Text, nullable=True)
     extra_data:       Mapped[dict]             = mapped_column("extra_data", JSONB, nullable=False, server_default="{}")
 

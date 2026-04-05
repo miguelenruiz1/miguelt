@@ -265,8 +265,8 @@ class MatiasAdapter(BaseAdapter):
             }] if tax_amount > 0 else [],
             "payments": [{
                 "payment_form_id": data.get("payment_form", 1),  # 1=Contado, 2=Crédito
-                "payment_method_id": 1,  # Instrumento no definido
-                "means_payment_id": 10,  # Efectivo
+                "payment_method_id": 1,  # Instrumento no definido (DIAN catalog)
+                "means_payment_id": data.get("payment_method", 10),  # 10=Efectivo, 42=Consignación, 47=Transferencia, 48=TC, 49=TD
                 "payment_due_date": self._calc_due_date(data),
                 "value_paid": f"{total:.2f}",
             }],

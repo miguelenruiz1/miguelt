@@ -97,7 +97,7 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
   // Only show active products with available stock
   const products = allProducts.filter(p => p.is_active && productsWithStock.has(p.id))
 
-  const [form, setForm] = useState({ customer_id: '', warehouse_id: '', expected_date: '', notes: '', discount_pct: '0', discount_reason: '' })
+  const [form, setForm] = useState({ customer_id: '', warehouse_id: '', expected_date: '', notes: '', discount_pct: '0', discount_reason: '', payment_form: '1', payment_method: '10' })
   const [lines, setLines] = useState<SOLine[]>([{ product_id: '', variant_id: '', warehouse_id: '', qty_ordered: '1', unit_price: '0', discount_pct: '0', tax_rate: '19' }])
   const [linePriceSources, setLinePriceSources] = useState<Record<number, PriceLookupResponse>>({})
 
@@ -188,6 +188,8 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
       notes: form.notes || null,
       discount_pct: Number(form.discount_pct) || 0,
       discount_reason: form.discount_reason || null,
+      payment_form: Number(form.payment_form),
+      payment_method: Number(form.payment_method),
       lines: lines.map(l => ({
         product_id: l.product_id,
         variant_id: l.variant_id || null,
@@ -228,6 +230,26 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
             {partners.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
           </select>
           <input type="date" value={form.expected_date} onChange={e => setForm(f => ({ ...f, expected_date: e.target.value }))} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase">Forma de pago</label>
+              <select value={form.payment_form} onChange={e => setForm(f => ({ ...f, payment_form: e.target.value }))} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="1">Contado</option>
+                <option value="2">Crédito</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase">Medio de pago</label>
+              <select value={form.payment_method} onChange={e => setForm(f => ({ ...f, payment_method: e.target.value }))} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="10">Efectivo</option>
+                <option value="42">Consignación bancaria</option>
+                <option value="47">Transferencia débito</option>
+                <option value="48">Tarjeta crédito</option>
+                <option value="49">Tarjeta débito</option>
+                <option value="1">Instrumento no definido</option>
+              </select>
+            </div>
+          </div>
           <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notas" rows={2} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
 
           <div className="space-y-2">
