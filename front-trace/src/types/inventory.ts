@@ -1726,6 +1726,13 @@ export interface BusinessPartner {
   supplier_type_id: string | null
   customer_type_id: string | null
   tax_id: string | null
+  dv: string | null
+  document_type: string
+  organization_type: number
+  tax_regime: number
+  tax_liability: number
+  municipality_id: number
+  company_name: string | null
   contact_name: string | null
   email: string | null
   phone: string | null
