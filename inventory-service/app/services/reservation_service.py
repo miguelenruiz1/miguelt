@@ -54,7 +54,10 @@ class ReservationService:
         for line in so.lines:
             eff_wh = line.warehouse_id or so.warehouse_id
             if not eff_wh:
-                continue
+                product_name = line.product.name if line.product else line.product_id
+                raise ValueError(
+                    f"No se puede reservar stock para '{product_name}': no tiene bodega asignada."
+                )
             qty = Decimal(str(line.qty_ordered))
             if qty <= 0:
                 continue
