@@ -65,6 +65,11 @@ def _error_response(
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def app_error_handler(request: Request, exc: AppError) -> ORJSONResponse:
+        import structlog
+        structlog.get_logger(__name__).warning(
+            "app_error", status=exc.status_code, code=exc.error_code,
+            detail=exc.detail, path=str(request.url), method=request.method,
+        )
         return _error_response(request, exc.status_code, exc.error_code, exc.detail)
 
     @app.exception_handler(RequestValidationError)

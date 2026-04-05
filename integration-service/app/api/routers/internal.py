@@ -37,12 +37,18 @@ async def create_invoice_internal(
         )
 
     # Get next invoice number from resolution
+    # Map provider slug to resolution slug (e.g., matias → matias_fev for invoices)
+    resolution_slug = f"{provider_slug}_fev" if not provider_slug.endswith(("_fev", "_nc", "_nd", "_ds", "_er", "_pos")) else provider_slug
     svc = ResolutionService(db)
     invoice_number: str | None = None
     try:
-        resolution = await svc.get_active_resolution(x_tenant_id, provider_slug)
+        # Try specific resolution first, fall back to legacy provider slug
+        resolution = await svc.get_active_resolution(x_tenant_id, resolution_slug)
+        if not resolution:
+            resolution = await svc.get_active_resolution(x_tenant_id, provider_slug)
+            resolution_slug = provider_slug
         if resolution:
-            invoice_number, _ = await svc.get_next_number(x_tenant_id, provider_slug)
+            invoice_number, _ = await svc.get_next_number(x_tenant_id, resolution_slug)
             body["invoice_number"] = invoice_number
             body["resolution"] = {
                 "prefix": resolution.prefix,
@@ -88,13 +94,17 @@ async def create_credit_note_internal(
             detail=f"No adapter for provider: {provider_slug}",
         )
 
-    # Get next number from resolution for the credit note
+    # Get next number from resolution for the credit note (matias → matias_nc)
+    resolution_slug = f"{provider_slug}_nc" if not provider_slug.endswith(("_fev", "_nc", "_nd", "_ds", "_er", "_pos")) else provider_slug
     svc = ResolutionService(db)
     credit_note_number: str | None = None
     try:
-        resolution = await svc.get_active_resolution(x_tenant_id, provider_slug)
+        resolution = await svc.get_active_resolution(x_tenant_id, resolution_slug)
+        if not resolution:
+            resolution = await svc.get_active_resolution(x_tenant_id, provider_slug)
+            resolution_slug = provider_slug
         if resolution:
-            credit_note_number, _ = await svc.get_next_number(x_tenant_id, provider_slug)
+            credit_note_number, _ = await svc.get_next_number(x_tenant_id, resolution_slug)
             body["credit_note_number"] = credit_note_number
             body["resolution"] = {
                 "prefix": resolution.prefix,
