@@ -626,11 +626,17 @@ class SalesOrderService:
             except Exception:
                 pass
             src = bp or customer  # prefer BusinessPartner (has fiscal fields)
+            addr = getattr(src, "address", {}) or {}
+            payment_terms = getattr(src, "payment_terms_days", 0) or 0
+            # payment_form: 1=Contado, 2=Crédito
+            payment_form = 2 if payment_terms > 0 else 1
             subtotal_after_discount = float(order.subtotal) - float(order.discount_amount)
             payload = {
                 "number": order.order_number,
                 "date": order.confirmed_at.strftime("%Y-%m-%d") if order.confirmed_at else None,
                 "currency": order.currency,
+                "payment_form": payment_form,
+                "payment_terms_days": payment_terms,
                 "customer": {
                     "nit": getattr(src, "tax_id", "") or "222222222",
                     "dv": getattr(src, "dv", "") or "0",
@@ -643,7 +649,12 @@ class SalesOrderService:
                     "tax_regime": getattr(src, "tax_regime", 2),
                     "tax_liability": getattr(src, "tax_liability", 7),
                     "municipality_id": getattr(src, "municipality_id", 149),
-                    "address": getattr(src, "address", {}) or {},
+                    "address": addr,
+                    "address_line": addr.get("line1", ""),
+                    "city": addr.get("city", ""),
+                    "state": addr.get("state", ""),
+                    "zip": addr.get("zip", ""),
+                    "country": addr.get("country", "CO"),
                 },
                 "items": [],
                 "global_discount_pct": float(order.discount_pct or 0),
