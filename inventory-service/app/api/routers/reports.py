@@ -198,10 +198,16 @@ async def get_pnl_ai_analysis(
     db: AsyncSession = Depends(get_db_session),
 ):
     """Proxy to ai-service for P&L analysis."""
+    import json as _json
     from datetime import datetime as _dt, timezone as _tz
     from app.services.pnl_service import PnLService
     from app.core.settings import get_settings
     import httpx
+
+    def _default(o: object) -> str:
+        if isinstance(o, (_dt, date)):
+            return o.isoformat()
+        raise TypeError(f"Object of type {type(o).__name__} is not JSON serializable")
 
     tenant_id = current_user.get("tenant_id", "default")
     settings = get_settings()
@@ -248,18 +254,22 @@ async def get_pnl_ai_analysis(
     # 3. Call ai-service (forward user's Bearer token)
     auth_header = request.headers.get("authorization", "")
     try:
+        payload = _json.dumps({
+            "tenant_id": tenant_id,
+            "date_from": str(date_from or "2020-01-01"),
+            "date_to": str(date_to or _dt.now(_tz.utc).date()),
+            "force": force,
+            "pnl_data": pnl,
+            "business_context": biz_context,
+        }, default=_default, ensure_ascii=False)
+        hdrs: dict[str, str] = {"Content-Type": "application/json"}
+        if auth_header:
+            hdrs["Authorization"] = auth_header
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
                 f"{settings.AI_SERVICE_URL}/api/v1/analyze/pnl",
-                json={
-                    "tenant_id": tenant_id,
-                    "date_from": str(date_from or "2020-01-01"),
-                    "date_to": str(date_to or _dt.now(_tz.utc).date()),
-                    "force": force,
-                    "pnl_data": pnl,
-                    "business_context": biz_context,
-                },
-                headers={"Authorization": auth_header} if auth_header else {},
+                content=payload,
+                headers=hdrs,
             )
         if resp.status_code == 200:
             return resp.json()
