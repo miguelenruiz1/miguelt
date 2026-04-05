@@ -204,9 +204,16 @@ async def get_pnl_ai_analysis(
     from app.core.settings import get_settings
     import httpx
 
-    def _default(o: object) -> str:
+    from decimal import Decimal as _Decimal
+    from uuid import UUID as _UUID
+
+    def _default(o: object):
         if isinstance(o, (_dt, date)):
             return o.isoformat()
+        if isinstance(o, _Decimal):
+            return float(o)
+        if isinstance(o, _UUID):
+            return str(o)
         raise TypeError(f"Object of type {type(o).__name__} is not JSON serializable")
 
     tenant_id = current_user.get("tenant_id", "default")
