@@ -46,6 +46,15 @@ class BusinessPartner(Base):
     phone:            Mapped[str | None] = mapped_column(String(50), nullable=True)
     address:          Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
+    # ── DIAN fiscal fields (e-invoicing) ──────────────────────────────────
+    dv:                Mapped[str | None] = mapped_column(String(1), nullable=True)
+    document_type:     Mapped[str]        = mapped_column(String(10), nullable=False, server_default="CC")
+    organization_type: Mapped[int]        = mapped_column(Integer, nullable=False, server_default="2")
+    tax_regime:        Mapped[int]        = mapped_column(Integer, nullable=False, server_default="2")
+    tax_liability:     Mapped[int]        = mapped_column(Integer, nullable=False, server_default="7")
+    municipality_id:   Mapped[int]        = mapped_column(Integer, nullable=False, server_default="149")
+    company_name:      Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     # ── Customer-specific ─────────────────────────────────────────────────
     shipping_address: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     credit_limit:     Mapped[int]        = mapped_column(Integer, nullable=False, server_default="0")

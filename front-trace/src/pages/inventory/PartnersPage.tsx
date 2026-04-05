@@ -62,6 +62,8 @@ export function PartnersPage() {
     supplier_type_id: '', customer_type_id: '', tax_id: '', contact_name: '',
     email: '', phone: '', payment_terms_days: '30', lead_time_days: '7',
     credit_limit: '0', discount_percent: '0', notes: '',
+    document_type: 'CC', dv: '', company_name: '',
+    organization_type: '2', tax_regime: '2', tax_liability: '7', municipality_id: '149',
     address: { ...emptyAddress },
     shipping_address: { ...emptyAddress },
     differentShippingAddress: false,
@@ -72,6 +74,8 @@ export function PartnersPage() {
     supplier_type_id: '', customer_type_id: '', tax_id: '', contact_name: '',
     email: '', phone: '', payment_terms_days: '30', lead_time_days: '7',
     credit_limit: '0', discount_percent: '0', notes: '',
+    document_type: 'CC', dv: '', company_name: '',
+    organization_type: '2', tax_regime: '2', tax_liability: '7', municipality_id: '149',
     address: { ...emptyAddress },
     shipping_address: { ...emptyAddress },
     differentShippingAddress: false,
@@ -85,6 +89,12 @@ export function PartnersPage() {
       name: p.name, code: p.code, is_supplier: p.is_supplier, is_customer: p.is_customer,
       supplier_type_id: p.supplier_type_id || '', customer_type_id: p.customer_type_id || '',
       tax_id: p.tax_id || '', contact_name: p.contact_name || '',
+      document_type: (p as any).document_type || 'CC', dv: (p as any).dv || '',
+      company_name: (p as any).company_name || '',
+      organization_type: String((p as any).organization_type ?? 2),
+      tax_regime: String((p as any).tax_regime ?? 2),
+      tax_liability: String((p as any).tax_liability ?? 7),
+      municipality_id: String((p as any).municipality_id ?? 149),
       email: p.email || '', phone: p.phone || '',
       payment_terms_days: String(p.payment_terms_days), lead_time_days: String(p.lead_time_days),
       credit_limit: String(p.credit_limit), discount_percent: String(p.discount_percent),
@@ -106,6 +116,13 @@ export function PartnersPage() {
       supplier_type_id: form.supplier_type_id || null,
       customer_type_id: form.customer_type_id || null,
       tax_id: form.tax_id || null,
+      document_type: form.document_type,
+      dv: form.dv || null,
+      company_name: form.company_name || null,
+      organization_type: Number(form.organization_type),
+      tax_regime: Number(form.tax_regime),
+      tax_liability: Number(form.tax_liability),
+      municipality_id: Number(form.municipality_id),
       contact_name: form.contact_name || null,
       email: form.email || null, phone: form.phone || null,
       payment_terms_days: Number(form.payment_terms_days),
@@ -224,7 +241,32 @@ export function PartnersPage() {
               {/* ── Identificacion ── */}
               <div className="col-span-2"><label className="text-xs text-muted-foreground">Nombre *</label><input required value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} className={inputCls} /></div>
               <div><label className="text-xs text-muted-foreground">Codigo *</label><input required value={form.code} onChange={e => setForm(f => ({...f, code: e.target.value}))} className={inputCls} /></div>
-              <div><label className="text-xs text-muted-foreground">NIT / RUT</label><input value={form.tax_id} onChange={e => setForm(f => ({...f, tax_id: e.target.value}))} className={inputCls} /></div>
+              <div>
+                <label className="text-xs text-muted-foreground">Tipo documento</label>
+                <select value={form.document_type} onChange={e => setForm(f => ({...f, document_type: e.target.value}))} className={inputCls}>
+                  <option value="CC">Cédula (CC)</option>
+                  <option value="NIT">NIT</option>
+                  <option value="CE">Cédula Extranjería</option>
+                  <option value="PP">Pasaporte</option>
+                  <option value="TI">Tarjeta Identidad</option>
+                </select>
+              </div>
+              <div><label className="text-xs text-muted-foreground">{form.document_type === 'NIT' ? 'NIT' : 'Nº Documento'}</label><input value={form.tax_id} onChange={e => setForm(f => ({...f, tax_id: e.target.value}))} className={inputCls} /></div>
+              {form.document_type === 'NIT' && (
+                <div><label className="text-xs text-muted-foreground">DV</label><input maxLength={1} value={form.dv} onChange={e => setForm(f => ({...f, dv: e.target.value}))} className={inputCls} placeholder="0-9" /></div>
+              )}
+              {form.document_type === 'NIT' && (
+                <>
+                  <div className="col-span-2"><label className="text-xs text-muted-foreground">Razón social</label><input value={form.company_name} onChange={e => setForm(f => ({...f, company_name: e.target.value}))} className={inputCls} /></div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Régimen fiscal</label>
+                    <select value={form.tax_regime} onChange={e => setForm(f => ({...f, tax_regime: e.target.value}))} className={inputCls}>
+                      <option value="1">Responsable de IVA</option>
+                      <option value="2">No responsable de IVA</option>
+                    </select>
+                  </div>
+                </>
+              )}
 
               {/* ── Contacto ── */}
               <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contacto</p></div>

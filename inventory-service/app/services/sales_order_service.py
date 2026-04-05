@@ -616,15 +616,34 @@ class SalesOrderService:
 
             # Build invoice payload from SO + customer
             customer = await self.customer_repo.get_by_id(order.customer_id, tenant_id)
+            # Try to get richer data from BusinessPartner if available
+            bp = None
+            try:
+                from app.db.models.partner import BusinessPartner
+                from sqlalchemy import select as _sel
+                bp_result = await self.db.execute(_sel(BusinessPartner).where(BusinessPartner.id == order.customer_id, BusinessPartner.tenant_id == tenant_id))
+                bp = bp_result.scalar_one_or_none()
+            except Exception:
+                pass
+            src = bp or customer  # prefer BusinessPartner (has fiscal fields)
             subtotal_after_discount = float(order.subtotal) - float(order.discount_amount)
             payload = {
                 "number": order.order_number,
                 "date": order.confirmed_at.strftime("%Y-%m-%d") if order.confirmed_at else None,
                 "currency": order.currency,
                 "customer": {
-                    "nit": getattr(customer, "tax_id", "") or "222222222",
-                    "name": customer.name if customer else "",
-                    "email": getattr(customer, "email", "") or "",
+                    "nit": getattr(src, "tax_id", "") or "222222222",
+                    "dv": getattr(src, "dv", "") or "0",
+                    "name": src.name if src else "",
+                    "company_name": getattr(src, "company_name", "") or (src.name if src else ""),
+                    "email": getattr(src, "email", "") or "",
+                    "phone": getattr(src, "phone", "") or "",
+                    "document_type": getattr(src, "document_type", "CC"),
+                    "organization_type": getattr(src, "organization_type", 2),
+                    "tax_regime": getattr(src, "tax_regime", 2),
+                    "tax_liability": getattr(src, "tax_liability", 7),
+                    "municipality_id": getattr(src, "municipality_id", 149),
+                    "address": getattr(src, "address", {}) or {},
                 },
                 "items": [],
                 "global_discount_pct": float(order.discount_pct or 0),

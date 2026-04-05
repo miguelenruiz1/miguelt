@@ -139,6 +139,57 @@ class MatiasAdapter(BaseAdapter):
             "status": "simulated",
         }
 
+    @staticmethod
+    def _clean_dni(value: str) -> str:
+        """Strip non-alphanumeric chars from DNI/NIT."""
+        import re
+        cleaned = re.sub(r'[^a-zA-Z0-9]', '', str(value or "").strip())
+        return cleaned or "222222222"
+
+    def _build_customer(self, customer: dict) -> dict:
+        """Build UBL 2.1 customer from Trace customer data with smart defaults."""
+        doc_type = customer.get("document_type", "CC")
+        nit = self._clean_dni(customer.get("nit") or customer.get("tax_id"))
+
+        # Map Trace document_type → Matias type_document_identification_id
+        DOC_TYPE_MAP = {"CC": 6, "NIT": 9, "CE": 2, "PP": 7, "TI": 5, "RC": 4}
+        type_doc_id = DOC_TYPE_MAP.get(doc_type, 6)
+
+        # Smart defaults by document type
+        if doc_type == "NIT":
+            org_type = customer.get("organization_type", 1)  # Jurídica
+            regime = customer.get("tax_regime", 1)  # Responsable IVA
+            liability = customer.get("tax_liability", 7)
+        else:
+            org_type = customer.get("organization_type", 2)  # Persona Natural
+            regime = customer.get("tax_regime", 2)  # No responsable IVA
+            liability = customer.get("tax_liability", 7)  # No aplica
+
+        # Address extraction
+        addr = customer.get("address", {}) or {}
+        addr_line = addr.get("line1", "")
+        city = addr.get("city", "")
+
+        result = {
+            "identification_number": nit,
+            "dni": nit,
+            "dv": str(customer.get("dv", "0") or "0"),
+            "name": customer.get("name", "Cliente"),
+            "company_name": customer.get("company_name") or customer.get("name", "Cliente"),
+            "email": customer.get("email", ""),
+            "phone": customer.get("phone", ""),
+            "municipality_id": customer.get("municipality_id", 149),
+            "type_document_identification_id": type_doc_id,
+            "type_organization_id": org_type,
+            "type_regime_id": regime,
+            "type_liability_id": liability,
+        }
+        if addr_line:
+            result["address"] = addr_line
+        if city:
+            result["city"] = city
+        return result
+
     def _build_invoice_payload(self, data: dict) -> dict:
         """Build MATIAS API v2 UBL 2.1 compatible payload."""
         resolution = data.get("resolution", {})
@@ -155,13 +206,13 @@ class MatiasAdapter(BaseAdapter):
             tax_amount = round(line_subtotal * tax_rate / 100, 2)
 
             invoice_lines.append({
-                "unit_measure_id": 70,  # UN (unidad)
+                "quantity_units_id": 70,  # UN (unidad)
                 "invoiced_quantity": str(quantity),
                 "line_extension_amount": f"{line_subtotal:.2f}",
                 "free_of_charge_indicator": False,
                 "description": line.get("description", line.get("product_name", line.get("name", "Producto"))),
                 "code": line.get("sku", line.get("code", f"PROD-{i}")),
-                "type_item_identification_id": 4,  # Estándar de adopción del contribuyente
+                "type_item_identifications_id": 4,  # Estándar de adopción del contribuyente
                 "price_amount": f"{unit_price:.2f}",
                 "base_quantity": str(quantity),
                 "tax_totals": [{
@@ -178,18 +229,15 @@ class MatiasAdapter(BaseAdapter):
         total = float(data.get("total", subtotal + tax_amount))
 
         payload = {
-            "type_document_id": 1,  # Factura electrónica de venta
+            "type_document_id": 7,  # Factura electrónica de venta (sandbox/habilitación)
+            "operation_type_id": 10,  # Estándar
             "resolution_number": resolution.get("resolution_number", data.get("resolution_number", "")),
-            "prefix": resolution.get("prefix", "FEV"),
+            "prefix": resolution.get("prefix", "SETP"),
             "number": data.get("invoice_number", ""),
+            "document_number": int("".join(c for c in str(data.get("invoice_number", "0")) if c.isdigit()) or "0"),
             "date": data.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
             "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
-            "customer": {
-                "identification_number": customer.get("nit", customer.get("tax_id", "222222222")),
-                "name": customer.get("name", "Cliente"),
-                "email": customer.get("email", ""),
-                "municipality_id": 149,  # Bogotá default
-            },
+            "customer": self._build_customer(customer),
             "legal_monetary_totals": {
                 "line_extension_amount": f"{subtotal:.2f}",
                 "tax_exclusive_amount": f"{subtotal:.2f}",
@@ -204,8 +252,10 @@ class MatiasAdapter(BaseAdapter):
             }] if tax_amount > 0 else [],
             "payments": [{
                 "payment_form_id": 1,  # Contado
-                "payment_method_id": 10,  # Efectivo
+                "payment_method_id": 1,  # Instrumento no definido
+                "means_payment_id": 10,  # Efectivo
                 "payment_due_date": data.get("due_date", data.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))),
+                "value_paid": f"{total:.2f}",
             }],
             "lines": invoice_lines,
             "notes": data.get("notes", ""),
