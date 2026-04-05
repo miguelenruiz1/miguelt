@@ -13,7 +13,7 @@ import httpx
 from app.adapters.base import BaseAdapter
 from app.core.errors import AdapterError
 
-MATIAS_BASE_URL = "https://api.matias-api.com/v1"
+MATIAS_BASE_URL = "https://api-v2.matias-api.com/v1"
 
 
 class MatiasAdapter(BaseAdapter):
