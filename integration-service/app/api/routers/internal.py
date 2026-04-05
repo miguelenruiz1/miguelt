@@ -65,7 +65,16 @@ async def create_invoice_internal(
             "resolution_error tenant=%s provider=%s", x_tenant_id, provider_slug
         )
 
+    # Get credentials from DB (internal calls don't include them in body)
     credentials = body.pop("credentials", {})
+    if not credentials:
+        from app.repositories.integration_repo import IntegrationConfigRepository
+        from app.core.security import decrypt_credentials
+        import json as _json
+        repo = IntegrationConfigRepository(db)
+        config = await repo.get_by_provider(x_tenant_id, provider_slug)
+        if config and config.credentials_enc:
+            credentials = _json.loads(decrypt_credentials(config.credentials_enc))
     result = await adapter.create_invoice(credentials, body)
 
     # Inject invoice_number into the response
@@ -121,6 +130,14 @@ async def create_credit_note_internal(
         )
 
     credentials = body.pop("credentials", {})
+    if not credentials:
+        from app.repositories.integration_repo import IntegrationConfigRepository
+        from app.core.security import decrypt_credentials
+        import json as _json
+        repo = IntegrationConfigRepository(db)
+        config = await repo.get_by_provider(x_tenant_id, provider_slug)
+        if config and config.credentials_enc:
+            credentials = _json.loads(decrypt_credentials(config.credentials_enc))
     result = await adapter.create_credit_note(credentials, body)
 
     if credit_note_number:
