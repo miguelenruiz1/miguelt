@@ -176,14 +176,17 @@ export function EInvoicingPage() {
                 </button>
               </>
             )}
-            {!isConnected && (
-              <button
-                onClick={() => setShowSetup(true)}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white  transition hover:bg-primary"
-              >
-                Configurar
-              </button>
-            )}
+            <button
+              onClick={() => setShowSetup(true)}
+              className={cn(
+                "rounded-lg px-4 py-2 text-sm font-medium transition",
+                isConnected
+                  ? "bg-secondary text-foreground hover:bg-gray-200"
+                  : "bg-primary text-white hover:bg-primary/90"
+              )}
+            >
+              {isConnected ? 'Reconfigurar' : 'Configurar'}
+            </button>
           </div>
         </div>
       </div>
