@@ -27,6 +27,7 @@ export function EInvoicingPage() {
   const { data: ordersData } = useSalesOrders({ status: 'delivered', limit: 100 })
 
   const [showSetup, setShowSetup] = useState(false)
+  const [showUpdateKey, setShowUpdateKey] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
   const [apiKey, setApiKey] = useState('')
   const [simMode, setSimMode] = useState(true)
@@ -162,7 +163,13 @@ export function EInvoicingPage() {
                   <Zap className="h-3.5 w-3.5" /> {testMut.isPending ? 'Probando...' : 'Probar conexión'}
                 </button>
                 <button
-                  onClick={() => { if (confirm('¿Desconectar MATIAS API?')) deleteMut.mutate(matiasConfig!.id) }}
+                  onClick={() => setShowUpdateKey(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-2 text-xs font-medium text-foreground transition hover:bg-gray-200"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" /> Actualizar API Key
+                </button>
+                <button
+                  onClick={async () => { if (window.confirm('¿Desconectar MATIAS API?')) { try { await deleteMut.mutateAsync(matiasConfig!.id) } catch { alert('Error al desconectar. Intenta de nuevo.') } } }}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-100"
                 >
                   <XCircle className="h-3.5 w-3.5" /> Desconectar
@@ -344,6 +351,50 @@ export function EInvoicingPage() {
               </button>
               <button type="submit" disabled={createMut.isPending} className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white  transition hover:bg-primary disabled:opacity-50">
                 {createMut.isPending ? 'Conectando...' : 'Conectar'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+      {/* Update API Key modal */}
+      {showUpdateKey && matiasConfig && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-gray-900/50" onClick={() => setShowUpdateKey(false)} />
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              await updateMut.mutateAsync({
+                id: matiasConfig.id,
+                data: { credentials: { api_key: apiKey } },
+              })
+              setShowUpdateKey(false)
+              setApiKey('')
+              setTestResult(null)
+            }}
+            onClick={e => e.stopPropagation()}
+            className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-5"
+          >
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">Actualizar API Key</h3>
+              <p className="text-sm text-muted-foreground mt-1">Ingresa tu nueva API Key de MATIAS.</p>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Nueva API Key <span className="text-red-500">*</span></label>
+              <input
+                value={apiKey}
+                onChange={e => setApiKey(e.target.value)}
+                type="password"
+                required
+                className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20"
+                placeholder="Pega tu token de Matias aquí"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-1">
+              <button type="button" onClick={() => { setShowUpdateKey(false); setApiKey('') }} className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted">
+                Cancelar
+              </button>
+              <button type="submit" disabled={!apiKey.trim() || updateMut.isPending} className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 disabled:opacity-50">
+                {updateMut.isPending ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </form>
