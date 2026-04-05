@@ -1,7 +1,8 @@
-"""MATIAS API adapter — electronic invoicing for Colombia (DIAN).
+"""MATIAS API v2 adapter — electronic invoicing for Colombia (DIAN).
 
-MATIAS API docs: https://api.matias-api.com/v1
-Auth: Bearer token per tenant (API key)
+MATIAS API v2 docs: https://api-v2.matias-api.com
+Auth: Bearer JWT token (Personal Access Token)
+Format: UBL 2.1 Colombia
 """
 from __future__ import annotations
 
@@ -13,7 +14,7 @@ import httpx
 from app.adapters.base import BaseAdapter
 from app.core.errors import AdapterError
 
-MATIAS_BASE_URL = "https://api-v2.matias-api.com/v1"
+MATIAS_BASE_URL = "https://api-v2.matias-api.com/api/ubl2.1"
 
 
 class MatiasAdapter(BaseAdapter):
@@ -21,13 +22,14 @@ class MatiasAdapter(BaseAdapter):
     display_name = "MATIAS API — Facturación Electrónica DIAN"
 
     def __init__(self) -> None:
-        self._client = httpx.AsyncClient(timeout=30.0)
+        self._client = httpx.AsyncClient(timeout=30.0, follow_redirects=False)
 
     def _headers(self, credentials: dict) -> dict:
         api_key = credentials.get("api_key", "")
         return {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "Accept": "application/json",
         }
 
     def _is_simulation(self, credentials: dict) -> bool:
@@ -43,7 +45,7 @@ class MatiasAdapter(BaseAdapter):
             raise AdapterError("matias", f"Connection error: {e}")
 
         if resp.status_code >= 400:
-            raise AdapterError("matias", f"MATIAS API error {resp.status_code}: {resp.text}", resp.status_code)
+            raise AdapterError("matias", f"MATIAS API error {resp.status_code}: {resp.text[:500]}", resp.status_code)
 
         return resp.json() if resp.content else {}
 
@@ -52,20 +54,22 @@ class MatiasAdapter(BaseAdapter):
     async def test_connection(self, credentials: dict) -> dict:
         if self._is_simulation(credentials):
             return {"ok": True, "provider": "matias", "message": "Simulation mode — no real connection", "simulation": True}
-        resp = await self._request("GET", "/account", credentials)
-        return {
-            "ok": True,
-            "provider": "matias",
-            "company_name": resp.get("company_name", ""),
-            "message": "Authentication successful",
-        }
+        # Use a simple GET to verify auth
+        try:
+            headers = self._headers(credentials)
+            resp = await self._client.get(f"{MATIAS_BASE_URL}/config/software", headers=headers)
+            if resp.status_code == 200:
+                return {"ok": True, "provider": "matias", "message": "Conexión exitosa con MATIAS API v2"}
+            if resp.status_code == 401:
+                return {"ok": False, "provider": "matias", "message": "Token inválido o expirado"}
+            return {"ok": True, "provider": "matias", "message": f"MATIAS API responde (HTTP {resp.status_code})"}
+        except httpx.RequestError as e:
+            return {"ok": False, "provider": "matias", "message": f"Error de conexión: {e}"}
 
     async def sync_products(self, credentials: dict, products: list[dict], direction: str = "push") -> list[dict]:
-        # MATIAS is invoicing-only; product sync not applicable
         return []
 
     async def sync_customers(self, credentials: dict, customers: list[dict], direction: str = "push") -> list[dict]:
-        # MATIAS is invoicing-only; customer sync not applicable
         return []
 
     async def create_invoice(self, credentials: dict, invoice_data: dict) -> dict:
@@ -73,22 +77,22 @@ class MatiasAdapter(BaseAdapter):
             return self._simulated_invoice(invoice_data)
 
         payload = self._build_invoice_payload(invoice_data)
-        resp = await self._request("POST", "/invoices", credentials, json=payload)
+        resp = await self._request("POST", "/invoice", credentials, json=payload)
         inv_number = invoice_data.get("invoice_number") or resp.get("number", "")
         return {
-            "remote_id": resp.get("id", ""),
+            "remote_id": str(resp.get("id", "")),
             "invoice_number": inv_number,
-            "cufe": resp.get("document_key", ""),
-            "pdf_url": resp.get("pdf_url", ""),
-            "qr_code": resp.get("qr_code", ""),
-            "status": resp.get("status", "issued"),
+            "cufe": resp.get("cufe", resp.get("uuid", "")),
+            "pdf_url": resp.get("pdf_url", resp.get("urlinvoicepdf", "")),
+            "qr_code": resp.get("qr_code", resp.get("urlqrcode", "")),
+            "status": "issued" if resp.get("status_code") in (None, "1", 1) else resp.get("status_description", "issued"),
             "raw_response": resp,
         }
 
     async def get_invoice(self, credentials: dict, remote_id: str) -> dict:
         if self._is_simulation(credentials):
             return {"remote_id": remote_id, "status": "simulated"}
-        return await self._request("GET", f"/invoices/{remote_id}", credentials)
+        return await self._request("GET", f"/invoice/{remote_id}", credentials)
 
     async def list_invoices(self, credentials: dict, params: dict | None = None) -> list[dict]:
         if self._is_simulation(credentials):
@@ -109,22 +113,18 @@ class MatiasAdapter(BaseAdapter):
                 "simulated": True,
             }
         payload = self._build_credit_note_payload(data)
-        resp = await self._request("POST", "/credit-notes", credentials, json=payload)
+        resp = await self._request("POST", "/credit-note", credentials, json=payload)
         return {
-            "remote_id": resp.get("id", ""),
+            "remote_id": str(resp.get("id", "")),
             "credit_note_number": data.get("credit_note_number", resp.get("number", "")),
-            "cufe": resp.get("cufe", ""),
-            "pdf_url": resp.get("pdf_url"),
-            "status": resp.get("status", "created"),
+            "cufe": resp.get("cufe", resp.get("uuid", "")),
+            "pdf_url": resp.get("pdf_url", resp.get("urlinvoicepdf", "")),
+            "status": "issued",
         }
 
     async def process_webhook(self, payload: dict, headers: dict) -> dict:
         event_type = payload.get("event", "unknown")
-        return {
-            "status": "processed",
-            "event_type": event_type,
-            "invoice_id": payload.get("invoice_id"),
-        }
+        return {"status": "processed", "event_type": event_type, "invoice_id": payload.get("invoice_id")}
 
     # ── Helpers ─────────────────────────────────────────────────────
 
@@ -132,6 +132,7 @@ class MatiasAdapter(BaseAdapter):
         sim_id = uuid.uuid4().hex[:12]
         return {
             "remote_id": f"SIM-{sim_id}",
+            "invoice_number": invoice_data.get("invoice_number", ""),
             "cufe": f"SIMULATED-CUFE-{uuid.uuid4().hex}",
             "pdf_url": "",
             "qr_code": "",
@@ -139,82 +140,151 @@ class MatiasAdapter(BaseAdapter):
         }
 
     def _build_invoice_payload(self, data: dict) -> dict:
-        """Build MATIAS API UBL 2.1 compatible payload."""
-        items = []
-        for line in data.get("items", data.get("lines", [])):
-            items.append({
-                "code": line.get("sku", ""),
-                "description": line.get("name", line.get("product_name", "")),
-                "quantity": line.get("quantity", line.get("qty_shipped", 1)),
-                "unit_price": line.get("unit_price", 0),
-                "discount_percent": line.get("discount_pct", 0),
-                "tax_rate": line.get("tax_rate", 0),
+        """Build MATIAS API v2 UBL 2.1 compatible payload."""
+        resolution = data.get("resolution", {})
+        customer = data.get("customer", {})
+
+        # Build line items in Matias UBL 2.1 format
+        invoice_lines = []
+        for i, line in enumerate(data.get("items", data.get("lines", [])), 1):
+            tax_rate = float(line.get("tax_rate", 0))
+            unit_price = float(line.get("unit_price", 0))
+            quantity = float(line.get("quantity", line.get("qty_shipped", 1)))
+            discount_rate = float(line.get("discount_rate", line.get("discount_pct", 0) / 100 if line.get("discount_pct") else 0))
+            line_subtotal = round(unit_price * quantity * (1 - discount_rate), 2)
+            tax_amount = round(line_subtotal * tax_rate / 100, 2)
+
+            invoice_lines.append({
+                "unit_measure_id": 70,  # UN (unidad)
+                "invoiced_quantity": str(quantity),
+                "line_extension_amount": f"{line_subtotal:.2f}",
+                "free_of_charge_indicator": False,
+                "description": line.get("description", line.get("product_name", line.get("name", "Producto"))),
+                "code": line.get("sku", line.get("code", f"PROD-{i}")),
+                "type_item_identification_id": 4,  # Estándar de adopción del contribuyente
+                "price_amount": f"{unit_price:.2f}",
+                "base_quantity": str(quantity),
+                "tax_totals": [{
+                    "tax_id": 1,  # IVA
+                    "percent": f"{tax_rate:.2f}",
+                    "tax_amount": f"{tax_amount:.2f}",
+                    "taxable_amount": f"{line_subtotal:.2f}",
+                }] if tax_rate > 0 else [],
             })
 
-        customer = data.get("customer", {})
+        # Calculate totals
+        subtotal = float(data.get("subtotal", data.get("subtotal_after_discount", 0)))
+        tax_amount = float(data.get("tax_amount", 0))
+        total = float(data.get("total", subtotal + tax_amount))
+
         payload = {
-            "number": data.get("invoice_number", data.get("number", "")),
+            "type_document_id": 1,  # Factura electrónica de venta
+            "resolution_number": resolution.get("resolution_number", data.get("resolution_number", "")),
+            "prefix": resolution.get("prefix", "FEV"),
+            "number": data.get("invoice_number", ""),
             "date": data.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
-            "due_date": data.get("due_date"),
-            "currency": data.get("currency", "COP"),
+            "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
             "customer": {
-                "identification": customer.get("nit", customer.get("tax_id", "")),
-                "name": customer.get("name", ""),
+                "identification_number": customer.get("nit", customer.get("tax_id", "222222222")),
+                "name": customer.get("name", "Cliente"),
                 "email": customer.get("email", ""),
-                "address": customer.get("address", ""),
-                "city": customer.get("city", ""),
-                "phone": customer.get("phone", ""),
+                "municipality_id": 149,  # Bogotá default
             },
-            "items": items,
-            "subtotal": data.get("subtotal", 0),
-            "tax_amount": data.get("tax_amount", 0),
-            "total": data.get("total", 0),
+            "legal_monetary_totals": {
+                "line_extension_amount": f"{subtotal:.2f}",
+                "tax_exclusive_amount": f"{subtotal:.2f}",
+                "tax_inclusive_amount": f"{total:.2f}",
+                "payable_amount": f"{total:.2f}",
+            },
+            "tax_totals": [{
+                "tax_id": 1,
+                "percent": "19.00",
+                "tax_amount": f"{tax_amount:.2f}",
+                "taxable_amount": f"{subtotal:.2f}",
+            }] if tax_amount > 0 else [],
+            "payments": [{
+                "payment_form_id": 1,  # Contado
+                "payment_method_id": 10,  # Efectivo
+                "payment_due_date": data.get("due_date", data.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))),
+            }],
+            "lines": invoice_lines,
             "notes": data.get("notes", ""),
         }
-        # Include resolution numbering range if provided
-        resolution = data.get("resolution")
-        if resolution:
-            payload["numbering_range"] = resolution
+
         return payload
 
     def _build_credit_note_payload(self, data: dict) -> dict:
-        """Build MATIAS API credit note payload with billing reference."""
-        items = []
-        for line in data.get("items", []):
-            items.append({
-                "code": line.get("sku", ""),
-                "description": line.get("description", line.get("product_name", "")),
-                "quantity": line.get("quantity", 1),
-                "unit_price": line.get("unit_price", 0),
-                "discount_percent": line.get("discount_pct", 0),
-                "tax_rate": line.get("tax_rate", 0),
+        """Build MATIAS API v2 credit note payload."""
+        resolution = data.get("resolution", {})
+        customer = data.get("customer", {})
+
+        invoice_lines = []
+        for i, line in enumerate(data.get("items", []), 1):
+            unit_price = float(line.get("unit_price", 0))
+            quantity = float(line.get("quantity", 1))
+            line_subtotal = round(unit_price * quantity, 2)
+            tax_rate = float(line.get("tax_rate", 0))
+            tax_amount = round(line_subtotal * tax_rate / 100, 2)
+
+            invoice_lines.append({
+                "unit_measure_id": 70,
+                "invoiced_quantity": str(quantity),
+                "line_extension_amount": f"{line_subtotal:.2f}",
+                "description": line.get("description", line.get("product_name", "Producto")),
+                "code": line.get("sku", f"PROD-{i}"),
+                "type_item_identification_id": 4,
+                "price_amount": f"{unit_price:.2f}",
+                "base_quantity": str(quantity),
+                "tax_totals": [{
+                    "tax_id": 1,
+                    "percent": f"{tax_rate:.2f}",
+                    "tax_amount": f"{tax_amount:.2f}",
+                    "taxable_amount": f"{line_subtotal:.2f}",
+                }] if tax_rate > 0 else [],
             })
 
-        customer = data.get("customer", {})
-        payload = {
+        subtotal = float(data.get("subtotal", 0))
+        tax_amount = float(data.get("tax_amount", 0))
+        total = float(data.get("total", subtotal + tax_amount))
+
+        return {
+            "type_document_id": 4,  # Nota crédito
+            "resolution_number": resolution.get("resolution_number", ""),
+            "prefix": resolution.get("prefix", "NC"),
             "number": data.get("credit_note_number", ""),
             "date": data.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
-            "currency": data.get("currency", "COP"),
-            "type": "credit_note",
+            "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
             "billing_reference": {
                 "number": data.get("invoice_number", ""),
-                "cufe": data.get("invoice_cufe", ""),
+                "uuid": data.get("invoice_cufe", ""),
+                "issue_date": data.get("invoice_date", ""),
             },
             "discrepancy_response": {
-                "code": "2",
+                "correction_concept_id": 2,  # Devolución
                 "description": data.get("reason", "Devolución de mercancía"),
             },
             "customer": {
-                "identification": customer.get("nit", customer.get("tax_id", "")),
+                "identification_number": customer.get("nit", customer.get("tax_id", "")),
                 "name": customer.get("name", ""),
                 "email": customer.get("email", ""),
+                "municipality_id": 149,
             },
-            "items": items,
-            "subtotal": data.get("subtotal", 0),
-            "tax_amount": data.get("tax_amount", 0),
-            "total": data.get("total", 0),
+            "legal_monetary_totals": {
+                "line_extension_amount": f"{subtotal:.2f}",
+                "tax_exclusive_amount": f"{subtotal:.2f}",
+                "tax_inclusive_amount": f"{total:.2f}",
+                "payable_amount": f"{total:.2f}",
+            },
+            "tax_totals": [{
+                "tax_id": 1,
+                "percent": "19.00",
+                "tax_amount": f"{tax_amount:.2f}",
+                "taxable_amount": f"{subtotal:.2f}",
+            }] if tax_amount > 0 else [],
+            "payments": [{
+                "payment_form_id": 1,
+                "payment_method_id": 10,
+                "payment_due_date": data.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
+            }],
+            "lines": invoice_lines,
         }
-        resolution = data.get("resolution")
-        if resolution:
-            payload["numbering_range"] = resolution
-        return payload
