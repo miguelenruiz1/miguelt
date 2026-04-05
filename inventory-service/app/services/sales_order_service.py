@@ -352,6 +352,13 @@ class SalesOrderService:
         try:
             await reservation_svc.reserve_for_so(order, tenant_id)
         except ValueError as exc:
+            # If reservation fails and backorder was created, clean it up
+            if backorder:
+                await self.db.delete(backorder)
+                for bl in backorder.lines:
+                    await self.db.delete(bl)
+                await self.db.flush()
+                backorder = None
             raise ValidationError(str(exc))
 
         order.confirmed_at = datetime.now(timezone.utc)
@@ -489,6 +496,9 @@ class SalesOrderService:
     async def deliver(self, order_id: str, tenant_id: str, user_id: str | None = None):
         """shipped → delivered: deducts physical stock, consumes reservations, creates sale movements."""
         order = await self.get(order_id, tenant_id)
+        # Guard against double-delivery (idempotency)
+        if order.delivered_date is not None:
+            raise ValidationError("Esta orden ya fue entregada.")
         self._assert_transition(order, SalesOrderStatus.delivered)
 
         # Consume reservations (releases qty_reserved; stock deduction handled below)
