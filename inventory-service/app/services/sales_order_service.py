@@ -316,6 +316,17 @@ class SalesOrderService:
 
         self._assert_transition(order, SalesOrderStatus.confirmed)
 
+        # Validate every line has a warehouse (line-level or SO-level)
+        for line in order.lines:
+            eff_wh = self._effective_warehouse(line, order)
+            if not eff_wh:
+                product = await self.product_repo.get_by_id(line.product_id, tenant_id)
+                pname = product.name if product else line.product_id[:8]
+                raise ValidationError(
+                    f'No se puede confirmar: "{pname}" no tiene bodega asignada. '
+                    f"Asigna una bodega a la orden o a cada línea antes de confirmar."
+                )
+
         bo_svc = BackorderService(self.db)
         analysis = await bo_svc.analyze_and_split(order, tenant_id, user_id)
 
@@ -490,7 +501,11 @@ class SalesOrderService:
             for line in order.lines:
                 eff_wh = self._effective_warehouse(line, order)
                 if not eff_wh:
-                    continue
+                    product = await self.product_repo.get_by_id(line.product_id, tenant_id)
+                    pname = product.name if product else line.product_id[:8]
+                    raise ValidationError(
+                        f'No se puede entregar: "{pname}" no tiene bodega asignada.'
+                    )
                 qty_shipped = Decimal(str(line.qty_shipped))
                 if qty_shipped <= 0:
                     continue
@@ -877,7 +892,11 @@ class SalesOrderService:
         for line in order.lines:
             eff_wh = self._effective_warehouse(line, order)
             if not eff_wh:
-                continue
+                product = await self.product_repo.get_by_id(line.product_id, tenant_id)
+                pname = product.name if product else line.product_id[:8]
+                raise ValidationError(
+                    f'No se puede devolver: "{pname}" no tiene bodega asignada.'
+                )
             qty = Decimal(str(line.qty_shipped))
             if qty > 0:
                 line_variant_id = line.variant_id
