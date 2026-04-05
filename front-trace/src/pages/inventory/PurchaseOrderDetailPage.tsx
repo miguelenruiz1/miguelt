@@ -54,7 +54,13 @@ const FILE_CLASSIFICATIONS = [
 ]
 
 interface ReceiveFormData {
-  lines: Array<{ line_id: string; qty_received: string }>
+  lines: Array<{
+    line_id: string
+    qty_received: string
+    batch_number?: string
+    manufacture_date?: string
+    expiration_date?: string
+  }>
   supplier_invoice_number?: string
   supplier_invoice_date?: string
   supplier_invoice_total?: number
@@ -85,6 +91,9 @@ function ReceiveModal({
       })
     )
   )
+  const [batchData, setBatchData] = useState<Record<string, { batch_number: string; manufacture_date: string; expiration_date: string }>>(() =>
+    Object.fromEntries(lines.map(l => [l.id, { batch_number: '', manufacture_date: '', expiration_date: '' }]))
+  )
   const [error, setError] = useState('')
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [invoiceDate, setInvoiceDate] = useState('')
@@ -108,7 +117,16 @@ function ReceiveModal({
     setError('')
     const receipts = Object.entries(quantities)
       .filter(([, v]) => v && Number(v) > 0)
-      .map(([line_id, qty_received]) => ({ line_id, qty_received }))
+      .map(([line_id, qty_received]) => {
+        const bd = batchData[line_id]
+        return {
+          line_id,
+          qty_received,
+          batch_number: bd?.batch_number || undefined,
+          manufacture_date: bd?.manufacture_date || undefined,
+          expiration_date: bd?.expiration_date || undefined,
+        }
+      })
     if (receipts.length === 0) {
       setError('Ingresa al menos una cantidad a recibir')
       return
@@ -157,17 +175,32 @@ function ReceiveModal({
               <tbody className="divide-y divide-slate-50">
                 {lines.map((line) => {
                   const remaining = Number(line.qty_ordered) - Number(line.qty_received)
+                  const bd = batchData[line.id] ?? { batch_number: '', manufacture_date: '', expiration_date: '' }
+                  const updateBatch = (field: string, value: string) =>
+                    setBatchData(prev => ({ ...prev, [line.id]: { ...prev[line.id], [field]: value } }))
                   return (
-                    <tr key={line.id}>
+                    <tr key={line.id} className="align-top">
                       <td className="py-2 text-foreground">{productMap[line.product_id] ?? line.product_id.slice(0, 8)}</td>
                       <td className="py-2 text-right font-mono text-muted-foreground">{line.qty_ordered}</td>
                       <td className="py-2 text-right font-mono text-muted-foreground">{line.qty_received}</td>
-                      <td className="py-2 text-right">
+                      <td className="py-2 text-right space-y-1.5">
                         <input type="number" min="0" max={remaining} step="0.01"
                           value={quantities[line.id] ?? ''}
                           onChange={(e) => setQuantities((q) => ({ ...q, [line.id]: e.target.value }))}
                           placeholder="0"
                           className="w-24 rounded-lg border border-border px-2 py-1.5 text-xs text-right focus:outline-none focus:ring-2 focus:ring-ring" />
+                        <input type="text" placeholder="N° lote"
+                          value={bd.batch_number}
+                          onChange={e => updateBatch('batch_number', e.target.value)}
+                          className="w-24 rounded-lg border border-border px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-ring" />
+                        <input type="date" title="Fecha producción"
+                          value={bd.manufacture_date}
+                          onChange={e => updateBatch('manufacture_date', e.target.value)}
+                          className="w-24 rounded-lg border border-border px-1 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-ring" />
+                        <input type="date" title="Fecha vencimiento"
+                          value={bd.expiration_date}
+                          onChange={e => updateBatch('expiration_date', e.target.value)}
+                          className="w-24 rounded-lg border border-border px-1 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-ring" />
                       </td>
                     </tr>
                   )

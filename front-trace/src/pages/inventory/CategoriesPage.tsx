@@ -93,9 +93,21 @@ function CategoryModal({
               className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Sin padre (raíz)</option>
-              {parentOptions.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
+              {(() => {
+                const opts: { id: string; label: string }[] = []
+                const roots = parentOptions.filter(c => !c.parent_id)
+                for (const root of roots) {
+                  opts.push({ id: root.id, label: root.name })
+                  for (const child of parentOptions.filter(c => c.parent_id === root.id)) {
+                    opts.push({ id: child.id, label: `  ↳ ${child.name}` })
+                  }
+                }
+                const listed = new Set(opts.map(o => o.id))
+                for (const c of parentOptions) {
+                  if (!listed.has(c.id)) opts.push({ id: c.id, label: c.name })
+                }
+                return opts.map(o => <option key={o.id} value={o.id}>{o.label}</option>)
+              })()}
             </select>
           </div>
           <div className="flex items-center gap-2">
@@ -205,37 +217,65 @@ export function CategoriesPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted border-b border-border">
               <tr>
-                {['Nombre', 'Descripción', 'Categoría padre', 'Estado', 'Acciones'].map(h => (
+                {['Nombre', 'Descripción', 'Estado', 'Acciones'].map(h => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {categories.map(cat => (
-                <tr key={cat.id} className="hover:bg-muted">
-                  <td className="px-5 py-3 font-medium text-foreground">{cat.name}</td>
-                  <td className="px-5 py-3 text-muted-foreground text-xs max-w-[250px] truncate">{cat.description || '\u2014'}</td>
-                  <td className="px-5 py-3 text-muted-foreground text-xs">{cat.parent_name || '\u2014'}</td>
-                  <td className="px-5 py-3">
-                    <span className={cn(
-                      'inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold',
-                      cat.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-secondary text-muted-foreground',
-                    )}>
-                      {cat.is_active ? 'Activa' : 'Inactiva'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => handleEdit(cat)} className="p-1.5 hover:bg-secondary rounded-lg" title="Editar">
-                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                      </button>
-                      <button onClick={() => handleDelete(cat)} className="p-1.5 hover:bg-red-50 rounded-lg" title="Eliminar" disabled={deleteMut.isPending}>
-                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {(() => {
+                // Build tree: parents first, then children indented
+                const roots = categories.filter(c => !c.parent_id)
+                const children = (parentId: string) => categories.filter(c => c.parent_id === parentId)
+                const rows: { cat: Category; depth: number }[] = []
+                for (const root of roots) {
+                  rows.push({ cat: root, depth: 0 })
+                  for (const child of children(root.id)) {
+                    rows.push({ cat: child, depth: 1 })
+                    for (const grandchild of children(child.id)) {
+                      rows.push({ cat: grandchild, depth: 2 })
+                    }
+                  }
+                }
+                // Add orphans (parent not in current list)
+                const listed = new Set(rows.map(r => r.cat.id))
+                for (const cat of categories) {
+                  if (!listed.has(cat.id)) rows.push({ cat, depth: 0 })
+                }
+                return rows.map(({ cat, depth }) => (
+                  <tr key={cat.id} className="hover:bg-muted">
+                    <td className="px-5 py-3 font-medium text-foreground">
+                      <div className="flex items-center gap-2" style={{ paddingLeft: depth * 24 }}>
+                        {depth > 0 && <span className="text-muted-foreground">└</span>}
+                        <FolderTree className={cn('h-3.5 w-3.5 shrink-0', depth === 0 ? 'text-primary' : 'text-muted-foreground')} />
+                        <span>{cat.name}</span>
+                        {children(cat.id).length > 0 && (
+                          <span className="text-[10px] bg-secondary text-muted-foreground rounded-full px-1.5 py-0.5">{children(cat.id).length}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-muted-foreground text-xs max-w-[250px] truncate">{cat.description || '\u2014'}</td>
+                    <td className="px-5 py-3">
+                      <span className={cn(
+                        'inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                        cat.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-secondary text-muted-foreground',
+                      )}>
+                        {cat.is_active ? 'Activa' : 'Inactiva'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => handleEdit(cat)} className="p-1.5 hover:bg-secondary rounded-lg" title="Editar">
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                        </button>
+                        <button onClick={() => handleDelete(cat)} className="p-1.5 hover:bg-red-50 rounded-lg" title="Eliminar" disabled={deleteMut.isPending}>
+                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              })()}
             </tbody>
           </table>
         )}

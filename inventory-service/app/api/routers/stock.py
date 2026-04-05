@@ -298,6 +298,8 @@ async def transfer_stock(
         performed_by=current_user.get("id"),
         variant_id=body.variant_id,
         uom=body.uom,
+        from_location_id=body.from_location_id,
+        to_location_id=body.to_location_id,
     )
     product_name = await svc.resolve_product_name(body.product_id, current_user["tenant_id"])
     from_wh_name = await svc.resolve_warehouse_name(body.from_warehouse_id, current_user["tenant_id"])

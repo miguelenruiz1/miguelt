@@ -43,5 +43,6 @@ class KardexEntry(BaseModel):
     reference: str | None
     quantity: float
     unit_cost: float
+    avg_cost: float | None = None
     balance: float
     value: float | None

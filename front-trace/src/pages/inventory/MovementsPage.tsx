@@ -65,10 +65,14 @@ function RegisterMovementModal({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({
     product_id: '', variant_id: '', warehouse_id: '', from_warehouse_id: '', to_warehouse_id: '',
     quantity: '', unit_cost: '', reference: '', reason: '', notes: '', location_id: '',
+    from_location_id: '', to_location_id: '',
   })
 
   // Load locations for the selected warehouse (for receive)
   const { data: warehouseLocations = [] } = useLocations(form.warehouse_id || undefined)
+  // Load locations for transfer origin/destination warehouses
+  const { data: fromWarehouseLocations = [] } = useLocations(form.from_warehouse_id || undefined)
+  const { data: toWarehouseLocations = [] } = useLocations(form.to_warehouse_id || undefined)
 
   async function doSubmit() {
     setError('')
@@ -100,6 +104,8 @@ function RegisterMovementModal({ onClose }: { onClose: () => void }) {
           quantity: Number(form.quantity),
           variant_id: vid,
           notes: form.notes || undefined,
+          from_location_id: form.from_location_id || undefined,
+          to_location_id: form.to_location_id || undefined,
         })
       } else if (type === 'adjust_in') {
         await adjustIn.mutateAsync({
@@ -236,16 +242,34 @@ function RegisterMovementModal({ onClose }: { onClose: () => void }) {
           {/* Transfer warehouses */}
           {needsTransferWarehouses && (
             <>
-              <select required value={form.from_warehouse_id} onChange={e => setForm(f => ({ ...f, from_warehouse_id: e.target.value }))}
+              <select required value={form.from_warehouse_id} onChange={e => setForm(f => ({ ...f, from_warehouse_id: e.target.value, from_location_id: '' }))}
                 className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Origen *</option>
                 {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
               </select>
-              <select required value={form.to_warehouse_id} onChange={e => setForm(f => ({ ...f, to_warehouse_id: e.target.value }))}
+              {form.from_warehouse_id && fromWarehouseLocations.filter(l => l.is_active).length > 0 && (
+                <select value={form.from_location_id} onChange={e => setForm(f => ({ ...f, from_location_id: e.target.value }))}
+                  className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
+                  <option value="">Ubicación origen (opcional)</option>
+                  {fromWarehouseLocations.filter(l => l.is_active).map(l => (
+                    <option key={l.id} value={l.id}>{l.code} — {l.name}</option>
+                  ))}
+                </select>
+              )}
+              <select required value={form.to_warehouse_id} onChange={e => setForm(f => ({ ...f, to_warehouse_id: e.target.value, to_location_id: '' }))}
                 className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Destino *</option>
                 {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
               </select>
+              {form.to_warehouse_id && toWarehouseLocations.filter(l => l.is_active).length > 0 && (
+                <select value={form.to_location_id} onChange={e => setForm(f => ({ ...f, to_location_id: e.target.value }))}
+                  className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
+                  <option value="">Ubicación destino (opcional)</option>
+                  {toWarehouseLocations.filter(l => l.is_active).map(l => (
+                    <option key={l.id} value={l.id}>{l.code} — {l.name}</option>
+                  ))}
+                </select>
+              )}
             </>
           )}
 

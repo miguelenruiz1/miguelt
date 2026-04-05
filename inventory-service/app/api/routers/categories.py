@@ -65,7 +65,7 @@ async def create_category(
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     repo = CategoryRepository(db)
-    audit = InventoryAuditService(svc.db)
+    audit = InventoryAuditService(db)
     data = body.model_dump()
     data["created_by"] = current_user.get("id")
     cat = await repo.create(current_user["tenant_id"], data)
@@ -103,7 +103,7 @@ async def update_category(
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
     repo = CategoryRepository(db)
-    audit = InventoryAuditService(svc.db)
+    audit = InventoryAuditService(db)
     cat = await repo.get_by_id(category_id, current_user["tenant_id"])
     if not cat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoría no encontrada")
@@ -131,7 +131,7 @@ async def delete_category(
     db: AsyncSession = Depends(get_db_session),
 ) -> Response:
     repo = CategoryRepository(db)
-    audit = InventoryAuditService(svc.db)
+    audit = InventoryAuditService(db)
     cat = await repo.get_by_id(category_id, current_user["tenant_id"])
     if not cat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoría no encontrada")
@@ -141,5 +141,5 @@ async def delete_category(
         action="inventory.category.delete", resource_type="category",
         resource_id=category_id, ip_address=_ip(request),
     )
-    await svc.db.commit()
+    await db.commit()
     return Response(status_code=204)

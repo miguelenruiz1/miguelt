@@ -305,6 +305,30 @@ async def delete_location(
 
 # ── Event Types ──────────────────────────────────────────────────────────────
 
+_DEFAULT_EVENT_TYPES = [
+    {"name": "Daño de mercancía", "slug": "dano-mercancia", "color": "#ef4444"},
+    {"name": "Faltante de inventario", "slug": "faltante-inventario", "color": "#f97316"},
+    {"name": "Sobrante de inventario", "slug": "sobrante-inventario", "color": "#3b82f6"},
+    {"name": "Devolución de cliente", "slug": "devolucion-cliente", "color": "#8b5cf6"},
+    {"name": "Vencimiento de producto", "slug": "vencimiento-producto", "color": "#dc2626"},
+    {"name": "Reclamo de proveedor", "slug": "reclamo-proveedor", "color": "#d97706"},
+    {"name": "Incidente de calidad", "slug": "incidente-calidad", "color": "#e11d48"},
+    {"name": "Ajuste de inventario", "slug": "ajuste-inventario", "color": "#6366f1"},
+]
+_DEFAULT_SEVERITIES = [
+    {"name": "Baja", "slug": "baja", "weight": 1, "color": "#6b7280"},
+    {"name": "Media", "slug": "media", "weight": 2, "color": "#f59e0b"},
+    {"name": "Alta", "slug": "alta", "weight": 3, "color": "#f97316"},
+    {"name": "Crítica", "slug": "critica", "weight": 4, "color": "#ef4444"},
+]
+_DEFAULT_EVENT_STATUSES = [
+    {"name": "Abierto", "slug": "abierto", "is_final": False, "sort_order": 1, "color": "#3b82f6"},
+    {"name": "En investigación", "slug": "en-investigacion", "is_final": False, "sort_order": 2, "color": "#f59e0b"},
+    {"name": "En proceso", "slug": "en-proceso", "is_final": False, "sort_order": 3, "color": "#8b5cf6"},
+    {"name": "Resuelto", "slug": "resuelto", "is_final": True, "sort_order": 4, "color": "#10b981"},
+    {"name": "Cerrado", "slug": "cerrado", "is_final": True, "sort_order": 5, "color": "#6b7280"},
+]
+
 @router.get("/event-types", response_model=PaginatedEventTypes)
 async def list_event_types(
     current_user: ModuleUser,
@@ -315,6 +339,11 @@ async def list_event_types(
 ):
     tenant_id = current_user.get("tenant_id", "default")
     items, total = await svc.list_event_types(tenant_id, offset=offset, limit=limit)
+    if total == 0:
+        for et in _DEFAULT_EVENT_TYPES:
+            await svc.create_event_type(tenant_id, {**et})
+        await svc.db.commit()
+        items, total = await svc.list_event_types(tenant_id, offset=offset, limit=limit)
     return PaginatedEventTypes(items=items, total=total, offset=offset, limit=limit)
 
 @router.post("/event-types", response_model=EventTypeOut, status_code=201)
@@ -390,6 +419,11 @@ async def list_event_severities(
 ):
     tenant_id = current_user.get("tenant_id", "default")
     items, total = await svc.list_event_severities(tenant_id, offset=offset, limit=limit)
+    if total == 0:
+        for sv in _DEFAULT_SEVERITIES:
+            await svc.create_event_severity(tenant_id, {**sv})
+        await svc.db.commit()
+        items, total = await svc.list_event_severities(tenant_id, offset=offset, limit=limit)
     return PaginatedEventSeverities(items=items, total=total, offset=offset, limit=limit)
 
 @router.post("/event-severities", response_model=EventSeverityOut, status_code=201)
@@ -465,6 +499,11 @@ async def list_event_statuses(
 ):
     tenant_id = current_user.get("tenant_id", "default")
     items, total = await svc.list_event_statuses(tenant_id, offset=offset, limit=limit)
+    if total == 0:
+        for es in _DEFAULT_EVENT_STATUSES:
+            await svc.create_event_status(tenant_id, {**es})
+        await svc.db.commit()
+        items, total = await svc.list_event_statuses(tenant_id, offset=offset, limit=limit)
     return PaginatedEventStatuses(items=items, total=total, offset=offset, limit=limit)
 
 @router.post("/event-statuses", response_model=EventStatusOut, status_code=201)
@@ -530,6 +569,16 @@ async def delete_event_status(
 
 # ── Serial Statuses ─────────────────────────────────────────────────────────
 
+_DEFAULT_SERIAL_STATUSES = [
+    {"name": "Disponible",     "slug": "disponible",     "color": "#10b981"},
+    {"name": "En tránsito",    "slug": "en-transito",    "color": "#8b5cf6"},
+    {"name": "Vendido",        "slug": "vendido",        "color": "#3b82f6"},
+    {"name": "Dañado",         "slug": "danado",         "color": "#ef4444"},
+    {"name": "En reparación",  "slug": "en-reparacion",  "color": "#f59e0b"},
+    {"name": "Dado de baja",   "slug": "dado-de-baja",   "color": "#6b7280"},
+]
+
+
 @router.get("/serial-statuses", response_model=PaginatedSerialStatuses)
 async def list_serial_statuses(
     current_user: ModuleUser,
@@ -540,6 +589,12 @@ async def list_serial_statuses(
 ):
     tenant_id = current_user.get("tenant_id", "default")
     items, total = await svc.list_serial_statuses(tenant_id, offset=offset, limit=limit)
+    # Auto-seed default serial statuses for new tenants
+    if not total:
+        for s in _DEFAULT_SERIAL_STATUSES:
+            await svc.create_serial_status(tenant_id, dict(s))
+        await svc.db.commit()
+        items, total = await svc.list_serial_statuses(tenant_id, offset=offset, limit=limit)
     return PaginatedSerialStatuses(items=items, total=total, offset=offset, limit=limit)
 
 @router.post("/serial-statuses", response_model=SerialStatusOut, status_code=201)
@@ -1220,13 +1275,13 @@ async def update_margin_config(
     if "margin_cost_method_global" in body:
         config.margin_cost_method_global = body["margin_cost_method_global"]
     await db.flush()
-    audit = InventoryAuditService(svc.db)
+    audit = InventoryAuditService(db)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.config.margins.update", resource_type="config",
         resource_id=tenant_id, new_data=body, ip_address=_ip(request),
     )
-    await svc.db.commit()
+    await db.commit()
     return {
         "tenant_id": tenant_id,
         "margin_target_global": float(config.margin_target_global) if config.margin_target_global is not None else 35.0,

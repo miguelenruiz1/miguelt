@@ -373,7 +373,7 @@ function AiInsightsPanelInner({ dateFrom, dateTo }: { dateFrom: string; dateTo: 
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!isLoading && analysis && (
+          {!isLoading && (
             <button
               onClick={(e) => { e.stopPropagation(); handleRegenerate() }}
               className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -412,9 +412,15 @@ function AiInsightsPanelInner({ dateFrom, dateTo }: { dateFrom: string; dateTo: 
               </div>
             </div>
           ) : is503 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">Analisis IA temporalmente no disponible. Intenta mas tarde.</p>
+            <div className="text-center py-4 space-y-2">
+              <p className="text-sm text-muted-foreground">Analisis IA temporalmente no disponible.</p>
+              <button onClick={handleRegenerate} className="text-xs font-medium text-primary hover:underline">Reintentar</button>
+            </div>
           ) : isError ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">Analisis no disponible en este momento.</p>
+            <div className="text-center py-4 space-y-2">
+              <p className="text-sm text-muted-foreground">Analisis no disponible en este momento.</p>
+              <button onClick={handleRegenerate} className="text-xs font-medium text-primary hover:underline">Reintentar</button>
+            </div>
           ) : analysis ? (
             <div className="space-y-5">
               {/* Resumen */}

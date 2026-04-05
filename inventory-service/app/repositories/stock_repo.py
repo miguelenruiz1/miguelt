@@ -23,7 +23,7 @@ class StockRepository:
         """Same as get_level but eagerly loads product + warehouse."""
         q = (
             select(StockLevel)
-            .options(joinedload(StockLevel.product), joinedload(StockLevel.warehouse))
+            .options(joinedload(StockLevel.product), joinedload(StockLevel.warehouse), joinedload(StockLevel.location))
             .where(
                 StockLevel.product_id == product_id,
                 StockLevel.warehouse_id == warehouse_id,
@@ -87,7 +87,7 @@ class StockRepository:
 
         q = (
             base
-            .options(joinedload(StockLevel.product), joinedload(StockLevel.warehouse))
+            .options(joinedload(StockLevel.product), joinedload(StockLevel.warehouse), joinedload(StockLevel.location))
             .order_by(StockLevel.updated_at.desc())
             .offset(offset)
             .limit(limit)
@@ -104,7 +104,7 @@ class StockRepository:
         """Assign or clear the location on a stock level."""
         result = await self.db.execute(
             select(StockLevel)
-            .options(joinedload(StockLevel.product), joinedload(StockLevel.warehouse))
+            .options(joinedload(StockLevel.product), joinedload(StockLevel.warehouse), joinedload(StockLevel.location))
             .where(
                 StockLevel.id == level_id,
                 StockLevel.tenant_id == tenant_id,
@@ -146,7 +146,7 @@ class StockRepository:
         result = await self.db.execute(
             select(StockLevel)
             .join(Product, StockLevel.product_id == Product.id)
-            .options(joinedload(StockLevel.product), joinedload(StockLevel.warehouse))
+            .options(joinedload(StockLevel.product), joinedload(StockLevel.warehouse), joinedload(StockLevel.location))
             .where(
                 StockLevel.tenant_id == tenant_id,
                 available_qty <= effective_threshold,
@@ -169,8 +169,27 @@ class StockRepository:
         batch_id: str | None = None,
         unit_cost: Decimal | None = None,
         variant_id: str | None = None,
+        location_id: str | None = None,
     ) -> StockLevel | None:
         level = await self.get_level(product_id, warehouse_id, batch_id, variant_id)
+        # When location_id is provided, narrow lookup to that specific location
+        if level is not None and location_id is not None and getattr(level, "location_id", None) != location_id:
+            # The generic get_level found a record for a different location; search specifically
+            q = select(StockLevel).where(
+                StockLevel.product_id == product_id,
+                StockLevel.warehouse_id == warehouse_id,
+                StockLevel.location_id == location_id,
+            )
+            if batch_id is not None:
+                q = q.where(StockLevel.batch_id == batch_id)
+            else:
+                q = q.where(StockLevel.batch_id.is_(None))
+            if variant_id is not None:
+                q = q.where(StockLevel.variant_id == variant_id)
+            else:
+                q = q.where(StockLevel.variant_id.is_(None))
+            result = await self.db.execute(q)
+            level = result.scalar_one_or_none()
         if level is None:
             if delta <= 0:
                 return None
@@ -191,6 +210,7 @@ class StockRepository:
                 warehouse_id=warehouse_id,
                 batch_id=batch_id,
                 variant_id=variant_id,
+                location_id=location_id,
                 qty_on_hand=max(Decimal("0"), delta),
                 qty_reserved=Decimal("0"),
                 weighted_avg_cost=unit_cost,

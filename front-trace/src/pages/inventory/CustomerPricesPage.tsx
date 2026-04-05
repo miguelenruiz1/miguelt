@@ -5,6 +5,7 @@ import { useFormValidation } from '@/hooks/useFormValidation'
 import {
   useCustomerSpecialPrices, useCustomerPriceMetrics, useDeactivateCustomerPrice,
   useCreateCustomerPrice, useCustomers, useProducts, useCustomerPriceDetail,
+  useProductVariantsForProduct,
 } from '@/hooks/useInventory'
 import { useToast } from '@/store/toast'
 import type { CustomerPrice } from '@/types/inventory'
@@ -54,6 +55,7 @@ export function CustomerPricesPage() {
     await createMut.mutateAsync({
       customer_id: fd.get('customer_id') as string,
       product_id: fd.get('product_id') as string,
+      variant_id: (fd.get('variant_id') as string) || null,
       price: Number(fd.get('price')),
       min_quantity: Number(fd.get('min_quantity') || 1),
       valid_from: (fd.get('valid_from') as string) || new Date().toISOString().slice(0, 10),
@@ -160,6 +162,7 @@ export function CustomerPricesPage() {
               <thead><tr className="bg-muted text-left text-xs font-semibold text-muted-foreground uppercase">
                 <th className="px-6 py-3">Cliente</th>
                 <th className="px-6 py-3">Producto</th>
+                <th className="px-6 py-3">Variante</th>
                 <th className="px-6 py-3 text-right">Precio esp.</th>
                 <th className="px-6 py-3 text-right">Precio base</th>
                 <th className="px-6 py-3 text-right">Ahorro %</th>
@@ -170,7 +173,7 @@ export function CustomerPricesPage() {
               <tbody className="divide-y divide-slate-100">
                 {pagePrices.map(sp => {
                   const prod = productsMap.get(sp.product_id)
-                  const basePrice = Number(prod?.suggested_sale_price ?? 0)
+                  const basePrice = sp.base_price ?? Number(prod?.suggested_sale_price ?? 0)
                   const savingsPct = basePrice > 0 ? ((basePrice - sp.price) / basePrice * 100) : 0
                   const status = getStatus(sp)
                   return (
@@ -179,6 +182,11 @@ export function CustomerPricesPage() {
                       <td className="px-6 py-3">
                         <span className="text-foreground">{sp.product_name ?? prod?.name ?? sp.product_id.slice(0, 8)}</span>
                         {(sp.product_sku || prod?.sku) && <span className="ml-1.5 text-xs text-muted-foreground font-mono">{sp.product_sku ?? prod?.sku}</span>}
+                      </td>
+                      <td className="px-6 py-3 text-xs text-muted-foreground">
+                        {sp.variant_id ? (
+                          <span>{sp.variant_name ?? sp.variant_sku ?? sp.variant_id.slice(0, 8)}</span>
+                        ) : '—'}
                       </td>
                       <td className="px-6 py-3 text-right font-mono font-bold text-blue-700">${sp.price.toLocaleString()}</td>
                       <td className="px-6 py-3 text-right font-mono text-muted-foreground">${basePrice.toLocaleString()}</td>
@@ -213,7 +221,7 @@ export function CustomerPricesPage() {
                     </tr>
                   )
                 })}
-                {pagePrices.length === 0 && <tr><td colSpan={8} className="px-6 py-12 text-center text-muted-foreground">Sin precios especiales</td></tr>}
+                {pagePrices.length === 0 && <tr><td colSpan={9} className="px-6 py-12 text-center text-muted-foreground">Sin precios especiales</td></tr>}
               </tbody>
             </table>
           </div>
@@ -290,59 +298,107 @@ export function CustomerPricesPage() {
 
       {/* Create / Renew modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowCreate(false)}>
-          <div className="bg-card rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-foreground">{renewFrom ? 'Renovar Precio Especial' : 'Nuevo Precio Especial'}</h3>
-              <button onClick={() => setShowCreate(false)} className="p-1 text-muted-foreground hover:text-muted-foreground"><X className="h-5 w-5" /></button>
-            </div>
-            <form ref={createFormRef} onSubmit={validateAndSubmitPrice} noValidate className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Cliente *</label>
-                <select name="customer_id" required defaultValue={renewFrom?.customer_id ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none">
-                  <option value="">Seleccionar cliente</option>
-                  {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Producto *</label>
-                <select name="product_id" required defaultValue={renewFrom?.product_id ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none">
-                  <option value="">Seleccionar producto</option>
-                  {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name} (${Number(p.suggested_sale_price ?? 0).toLocaleString()})</option>)}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Precio especial ($) *</label>
-                  <input name="price" type="number" step="0.01" required defaultValue={renewFrom?.price ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Cantidad minima</label>
-                  <input name="min_quantity" type="number" min={1} defaultValue={renewFrom?.min_quantity ?? 1} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Vigente desde</label>
-                  <input name="valid_from" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Vigente hasta</label>
-                  <input name="valid_to" type="date" className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Motivo</label>
-                <input name="reason" defaultValue={renewFrom?.reason ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none" placeholder="Ej: Renovacion acuerdo 2026" />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => { setShowCreate(false); setRenewFrom(null) }} className="px-4 py-2 text-sm text-muted-foreground hover:bg-secondary rounded-xl transition">Cancelar</button>
-                <button type="submit" disabled={createMut.isPending} className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl disabled:opacity-50 transition">{renewFrom ? 'Renovar' : 'Crear'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <CreatePriceModal
+          renewFrom={renewFrom}
+          customers={customers}
+          products={products}
+          createFormRef={createFormRef}
+          validateAndSubmitPrice={validateAndSubmitPrice}
+          createMut={createMut}
+          onClose={() => { setShowCreate(false); setRenewFrom(null) }}
+        />
       )}
+    </div>
+  )
+}
+
+function CreatePriceModal({
+  renewFrom, customers, products, createFormRef, validateAndSubmitPrice, createMut, onClose,
+}: {
+  renewFrom: CustomerPrice | null
+  customers: any[]
+  products: any[]
+  createFormRef: React.RefObject<HTMLFormElement | null>
+  validateAndSubmitPrice: (e: React.FormEvent) => void
+  createMut: { isPending: boolean }
+  onClose: () => void
+}) {
+  const [selectedProductId, setSelectedProductId] = useState(renewFrom?.product_id ?? '')
+  const { data: variantsData } = useProductVariantsForProduct(selectedProductId || undefined)
+  const variants = variantsData?.items ?? variantsData ?? []
+
+  const cls = 'w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-foreground">{renewFrom ? 'Renovar Precio Especial' : 'Nuevo Precio Especial'}</h3>
+          <button onClick={onClose} className="p-1 text-muted-foreground hover:text-muted-foreground"><X className="h-5 w-5" /></button>
+        </div>
+        <form ref={createFormRef} onSubmit={validateAndSubmitPrice} noValidate className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Cliente *</label>
+            <select name="customer_id" required defaultValue={renewFrom?.customer_id ?? ''} className={cls}>
+              <option value="">Seleccionar cliente</option>
+              {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Producto *</label>
+            <select
+              name="product_id"
+              required
+              value={selectedProductId}
+              onChange={e => setSelectedProductId(e.target.value)}
+              className={cls}
+            >
+              <option value="">Seleccionar producto</option>
+              {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name} (${Number(p.suggested_sale_price ?? 0).toLocaleString()})</option>)}
+            </select>
+          </div>
+          {Array.isArray(variants) && variants.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Variante</label>
+              <select name="variant_id" defaultValue={(renewFrom as any)?.variant_id ?? ''} className={cls}>
+                <option value="">Todas las variantes (precio general)</option>
+                {variants.map((v: any) => (
+                  <option key={v.id} value={v.id}>{v.sku} — {v.name ?? v.attribute_values?.map((a: any) => a.value).join(', ')}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground mt-1">Si seleccionas una variante, el precio aplica solo a esa variante. Si lo dejas vacio, aplica al producto completo.</p>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Precio especial ($) *</label>
+              <input name="price" type="number" step="0.01" required defaultValue={renewFrom?.price ?? ''} className={cls} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Cantidad minima</label>
+              <input name="min_quantity" type="number" min={1} defaultValue={renewFrom?.min_quantity ?? 1} className={cls} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Vigente desde</label>
+              <input name="valid_from" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className={cls} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Vigente hasta</label>
+              <input name="valid_to" type="date" className={cls} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Motivo</label>
+            <input name="reason" defaultValue={renewFrom?.reason ?? ''} className={cls} placeholder="Ej: Renovacion acuerdo 2026" />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-muted-foreground hover:bg-secondary rounded-xl transition">Cancelar</button>
+            <button type="submit" disabled={createMut.isPending} className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl disabled:opacity-50 transition">{renewFrom ? 'Renovar' : 'Crear'}</button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
@@ -372,6 +428,7 @@ function PriceDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
               <div>
                 <p className="text-xs text-muted-foreground">Producto</p>
                 <p className="text-sm font-semibold text-foreground">{detail.product_name ?? detail.product_id?.slice(0, 8)}</p>
+                {detail.variant_id && <p className="text-xs text-muted-foreground mt-0.5">Variante: {detail.variant_name ?? detail.variant_id.slice(0, 8)}</p>}
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Precio especial</p>

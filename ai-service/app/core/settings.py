@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     USER_CACHE_TTL: int = 60
 
+    S2S_SERVICE_TOKEN: str = "s2s-change-me-in-production"
+
     ANTHROPIC_API_KEY: str = ""
     AI_ANALYSIS_DAILY_LIMIT: int = 10
 

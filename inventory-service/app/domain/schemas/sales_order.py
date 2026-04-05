@@ -42,6 +42,7 @@ class SOLineOut(OrmBase):
     product_name: str | None = None
     product_sku: str | None = None
     variant_id: str | None = None
+    variant_name: str | None = None
     batch_id: str | None = None
     warehouse_id: str | None = None
     warehouse_name: str | None = None
@@ -75,6 +76,10 @@ class SOLineOut(OrmBase):
                 data.product_name = product.name
             if not getattr(data, "product_sku", None):
                 data.product_sku = product.sku
+        variant = _loaded_rel(data, "variant")
+        if variant is not None:
+            if not getattr(data, "variant_name", None):
+                data.variant_name = getattr(variant, "name", None) or getattr(variant, "sku", None)
         warehouse = _loaded_rel(data, "warehouse")
         if warehouse is not None:
             if not getattr(data, "warehouse_name", None):

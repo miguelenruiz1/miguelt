@@ -1,10 +1,11 @@
 """Stock level and movement schemas."""
 from __future__ import annotations
 
+from typing import Any
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.db.models.enums import MovementType
 from app.domain.schemas.base import OrmBase
@@ -27,6 +28,7 @@ class StockLevelOut(OrmBase):
     product_id: str
     warehouse_id: str
     location_id: str | None = None
+    location_name: str | None = None
     batch_id: str | None = None
     variant_id: str | None = None
     qty_on_hand: Decimal
@@ -39,6 +41,16 @@ class StockLevelOut(OrmBase):
     last_count_at: datetime | None
     updated_at: datetime
     product: StockProductSummary | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _resolve_location(cls, data: Any) -> Any:
+        from app.db.models.warehouse import WarehouseLocation
+        loc = getattr(data, "location", None)
+        if loc is not None and isinstance(loc, WarehouseLocation):
+            if not getattr(data, "location_name", None):
+                data.location_name = loc.name
+        return data
 
 
 class ReceiveStockIn(BaseModel):
@@ -72,6 +84,8 @@ class TransferStockIn(BaseModel):
     uom: str = "primary"
     notes: str | None = Field(default=None, max_length=2000)
     variant_id: str | None = None
+    from_location_id: str | None = None
+    to_location_id: str | None = None
 
 
 class AdjustStockIn(BaseModel):

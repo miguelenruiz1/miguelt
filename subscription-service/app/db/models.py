@@ -279,3 +279,93 @@ class PlatformAISettings(Base):
     current_month_cost_usd:          Mapped[Decimal] = mapped_column(Numeric(10, 4), nullable=False, server_default="0.0")
     # Features
     pnl_analysis_enabled:            Mapped[bool]  = mapped_column(Boolean, nullable=False, server_default="true")
+
+
+# ─── CMS Page ────────────────────────────────────────────────────────────────
+
+class CmsPage(Base):
+    __tablename__ = "cms_pages"
+
+    id:               Mapped[str]           = mapped_column(String(36), primary_key=True)
+    slug:             Mapped[str]           = mapped_column(String(255), nullable=False, unique=True)
+    title:            Mapped[str]           = mapped_column(String(255), nullable=False)
+    status:           Mapped[str]           = mapped_column(String(20), nullable=False, server_default="draft")
+    published_at:     Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    unpublished_at:   Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # SEO
+    seo_title:        Mapped[str | None]    = mapped_column(String(255), nullable=True)
+    seo_description:  Mapped[str | None]    = mapped_column(Text, nullable=True)
+    seo_keywords:     Mapped[str | None]    = mapped_column(String(500), nullable=True)
+    og_title:         Mapped[str | None]    = mapped_column(String(255), nullable=True)
+    og_description:   Mapped[str | None]    = mapped_column(Text, nullable=True)
+    og_image:         Mapped[str | None]    = mapped_column(String(500), nullable=True)
+    og_type:          Mapped[str | None]    = mapped_column(String(50), nullable=True)
+    twitter_card:     Mapped[str | None]    = mapped_column(String(50), nullable=True)
+    canonical_url:    Mapped[str | None]    = mapped_column(String(500), nullable=True)
+    robots:           Mapped[str | None]    = mapped_column(String(100), nullable=True)
+    json_ld:          Mapped[dict | None]   = mapped_column(JSONB, nullable=True)
+    lang:             Mapped[str]           = mapped_column(String(10), nullable=False, server_default="es")
+    # Layout
+    navbar_config:    Mapped[dict | None]   = mapped_column(JSONB, nullable=True)
+    footer_config:    Mapped[dict | None]   = mapped_column(JSONB, nullable=True)
+    theme_overrides:  Mapped[dict | None]   = mapped_column(JSONB, nullable=True)
+    # Audit
+    created_by:       Mapped[str | None]    = mapped_column(String(255), nullable=True)
+    updated_by:       Mapped[str | None]    = mapped_column(String(255), nullable=True)
+    created_at:       Mapped[DateTime]      = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at:       Mapped[DateTime]      = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    sections: Mapped[list[CmsSection]] = relationship("CmsSection", back_populates="page", cascade="all, delete-orphan", order_by="CmsSection.sort_order")
+    scripts:  Mapped[list[CmsScript]]  = relationship("CmsScript", back_populates="page", cascade="all, delete-orphan", order_by="CmsScript.sort_order")
+
+    __table_args__ = (
+        Index("ix_cms_pages_status", "status"),
+        Index("ix_cms_pages_slug", "slug"),
+    )
+
+
+# ─── CMS Section ─────────────────────────────────────────────────────────────
+
+class CmsSection(Base):
+    __tablename__ = "cms_sections"
+
+    id:          Mapped[str]           = mapped_column(String(36), primary_key=True)
+    page_id:     Mapped[str]           = mapped_column(String(36), ForeignKey("cms_pages.id", ondelete="CASCADE"), nullable=False)
+    block_type:  Mapped[str]           = mapped_column(String(50), nullable=False)
+    sort_order:  Mapped[int]           = mapped_column(Integer, nullable=False, server_default="0")
+    is_visible:  Mapped[bool]          = mapped_column(Boolean, nullable=False, server_default="true")
+    config:      Mapped[dict]          = mapped_column(JSONB, nullable=False, server_default="{}")
+    css_class:   Mapped[str | None]    = mapped_column(String(255), nullable=True)
+    anchor_id:   Mapped[str | None]    = mapped_column(String(100), nullable=True)
+    created_at:  Mapped[DateTime]      = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at:  Mapped[DateTime]      = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    page: Mapped[CmsPage] = relationship("CmsPage", back_populates="sections")
+
+    __table_args__ = (
+        Index("ix_cms_sections_page_id", "page_id"),
+        Index("ix_cms_sections_sort_order", "page_id", "sort_order"),
+    )
+
+
+# ─── CMS Script ──────────────────────────────────────────────────────────────
+
+class CmsScript(Base):
+    __tablename__ = "cms_scripts"
+
+    id:              Mapped[str]           = mapped_column(String(36), primary_key=True)
+    page_id:         Mapped[str | None]    = mapped_column(String(36), ForeignKey("cms_pages.id", ondelete="CASCADE"), nullable=True)
+    name:            Mapped[str]           = mapped_column(String(100), nullable=False)
+    placement:       Mapped[str]           = mapped_column(String(20), nullable=False, server_default="head")
+    script_content:  Mapped[str]           = mapped_column(Text, nullable=False)
+    is_active:       Mapped[bool]          = mapped_column(Boolean, nullable=False, server_default="true")
+    sort_order:      Mapped[int]           = mapped_column(Integer, nullable=False, server_default="0")
+    created_at:      Mapped[DateTime]      = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at:      Mapped[DateTime]      = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    page: Mapped[CmsPage | None] = relationship("CmsPage", back_populates="scripts")
+
+    __table_args__ = (
+        Index("ix_cms_scripts_page_id", "page_id"),
+        Index("ix_cms_scripts_placement", "placement"),
+    )

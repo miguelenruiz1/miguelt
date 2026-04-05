@@ -9,8 +9,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import NotFoundError, ValidationError
-from app.db.models import POStatus, Product, PurchaseOrder
+from app.db.models import POStatus, Product, PurchaseOrder, Supplier
 from app.db.models.cost_history import ProductCostHistory
+from app.db.models.partner import BusinessPartner
+from app.repositories.batch_repo import BatchRepository
 from app.repositories.po_repo import PORepository
 from app.repositories.product_repo import ProductRepository
 from app.repositories.supplier_repo import SupplierRepository
@@ -25,10 +27,25 @@ class POService:
         self.supplier_repo = SupplierRepository(db)
         self.stock_service = StockService(db)
 
+    async def _find_supplier(self, supplier_id: str, tenant_id: str):
+        """Find supplier in suppliers table or partners table."""
+        supplier = await self.supplier_repo.get_by_id(supplier_id, tenant_id)
+        if supplier:
+            return supplier
+        # Fallback: check partners table
+        result = await self.db.execute(
+            select(BusinessPartner).where(
+                BusinessPartner.id == supplier_id,
+                BusinessPartner.tenant_id == tenant_id,
+                BusinessPartner.is_supplier.is_(True),
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def resolve_supplier_name(self, supplier_id: str | None, tenant_id: str) -> str | None:
         if not supplier_id:
             return None
-        supplier = await self.supplier_repo.get_by_id(supplier_id, tenant_id)
+        supplier = await self._find_supplier(supplier_id, tenant_id)
         return supplier.name if supplier else None
 
     async def list(
@@ -53,10 +70,31 @@ class POService:
             raise NotFoundError(f"Purchase order {po_id!r} not found")
         return po
 
+    async def _ensure_legacy_supplier(self, partner: BusinessPartner, tenant_id: str):
+        """If supplier comes from business_partners, ensure a legacy supplier record exists for FK."""
+        existing = await self.supplier_repo.get_by_id(partner.id, tenant_id)
+        if not existing:
+            legacy = Supplier(
+                id=partner.id,
+                tenant_id=tenant_id,
+                name=partner.name,
+                code=partner.code or partner.id[:8],
+                contact_name=partner.contact_name,
+                email=partner.email,
+                phone=partner.phone,
+                is_active=True,
+            )
+            self.db.add(legacy)
+            await self.db.flush()
+
     async def create_draft(self, tenant_id: str, data: dict) -> PurchaseOrder:
-        supplier = await self.supplier_repo.get_by_id(data["supplier_id"], tenant_id)
+        supplier = await self._find_supplier(data["supplier_id"], tenant_id)
         if not supplier:
-            raise NotFoundError(f"Supplier {data['supplier_id']!r} not found")
+            raise NotFoundError(f"Proveedor {data['supplier_id']!r} no encontrado")
+
+        # Ensure legacy supplier record exists for FK constraint
+        if isinstance(supplier, BusinessPartner):
+            await self._ensure_legacy_supplier(supplier, tenant_id)
 
         lines = data.get("lines", [])
         if not lines:
@@ -150,7 +188,7 @@ class POService:
         pricing = PricingEngine(self.db)
 
         # Resolve supplier name once
-        supplier = await self.supplier_repo.get_by_id(po.supplier_id, tenant_id)
+        supplier = await self._find_supplier(po.supplier_id, tenant_id)
         supplier_name = supplier.name if supplier else "Desconocido"
 
         for receipt in line_receipts:
@@ -177,6 +215,33 @@ class POService:
 
             await self.repo.update_line(line, {"qty_received": new_received})
 
+            # ── Auto-create or find batch if batch_number provided ────
+            batch_id = None
+            batch_number = receipt.get("batch_number")
+            if batch_number:
+                batch_repo = BatchRepository(self.db)
+                existing = await batch_repo.find_by_number(
+                    tenant_id, line.product_id, batch_number
+                )
+                if existing:
+                    batch_id = existing.id
+                    # Update quantity on existing batch
+                    await batch_repo.update(existing, {
+                        "quantity": existing.quantity + qty,
+                    })
+                else:
+                    batch = await batch_repo.create(tenant_id, {
+                        "entity_id": line.product_id,
+                        "batch_number": batch_number,
+                        "quantity": qty,
+                        "cost": line.unit_cost,
+                        "manufacture_date": receipt.get("manufacture_date"),
+                        "expiration_date": receipt.get("expiration_date"),
+                        "notes": f"Auto-creado al recibir OC {po.po_number}",
+                        "created_by": performed_by or "system",
+                    })
+                    batch_id = batch.id
+
             # Receive stock (creates movement + updates qty_on_hand)
             await self.stock_service.receive(
                 tenant_id=tenant_id,
@@ -189,6 +254,8 @@ class POService:
                 variant_id=line.variant_id,
                 location_id=line.location_id,
                 uom=receipt.get("uom", "primary"),
+                batch_id=batch_id,
+                batch_number=batch_number,
             )
 
             # ── Cost history & dynamic pricing ────────────────────────

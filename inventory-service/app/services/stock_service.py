@@ -132,7 +132,7 @@ class StockService:
 
         qty_primary = self._to_primary_qty(quantity, uom, product)
 
-        level = await self.stock_repo.upsert_level(tenant_id, product_id, warehouse_id, qty_primary, batch_id, unit_cost=unit_cost, variant_id=variant_id)
+        level = await self.stock_repo.upsert_level(tenant_id, product_id, warehouse_id, qty_primary, batch_id, unit_cost=unit_cost, variant_id=variant_id, location_id=location_id)
 
         # Location assignment: explicit > product-type entry rule > None
         if level:
@@ -351,6 +351,8 @@ class StockService:
         batch_id: str | None = None,
         variant_id: str | None = None,
         uom: str = "primary",
+        from_location_id: str | None = None,
+        to_location_id: str | None = None,
     ) -> StockMovement:
         product = await self._assert_product(product_id, tenant_id)
         await self._assert_warehouse(from_warehouse_id, tenant_id)
@@ -369,10 +371,10 @@ class StockService:
                 f"Insufficient stock in source warehouse: available {available}, requested {qty_primary}"
             )
 
-        await self.stock_repo.upsert_level(tenant_id, product_id, from_warehouse_id, -qty_primary, batch_id, variant_id=variant_id)
-        await self.stock_repo.upsert_level(tenant_id, product_id, to_warehouse_id, qty_primary, batch_id, variant_id=variant_id)
+        await self.stock_repo.upsert_level(tenant_id, product_id, from_warehouse_id, -qty_primary, batch_id, variant_id=variant_id, location_id=from_location_id)
+        await self.stock_repo.upsert_level(tenant_id, product_id, to_warehouse_id, qty_primary, batch_id, variant_id=variant_id, location_id=to_location_id)
 
-        return await self.movement_repo.create({
+        movement_data: dict = {
             "tenant_id": tenant_id,
             "movement_type": MovementType.transfer,
             "product_id": product_id,
@@ -384,7 +386,13 @@ class StockService:
             "notes": notes,
             "performed_by": performed_by,
             "variant_id": variant_id,
-        })
+        }
+        if from_location_id:
+            movement_data["from_location_id"] = from_location_id
+        if to_location_id:
+            movement_data["to_location_id"] = to_location_id
+
+        return await self.movement_repo.create(movement_data)
 
     async def initiate_transfer(
         self,
