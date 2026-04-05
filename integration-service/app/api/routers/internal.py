@@ -65,7 +65,7 @@ async def create_invoice_internal(
             "resolution_error tenant=%s provider=%s", x_tenant_id, provider_slug
         )
 
-    # Get credentials from DB (internal calls don't include them in body)
+    # Get credentials from DB — tenant-specific first, then global fallback
     import logging as _logging
     _log = _logging.getLogger("integration.internal")
     credentials = body.pop("credentials", {})
@@ -75,12 +75,20 @@ async def create_invoice_internal(
             from app.core.security import decrypt_credentials
             import json as _json
             repo = IntegrationConfigRepository(db)
+            # 1. Try tenant-specific config
             config = await repo.get_by_provider(x_tenant_id, provider_slug)
+            # 2. Fallback to global/platform configs
+            if not config or not config.credentials_enc:
+                for fallback_tenant in ("platform", "default"):
+                    config = await repo.get_by_provider(fallback_tenant, provider_slug)
+                    if config and config.credentials_enc:
+                        _log.info("credentials_fallback tenant=%s fallback=%s provider=%s", x_tenant_id, fallback_tenant, provider_slug)
+                        break
             if config and config.credentials_enc:
                 credentials = _json.loads(decrypt_credentials(config.credentials_enc))
                 _log.info("credentials_loaded tenant=%s provider=%s", x_tenant_id, provider_slug)
             else:
-                _log.warning("no_credentials_found tenant=%s provider=%s config=%s", x_tenant_id, provider_slug, config is not None)
+                _log.warning("no_credentials_found tenant=%s provider=%s", x_tenant_id, provider_slug)
         except Exception as exc:
             _log.exception("credentials_load_error tenant=%s provider=%s", x_tenant_id, provider_slug)
             raise HTTPException(status_code=500, detail=f"Failed to load credentials: {exc}")
@@ -149,6 +157,11 @@ async def create_credit_note_internal(
         import json as _json
         repo = IntegrationConfigRepository(db)
         config = await repo.get_by_provider(x_tenant_id, provider_slug)
+        if not config or not config.credentials_enc:
+            for fallback_tenant in ("platform", "default"):
+                config = await repo.get_by_provider(fallback_tenant, provider_slug)
+                if config and config.credentials_enc:
+                    break
         if config and config.credentials_enc:
             credentials = _json.loads(decrypt_credentials(config.credentials_enc))
     result = await adapter.create_credit_note(credentials, body)
