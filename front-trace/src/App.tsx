@@ -102,6 +102,7 @@ const RecordsPage = React.lazy(() => import('@/pages/compliance/RecordsPage'))
 const RecordDetailPage = React.lazy(() => import('@/pages/compliance/RecordDetailPage'))
 const CertificatesPage = React.lazy(() => import('@/pages/compliance/CertificatesPage'))
 const VerifyCertificatePage = React.lazy(() => import('@/pages/compliance/VerifyCertificatePage'))
+const ComplianceIntegrationsPage = React.lazy(() => import('@/pages/compliance/IntegrationsPage').then(m => ({ default: m.ComplianceIntegrationsPage })))
 import { FeatureGuard } from '@/components/inventory/FeatureGuard'
 import { PlatformDashboardPage } from '@/pages/platform/PlatformDashboardPage'
 import { PlatformTenantsPage } from '@/pages/platform/PlatformTenantsPage'
@@ -882,6 +883,14 @@ const router = createBrowserRouter([
         element: (
           <React.Suspense fallback={null}>
             <ComplianceGuard><CertificatesPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+      {
+        path: 'cumplimiento/integraciones',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><ComplianceIntegrationsPage /></ComplianceGuard>
           </React.Suspense>
         ),
       },

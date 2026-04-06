@@ -9,7 +9,7 @@ import {
   ShoppingBag, Tag, BellRing, BookText, Shapes,
   Users2, Globe, ScanLine, PackageCheck, RefreshCw, Scale, Search,
   CheckCircle, MapPin, Award, ChevronsUpDown, Sparkles,
-  Ship, Plane, Shield, FolderOpen, Link2,
+  Ship, Plane, Shield, FolderOpen, Link2, Key,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLiveness } from '@/hooks/useHealth'
@@ -100,6 +100,7 @@ const cumplimientoItems = [
   { to: '/cumplimiento/parcelas', icon: MapPin, label: 'Parcelas' },
   { to: '/cumplimiento/registros', icon: FileText, label: 'Registros' },
   { to: '/cumplimiento/certificados', icon: Award, label: 'Certificados' },
+  { to: '/cumplimiento/integraciones', icon: Key, label: 'Integraciones' },
 ]
 
 const logisticaItems = [

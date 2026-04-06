@@ -229,7 +229,7 @@ async def screen_deforestation(
         # For now, use point buffer — polygon fetch from arweave would need async download
         pass
 
-    svc = DeforestationService()
+    svc = await DeforestationService.from_db(db)
     result = await svc.check_plot(
         lat=plot.lat,
         lng=plot.lng,
