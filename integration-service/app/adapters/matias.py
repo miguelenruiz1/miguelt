@@ -183,6 +183,13 @@ class MatiasAdapter(BaseAdapter):
         addr_line = customer.get("address_line") or addr.get("line1", "")
         city = customer.get("city") or addr.get("city", "")
 
+        # Build full address string for Matias
+        full_address = addr_line
+        if city and addr_line:
+            full_address = f"{addr_line}, {city}"
+        elif city:
+            full_address = city
+
         result = {
             "identification_number": nit,
             "dni": nit,
@@ -191,16 +198,13 @@ class MatiasAdapter(BaseAdapter):
             "company_name": customer.get("company_name") or customer.get("name", "Cliente"),
             "email": customer.get("email", ""),
             "phone": customer.get("phone", ""),
+            "address": full_address or "Sin dirección",
             "municipality_id": customer.get("municipality_id", 149),
             "type_document_identification_id": type_doc_id,
             "type_organization_id": org_type,
             "type_regime_id": regime,
             "type_liability_id": liability,
         }
-        if addr_line:
-            result["address"] = addr_line
-        if city:
-            result["city"] = city
         return result
 
     def _build_invoice_payload(self, data: dict) -> dict:
