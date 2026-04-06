@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, MapPin, Satellite, Check, X, Loader2, Calendar, Sprout, Shield, AlertTriangle, FolderOpen } from 'lucide-react'
 import { usePlot, useUpdatePlot, useScreenDeforestation, usePlotDocuments, useAttachPlotDocument, useDetachPlotDocument } from '@/hooks/useCompliance'
 import { SinglePlotMap } from '@/components/compliance/PlotMap'
+import { PlotPolygonEditor } from '@/components/compliance/PlotPolygonEditor'
 import DocumentUploader from '@/components/compliance/DocumentUploader'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/store/toast'
@@ -149,7 +150,22 @@ export function PlotDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Map */}
         <div className="lg:col-span-2 space-y-4">
-          <SinglePlotMap plot={plot} height="400px" geojsonData={geojsonData} />
+          <PlotPolygonEditor
+            initialLat={plot.lat ? Number(plot.lat) : null}
+            initialLng={plot.lng ? Number(plot.lng) : null}
+            initialGeojson={geojsonData}
+            height="400px"
+            saving={updatePlot.isPending}
+            onSave={async (geojson) => {
+              try {
+                await updatePlot.mutateAsync({ geojson_data: geojson } as any)
+                setGeojsonData(geojson)
+                toast.success('Polígono guardado')
+              } catch (e: any) {
+                toast.error(e.message || 'Error al guardar polígono')
+              }
+            }}
+          />
 
           {/* Compliance flags */}
           <div className="grid grid-cols-3 gap-3">
