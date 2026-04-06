@@ -69,6 +69,13 @@ export async function authFetch(
     if (t) h['Authorization'] = `Bearer ${t}`
     const tenantId = useAuthStore.getState().user?.tenant_id
     if (tenantId) h['X-Tenant-Id'] = tenantId
+    // Generate a per-request correlation id so frontend bug reports can be
+    // traced to backend logs. Falls back to crypto.randomUUID where available.
+    h['X-Correlation-Id'] = (
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+    )
     return h
   }
 

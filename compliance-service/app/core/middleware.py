@@ -31,13 +31,15 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
         response.headers["X-Correlation-Id"] = cid
         response.headers["X-Response-Time-Ms"] = str(elapsed)
 
-        log.info(
-            "request_completed",
-            method=request.method,
-            path=request.url.path,
-            status_code=response.status_code,
-            elapsed_ms=elapsed,
-        )
+        # Skip noisy healthcheck logs (Cloud Run pings every few seconds)
+        if request.url.path not in ("/health", "/ready", "/metrics"):
+            log.info(
+                "request_completed",
+                method=request.method,
+                path=request.url.path,
+                status_code=response.status_code,
+                elapsed_ms=elapsed,
+            )
         return response
 
 

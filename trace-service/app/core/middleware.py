@@ -8,12 +8,16 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.types import ASGIApp
 
 
+_LOG_SKIP_PATHS = frozenset({"/health", "/ready", "/metrics"})
+
+
 class CorrelationIdMiddleware(BaseHTTPMiddleware):
     """
     Injects a correlation-id into every request context.
     - Reads X-Correlation-Id header if provided; otherwise generates one.
     - Binds it to structlog context so every log line carries it.
     - Adds it to the response headers.
+    - Skips request_completed log spam for healthcheck/metrics paths.
     """
 
     def __init__(self, app: ASGIApp) -> None:
@@ -42,8 +46,10 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
             elapsed_ms=elapsed_ms,
         )
 
-        log = structlog.get_logger(__name__)
-        log.info("request_completed")
+        # Skip noisy healthcheck logs (Cloud Run pings every few seconds)
+        if request.url.path not in _LOG_SKIP_PATHS:
+            log = structlog.get_logger(__name__)
+            log.info("request_completed")
 
         return response
 

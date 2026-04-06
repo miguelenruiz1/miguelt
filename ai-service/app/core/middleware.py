@@ -26,5 +26,6 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
         response.headers["X-Response-Time-Ms"] = str(elapsed_ms)
 
         structlog.contextvars.bind_contextvars(status_code=response.status_code, elapsed_ms=elapsed_ms)
-        structlog.get_logger(__name__).info("request_completed")
+        if request.url.path not in ("/health", "/ready", "/metrics"):
+            structlog.get_logger(__name__).info("request_completed")
         return response

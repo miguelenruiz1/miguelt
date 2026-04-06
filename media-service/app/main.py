@@ -61,6 +61,13 @@ def create_app() -> FastAPI:
     uploads_path.mkdir(parents=True, exist_ok=True)
     app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 
+    # ─── Prometheus metrics (optional) ────────────────────────────────────────
+    try:
+        from prometheus_fastapi_instrumentator import Instrumentator  # type: ignore
+        Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+    except ImportError:
+        pass
+
     return app
 
 

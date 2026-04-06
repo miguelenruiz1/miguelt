@@ -115,6 +115,13 @@ def create_app() -> FastAPI:
     app.include_router(notifications_router)
     app.include_router(onboarding_router)
 
+    # ─── Prometheus metrics (optional) ────────────────────────────────────────
+    try:
+        from prometheus_fastapi_instrumentator import Instrumentator  # type: ignore
+        Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+    except ImportError:
+        pass
+
     return app
 
 

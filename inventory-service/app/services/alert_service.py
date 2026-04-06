@@ -227,18 +227,35 @@ class AlertService:
             })
 
         # 2) Auto-resolve expiry alerts for batches that are no longer active
-        unresolved = await self.db.execute(
-            select(StockAlert).where(
-                StockAlert.tenant_id == tenant_id,
-                StockAlert.is_resolved == False,  # noqa: E712
-                StockAlert.alert_type.in_(["expired", "expiring_soon"]),
-                StockAlert.batch_id != None,  # noqa: E711
+        unresolved = (
+            (
+                await self.db.execute(
+                    select(StockAlert).where(
+                        StockAlert.tenant_id == tenant_id,
+                        StockAlert.is_resolved == False,  # noqa: E712
+                        StockAlert.alert_type.in_(["expired", "expiring_soon"]),
+                        StockAlert.batch_id != None,  # noqa: E711
+                    )
+                )
             )
+            .scalars()
+            .all()
         )
-        for alert in unresolved.scalars().all():
-            batch = await self.batch_repo.get(tenant_id, alert.batch_id)
-            if not batch or not batch.is_active:
-                await self.repo.resolve(alert.id, tenant_id)
+        # Bulk-load all referenced batches in a single query (was N+1 in loop)
+        if unresolved:
+            from app.db.models.tracking import EntityBatch
+            batch_ids = list({a.batch_id for a in unresolved if a.batch_id})
+            batches_q = await self.db.execute(
+                select(EntityBatch).where(
+                    EntityBatch.tenant_id == tenant_id,
+                    EntityBatch.id.in_(batch_ids),
+                )
+            )
+            batch_map = {b.id: b for b in batches_q.scalars().all()}
+            for alert in unresolved:
+                batch = batch_map.get(alert.batch_id)
+                if not batch or not batch.is_active:
+                    await self.repo.resolve(alert.id, tenant_id)
 
         return alerts_created
 

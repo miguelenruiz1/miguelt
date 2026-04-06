@@ -96,6 +96,13 @@ def create_app() -> FastAPI:
     app.include_router(webhooks_router)
     app.include_router(subscriptions_router)
 
+    # ─── Prometheus metrics (optional) ────────────────────────────────────────
+    try:
+        from prometheus_fastapi_instrumentator import Instrumentator  # type: ignore
+        Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+    except ImportError:
+        pass
+
     return app
 
 

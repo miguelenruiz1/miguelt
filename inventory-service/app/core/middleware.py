@@ -35,7 +35,9 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
             elapsed_ms=elapsed_ms,
         )
 
-        log = structlog.get_logger(__name__)
-        log.info("request_completed")
+        # Skip noisy healthcheck logs (Cloud Run pings every few seconds)
+        if request.url.path not in ("/health", "/ready", "/metrics"):
+            log = structlog.get_logger(__name__)
+            log.info("request_completed")
 
         return response

@@ -5,7 +5,7 @@ import uuid
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, Index, Integer, Numeric, Text, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, Date, Index, Integer, Numeric, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -22,6 +22,19 @@ class CompliancePlot(Base):
         UniqueConstraint("tenant_id", "plot_code", name="uq_plot_tenant_code"),
         Index("ix_plots_tenant", "tenant_id"),
         Index("ix_plots_org", "organization_id"),
+        # Sanity ranges — invalid coordinates corrupt downstream geofencing.
+        CheckConstraint(
+            "lat IS NULL OR (lat BETWEEN -90 AND 90)",
+            name="ck_compliance_plots_lat_range",
+        ),
+        CheckConstraint(
+            "lng IS NULL OR (lng BETWEEN -180 AND 180)",
+            name="ck_compliance_plots_lng_range",
+        ),
+        CheckConstraint(
+            "plot_area_ha IS NULL OR plot_area_ha > 0",
+            name="ck_compliance_plots_area_positive",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

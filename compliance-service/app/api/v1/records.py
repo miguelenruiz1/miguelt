@@ -776,12 +776,13 @@ async def attach_document(
     if record is None:
         raise NotFoundError(f"Record '{record_id}' not found")
 
-    # Check duplicate
+    # Check duplicate (tenant-scoped to avoid cross-tenant existence probes)
     existing = (
         await db.execute(
             select(ComplianceRecordDocument).where(
                 ComplianceRecordDocument.record_id == record_id,
                 ComplianceRecordDocument.media_file_id == body.media_file_id,
+                ComplianceRecordDocument.tenant_id == tid,
             )
         )
     ).scalar_one_or_none()

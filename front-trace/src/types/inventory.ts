@@ -29,8 +29,10 @@ export interface Product {
   preferred_currency: string
   tax_rate_id: string | null
   is_tax_exempt: boolean
-  retention_rate: string | null
-  images: string[]
+  retention_rate: number | null
+  /** Backend stores image refs as `{media_file_id, url}` dicts.
+   *  Legacy strings are kept for backwards compatibility. */
+  images: Array<string | { media_file_id: string; url: string }>
   attributes: Record<string, unknown>
   created_by?: string | null
   updated_by?: string | null

@@ -354,6 +354,7 @@ async def attach_plot_document(
             select(CompliancePlotDocument).where(
                 CompliancePlotDocument.plot_id == plot_id,
                 CompliancePlotDocument.media_file_id == body.media_file_id,
+                CompliancePlotDocument.tenant_id == tid,
             )
         )
     ).scalar_one_or_none()

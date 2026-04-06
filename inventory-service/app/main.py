@@ -222,6 +222,14 @@ def create_app() -> FastAPI:
     app.include_router(uom_router)
     app.include_router(partners_router)
     app.include_router(internal_router)
+
+    # ─── Prometheus metrics (optional) ────────────────────────────────────────
+    try:
+        from prometheus_fastapi_instrumentator import Instrumentator  # type: ignore
+        Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+    except ImportError:
+        pass
+
     return app
 
 

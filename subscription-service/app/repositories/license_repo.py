@@ -31,10 +31,15 @@ class LicenseRepository:
         await self.db.refresh(lic)
         return lic
 
-    async def get_by_id(self, lic_id: str) -> LicenseKey | None:
-        result = await self.db.execute(
-            select(LicenseKey).where(LicenseKey.id == lic_id)
-        )
+    async def get_by_id(
+        self, lic_id: str, tenant_id: str | None = None
+    ) -> LicenseKey | None:
+        """Optional tenant filter — defense in depth.
+        Service layer also enforces it (license_service.get/revoke)."""
+        q = select(LicenseKey).where(LicenseKey.id == lic_id)
+        if tenant_id is not None:
+            q = q.where(LicenseKey.tenant_id == tenant_id)
+        result = await self.db.execute(q)
         return result.scalar_one_or_none()
 
     async def get_by_key(self, key: str) -> LicenseKey | None:
