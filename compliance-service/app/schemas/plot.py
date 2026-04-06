@@ -19,6 +19,7 @@ class PlotCreate(BaseModel):
     geolocation_type: str = "point"
     lat: Decimal | None = None
     lng: Decimal | None = None
+    geojson_data: dict | None = None
     geojson_arweave_url: str | None = None
     geojson_hash: str | None = None
     country_code: str = "CO"
@@ -46,6 +47,7 @@ class PlotUpdate(BaseModel):
     geolocation_type: str | None = None
     lat: Decimal | None = None
     lng: Decimal | None = None
+    geojson_data: dict | None = None
     geojson_arweave_url: str | None = None
     geojson_hash: str | None = None
     country_code: str | None = None
