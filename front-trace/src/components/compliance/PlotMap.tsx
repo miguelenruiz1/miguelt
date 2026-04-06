@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker, GeoJSON, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, GeoJSON, LayersControl, useMap } from 'react-leaflet'
+
+const { BaseLayer } = LayersControl
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { CompliancePlot } from '@/types/compliance'
@@ -58,10 +60,28 @@ export function PlotMap({ plots, height = '400px', onPlotClick, selectedPlotId }
   return (
     <div className="rounded-xl overflow-hidden border border-border  relative z-0" style={{ height }}>
       <MapContainer center={center} zoom={10} style={{ height: '100%', width: '100%' }}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <LayersControl position="topright">
+          <BaseLayer checked name="Satélite">
+            <TileLayer
+              attribution='&copy; Esri, Maxar, Earthstar Geographics'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={19}
+            />
+          </BaseLayer>
+          <BaseLayer name="Topográfico">
+            <TileLayer
+              attribution='&copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+              url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
+              maxZoom={17}
+            />
+          </BaseLayer>
+          <BaseLayer name="Calles">
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+          </BaseLayer>
+        </LayersControl>
         <FitBounds plots={validPlots} />
         {validPlots.map(plot => {
           const lat = Number(plot.lat)
@@ -146,10 +166,28 @@ export function SinglePlotMap({ plot, height = '300px', geojsonData }: SinglePlo
   return (
     <div className="rounded-xl overflow-hidden border border-border  relative z-0" style={{ height }}>
       <MapContainer center={[lat, lng]} zoom={15} style={{ height: '100%', width: '100%' }}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <LayersControl position="topright">
+          <BaseLayer checked name="Satélite">
+            <TileLayer
+              attribution='&copy; Esri, Maxar, Earthstar Geographics'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={19}
+            />
+          </BaseLayer>
+          <BaseLayer name="Topográfico">
+            <TileLayer
+              attribution='&copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+              url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
+              maxZoom={17}
+            />
+          </BaseLayer>
+          <BaseLayer name="Calles">
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+          </BaseLayer>
+        </LayersControl>
         {geojsonData ? (
           <>
             <FitGeoJSON geojson={geojsonData} />
