@@ -21,7 +21,9 @@ MEMORY_TTL = 90 * 24 * 3600
 LAST_ANALYSIS_TTL = 24 * 3600
 
 SYSTEM_PROMPT = """\
-Eres el asistente de rentabilidad de TraceLog, una plataforma de inventario y trazabilidad para PYMEs colombianas.
+Eres el asistente de inteligencia de inventario de TraceLog, una plataforma de inventario y trazabilidad para PYMEs colombianas.
+
+TU ROL: Analizar TODA la operacion del negocio — rentabilidad, costos, stock, compras, ventas, movimientos — y detectar problemas antes de que se vuelvan criticos.
 
 CAPACIDADES REALES DE TRACELOG (solo recomienda estas):
 - Crear precios especiales por cliente
@@ -33,17 +35,27 @@ CAPACIDADES REALES DE TRACELOG (solo recomienda estas):
 - Reasignar stock entre bodegas
 - Registrar movimientos manuales de inventario
 - Ajustar precio sugerido de venta por producto
+- Ver kardex por producto
 
 CAPACIDADES NO DISPONIBLES (nunca las sugieras):
 - Promociones, cupones, email marketing, envio gratis, publicidad, ecommerce, CRM
+
+ANALISIS QUE DEBES HACER:
+1. COSTOS: Si ves variaciones de costo >20% entre compras del mismo producto, ALERTA INMEDIATA. Indica el costo anterior vs nuevo, el proveedor y el impacto en margen.
+2. STOCK: Si hay productos bajo el punto de reorden, recomienda generar OC al proveedor preferido.
+3. MARGEN NEGATIVO: Si un producto tiene margen negativo, es ALERTA ALTA. Recomienda subir precio sugerido o cambiar proveedor.
+4. MOVIMIENTOS SOSPECHOSOS: Si hay devoluciones frecuentes, ajustes de inventario grandes, o ventas sin costo, reportalo.
+5. OPORTUNIDADES: Identifica productos estrella (alto margen + alto volumen) y sugiere acciones concretas.
 
 REGLAS:
 1. Cada recomendacion debe ser ejecutable HOY dentro de TraceLog
 2. No repitas recomendaciones pendientes en memoria
 3. Detecta la industria por productos y categorias
 4. Usa nombres reales de productos, proveedores y bodegas
-5. Moneda: COP. Se especifico y conciso
-6. Si hay alertas recurrentes en memoria, priorizarlas\
+5. Moneda: COP. Se especifico y conciso con cifras reales
+6. Si hay alertas recurrentes en memoria, priorizarlas
+7. Si hay variaciones de costo de compra, SIEMPRE mencionarlas en alertas
+8. Si hay productos con margen negativo, SIEMPRE es alerta alta\
 """
 
 RESPONSE_SCHEMA = """\
@@ -291,7 +303,18 @@ class AnalysisService:
                 "proveedor": m.get("best_supplier", ""),
             })
 
-        return f"""\
+        # Inventory intelligence
+        inventory_alerts = {}
+        if biz.get("alertas_stock_bajo"):
+            inventory_alerts["stock_bajo_reorden"] = biz["alertas_stock_bajo"]
+        if biz.get("variaciones_costo_compra"):
+            inventory_alerts["variaciones_costo_compra"] = biz["variaciones_costo_compra"]
+        if biz.get("resumen_movimientos"):
+            inventory_alerts["resumen_movimientos_periodo"] = biz["resumen_movimientos"]
+        if biz.get("productos_margen_negativo"):
+            inventory_alerts["productos_con_perdida"] = biz["productos_margen_negativo"]
+
+        prompt = f"""\
 NEGOCIO:
 {json.dumps(tenant_context, ensure_ascii=False, indent=2)}
 
@@ -300,8 +323,14 @@ MEMORIA:
 
 PRODUCTOS ({len(products)}):
 {json.dumps(product_details, ensure_ascii=False, indent=2)}
-
-{RESPONSE_SCHEMA}"""
+"""
+        if inventory_alerts:
+            prompt += f"""
+ALERTAS DE INVENTARIO (PRIORIDAD ALTA — analiza esto primero):
+{json.dumps(inventory_alerts, ensure_ascii=False, indent=2)}
+"""
+        prompt += f"\n{RESPONSE_SCHEMA}"
+        return prompt
 
     # ─── Parse ─────────────────────────────────────────────────────────────────
 
