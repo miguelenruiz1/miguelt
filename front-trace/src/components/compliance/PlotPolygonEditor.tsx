@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Polygon, Polyline, useMap, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Polygon, Polyline, LayersControl, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { MapPin, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react'
+
+const { BaseLayer } = LayersControl
 
 // Smaller marker for vertices
 const vertexIcon = L.divIcon({
@@ -121,11 +123,35 @@ export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, heig
     <div className="space-y-3">
       <div className="rounded-xl overflow-hidden border border-border relative z-0" style={{ height }}>
         <MapContainer center={center} zoom={15} style={{ height: '100%', width: '100%' }}>
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {/* Satellite layer toggle (Esri free) */}
+          <LayersControl position="topright">
+            <BaseLayer checked name="Satélite (Esri)">
+              <TileLayer
+                attribution='&copy; Esri, Maxar, Earthstar Geographics'
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                maxZoom={19}
+              />
+            </BaseLayer>
+            <BaseLayer name="Híbrido (Satélite + Calles)">
+              <TileLayer
+                attribution='&copy; Esri, Maxar'
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                maxZoom={19}
+              />
+            </BaseLayer>
+            <BaseLayer name="Topográfico">
+              <TileLayer
+                attribution='&copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+                url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
+                maxZoom={17}
+              />
+            </BaseLayer>
+            <BaseLayer name="Calles (OSM)">
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+            </BaseLayer>
+          </LayersControl>
           <ClickHandler enabled={editing} onClick={handleAddPoint} />
           <FitToPoints points={points} />
           {points.length >= 3 && (
