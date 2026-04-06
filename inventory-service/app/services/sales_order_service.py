@@ -663,6 +663,8 @@ class SalesOrderService:
                 "subtotal": float(order.subtotal),
                 "subtotal_after_discount": subtotal_after_discount,
                 "tax_amount": float(order.tax_amount or 0),
+                "total_retention": float(order.total_retention or 0),
+                "total_payable": float(order.total_payable or order.total or 0),
                 "total": float(order.total),
                 "notes": order.notes or "",
             }
@@ -677,6 +679,8 @@ class SalesOrderService:
                     "discount_rate": float(line.discount_pct) / 100 if line.discount_pct else 0,
                     "discount_amount": float(line.discount_amount or 0),
                     "tax_rate": float(line.tax_rate),
+                    "retention_pct": float(line.retention_pct or 0) * 100 if line.retention_pct else 0,
+                    "retention_amount": float(line.retention_amount or 0),
                     "subtotal": float(line.line_subtotal or 0),
                     "total": float(line.line_total or 0),
                 })
