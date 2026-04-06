@@ -548,6 +548,44 @@ function CreateProductModal({ onClose }: { onClose: () => void }) {
 
 // ─── Customer Special Prices Section ──────────────────────────────────────────
 
+function CostHistorySection({ productId }: { productId: string }) {
+  const { data: history = [] } = useQuery({
+    queryKey: ['inventory', 'products', productId, 'cost-history'],
+    queryFn: () => inventoryProductsApi.getCostHistory(productId, 10),
+    enabled: !!productId,
+    staleTime: 30_000,
+  })
+
+  // Deduplicate by supplier_name, keep latest per supplier (max 3)
+  const uniqueSuppliers: Array<{ supplier: string; cost: number; date: string; qty: number }> = []
+  const seen = new Set<string>()
+  for (const h of history) {
+    const name = h.supplier_name || 'Desconocido'
+    if (!seen.has(name)) {
+      seen.add(name)
+      uniqueSuppliers.push({ supplier: name, cost: h.unit_cost_base_uom, date: h.received_at, qty: h.qty_purchased })
+      if (uniqueSuppliers.length >= 3) break
+    }
+  }
+
+  if (uniqueSuppliers.length === 0) return null
+
+  return (
+    <div className="rounded-lg border border-border p-3 space-y-2">
+      <p className="text-xs font-medium text-muted-foreground">Últimos proveedores</p>
+      {uniqueSuppliers.map((s, i) => (
+        <div key={i} className="flex items-center justify-between text-sm">
+          <div>
+            <span className="text-foreground font-medium">{s.supplier}</span>
+            <span className="text-[10px] text-muted-foreground ml-2">{s.date ? new Date(s.date).toLocaleDateString('es-CO') : ''}</span>
+          </div>
+          <span className="font-mono font-bold">${Number(s.cost).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function CustomerPricesSection({ productId }: { productId: string }) {
   const { data: prices = [], isLoading } = useCustomerPricesForProduct(productId)
   const [expanded, setExpanded] = useState(false)
@@ -1747,11 +1785,15 @@ function ProductDrawer({
               {drawerTab === 'finanzas' && (
                 <div className="space-y-4">
                   <div className="rounded-lg bg-muted/50 p-3 space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Costo Base</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-muted-foreground">Costo Base</p>
+                      <button onClick={async () => { try { await inventoryProductsApi.recalculatePrices(product.id); qc.invalidateQueries({ queryKey: ['inventory', 'products'] }) } catch {} }} className="text-[10px] text-primary hover:underline font-medium">Recalcular precios</button>
+                    </div>
                     <div className="flex justify-between text-sm"><span className="text-muted-foreground">Último costo</span><span className="font-bold">{product.last_purchase_cost ? `$${Number(product.last_purchase_cost).toLocaleString('es-CO')}` : '—'}</span></div>
                     {product.last_purchase_date && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Fecha</span><span>{new Date(product.last_purchase_date).toLocaleDateString('es-CO')}</span></div>}
                     {product.last_purchase_supplier && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Proveedor</span><span>{product.last_purchase_supplier}</span></div>}
                   </div>
+                  <CostHistorySection productId={product.id} />
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-lg border border-border p-3">
                       <p className="text-xs text-muted-foreground">Valorización</p>
