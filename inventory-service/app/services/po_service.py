@@ -290,6 +290,7 @@ class POService:
                 product.last_purchase_cost = cost_per_base
                 product.last_purchase_date = datetime.now(timezone.utc)
                 product.last_purchase_supplier = supplier_name
+                await self.db.flush()  # Persist cost before recalculating prices
 
                 # Recalculate suggested & minimum sale prices
                 await pricing.recalculate_product_prices(product, tenant_id)

@@ -108,10 +108,15 @@ async def update_product(
     svc = ProductService(db)
     audit = InventoryAuditService(db)
     old = await svc.get(product_id, current_user["tenant_id"])
-    old_data = ProductOut.model_validate(old).model_dump(mode="json")
+    try:
+        old_data = {"id": old.id, "sku": old.sku, "name": old.name}
+    except Exception:
+        old_data = {"id": product_id}
     update_data = body.model_dump(exclude_none=True)
     update_data["updated_by"] = current_user.get("id")
     product = await svc.update(product_id, current_user["tenant_id"], update_data)
+    # Re-fetch to get clean state with all fields loaded
+    product = await svc.get(product_id, current_user["tenant_id"])
     hm = await svc.has_movements(product.id, current_user["tenant_id"])
     await audit.log(
         tenant_id=current_user["tenant_id"], user=current_user,
