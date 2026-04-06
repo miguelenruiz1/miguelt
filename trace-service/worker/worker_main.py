@@ -273,6 +273,7 @@ async def sweep_pending_mints(ctx: dict[str, Any]) -> None:
                 await arq_pool.enqueue_job(
                     "retry_blockchain_mint",
                     str(asset.id),
+                    _job_id=f"retry_mint:{asset.id}",
                     _queue_name=settings.ANCHOR_QUEUE_NAME,
                 )
                 enqueued += 1
@@ -303,9 +304,12 @@ async def sweep_pending_anchors(ctx: dict[str, Any]) -> None:
             if event.anchor_attempts >= settings.ANCHOR_MAX_RETRIES:
                 continue  # Give up after max retries
             try:
+                # _job_id dedup so the same event isn't enqueued twice if the
+                # main flow already pushed it before the sweep ran.
                 await arq_pool.enqueue_job(
                     "anchor_event",
                     str(event.id),
+                    _job_id=f"anchor:{event.id}",
                     _queue_name=settings.ANCHOR_QUEUE_NAME,
                 )
                 enqueued += 1
@@ -330,6 +334,7 @@ async def sweep_pending_anchors(ctx: dict[str, Any]) -> None:
                 await arq_pool.enqueue_job(
                     "anchor_generic",
                     str(ar.id),
+                    _job_id=f"anchor_generic:{ar.id}",
                     _queue_name=settings.ANCHOR_QUEUE_NAME,
                 )
                 ar_enqueued += 1

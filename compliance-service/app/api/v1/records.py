@@ -11,13 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import ModuleUser, get_http_client
 from app.core.errors import ConflictError, NotFoundError, ValidationError
 from app.core.logging import get_logger
-
-log = get_logger(__name__)
 from app.core.settings import get_settings
 from app.db.session import get_db_session
 from app.models.framework import ComplianceFramework
 from app.models.plot_link import CompliancePlotLink
 from app.models.record import ComplianceRecord
+from app.schemas.document_link import DocumentLinkCreate, DocumentLinkResponse, DocumentLinkWithUrl
 from app.schemas.record import (
     PlotLinkCreate,
     PlotLinkResponse,
@@ -25,8 +24,9 @@ from app.schemas.record import (
     RecordResponse,
     RecordUpdate,
 )
-from app.schemas.document_link import DocumentLinkCreate, DocumentLinkResponse, DocumentLinkWithUrl
 from app.schemas.validation import ValidationResult
+
+log = get_logger(__name__)
 
 router = APIRouter(
     prefix="/api/v1/compliance/records",

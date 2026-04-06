@@ -125,7 +125,8 @@ async def get_current_user(
     if credentials is None:
         raise UnauthorizedError("Missing authorization header")
 
-    from jose import JWTError, jwt
+    import jwt
+    from jwt import PyJWTError as JWTError
     token = credentials.credentials
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])

@@ -1,5 +1,5 @@
 """JWT decode for auth delegation."""
-from jose import jwt
+import jwt
 from app.core.settings import get_settings
 
 

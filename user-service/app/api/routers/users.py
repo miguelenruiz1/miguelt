@@ -21,7 +21,13 @@ _log = structlog.get_logger(__name__)
 
 
 async def _enforce_user_limit(tenant_id: str) -> None:
-    """Check subscription plan user limit via subscription-service. Raises 402 if exceeded."""
+    """Check subscription plan user limit via subscription-service.
+
+    Raises 402 if the plan limit is reached. In production, fails CLOSED if
+    subscription-service is unreachable (returns 503) so a competitor can't
+    DoS subscription-service to bypass billing limits. In dev/test it fails open.
+    """
+    import os
     settings = get_settings()
     url = f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/enforcement/check/{tenant_id}/users"
     try:
@@ -36,8 +42,14 @@ async def _enforce_user_limit(tenant_id: str) -> None:
         if resp.status_code != 200:
             _log.warning("enforcement_check_unexpected", status=resp.status_code, tenant=tenant_id)
     except httpx.RequestError as exc:
-        # If subscription-service is down, allow creation (fail-open)
-        _log.warning("enforcement_check_unreachable", tenant=tenant_id, error=str(exc))
+        env = os.environ.get("ENV", "dev").lower()
+        _log.warning("enforcement_check_unreachable", tenant=tenant_id, error=str(exc), env=env)
+        if env in ("prod", "production"):
+            # Fail CLOSED in prod — refuse user creation if we can't verify the limit
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="No se pudo verificar el límite del plan. Reintenta en un momento.",
+            )
 
 
 def _require_superuser(current_user: CurrentUser):

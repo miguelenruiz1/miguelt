@@ -1,7 +1,7 @@
 """JWT token validation."""
 from __future__ import annotations
 
-from jose import jwt
+import jwt
 
 from app.core.settings import get_settings
 

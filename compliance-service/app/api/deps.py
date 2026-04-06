@@ -109,7 +109,8 @@ async def get_current_user(
     settings = get_settings()
     token = credentials.credentials
 
-    from jose import JWTError, jwt
+    import jwt
+    from jwt import PyJWTError as JWTError
 
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])

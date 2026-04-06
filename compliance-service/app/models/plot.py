@@ -35,6 +35,14 @@ class CompliancePlot(Base):
             "plot_area_ha IS NULL OR plot_area_ha > 0",
             name="ck_compliance_plots_area_positive",
         ),
+        CheckConstraint(
+            "risk_level IN ('low','standard','high','critical')",
+            name="ck_compliance_plots_risk_level",
+        ),
+        CheckConstraint(
+            "geolocation_type IN ('point','polygon','multipolygon')",
+            name="ck_compliance_plots_geo_type",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

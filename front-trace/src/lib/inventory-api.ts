@@ -87,13 +87,21 @@ import type {
 
 const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
+interface ApiErrorBody {
+  error?: { code?: string; message?: string }
+  detail?: string | { message?: string }
+  resource?: string
+  current?: number
+  limit?: number
+}
+
 class ApiError extends Error {
   status: number
-  body: any
-  constructor(status: number, message: string, body?: any) {
+  body: ApiErrorBody | null
+  constructor(status: number, message: string, body?: ApiErrorBody | null) {
     super(message)
     this.status = status
-    this.body = body
+    this.body = body ?? null
   }
 }
 

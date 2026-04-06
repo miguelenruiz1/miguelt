@@ -104,20 +104,25 @@ class MovementRepository:
         offset: int = 0,
         limit: int = 50,
     ) -> tuple[list[StockMovement], int]:
-        q = select(StockMovement).where(StockMovement.tenant_id == tenant_id)
+        # Build the WHERE clause once and reuse it for both the count and the
+        # list query. The count must NOT carry joinedloads (Postgres would
+        # execute the full join just to count).
+        conditions = [StockMovement.tenant_id == tenant_id]
+        joins = []
         if product_id:
-            q = q.where(StockMovement.product_id == product_id)
+            conditions.append(StockMovement.product_id == product_id)
         if movement_type:
-            q = q.where(StockMovement.movement_type == movement_type)
+            conditions.append(StockMovement.movement_type == movement_type)
         if status:
-            q = q.where(StockMovement.status == status)
+            conditions.append(StockMovement.status == status)
         if from_dt:
-            q = q.where(StockMovement.created_at >= from_dt)
+            conditions.append(StockMovement.created_at >= from_dt)
         if to_dt:
-            q = q.where(StockMovement.created_at <= to_dt)
+            conditions.append(StockMovement.created_at <= to_dt)
         if search:
             like = f"%{search}%"
-            q = q.join(Product, StockMovement.product_id == Product.id).where(
+            joins.append((Product, StockMovement.product_id == Product.id))
+            conditions.append(
                 or_(
                     StockMovement.reference.ilike(like),
                     StockMovement.notes.ilike(like),
@@ -127,10 +132,21 @@ class MovementRepository:
                     Product.sku.ilike(like),
                 )
             )
-        count_q = select(func.count()).select_from(q.subquery())
+
+        # Count query — bare, no joinedloads, no order_by
+        count_q = select(func.count()).select_from(StockMovement)
+        for jt, jc in joins:
+            count_q = count_q.join(jt, jc)
+        count_q = count_q.where(*conditions)
         total = (await self.db.execute(count_q)).scalar_one()
-        q = (
-            q.options(
+
+        # List query — with eager loads + ordering + pagination
+        list_q = select(StockMovement)
+        for jt, jc in joins:
+            list_q = list_q.join(jt, jc)
+        list_q = (
+            list_q.where(*conditions)
+            .options(
                 joinedload(StockMovement.product),
                 joinedload(StockMovement.from_warehouse),
                 joinedload(StockMovement.to_warehouse),
@@ -139,5 +155,5 @@ class MovementRepository:
             .offset(offset)
             .limit(limit)
         )
-        result = await self.db.execute(q)
+        result = await self.db.execute(list_q)
         return list(result.scalars().unique().all()), total

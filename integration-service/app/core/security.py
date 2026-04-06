@@ -4,7 +4,7 @@ from __future__ import annotations
 import base64
 
 from cryptography.fernet import Fernet
-from jose import jwt
+import jwt
 
 from app.core.settings import get_settings
 

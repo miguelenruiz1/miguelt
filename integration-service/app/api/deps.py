@@ -8,7 +8,7 @@ import httpx
 import redis.asyncio as aioredis
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError
+from jwt import PyJWTError as JWTError
 
 from app.core.security import decode_token
 from app.core.settings import get_settings

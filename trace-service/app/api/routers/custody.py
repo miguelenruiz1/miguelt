@@ -104,6 +104,20 @@ def _event_resp(event) -> dict:
     return CustodyEventResponse.model_validate(event).model_dump(mode="json")
 
 
+# Module-level Redis client — singleton, reused across requests, avoids
+# the TIME_WAIT churn that came from creating/closing per request.
+_idempotency_redis = None
+
+
+async def _get_idempotency_redis():
+    global _idempotency_redis
+    if _idempotency_redis is None:
+        import redis.asyncio as aioredis
+        from app.core.settings import get_settings
+        _idempotency_redis = aioredis.from_url(get_settings().REDIS_URL)
+    return _idempotency_redis
+
+
 async def _idempotent_post(
     idempotency_key: str | None,
     namespace: str,
@@ -118,33 +132,28 @@ async def _idempotent_post(
         result = await handler()
         return False, result
 
-    import redis.asyncio as aioredis
-    from app.core.settings import get_settings
     from app.utils.idempotency import IdempotencyStore
 
-    redis_client = aioredis.from_url(get_settings().REDIS_URL)
+    redis_client = await _get_idempotency_redis()
     store = IdempotencyStore(redis_client)
 
+    cached = await store.get_cached_response(idempotency_key, namespace=namespace)
+    if cached:
+        if cached.get("__processing__"):
+            raise ConflictError("Request is still being processed")
+        return True, cached
+
+    acquired = await store.mark_processing(idempotency_key, namespace=namespace)
+    if not acquired:
+        raise ConflictError("Concurrent duplicate request in progress")
+
     try:
-        cached = await store.get_cached_response(idempotency_key, namespace=namespace)
-        if cached:
-            if cached.get("__processing__"):
-                raise ConflictError("Request is still being processed")
-            return True, cached
-
-        acquired = await store.mark_processing(idempotency_key, namespace=namespace)
-        if not acquired:
-            raise ConflictError("Concurrent duplicate request in progress")
-
-        try:
-            result = await handler()
-            await store.save_response(idempotency_key, namespace=namespace, response=result)
-            return False, result
-        except Exception:
-            await store.delete(idempotency_key, namespace=namespace)
-            raise
-    finally:
-        await redis_client.aclose()
+        result = await handler()
+        await store.save_response(idempotency_key, namespace=namespace, response=result)
+        return False, result
+    except Exception:
+        await store.delete(idempotency_key, namespace=namespace)
+        raise
 
 
 # ─── Assets ───────────────────────────────────────────────────────────────────

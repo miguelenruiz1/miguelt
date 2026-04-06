@@ -3,11 +3,10 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastapi import HTTPException
 from app.api.deps import ModuleUser
 from app.core.errors import ConflictError, NotFoundError
 

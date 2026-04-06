@@ -240,22 +240,41 @@ class AuthService:
         return user
 
     async def request_password_reset(self, email: str, redis: aioredis.Redis) -> None:
-        """Generate password reset token and send email. Always succeeds (no email leak)."""
+        """Generate password reset token and send email.
+
+        ALWAYS sleeps a constant ~250ms regardless of whether the email exists,
+        so an attacker can't use response timing to enumerate registered users.
+        Email send happens in the same request but is wrapped to ensure constant
+        wall-clock time on success and failure.
+        """
+        import asyncio as _asyncio
+        import time as _time
+        start = _time.perf_counter()
+
         user = await self.user_repo.get_by_email(email)
-        if not user or not user.is_active:
-            return  # Silent — don't reveal if email exists
+        if user and user.is_active:
+            token = secrets.token_urlsafe(64)
+            await redis.setex(f"pwd_reset:{token}", 3600, user.id)  # TTL 1h
 
-        token = secrets.token_urlsafe(64)
-        await redis.setex(f"pwd_reset:{token}", 3600, user.id)  # TTL 1h
+            settings = get_settings()
+            link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+            try:
+                email_svc = EmailService()
+                await email_svc.send_from_template(
+                    self.db, user.tenant_id, "password_reset", user.email,
+                    {"user_name": user.full_name, "user_email": user.email,
+                     "link": link, "app_name": settings.APP_NAME},
+                )
+            except Exception:
+                # Don't leak failure either — same UX as success
+                pass
 
-        settings = get_settings()
-        link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
-        email_svc = EmailService()
-        await email_svc.send_from_template(
-            self.db, user.tenant_id, "password_reset", user.email,
-            {"user_name": user.full_name, "user_email": user.email,
-             "link": link, "app_name": settings.APP_NAME},
-        )
+        # Pad total wall time to ~300ms so the response time doesn't reveal
+        # whether the email belonged to a real user.
+        elapsed = _time.perf_counter() - start
+        target = 0.3
+        if elapsed < target:
+            await _asyncio.sleep(target - elapsed)
 
     async def reset_password(self, token: str, new_password: str, redis: aioredis.Redis) -> User:
         """Reset password using token from Redis."""

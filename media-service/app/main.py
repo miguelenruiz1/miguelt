@@ -68,6 +68,13 @@ def create_app() -> FastAPI:
     except ImportError:
         pass
 
+    # OpenTelemetry tracing (optional)
+    try:
+        from app.core.tracing import init_tracing
+        init_tracing(app, settings.APP_NAME)
+    except Exception:
+        pass
+
     return app
 
 

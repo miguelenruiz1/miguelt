@@ -8,7 +8,7 @@ from typing import Annotated
 
 import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile, status
-from jose import JWTError
+from jwt import PyJWTError as JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
