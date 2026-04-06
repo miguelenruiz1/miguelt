@@ -180,6 +180,10 @@ export const inventoryProductsApi = {
   update: (id: string, data: Partial<Product> & { term_ids?: string[] }) =>
     request<Product>(`/api/v1/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (id: string) => requestVoid(`/api/v1/products/${id}`, { method: 'DELETE' }),
+  getCostHistory: (id: string, limit = 10) =>
+    request<Array<{ id: string; supplier_name: string; unit_cost_base_uom: number; qty_purchased: number; total_cost: number; received_at: string }>>(`/api/v1/products/${id}/cost-history?limit=${limit}`),
+  recalculatePrices: (id: string) =>
+    request<Product>(`/api/v1/products/${id}/recalculate-prices`, { method: 'POST' }),
   uploadImage: async (productId: string, file: File): Promise<Product> => {
     const form = new FormData()
     form.append('file', file)
