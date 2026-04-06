@@ -277,6 +277,20 @@ class SolanaClient:
             }
         return await self._cb.call(_call)
 
+    async def tx_exists(self, signature: str) -> bool:
+        """Return True if a Solana transaction signature exists on chain.
+
+        Used by anchor recovery to avoid double-spending memo fees when a
+        previous attempt persisted the sig but failed to mark anchored.
+        """
+        if not signature or signature.startswith("SIM_"):
+            return self._simulation
+        try:
+            status = await self.get_signature_status(signature)
+            return status.get("slot") is not None and status.get("err") is None
+        except Exception:
+            return False
+
     async def get_signature_status(self, signature: str) -> dict[str, Any]:
         if self._simulation or signature.startswith("SIM_"):
             return {"signature": signature, "slot": 1, "confirmations": 32, "err": None, "simulated": True}

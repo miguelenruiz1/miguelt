@@ -639,16 +639,31 @@ async def submit_to_traces(
     """
     # First export the DDS
     tid = _tenant_id(user)
+
+    # Lock the record row to serialize concurrent submits (e.g. user double-click).
+    # Re-check status INSIDE the locked txn so the second click sees 'submitted'
+    # and is rejected without re-hitting TRACES NT.
     record = (
         await db.execute(
-            select(ComplianceRecord).where(
+            select(ComplianceRecord)
+            .where(
                 ComplianceRecord.id == record_id,
                 ComplianceRecord.tenant_id == tid,
             )
+            .with_for_update()
         )
     ).scalar_one_or_none()
     if record is None:
         raise NotFoundError(f"Record '{record_id}' not found")
+
+    if record.declaration_status == "submitted" and record.declaration_reference:
+        # Idempotent: return the existing reference instead of re-submitting
+        return {
+            "record_id": str(record_id),
+            "submitted": True,
+            "reference_number": record.declaration_reference,
+            "already_submitted": True,
+        }
 
     if record.compliance_status not in ("compliant", "partial", "declared", "ready"):
         raise ValidationError(

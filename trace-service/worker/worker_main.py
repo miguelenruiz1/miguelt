@@ -75,6 +75,24 @@ async def anchor_event(ctx: dict[str, Any], event_id: str) -> dict[str, Any]:
             log.info("anchor_already_done", event_id=event_id, sig=event.solana_tx_sig)
             return {"status": "already_anchored", "sig": event.solana_tx_sig}
 
+        # If a previous attempt persisted a tx_sig but commit failed, the
+        # memo may already be on-chain. Verify before re-sending to avoid
+        # double-spend on Solana.
+        if event.solana_tx_sig:
+            try:
+                already_on_chain = await solana_client.tx_exists(event.solana_tx_sig)
+            except Exception:
+                already_on_chain = False
+            if already_on_chain:
+                await repo.mark_anchored(eid, event.solana_tx_sig)
+                await session.commit()
+                log.info(
+                    "anchor_recovered_from_orphan_tx",
+                    event_id=event_id,
+                    tx_sig=event.solana_tx_sig,
+                )
+                return {"status": "anchored", "sig": event.solana_tx_sig}
+
         try:
             tx_sig = await solana_client.send_memo(event.event_hash)
             await repo.mark_anchored(eid, tx_sig)

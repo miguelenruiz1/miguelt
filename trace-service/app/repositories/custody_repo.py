@@ -245,13 +245,13 @@ class CustodyEventRepository:
     async def increment_anchor_attempt(
         self, event_id: uuid.UUID, error: str | None = None
     ) -> None:
-        result = await self._db.execute(
-            select(CustodyEvent.anchor_attempts).where(CustodyEvent.id == event_id)
-        )
-        current = result.scalar_one_or_none() or 0
+        """Atomic increment to avoid lost updates under concurrent retries."""
         await self._db.execute(
             update(CustodyEvent)
             .where(CustodyEvent.id == event_id)
-            .values(anchor_attempts=current + 1, anchor_last_error=error)
+            .values(
+                anchor_attempts=CustodyEvent.anchor_attempts + 1,
+                anchor_last_error=error,
+            )
         )
         await self._db.flush()

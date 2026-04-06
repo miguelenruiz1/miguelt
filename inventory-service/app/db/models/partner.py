@@ -57,8 +57,10 @@ class BusinessPartner(Base):
 
     # ── Customer-specific ─────────────────────────────────────────────────
     shipping_address: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    credit_limit:     Mapped[int]        = mapped_column(Integer, nullable=False, server_default="0")
-    discount_percent: Mapped[int]        = mapped_column(Integer, nullable=False, server_default="0")
+    # Numeric so amounts in COP/USD don't lose decimals.
+    credit_limit:     Mapped[Decimal]    = mapped_column(Numeric(18, 2), nullable=False, server_default="0")
+    # Numeric so 12.5% etc. is preservable; CHECK constraint enforces 0..100 range.
+    discount_percent: Mapped[Decimal]    = mapped_column(Numeric(5, 2), nullable=False, server_default="0")
 
     # ── Supplier-specific ─────────────────────────────────────────────────
     lead_time_days:   Mapped[int]        = mapped_column(Integer, nullable=False, server_default="7")

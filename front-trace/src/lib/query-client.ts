@@ -4,13 +4,18 @@ import { ApiError } from '@/lib/api'
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000,
+      // 60s default staleTime — most data is not volatile enough to refetch
+      // every time the user changes browser tab.
+      staleTime: 60_000,
       gcTime:    5 * 60_000,
       retry: (failureCount, error) => {
         if (error instanceof ApiError && error.status < 500) return false
         return failureCount < 2
       },
-      refetchOnWindowFocus: true,
+      // Disabled: refetching on tab focus produces tons of unnecessary load
+      // for slowly-changing data. Pages that need fresh data on focus should
+      // opt in via per-query refetchOnWindowFocus: true.
+      refetchOnWindowFocus: false,
     },
     mutations: {
       retry: false,

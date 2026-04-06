@@ -76,12 +76,14 @@ class VariantAttributeOptionRepository:
         await self.db.delete(obj)
         await self.db.flush()
 
-    async def get_by_id(self, opt_id: str, tenant_id: str | None = None) -> VariantAttributeOption | None:
-        q = select(VariantAttributeOption).where(VariantAttributeOption.id == opt_id)
-        if tenant_id:
-            q = q.join(VariantAttribute, VariantAttributeOption.attribute_id == VariantAttribute.id).where(
-                VariantAttribute.tenant_id == tenant_id
-            )
+    async def get_by_id(self, opt_id: str, tenant_id: str) -> VariantAttributeOption | None:
+        """tenant_id is REQUIRED — no silent default to prevent cross-tenant reads."""
+        q = (
+            select(VariantAttributeOption)
+            .where(VariantAttributeOption.id == opt_id)
+            .join(VariantAttribute, VariantAttributeOption.attribute_id == VariantAttribute.id)
+            .where(VariantAttribute.tenant_id == tenant_id)
+        )
         return (await self.db.execute(q)).scalar_one_or_none()
 
 

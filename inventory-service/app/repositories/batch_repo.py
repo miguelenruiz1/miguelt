@@ -41,15 +41,36 @@ class BatchRepository:
         )
         return result.scalar_one_or_none()
 
-    async def find_by_number(self, tenant_id: str, entity_id: str, batch_number: str) -> EntityBatch | None:
-        result = await self.db.execute(
-            select(EntityBatch).where(
-                EntityBatch.tenant_id == tenant_id,
-                EntityBatch.entity_id == entity_id,
-                EntityBatch.batch_number == batch_number,
-            )
+    async def find_by_number(
+        self,
+        tenant_id: str,
+        entity_id: str,
+        batch_number: str,
+        for_update: bool = False,
+    ) -> EntityBatch | None:
+        q = select(EntityBatch).where(
+            EntityBatch.tenant_id == tenant_id,
+            EntityBatch.entity_id == entity_id,
+            EntityBatch.batch_number == batch_number,
         )
+        if for_update:
+            q = q.with_for_update()
+        result = await self.db.execute(q)
         return result.scalar_one_or_none()
+
+    async def increment_quantity(
+        self,
+        batch_id: str,
+        delta,
+    ) -> None:
+        """Atomically add delta to a batch's quantity to avoid lost updates."""
+        from sqlalchemy import update as _update
+        await self.db.execute(
+            _update(EntityBatch)
+            .where(EntityBatch.id == batch_id)
+            .values(quantity=EntityBatch.quantity + delta)
+        )
+        await self.db.flush()
 
     async def create(self, tenant_id: str, data: dict) -> EntityBatch:
         obj = EntityBatch(id=str(uuid.uuid4()), tenant_id=tenant_id, **data)

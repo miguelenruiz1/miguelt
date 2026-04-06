@@ -177,7 +177,21 @@ class POService:
         line_receipts: list[dict],
         performed_by: str | None = None,
     ) -> PurchaseOrder:
-        """Receive quantities per line, create stock movements, cost history, and recalculate prices."""
+        """Receive quantities per line, create stock movements, cost history, and recalculate prices.
+
+        Takes a SELECT FOR UPDATE on the PO so two concurrent receives can't
+        both pass the status check and cause double-receipts on the same lines.
+        """
+        # Lock the PO row to serialize concurrent receive_items calls
+        from sqlalchemy import select as _select
+        locked = await self.db.execute(
+            _select(PurchaseOrder)
+            .where(PurchaseOrder.id == po_id, PurchaseOrder.tenant_id == tenant_id)
+            .with_for_update()
+        )
+        if locked.scalar_one_or_none() is None:
+            raise NotFoundError(f"PO {po_id!r} not found")
+
         po = await self.get(po_id, tenant_id)
         if po.status in (POStatus.received, POStatus.canceled, POStatus.consolidated):
             raise ValidationError(f"No se puede recibir una OC con estado '{po.status.value}'")
@@ -191,9 +205,32 @@ class POService:
         supplier = await self._find_supplier(po.supplier_id, tenant_id)
         supplier_name = supplier.name if supplier else "Desconocido"
 
+        # ── Bulk pre-fetch to avoid N+1 in receive loops ──
+        # Fetch all PO lines referenced in receipts in a single query.
+        line_ids = [r["line_id"] for r in line_receipts]
+        from app.db.models import PurchaseOrderLine
+        from sqlalchemy import select as _select
+        lines_q = await self.db.execute(
+            _select(PurchaseOrderLine).where(PurchaseOrderLine.id.in_(line_ids))
+        )
+        line_map: dict[str, PurchaseOrderLine] = {l.id: l for l in lines_q.scalars().all()}
+
+        # Fetch all products referenced in those lines in one query.
+        product_ids = list({l.product_id for l in line_map.values()})
+        if product_ids:
+            prods_q = await self.db.execute(
+                _select(Product).where(
+                    Product.id.in_(product_ids),
+                    Product.tenant_id == tenant_id,
+                )
+            )
+            product_map: dict[str, Product] = {p.id: p for p in prods_q.scalars().all()}
+        else:
+            product_map = {}
+
         for receipt in line_receipts:
-            line = await self.repo.get_line(receipt["line_id"], po_id)
-            if not line:
+            line = line_map.get(receipt["line_id"])
+            if not line or line.purchase_order_id != po_id:
                 raise NotFoundError(f"PO line {receipt['line_id']!r} not found")
 
             qty = Decimal(str(receipt["qty_received"]))
@@ -225,10 +262,8 @@ class POService:
                 )
                 if existing:
                     batch_id = existing.id
-                    # Update quantity on existing batch
-                    await batch_repo.update(existing, {
-                        "quantity": existing.quantity + qty,
-                    })
+                    # Atomic increment to avoid lost updates under concurrency
+                    await batch_repo.increment_quantity(existing.id, qty)
                 else:
                     batch = await batch_repo.create(tenant_id, {
                         "entity_id": line.product_id,
@@ -284,8 +319,8 @@ class POService:
             )
             self.db.add(cost_record)
 
-            # Update product denormalized pricing fields
-            product = await product_repo.get_by_id(line.product_id, tenant_id)
+            # Update product denormalized pricing fields (from pre-fetched map)
+            product = product_map.get(line.product_id)
             if product:
                 product.last_purchase_cost = cost_per_base
                 product.last_purchase_date = datetime.now(timezone.utc)

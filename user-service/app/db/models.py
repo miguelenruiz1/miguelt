@@ -27,11 +27,15 @@ class User(Base):
     __table_args__ = (
         Index("ix_users_tenant_id", "tenant_id"),
         Index("ix_users_is_active", "is_active"),
+        # Email and username are unique PER tenant (not globally) so two
+        # different tenants can both have an "admin@empresa.com".
+        UniqueConstraint("tenant_id", "email", name="uq_users_tenant_email"),
+        UniqueConstraint("tenant_id", "username", name="uq_users_tenant_username"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    username: Mapped[str] = mapped_column(String(100), nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

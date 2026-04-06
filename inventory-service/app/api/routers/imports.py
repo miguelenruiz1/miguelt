@@ -19,6 +19,12 @@ class DemoRequest(BaseModel):
     industries: list[str]
 
 
+# 10 MB hard cap on CSV uploads to prevent memory exhaustion DoS.
+_MAX_CSV_BYTES = 10 * 1024 * 1024
+# 50k rows hard cap (large enough for any realistic SaaS tenant migration).
+_MAX_CSV_ROWS = 50_000
+
+
 @router.post("/products")
 async def import_products_csv(
     current_user: ModuleUser,
@@ -27,8 +33,30 @@ async def import_products_csv(
     db: AsyncSession = Depends(get_db_session),
 ):
     """Upload a CSV file to bulk-create products with optional initial stock."""
-    content = await file.read()
+    from fastapi import HTTPException
+
+    # Stream-read with byte cap so attackers can't OOM the worker.
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await file.read(64 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > _MAX_CSV_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"CSV exceeds {_MAX_CSV_BYTES // (1024 * 1024)} MB limit",
+            )
+        chunks.append(chunk)
+    content = b"".join(chunks)
     csv_text = content.decode("utf-8-sig")  # handles BOM from Excel
+
+    if csv_text.count("\n") > _MAX_CSV_ROWS:
+        raise HTTPException(
+            status_code=413,
+            detail=f"CSV exceeds {_MAX_CSV_ROWS} row limit",
+        )
 
     svc = ImportService(db)
     tenant_id = current_user.get("tenant_id", "default")

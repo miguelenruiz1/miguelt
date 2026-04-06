@@ -189,14 +189,22 @@ async def download_certificate(
             target = f"https://storage.googleapis.com/{without}"
         return RedirectResponse(url=target)
 
-    # Local file:// URL fallback (DEV only)
-    pdf_path = cert.pdf_url.replace("file://", "")
-    if not Path(pdf_path).exists():
-        from fastapi import HTTPException
+    # Local file:// URL fallback (DEV only). Defense in depth: validate that
+    # the resolved path lives inside the certificates directory to prevent
+    # arbitrary file disclosure if pdf_url is ever tampered with.
+    from app.certificates.storage import LocalStorage
+    from fastapi import HTTPException
+    pdf_path = Path(cert.pdf_url.replace("file://", "")).resolve()
+    base_dir = LocalStorage.BASE_DIR.resolve()
+    try:
+        pdf_path.relative_to(base_dir)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="PDF file not found")
+    if not pdf_path.exists():
         raise HTTPException(status_code=404, detail="PDF file not found on disk")
 
     return FileResponse(
-        path=pdf_path,
+        path=str(pdf_path),
         media_type="application/pdf",
         filename=f"{cert.certificate_number}.pdf",
     )
