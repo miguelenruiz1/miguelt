@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Polygon, Polyline, LayersControl, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { MapPin, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react'
+import { MapPin, Pencil, Trash2, Check, X, Loader2, Search, Navigation } from 'lucide-react'
 
 const { BaseLayer } = LayersControl
 
@@ -43,6 +43,16 @@ function FitToPoints({ points }: { points: [number, number][] }) {
   return null
 }
 
+function FlyTo({ target }: { target: [number, number] | null }) {
+  const map = useMap()
+  useEffect(() => {
+    if (target) {
+      map.flyTo(target, 16, { duration: 1.2 })
+    }
+  }, [target, map])
+  return null
+}
+
 function geojsonToPoints(geojson: any): [number, number][] {
   if (!geojson) return []
   let coords: number[][] = []
@@ -80,6 +90,54 @@ export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, heig
   const [points, setPoints] = useState<[number, number][]>(() => geojsonToPoints(initialGeojson))
   const [editing, setEditing] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searching, setSearching] = useState(false)
+  const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null)
+  const [searchError, setSearchError] = useState<string | null>(null)
+
+  async function handleSearch(e?: React.FormEvent) {
+    e?.preventDefault()
+    if (!searchQuery.trim()) return
+    setSearching(true)
+    setSearchError(null)
+    try {
+      // Nominatim free geocoding (OSM)
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(searchQuery)}`
+      const resp = await fetch(url, { headers: { 'Accept-Language': 'es' } })
+      const data = await resp.json()
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat)
+        const lng = parseFloat(data[0].lon)
+        setFlyTarget([lat, lng])
+      } else {
+        setSearchError('No se encontraron resultados')
+      }
+    } catch (err: any) {
+      setSearchError('Error de búsqueda')
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  function handleUseMyLocation() {
+    if (!navigator.geolocation) {
+      setSearchError('Geolocalización no disponible')
+      return
+    }
+    setSearching(true)
+    setSearchError(null)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setFlyTarget([pos.coords.latitude, pos.coords.longitude])
+        setSearching(false)
+      },
+      (err) => {
+        setSearchError(err.message || 'No se pudo obtener ubicación')
+        setSearching(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
 
   // Initial position
   const center: [number, number] = points.length > 0
@@ -121,6 +179,41 @@ export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, heig
 
   return (
     <div className="space-y-3">
+      {/* Search bar */}
+      <form onSubmit={handleSearch} className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar dirección, ciudad, finca... (ej: Jardín Antioquia)"
+            className="w-full rounded-lg border border-border bg-card pl-9 pr-3 py-2 text-sm focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-ring/20"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={searching || !searchQuery.trim()}
+          className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
+        >
+          {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+          Buscar
+        </button>
+        <button
+          type="button"
+          onClick={handleUseMyLocation}
+          disabled={searching}
+          className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted disabled:opacity-50"
+          title="Usar mi ubicación actual"
+        >
+          <Navigation className="h-3.5 w-3.5" />
+          Mi ubicación
+        </button>
+      </form>
+      {searchError && (
+        <p className="text-xs text-red-600">{searchError}</p>
+      )}
+
       <div className="rounded-xl overflow-hidden border border-border relative z-0" style={{ height }}>
         <MapContainer center={center} zoom={15} style={{ height: '100%', width: '100%' }}>
           <LayersControl position="topright">
@@ -154,6 +247,7 @@ export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, heig
           </LayersControl>
           <ClickHandler enabled={editing} onClick={handleAddPoint} />
           <FitToPoints points={points} />
+          <FlyTo target={flyTarget} />
           {points.length >= 3 && (
             <Polygon
               positions={points}
