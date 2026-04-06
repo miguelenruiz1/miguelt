@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { safeHtml } from '@/lib/safe-html'
 
 interface PlanFeature {
   text: string
@@ -73,7 +74,7 @@ export function PricingBlock({ config }: { config: PricingConfig }) {
             ))}
           </div>
           {config.note && (
-            <div className="precios-note" dangerouslySetInnerHTML={{ __html: config.note }} />
+            <div className="precios-note" dangerouslySetInnerHTML={safeHtml(config.note)} />
           )}
         </div>
       </section>

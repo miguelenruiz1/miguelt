@@ -53,26 +53,18 @@ class SalesOrderRepository:
         )).scalar_one_or_none()
 
     async def next_number(self, tenant_id: str) -> str:
+        """Race-free SO number via atomic counter."""
+        from app.repositories.sequence_repo import SequenceRepository
         from datetime import datetime
         year = datetime.now(timezone.utc).year
-        result = await self.db.execute(
-            select(func.count()).where(
-                SalesOrder.tenant_id == tenant_id,
-                SalesOrder.order_number.like(f"SO-{year}-%"),
-            )
-        )
-        seq = result.scalar_one() + 1
+        seq = await SequenceRepository(self.db).next_value(tenant_id, f"so-{year}")
         return f"SO-{year}-{seq:04d}"
 
     async def next_remission_number(self, tenant_id: str) -> str:
+        """Race-free remission number via atomic counter."""
+        from app.repositories.sequence_repo import SequenceRepository
         year = datetime.now(timezone.utc).year
-        result = await self.db.execute(
-            select(func.count()).where(
-                SalesOrder.tenant_id == tenant_id,
-                SalesOrder.remission_number.like(f"REM-{year}-%"),
-            )
-        )
-        seq = result.scalar_one() + 1
+        seq = await SequenceRepository(self.db).next_value(tenant_id, f"rem-{year}")
         return f"REM-{year}-{seq:04d}"
 
     async def create(self, data: dict, lines: list[dict]) -> SalesOrder:

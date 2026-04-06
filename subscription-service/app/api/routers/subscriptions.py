@@ -61,18 +61,27 @@ async def create_subscription(
     return await svc.create(data)
 
 
+def _enforce_tenant_match(current_user: dict, path_tenant_id: str) -> None:
+    """Reject path tenant_id != JWT tenant_id unless caller is superuser.
+
+    Closes IDOR where any tenant admin could mutate other tenants by manipulating
+    the path. Superusers may operate cross-tenant intentionally.
+    """
+    if current_user.get("is_superuser"):
+        return
+    user_tenant = str(current_user.get("tenant_id", "default"))
+    if str(path_tenant_id) != user_tenant:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Access denied to other tenant's resources")
+
+
 @router.get("/{tenant_id}", response_model=SubscriptionResponse)
 async def get_subscription(
     tenant_id: str,
     current_user: Annotated[dict, Depends(require_permission("subscription.view"))],
     svc: SubscriptionService = Depends(_svc),
 ):
-    # Non-superusers can only view their own tenant's subscription
-    if not current_user.get("is_superuser"):
-        user_tenant = current_user.get("tenant_id", "default")
-        if tenant_id != user_tenant:
-            from fastapi import HTTPException
-            raise HTTPException(status_code=403, detail="Access denied to other tenant's subscription")
+    _enforce_tenant_match(current_user, tenant_id)
     return await svc.get(tenant_id)
 
 
@@ -83,6 +92,7 @@ async def upgrade_subscription(
     current_user: Annotated[dict, Depends(require_permission("subscription.manage"))],
     svc: SubscriptionService = Depends(_svc),
 ):
+    _enforce_tenant_match(current_user, tenant_id)
     performed_by = current_user.get("id") or current_user.get("email")
     return await svc.upgrade(tenant_id, body.plan_slug, performed_by=performed_by)
 
@@ -94,6 +104,7 @@ async def cancel_subscription(
     current_user: Annotated[dict, Depends(require_permission("subscription.manage"))],
     svc: SubscriptionService = Depends(_svc),
 ):
+    _enforce_tenant_match(current_user, tenant_id)
     performed_by = current_user.get("id") or current_user.get("email")
     await svc.cancel(tenant_id, reason=body.reason, performed_by=performed_by)
 
@@ -104,6 +115,7 @@ async def reactivate_subscription(
     current_user: Annotated[dict, Depends(require_permission("subscription.manage"))],
     svc: SubscriptionService = Depends(_svc),
 ):
+    _enforce_tenant_match(current_user, tenant_id)
     performed_by = current_user.get("id") or current_user.get("email")
     return await svc.reactivate(tenant_id, performed_by=performed_by)
 
@@ -111,9 +123,10 @@ async def reactivate_subscription(
 @router.get("/{tenant_id}/invoices", response_model=list[InvoiceResponse])
 async def list_invoices(
     tenant_id: str,
-    _: Annotated[dict, Depends(require_permission("subscription.view"))],
+    current_user: Annotated[dict, Depends(require_permission("subscription.view"))],
     svc: SubscriptionService = Depends(_svc),
 ):
+    _enforce_tenant_match(current_user, tenant_id)
     return await svc.get_invoices(tenant_id)
 
 

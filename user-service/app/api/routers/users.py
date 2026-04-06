@@ -131,11 +131,14 @@ async def list_users(
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: str,
-    _: Annotated[object, require_permission("admin.users")],
+    current_user: Annotated[dict, require_permission("admin.users")],
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    tenant_id: Annotated[str, Depends(get_tenant_id)],
 ) -> UserResponse:
     svc = UserService(db)
-    user = await svc.get(user_id)
+    # Superusers may bypass tenant scoping
+    scope_tid = None if current_user.get("is_superuser") else tenant_id
+    user = await svc.get(user_id, tenant_id=scope_tid)
     return await _user_response(user, db)
 
 
@@ -143,11 +146,13 @@ async def get_user(
 async def update_user(
     user_id: str,
     body: AdminUpdateUser,
-    _: Annotated[object, require_permission("admin.users")],
+    current_user: Annotated[dict, require_permission("admin.users")],
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    tenant_id: Annotated[str, Depends(get_tenant_id)],
 ) -> UserResponse:
     svc = UserService(db)
-    user = await svc.update(user_id, **body.model_dump(exclude_unset=True))
+    scope_tid = None if current_user.get("is_superuser") else tenant_id
+    user = await svc.update(user_id, tenant_id=scope_tid, **body.model_dump(exclude_unset=True))
     return await _user_response(user, db)
 
 
@@ -192,11 +197,13 @@ async def reactivate_user(
 async def assign_role(
     user_id: str,
     role_id: str,
-    _: Annotated[object, require_permission("admin.roles")],
+    current_user: Annotated[dict, require_permission("admin.roles")],
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    tenant_id: Annotated[str, Depends(get_tenant_id)],
 ) -> Response:
     svc = UserService(db)
-    await svc.assign_role(user_id, role_id)
+    scope_tid = None if current_user.get("is_superuser") else tenant_id
+    await svc.assign_role(user_id, role_id, tenant_id=scope_tid)
     return Response(status_code=204)
 
 
@@ -204,9 +211,11 @@ async def assign_role(
 async def remove_role(
     user_id: str,
     role_id: str,
-    _: Annotated[object, require_permission("admin.roles")],
+    current_user: Annotated[dict, require_permission("admin.roles")],
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    tenant_id: Annotated[str, Depends(get_tenant_id)],
 ) -> Response:
     svc = UserService(db)
-    await svc.remove_role(user_id, role_id)
+    scope_tid = None if current_user.get("is_superuser") else tenant_id
+    await svc.remove_role(user_id, role_id, tenant_id=scope_tid)
     return Response(status_code=204)

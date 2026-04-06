@@ -1,5 +1,15 @@
 resolver 8.8.8.8 valid=30s;
 
+# CORS allowlist — only echo Origin if it matches a known frontend host.
+# Set $cors_origin to the trusted origin or empty string.
+map $http_origin $cors_origin {
+    default                                 "";
+    "~^https?://localhost(:[0-9]+)?$"      $http_origin;
+    "~^https?://127\.0\.0\.1(:[0-9]+)?$"   $http_origin;
+    "~^https://[a-z0-9-]+\.a\.run\.app$"   $http_origin;
+    "~^https://[a-z0-9-]+\.trace\.app$"    $http_origin;
+}
+
 map $uri $backend {
     # User Service
     ~^/api/v1/auth            https://${USER_UPSTREAM};
@@ -92,7 +102,10 @@ server {
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto https;
     proxy_set_header X-Tenant-Id $http_x_tenant_id;
-    proxy_set_header X-User-Id $http_x_user_id;
+    # NOTE: X-User-Id is NOT proxied — it's derivable from the JWT and accepting
+    # it from the client allows audit log forgery. Backends must read the user
+    # id from the validated JWT token.
+    proxy_set_header X-User-Id "";
     proxy_set_header Authorization $http_authorization;
     proxy_set_header Content-Type $http_content_type;
     proxy_ssl_server_name on;
@@ -100,11 +113,21 @@ server {
     proxy_read_timeout 60s;
     proxy_send_timeout 60s;
 
-    add_header Access-Control-Allow-Origin $http_origin always;
+    # CORS — only echo Origin when it matches the allowlist (set in $cors_origin).
+    # X-Service-Token is NOT in Allow-Headers because it's a S2S secret that
+    # must never be sent from the browser.
+    add_header Access-Control-Allow-Origin $cors_origin always;
+    add_header Vary Origin always;
     add_header Access-Control-Allow-Methods "GET,POST,PUT,PATCH,DELETE,OPTIONS" always;
-    add_header Access-Control-Allow-Headers "Authorization,Content-Type,X-Tenant-Id,X-User-Id,X-Service-Token,X-Correlation-Id" always;
+    add_header Access-Control-Allow-Headers "Authorization,Content-Type,X-Tenant-Id,X-Correlation-Id,Idempotency-Key,X-Admin-Key" always;
     add_header Access-Control-Allow-Credentials "true" always;
     add_header Access-Control-Max-Age 86400 always;
+
+    # Security headers
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
     if ($request_method = OPTIONS) {
         return 204;

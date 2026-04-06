@@ -44,18 +44,24 @@ class InvoiceRepository:
         return invoice
 
     async def next_invoice_number(self) -> str:
+        """Race-free invoice number via atomic UPSERT counter.
+
+        Invoice numbers are legal/fiscal artifacts: duplicates would create
+        very real liability. The previous MAX+1 was a write race.
+        """
+        from sqlalchemy import text
         year = datetime.now(timezone.utc).year
-        prefix = f"INV-{year}-"
-        result = await self.db.execute(
-            select(func.max(Invoice.invoice_number))
-            .where(Invoice.invoice_number.like(f"{prefix}%"))
+        scope = f"invoice-{year}"
+        sql = text(
+            """
+            INSERT INTO sequence_counters (scope, value, updated_at)
+            VALUES (:scope, 1, NOW())
+            ON CONFLICT (scope) DO UPDATE
+                SET value = sequence_counters.value + 1,
+                    updated_at = NOW()
+            RETURNING value
+            """
         )
-        last = result.scalar_one_or_none()
-        if last:
-            try:
-                seq = int(last.split("-")[-1]) + 1
-            except (ValueError, IndexError):
-                seq = 1
-        else:
-            seq = 1
-        return f"{prefix}{seq:04d}"
+        result = await self.db.execute(sql, {"scope": scope})
+        seq = int(result.scalar_one())
+        return f"INV-{year}-{seq:04d}"

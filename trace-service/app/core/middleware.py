@@ -73,3 +73,66 @@ class TenantMiddleware(BaseHTTPMiddleware):
         if request.url.path not in self.EXCLUDED:
             request.state.tenant_slug = request.headers.get("X-Tenant-Id", "")
         return await call_next(request)
+
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    """
+    Enforces JWT auth on all endpoints by default.
+
+    Whitelisted paths (no auth):
+      - /health, /ready, /metrics, /docs, /openapi.json, /redoc
+      - Static /uploads
+      - /api/v1/internal/* (validated by S2S token)
+      - Public verify endpoints
+
+    For everything else, requires either:
+      - Authorization: Bearer <jwt> header (validated by routers via Depends)
+      - X-Service-Token header (S2S bypass)
+
+    This middleware does NOT decode the JWT — it only enforces presence so
+    routers without an explicit Depends still get protected. Routers should
+    still call get_current_user() for full validation.
+    """
+
+    EXCLUDED_EXACT = {
+        "/health", "/ready", "/metrics", "/docs", "/openapi.json", "/redoc",
+    }
+    EXCLUDED_PREFIX = (
+        "/uploads/",
+        "/api/v1/internal/",  # Internal S2S endpoints (use X-Service-Token)
+    )
+
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        from app.core.settings import get_settings
+        settings = get_settings()
+
+        if not settings.REQUIRE_AUTH:
+            return await call_next(request)
+
+        path = request.url.path
+        if path in self.EXCLUDED_EXACT:
+            return await call_next(request)
+        if any(path.startswith(p) for p in self.EXCLUDED_PREFIX):
+            return await call_next(request)
+
+        # Allow OPTIONS preflight without auth
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
+        # Accept either Bearer JWT or X-Service-Token
+        has_bearer = (request.headers.get("Authorization", "").lower().startswith("bearer "))
+        has_s2s = bool(request.headers.get("X-Service-Token"))
+
+        if not (has_bearer or has_s2s):
+            from fastapi.responses import ORJSONResponse
+            return ORJSONResponse(
+                status_code=401,
+                content={
+                    "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Missing Authorization header (Bearer JWT) or X-Service-Token",
+                    }
+                },
+            )
+
+        return await call_next(request)

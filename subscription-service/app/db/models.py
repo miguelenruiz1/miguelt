@@ -92,7 +92,9 @@ class Subscription(Base):
 
     id:                   Mapped[str] = mapped_column(String(36), primary_key=True)
     tenant_id:            Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
-    plan_id:              Mapped[str] = mapped_column(String(36), ForeignKey("plans.id", ondelete="CASCADE"), nullable=False)
+    # RESTRICT: deleting a plan must NOT cascade-delete subscriptions and their
+    # billing history. Plans should be soft-archived instead of hard-deleted.
+    plan_id:              Mapped[str] = mapped_column(String(36), ForeignKey("plans.id", ondelete="RESTRICT"), nullable=False)
     status:               Mapped[SubscriptionStatus] = mapped_column(Enum(SubscriptionStatus, native_enum=False), nullable=False, server_default="active")
     billing_cycle:        Mapped[BillingCycle] = mapped_column(Enum(BillingCycle, native_enum=False), nullable=False, server_default="monthly")
     current_period_start: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)

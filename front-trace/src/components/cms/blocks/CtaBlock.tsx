@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { safeHtml } from '@/lib/safe-html'
 
 interface CtaCta {
   text: string
@@ -22,7 +23,7 @@ export function CtaBlock({ config }: { config: CtaConfig }) {
     <div className="lp" style={style}>
       <section className="cta-final">
         {config.heading && (
-          <h2 dangerouslySetInnerHTML={{ __html: config.heading.replace(/\*(.*?)\*/g, '<em>$1</em>') }} />
+          <h2 dangerouslySetInnerHTML={safeHtml(config.heading.replace(/\*(.*?)\*/g, '<em>$1</em>'))} />
         )}
         {config.subtitle && <p>{config.subtitle}</p>}
         {config.ctas && config.ctas.length > 0 && (

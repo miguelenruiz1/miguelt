@@ -87,8 +87,10 @@ class StockMovement(Base):
     movement_type_id:  Mapped[str | None]     = mapped_column(
         String(36), ForeignKey("movement_types.id", ondelete="SET NULL"), nullable=True
     )
+    # RESTRICT: kardex/movement history must NEVER be silently deleted with the
+    # product. Soft-delete (Product.is_active=false) is the supported pattern.
     product_id:        Mapped[str]            = mapped_column(
-        String(36), ForeignKey("entities.id", ondelete="CASCADE"), nullable=False
+        String(36), ForeignKey("entities.id", ondelete="RESTRICT"), nullable=False
     )
     from_warehouse_id: Mapped[str | None]     = mapped_column(
         String(36), ForeignKey("warehouses.id", ondelete="SET NULL"), nullable=True

@@ -438,9 +438,10 @@ async def release(
     db: AsyncSession = Depends(get_db_session),
     tenant_id: uuid.UUID = Depends(get_tenant_id),
 ) -> ORJSONResponse:
+    import secrets as _secrets
     from app.core.errors import ForbiddenError
     from app.core.settings import get_settings
-    if x_admin_key != get_settings().TRACE_ADMIN_KEY:
+    if not _secrets.compare_digest(x_admin_key or "", get_settings().TRACE_ADMIN_KEY):
         raise ForbiddenError("Invalid admin key")
 
     idempotency_key = getattr(request.state, "idempotency_key", None)

@@ -1,3 +1,5 @@
+import { safeHtml } from '@/lib/safe-html'
+
 interface CustomHtmlConfig {
   html: string
 }
@@ -5,6 +7,6 @@ interface CustomHtmlConfig {
 export function CustomHtmlBlock({ config }: { config: CustomHtmlConfig }) {
   if (!config.html) return null
   return (
-    <div dangerouslySetInnerHTML={{ __html: config.html }} />
+    <div dangerouslySetInnerHTML={safeHtml(config.html)} />
   )
 }

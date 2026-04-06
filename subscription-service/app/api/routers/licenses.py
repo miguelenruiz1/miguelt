@@ -54,10 +54,11 @@ async def validate_license(
 @router.get("/{lic_id}", response_model=LicenseKeyResponse)
 async def get_license(
     lic_id: str,
-    _: Annotated[dict, Depends(require_permission("subscription.view"))],
+    current_user: Annotated[dict, Depends(require_permission("subscription.view"))],
     svc: LicenseService = Depends(_svc),
 ):
-    return await svc.get(lic_id)
+    scope_tid = None if current_user.get("is_superuser") else current_user.get("tenant_id")
+    return await svc.get(lic_id, tenant_id=scope_tid)
 
 
 @router.post("/{lic_id}/revoke", status_code=204)
@@ -67,4 +68,5 @@ async def revoke_license(
     svc: LicenseService = Depends(_svc),
 ):
     revoked_by = current_user.get("id") or current_user.get("email")
-    await svc.revoke(lic_id, revoked_by=revoked_by)
+    scope_tid = None if current_user.get("is_superuser") else current_user.get("tenant_id")
+    await svc.revoke(lic_id, revoked_by=revoked_by, tenant_id=scope_tid)

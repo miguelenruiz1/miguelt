@@ -67,15 +67,25 @@ class CertificateRepository:
         return result.scalar_one_or_none()
 
     async def get_next_number(self, year: int) -> str:
-        count_q = select(func.count()).select_from(
-            select(ComplianceCertificate)
-            .where(
-                ComplianceCertificate.certificate_number.like(f"TL-{year}-%")
-            )
-            .subquery()
+        """Race-free certificate number via atomic UPSERT counter.
+
+        Replaces the previous COUNT(*)+1 logic which reused numbers after
+        deletes and could collide under concurrency.
+        """
+        from sqlalchemy import text
+        scope = f"certificate-{year}"
+        sql = text(
+            """
+            INSERT INTO sequence_counters (scope, value, updated_at)
+            VALUES (:scope, 1, NOW())
+            ON CONFLICT (scope) DO UPDATE
+                SET value = sequence_counters.value + 1,
+                    updated_at = NOW()
+            RETURNING value
+            """
         )
-        count = (await self.db.execute(count_q)).scalar_one()
-        seq = count + 1
+        result = await self.db.execute(sql, {"scope": scope})
+        seq = int(result.scalar_one())
         return f"TL-{year}-{seq:06d}"
 
     async def create(self, tenant_id: uuid.UUID, **kwargs) -> ComplianceCertificate:

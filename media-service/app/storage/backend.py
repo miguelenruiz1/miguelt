@@ -15,11 +15,24 @@ from app.core.settings import get_settings
 
 def _sanitize_filename(name: str) -> str:
     """Remove or replace chars that are problematic in URLs and filesystems."""
+    # Strip directory separators (defense against path traversal)
+    name = (name or "file").replace("\\", "/").split("/")[-1]
+    if name in (".", ".."):
+        return "file"
     # Keep alphanumeric, dots, hyphens, underscores
     name = re.sub(r'[^\w.\-]', '_', name)
     # Collapse multiple underscores
     name = re.sub(r'_+', '_', name)
-    return name.strip('_') or 'file'
+    return (name.strip('_') or 'file')[:200]
+
+
+def _sanitize_segment(segment: str) -> str:
+    """Sanitize a single URL/path segment (tenant_id, category) — strict."""
+    s = (segment or "").strip().lower()
+    s = re.sub(r'[^a-z0-9_-]', '', s)
+    if not s or s in (".", ".."):
+        raise ValueError(f"Invalid path segment: {segment!r}")
+    return s[:64]
 
 
 class IStorage(Protocol):
@@ -67,12 +80,19 @@ class LocalStorage:
         content_type: str = "application/octet-stream",
         category: str = "general",
     ) -> tuple[str, str]:
-        # storage_key = media/{tenant_id}/{category}/{unique_filename}
+        # Defense in depth: sanitize EVERY segment of the path.
+        safe_tenant = _sanitize_segment(tenant_id)
+        safe_category = _sanitize_segment(category)
         unique_prefix = uuid.uuid4().hex[:8]
         safe_filename = f"{unique_prefix}_{_sanitize_filename(filename)}"
-        storage_key = f"media/{tenant_id}/{category}/{safe_filename}"
+        storage_key = f"media/{safe_tenant}/{safe_category}/{safe_filename}"
 
         file_path = self._base / storage_key
+        # Ensure resolved path is inside base dir (guards against any traversal bug)
+        resolved = file_path.resolve()
+        base_resolved = self._base.resolve()
+        if not str(resolved).startswith(str(base_resolved)):
+            raise ValueError("Resolved path escapes storage base")
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_bytes(data)
 
@@ -123,9 +143,11 @@ class S3Storage:
         content_type: str = "application/octet-stream",
         category: str = "general",
     ) -> tuple[str, str]:
+        safe_tenant = _sanitize_segment(tenant_id)
+        safe_category = _sanitize_segment(category)
         unique_prefix = uuid.uuid4().hex[:8]
         safe_filename = f"{unique_prefix}_{_sanitize_filename(filename)}"
-        storage_key = f"media/{tenant_id}/{category}/{safe_filename}"
+        storage_key = f"media/{safe_tenant}/{safe_category}/{safe_filename}"
 
         client = self._get_client()
         client.put_object(

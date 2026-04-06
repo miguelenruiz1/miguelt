@@ -18,9 +18,16 @@ class LicenseService:
     async def issue(self, data: dict) -> LicenseKey:
         return await self.repo.create(data)
 
-    async def revoke(self, lic_id: str, revoked_by: str | None = None) -> LicenseKey:
+    async def revoke(
+        self,
+        lic_id: str,
+        revoked_by: str | None = None,
+        tenant_id: str | None = None,
+    ) -> LicenseKey:
         lic = await self.repo.get_by_id(lic_id)
         if not lic:
+            raise NotFoundError(f"License {lic_id!r} not found")
+        if tenant_id is not None and str(lic.tenant_id) != str(tenant_id):
             raise NotFoundError(f"License {lic_id!r} not found")
         if lic.status == LicenseStatus.revoked:
             raise ValidationError("License is already revoked")
@@ -40,9 +47,11 @@ class LicenseService:
             limit=limit,
         )
 
-    async def get(self, lic_id: str) -> LicenseKey:
+    async def get(self, lic_id: str, tenant_id: str | None = None) -> LicenseKey:
         lic = await self.repo.get_by_id(lic_id)
         if not lic:
+            raise NotFoundError(f"License {lic_id!r} not found")
+        if tenant_id is not None and str(lic.tenant_id) != str(tenant_id):
             raise NotFoundError(f"License {lic_id!r} not found")
         return lic
 

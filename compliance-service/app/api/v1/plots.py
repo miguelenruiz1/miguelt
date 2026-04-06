@@ -179,13 +179,14 @@ async def update_plot(
     await db.flush()
     await db.refresh(plot)
 
-    # Invalidate compliance status of any record linked to this plot — geometry
-    # or area changes can break polygon coverage requirements.
+    # Invalidate compliance status of records linked to this plot. Tenant-scoped
+    # so a stale cross-tenant link can never write to another tenant's records.
     from app.models.record import ComplianceRecord
     linked_record_ids = (
         await db.execute(
             select(CompliancePlotLink.record_id).where(
-                CompliancePlotLink.plot_id == plot_id
+                CompliancePlotLink.plot_id == plot_id,
+                CompliancePlotLink.tenant_id == tid,
             )
         )
     ).scalars().all()
@@ -193,7 +194,10 @@ async def update_plot(
         for rec_id in linked_record_ids:
             rec = (
                 await db.execute(
-                    select(ComplianceRecord).where(ComplianceRecord.id == rec_id)
+                    select(ComplianceRecord).where(
+                        ComplianceRecord.id == rec_id,
+                        ComplianceRecord.tenant_id == tid,
+                    )
                 )
             ).scalar_one_or_none()
             if rec and rec.compliance_status in ("compliant", "partial", "ready", "declared"):

@@ -419,8 +419,9 @@ class CustodyService:
     async def release(
         self, asset_id: uuid.UUID, req: ReleaseRequest, admin_key: str
     ) -> tuple[Asset, CustodyEvent]:
+        import secrets as _secrets
         settings = get_settings()
-        if admin_key != settings.TRACE_ADMIN_KEY:
+        if not _secrets.compare_digest(admin_key or "", settings.TRACE_ADMIN_KEY):
             raise ForbiddenError("Invalid admin key")
 
         asset = await self._get_asset_locked(asset_id)
@@ -517,8 +518,9 @@ class CustodyService:
 
         # ── 1b. Admin key check for events flagged requires_admin ─────────────
         if wf_event and wf_event.requires_admin:
+            import secrets as _secrets
             settings = get_settings()
-            if not admin_key or admin_key != settings.TRACE_ADMIN_KEY:
+            if not _secrets.compare_digest(admin_key or "", settings.TRACE_ADMIN_KEY):
                 raise ForbiddenError(
                     f"Event '{event_type_slug}' requires a valid X-Admin-Key header"
                 )

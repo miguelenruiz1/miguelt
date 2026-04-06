@@ -20,9 +20,12 @@ class RoleService:
     async def list(self, tenant_id: str) -> list[Role]:
         return await self.role_repo.list(tenant_id)
 
-    async def get(self, role_id: str) -> Role:
+    async def get(self, role_id: str, tenant_id: str | None = None) -> Role:
+        """Fetch role by id with optional tenant scoping."""
         role = await self.role_repo.get_by_id(role_id)
         if not role:
+            raise NotFoundError(f"Role {role_id} not found")
+        if tenant_id is not None and str(role.tenant_id) != str(tenant_id):
             raise NotFoundError(f"Role {role_id} not found")
         return role
 
@@ -34,12 +37,12 @@ class RoleService:
             name=name, slug=slug, description=description, tenant_id=tenant_id
         )
 
-    async def update(self, role_id: str, **kwargs) -> Role:
-        role = await self.get(role_id)
+    async def update(self, role_id: str, tenant_id: str | None = None, **kwargs) -> Role:
+        role = await self.get(role_id, tenant_id=tenant_id)
         return await self.role_repo.update(role, **kwargs)
 
-    async def delete(self, role_id: str) -> None:
-        role = await self.get(role_id)
+    async def delete(self, role_id: str, tenant_id: str | None = None) -> None:
+        role = await self.get(role_id, tenant_id=tenant_id)
         if role.is_system:
             raise ForbiddenError("System roles cannot be deleted")
         await self.role_repo.delete(role)
@@ -47,12 +50,14 @@ class RoleService:
     async def list_permissions(self) -> list[Permission]:
         return await self.role_repo.list_permissions()
 
-    async def get_role_permissions(self, role_id: str) -> list[Permission]:
-        await self.get(role_id)  # ensure exists
+    async def get_role_permissions(self, role_id: str, tenant_id: str | None = None) -> list[Permission]:
+        await self.get(role_id, tenant_id=tenant_id)  # ensure exists + tenant
         return await self.role_repo.get_role_permissions(role_id)
 
-    async def set_role_permissions(self, role_id: str, perm_ids: list[str]) -> None:
-        role = await self.get(role_id)
+    async def set_role_permissions(
+        self, role_id: str, perm_ids: list[str], tenant_id: str | None = None
+    ) -> None:
+        role = await self.get(role_id, tenant_id=tenant_id)
         await self.role_repo.set_role_permissions(role.id, perm_ids)
 
     # ── Templates ─────────────────────────────────────────────────────────────

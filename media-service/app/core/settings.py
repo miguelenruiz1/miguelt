@@ -37,6 +37,24 @@ class Settings(BaseSettings):
 
     # Security
     S2S_SERVICE_TOKEN: str = "s2s-change-me-in-production"
+    JWT_SECRET: str = "change-me-in-production-min-32-chars!!"
+    JWT_ALGORITHM: str = "HS256"
+    USER_SERVICE_URL: str = "http://user-api:8001"
+    USER_CACHE_TTL: int = 60
+    REQUIRE_AUTH: bool = True
+
+    # File upload limits / validation
+    ALLOWED_CATEGORIES: list[str] = [
+        "documents", "images", "certificates", "evidence", "logos", "avatars", "exports", "general",
+    ]
+    ALLOWED_MIME_TYPES: list[str] = [
+        "image/jpeg", "image/png", "image/gif", "image/webp",
+        "application/pdf",
+        "text/csv", "text/plain",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/zip",
+    ]
 
     @field_validator("LOG_LEVEL")
     @classmethod
@@ -46,6 +64,27 @@ class Settings(BaseSettings):
         if upper not in valid:
             raise ValueError(f"LOG_LEVEL must be one of {valid}")
         return upper
+
+    @field_validator("JWT_SECRET")
+    @classmethod
+    def validate_jwt_secret(cls, v: str) -> str:
+        import os
+        env = os.environ.get("ENV", "dev").lower()
+        if env in ("prod", "production"):
+            if not v or len(v) < 32 or v.startswith("change-me"):
+                raise ValueError(
+                    "JWT_SECRET must be set to a strong (>=32 chars) value in production."
+                )
+        return v
+
+    @field_validator("S2S_SERVICE_TOKEN")
+    @classmethod
+    def validate_s2s_token(cls, v: str) -> str:
+        import os
+        env = os.environ.get("ENV", "dev").lower()
+        if env in ("prod", "production") and (not v or v.startswith("s2s-change-me")):
+            raise ValueError("S2S_SERVICE_TOKEN must be set in production")
+        return v
 
 
 @lru_cache

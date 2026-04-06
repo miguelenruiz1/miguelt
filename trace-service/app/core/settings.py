@@ -76,6 +76,12 @@ class Settings(BaseSettings):
     # ─── Security ─────────────────────────────────────────────────────────────
     TRACE_ADMIN_KEY: str = "change-me-in-production"
     S2S_SERVICE_TOKEN: str = "s2s-change-me-in-production"  # shared secret for inter-service calls
+    JWT_SECRET: str = "change-me-in-production-min-32-chars!!"
+    JWT_ALGORITHM: str = "HS256"
+    USER_SERVICE_URL: str = "http://user-api:8001"
+    USER_CACHE_TTL: int = 60
+    # Set to False to require JWT in production. Dev/tests can disable.
+    REQUIRE_AUTH: bool = True
 
     # ─── Subscription / Module gating ──────────────────────────────────────────
     PUBLIC_BASE_URL: str = "http://localhost:8000"  # public-facing URL for metadata URIs
@@ -113,6 +119,38 @@ class Settings(BaseSettings):
         if upper not in valid:
             raise ValueError(f"LOG_LEVEL must be one of {valid}")
         return upper
+
+    @field_validator("JWT_SECRET")
+    @classmethod
+    def validate_jwt_secret(cls, v: str) -> str:
+        """Fail closed: refuse to start in production with a default/short secret."""
+        import os
+        env = os.environ.get("ENV", "dev").lower()
+        if env in ("prod", "production"):
+            if not v or len(v) < 32 or v.startswith("change-me"):
+                raise ValueError(
+                    "JWT_SECRET must be set to a strong (>=32 chars) value in production. "
+                    "Default 'change-me-...' values are forbidden."
+                )
+        return v
+
+    @field_validator("TRACE_ADMIN_KEY")
+    @classmethod
+    def validate_admin_key(cls, v: str) -> str:
+        import os
+        env = os.environ.get("ENV", "dev").lower()
+        if env in ("prod", "production") and (not v or v.startswith("change-me")):
+            raise ValueError("TRACE_ADMIN_KEY must be set in production")
+        return v
+
+    @field_validator("S2S_SERVICE_TOKEN")
+    @classmethod
+    def validate_s2s_token(cls, v: str) -> str:
+        import os
+        env = os.environ.get("ENV", "dev").lower()
+        if env in ("prod", "production") and (not v or v.startswith("s2s-change-me")):
+            raise ValueError("S2S_SERVICE_TOKEN must be set in production")
+        return v
 
 
 @lru_cache

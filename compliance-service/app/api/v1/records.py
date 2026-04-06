@@ -334,6 +334,21 @@ async def link_plot(
     if record is None:
         raise NotFoundError(f"Record '{record_id}' not found")
 
+    # CRITICAL: validate that the plot belongs to the SAME tenant. Without this
+    # an attacker could link a deforestation-free plot from another tenant to
+    # their own record and obtain a falsified certificate.
+    from app.models.plot import CompliancePlot
+    plot = (
+        await db.execute(
+            select(CompliancePlot).where(
+                CompliancePlot.id == body.plot_id,
+                CompliancePlot.tenant_id == tid,
+            )
+        )
+    ).scalar_one_or_none()
+    if plot is None:
+        raise NotFoundError(f"Plot '{body.plot_id}' not found")
+
     # Check duplicate
     existing = (
         await db.execute(

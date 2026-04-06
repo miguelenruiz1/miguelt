@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { safeHtml } from '@/lib/safe-html'
 
 interface CountdownConfig {
   heading?: string
@@ -34,7 +35,7 @@ export function CountdownBlock({ config }: { config: CountdownConfig }) {
           {config.heading && (
             <>
               <div className="section-tag" style={{ justifyContent: 'center' }}>Cuenta regresiva</div>
-              <h2 className="section-title" dangerouslySetInnerHTML={{ __html: config.heading }} />
+              <h2 className="section-title" dangerouslySetInnerHTML={safeHtml(config.heading)} />
             </>
           )}
           {config.subtitle && <p style={{ color: 'var(--muted)', marginTop: 12 }}>{config.subtitle}</p>}
@@ -55,7 +56,7 @@ export function CountdownBlock({ config }: { config: CountdownConfig }) {
             </div>
           </div>
           {config.warning_text && (
-            <div className="eudr-warning" dangerouslySetInnerHTML={{ __html: config.warning_text }} />
+            <div className="eudr-warning" dangerouslySetInnerHTML={safeHtml(config.warning_text)} />
           )}
           {config.cta_text && config.cta_href && (
             <a href={config.cta_href} className="btn-primary btn-lg">{config.cta_text}</a>

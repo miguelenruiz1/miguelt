@@ -11,7 +11,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging, get_logger
-from app.core.middleware import CorrelationIdMiddleware, IdempotencyKeyMiddleware, TenantMiddleware
+from app.core.middleware import (
+    AuthMiddleware,
+    CorrelationIdMiddleware,
+    IdempotencyKeyMiddleware,
+    TenantMiddleware,
+)
 from app.core.settings import get_settings
 
 
@@ -89,6 +94,7 @@ def create_app() -> FastAPI:
     app.add_middleware(CorrelationIdMiddleware)
     app.add_middleware(IdempotencyKeyMiddleware)
     app.add_middleware(TenantMiddleware)
+    app.add_middleware(AuthMiddleware)
 
     # Security headers (added before CORS so it runs after CORS in the stack)
     app.add_middleware(SecurityHeadersMiddleware)

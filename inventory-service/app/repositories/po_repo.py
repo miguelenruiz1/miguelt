@@ -16,23 +16,12 @@ class PORepository:
         self.db = db
 
     async def next_po_number(self, tenant_id: str) -> str:
+        """Race-free PO number via atomic counter (sequence_counters table)."""
+        from app.repositories.sequence_repo import SequenceRepository
         year = datetime.now(timezone.utc).year
-        prefix = f"PO-{year}-"
-        result = await self.db.execute(
-            select(func.max(PurchaseOrder.po_number)).where(
-                PurchaseOrder.tenant_id == tenant_id,
-                PurchaseOrder.po_number.like(f"{prefix}%"),
-            )
-        )
-        max_num = result.scalar_one()
-        if max_num:
-            try:
-                seq = int(max_num.replace(prefix, "")) + 1
-            except ValueError:
-                seq = 1
-        else:
-            seq = 1
-        return f"{prefix}{seq:04d}"
+        scope = f"po-{year}"
+        seq = await SequenceRepository(self.db).next_value(tenant_id, scope)
+        return f"PO-{year}-{seq:04d}"
 
     async def list(
         self,

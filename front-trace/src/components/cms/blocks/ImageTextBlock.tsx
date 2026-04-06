@@ -1,3 +1,5 @@
+import { safeHtml } from '@/lib/safe-html'
+
 interface ImageTextConfig {
   heading?: string
   body?: string
@@ -24,7 +26,7 @@ export function ImageTextBlock({ config }: { config: ImageTextConfig }) {
       {config.body && (
         <div
           style={{ fontSize: 15, color: 'var(--muted)', lineHeight: 1.7 }}
-          dangerouslySetInnerHTML={{ __html: config.body }}
+          dangerouslySetInnerHTML={safeHtml(config.body)}
         />
       )}
     </div>

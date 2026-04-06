@@ -45,6 +45,28 @@ class Settings(BaseSettings):
             raise ValueError(f"LOG_LEVEL must be one of {valid}")
         return upper
 
+    @field_validator("JWT_SECRET")
+    @classmethod
+    def validate_jwt_secret(cls, v: str) -> str:
+        import os
+        env = os.environ.get("ENV", "dev").lower()
+        if env in ("prod", "production"):
+            if not v or len(v) < 32 or v.startswith("change-me"):
+                raise ValueError("JWT_SECRET must be set to a >=32 char strong value in production.")
+        return v
+
+    @field_validator("ENCRYPTION_KEY")
+    @classmethod
+    def validate_encryption_key(cls, v: str) -> str:
+        import os
+        env = os.environ.get("ENV", "dev").lower()
+        if env in ("prod", "production"):
+            if not v or len(v) < 32 or v.startswith("change-me"):
+                raise ValueError(
+                    "ENCRYPTION_KEY must be a strong (>=32 char) random value in production."
+                )
+        return v
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -40,6 +40,15 @@ async def get_module_status(
     return {"tenant_id": tenant_id, "slug": slug, "is_active": is_active}
 
 
+def _enforce_tenant(current_user: dict, path_tenant_id: str) -> None:
+    if current_user.get("is_superuser"):
+        return
+    user_tenant = str(current_user.get("tenant_id", "default"))
+    if str(path_tenant_id) != user_tenant:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Access denied to other tenant's modules")
+
+
 @router.post("/{tenant_id}/{slug}/activate", summary="Activate module")
 async def activate_module(
     tenant_id: str,
@@ -47,6 +56,7 @@ async def activate_module(
     current_user: Annotated[dict, Depends(require_permission("subscription.manage"))],
     svc: ModuleService = Depends(_svc),
 ):
+    _enforce_tenant(current_user, tenant_id)
     performed_by = current_user.get("id") or current_user.get("email")
     record = await svc.activate(tenant_id, slug, performed_by=performed_by)
     return {"tenant_id": tenant_id, "slug": slug, "is_active": record.is_active}
@@ -59,6 +69,7 @@ async def deactivate_module(
     current_user: Annotated[dict, Depends(require_permission("subscription.manage"))],
     svc: ModuleService = Depends(_svc),
 ):
+    _enforce_tenant(current_user, tenant_id)
     performed_by = current_user.get("id") or current_user.get("email")
     record = await svc.deactivate(tenant_id, slug, performed_by=performed_by)
     return {"tenant_id": tenant_id, "slug": slug, "is_active": record.is_active}

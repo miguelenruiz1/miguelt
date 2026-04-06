@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { safeHtml } from '@/lib/safe-html'
 
 interface HeroCta {
   text: string
@@ -41,7 +42,7 @@ export function HeroBlock({ config }: { config: HeroConfig }) {
             </div>
           )}
           {config.headline && (
-            <h1 dangerouslySetInnerHTML={{ __html: config.headline.replace(/\*(.*?)\*/g, '<em>$1</em>') }} />
+            <h1 dangerouslySetInnerHTML={safeHtml(config.headline.replace(/\*(.*?)\*/g, '<em>$1</em>'))} />
           )}
           {config.subtitle && <p className="hero-sub" style={{ maxWidth: '100%', margin: '0 auto 36px' }}>{config.subtitle}</p>}
           {config.ctas && config.ctas.length > 0 && (

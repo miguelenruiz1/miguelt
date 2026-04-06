@@ -66,6 +66,25 @@ class Settings(BaseSettings):
             raise ValueError(f"LOG_LEVEL must be one of {valid}")
         return upper
 
+    @field_validator("JWT_SECRET")
+    @classmethod
+    def validate_jwt_secret(cls, v: str) -> str:
+        import os
+        env = os.environ.get("ENV", "dev").lower()
+        if env in ("prod", "production"):
+            if not v or len(v) < 32 or v.startswith("change-me"):
+                raise ValueError("JWT_SECRET must be set to a >=32 char strong value in production.")
+        return v
+
+    @field_validator("S2S_SERVICE_TOKEN")
+    @classmethod
+    def validate_s2s_token(cls, v: str) -> str:
+        import os
+        env = os.environ.get("ENV", "dev").lower()
+        if env in ("prod", "production") and (not v or v.startswith("s2s-change-me")):
+            raise ValueError("S2S_SERVICE_TOKEN must be set in production")
+        return v
+
 
 @lru_cache
 def get_settings() -> Settings:

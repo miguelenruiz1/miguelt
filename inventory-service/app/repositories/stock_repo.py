@@ -160,6 +160,35 @@ class StockRepository:
         )
         return list(result.scalars().unique().all())
 
+    async def _get_level_for_update(
+        self,
+        product_id: str,
+        warehouse_id: str,
+        batch_id: str | None = None,
+        variant_id: str | None = None,
+        location_id: str | None = None,
+    ) -> StockLevel | None:
+        """Same as get_level but takes a SELECT FOR UPDATE row lock.
+        Use this whenever the caller will mutate qty_on_hand / qty_reserved.
+        """
+        q = select(StockLevel).where(
+            StockLevel.product_id == product_id,
+            StockLevel.warehouse_id == warehouse_id,
+        )
+        if batch_id is not None:
+            q = q.where(StockLevel.batch_id == batch_id)
+        else:
+            q = q.where(StockLevel.batch_id.is_(None))
+        if variant_id is not None:
+            q = q.where(StockLevel.variant_id == variant_id)
+        else:
+            q = q.where(StockLevel.variant_id.is_(None))
+        if location_id is not None:
+            q = q.where(StockLevel.location_id == location_id)
+        q = q.with_for_update()
+        result = await self.db.execute(q)
+        return result.scalar_one_or_none()
+
     async def upsert_level(
         self,
         tenant_id: str,
@@ -171,25 +200,12 @@ class StockRepository:
         variant_id: str | None = None,
         location_id: str | None = None,
     ) -> StockLevel | None:
-        level = await self.get_level(product_id, warehouse_id, batch_id, variant_id)
-        # When location_id is provided, narrow lookup to that specific location
-        if level is not None and location_id is not None and getattr(level, "location_id", None) != location_id:
-            # The generic get_level found a record for a different location; search specifically
-            q = select(StockLevel).where(
-                StockLevel.product_id == product_id,
-                StockLevel.warehouse_id == warehouse_id,
-                StockLevel.location_id == location_id,
-            )
-            if batch_id is not None:
-                q = q.where(StockLevel.batch_id == batch_id)
-            else:
-                q = q.where(StockLevel.batch_id.is_(None))
-            if variant_id is not None:
-                q = q.where(StockLevel.variant_id == variant_id)
-            else:
-                q = q.where(StockLevel.variant_id.is_(None))
-            result = await self.db.execute(q)
-            level = result.scalar_one_or_none()
+        # Take a row-level lock if the level exists; the lock prevents concurrent
+        # writers from causing lost updates on qty_on_hand / weighted_avg_cost.
+        level = await self._get_level_for_update(
+            product_id, warehouse_id, batch_id, variant_id, location_id,
+        )
+        # _get_level_for_update already includes location_id in the WHERE clause
         if level is None:
             if delta <= 0:
                 return None
@@ -246,19 +262,47 @@ class StockRepository:
         qty: Decimal,
         variant_id: str | None = None,
     ) -> StockLevel:
-        """Reserve stock for a confirmed sales order. Raises if insufficient available."""
-        level = await self.get_level(product_id, warehouse_id, variant_id=variant_id)
-        if not level:
-            raise ValueError(f"No stock level for product {product_id} in warehouse {warehouse_id}")
-        available = level.qty_on_hand - level.qty_reserved
-        if available < qty:
+        """Atomically reserve stock. Uses an UPDATE … WHERE qty_on_hand - qty_reserved >= qty
+        statement so two concurrent reservations cannot oversell.
+        """
+        from sqlalchemy import update as _update
+        now = datetime.now(timezone.utc)
+
+        conditions = [
+            StockLevel.product_id == product_id,
+            StockLevel.warehouse_id == warehouse_id,
+            (StockLevel.qty_on_hand - StockLevel.qty_reserved) >= qty,
+        ]
+        if variant_id is not None:
+            conditions.append(StockLevel.variant_id == variant_id)
+        else:
+            conditions.append(StockLevel.variant_id.is_(None))
+
+        stmt = (
+            _update(StockLevel)
+            .where(*conditions)
+            .values(
+                qty_reserved=StockLevel.qty_reserved + qty,
+                updated_at=now,
+            )
+            .returning(StockLevel.id)
+        )
+        result = await self.db.execute(stmt)
+        row = result.first()
+        if row is None:
+            # Either no level or insufficient available — disambiguate for error message
+            level = await self.get_level(product_id, warehouse_id, variant_id=variant_id)
+            if not level:
+                raise ValueError(
+                    f"No stock level for product {product_id} in warehouse {warehouse_id}"
+                )
+            available = level.qty_on_hand - level.qty_reserved
             raise ValueError(
                 f"Insufficient available stock: {available} available, {qty} requested"
             )
-        level.qty_reserved += qty
-        level.updated_at = datetime.now(timezone.utc)
         await self.db.flush()
-        return level
+        # Return refreshed level
+        return await self.get_level(product_id, warehouse_id, variant_id=variant_id)
 
     async def release_reservation(
         self,
@@ -267,13 +311,31 @@ class StockRepository:
         qty: Decimal,
         variant_id: str | None = None,
     ) -> StockLevel | None:
-        """Release reserved stock (on cancel or after shipment)."""
-        level = await self.get_level(product_id, warehouse_id, variant_id=variant_id)
-        if level and level.qty_reserved >= qty:
-            level.qty_reserved -= qty
-            level.updated_at = datetime.now(timezone.utc)
-            await self.db.flush()
-        return level
+        """Atomically release a reservation. Refuses to underflow qty_reserved."""
+        from sqlalchemy import update as _update
+        now = datetime.now(timezone.utc)
+
+        conditions = [
+            StockLevel.product_id == product_id,
+            StockLevel.warehouse_id == warehouse_id,
+            StockLevel.qty_reserved >= qty,
+        ]
+        if variant_id is not None:
+            conditions.append(StockLevel.variant_id == variant_id)
+        else:
+            conditions.append(StockLevel.variant_id.is_(None))
+
+        stmt = (
+            _update(StockLevel)
+            .where(*conditions)
+            .values(
+                qty_reserved=StockLevel.qty_reserved - qty,
+                updated_at=now,
+            )
+        )
+        await self.db.execute(stmt)
+        await self.db.flush()
+        return await self.get_level(product_id, warehouse_id, variant_id=variant_id)
 
     async def get_available_stock(self, tenant_id: str, product_id: str, warehouse_id: str | None = None):
         """Get stock availability summary: on_hand, reserved, available, in_transit."""
