@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
 import { PlotMap } from '@/components/compliance/PlotMap'
+import { PlotPolygonEditor } from '@/components/compliance/PlotPolygonEditor'
 import type { CompliancePlot, RiskLevel } from '@/types/compliance'
 
 // ─── Risk badge ──────────────────────────────────────────────────────────────
@@ -123,11 +124,13 @@ function CreatePlotModal({ onClose }: { onClose: () => void }) {
   const toast = useToast()
   const { data: orgsData } = useOrganizations()
   const orgs = orgsData?.items ?? []
+  const [polygonData, setPolygonData] = useState<any>(null)
 
   const {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors },
   } = useForm<PlotFormValues>({
     resolver: zodResolver(plotSchema),
@@ -153,14 +156,29 @@ function CreatePlotModal({ onClose }: { onClose: () => void }) {
   })
 
   async function onSubmit(values: PlotFormValues) {
+    if (values.geolocation_type === 'polygon' && !polygonData) {
+      toast.error('Dibuja el polígono en el mapa antes de guardar')
+      return
+    }
     try {
+      // If polygon, derive lat/lng from first vertex (centroid approximation)
+      let lat = values.lat
+      let lng = values.lng
+      if (values.geolocation_type === 'polygon' && polygonData?.coordinates?.[0]?.length) {
+        const ring = polygonData.coordinates[0]
+        const avgLng = ring.reduce((s: number, p: number[]) => s + p[0], 0) / ring.length
+        const avgLat = ring.reduce((s: number, p: number[]) => s + p[1], 0) / ring.length
+        lat = avgLat
+        lng = avgLng
+      }
       await create.mutateAsync({
         plot_code: values.plot_code,
         organization_id: values.organization_id || null,
         plot_area_ha: values.plot_area_ha ?? null,
         geolocation_type: values.geolocation_type,
-        lat: values.lat ?? null,
-        lng: values.lng ?? null,
+        lat: lat ?? null,
+        lng: lng ?? null,
+        geojson_data: polygonData,
         country_code: values.country_code,
         region: values.region || null,
         municipality: values.municipality || null,
@@ -172,7 +190,7 @@ function CreatePlotModal({ onClose }: { onClose: () => void }) {
         crop_type: values.crop_type || null,
         renovation_date: values.renovation_date || null,
         renovation_type: values.renovation_type || null,
-      })
+      } as any)
       toast.success('Parcela creada')
       onClose()
     } catch (e: any) {
@@ -267,17 +285,42 @@ function CreatePlotModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        {/* Row 3: Coordinates */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>Latitud</label>
-            <input {...register('lat')} type="number" step="0.000001" className={inputCls} placeholder="4.710989" />
+        {/* Row 3: Coordinates (point only) */}
+        {watch('geolocation_type') === 'point' && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Latitud</label>
+              <input {...register('lat')} type="number" step="0.000001" className={inputCls} placeholder="4.710989" />
+            </div>
+            <div>
+              <label className={labelCls}>Longitud</label>
+              <input {...register('lng')} type="number" step="0.000001" className={inputCls} placeholder="-74.072092" />
+            </div>
           </div>
+        )}
+
+        {/* Polygon editor */}
+        {watch('geolocation_type') === 'polygon' && (
           <div>
-            <label className={labelCls}>Longitud</label>
-            <input {...register('lng')} type="number" step="0.000001" className={inputCls} placeholder="-74.072092" />
+            <label className={labelCls}>Polígono de la parcela *</label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Click en "Dibujar polígono" → haz clic en el mapa para agregar vértices (mínimo 3) → "Guardar polígono"
+            </p>
+            <PlotPolygonEditor
+              initialGeojson={polygonData}
+              height="350px"
+              onSave={(geojson) => {
+                setPolygonData(geojson)
+                toast.success('Polígono listo. Completa los demás campos y guarda la parcela.')
+              }}
+            />
+            {polygonData && (
+              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                <Check className="h-3 w-3" /> Polígono dibujado
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
         {/* Row 4: Location */}
         <div className="grid grid-cols-3 gap-4">
