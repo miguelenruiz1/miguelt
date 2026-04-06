@@ -249,12 +249,24 @@ def build_soap_envelope(dds: dict, username: str, auth_key: str) -> str:
 class TracesNTService:
     """Submit DDS to the EU TRACES NT system."""
 
-    def __init__(self) -> None:
+    def __init__(self, username: str | None = None, auth_key: str | None = None, env: str | None = None) -> None:
         settings = get_settings()
-        self._username = settings.TRACES_NT_USERNAME
-        self._auth_key = settings.TRACES_NT_AUTH_KEY
-        self._env = settings.TRACES_NT_ENV
+        self._username = username or settings.TRACES_NT_USERNAME
+        self._auth_key = auth_key or settings.TRACES_NT_AUTH_KEY
+        self._env = env or settings.TRACES_NT_ENV
         self._base_url = TRACES_URLS.get(self._env, TRACES_URLS["acceptance"])
+
+    @classmethod
+    async def from_db(cls, db) -> "TracesNTService":
+        """Build instance with credentials loaded from DB."""
+        from app.services.integration_service import IntegrationCredentialsService
+        svc = IntegrationCredentialsService(db)
+        creds = await svc.get_credentials("traces_nt")
+        return cls(
+            username=creds.get("username") or None,
+            auth_key=creds.get("auth_key") or None,
+            env=creds.get("env") or None,
+        )
 
     @property
     def is_configured(self) -> bool:
