@@ -14,6 +14,7 @@ from app.core.logging import get_logger
 log = get_logger(__name__)
 
 _EXCLUDE = frozenset({"/health", "/ready", "/metrics", "/docs", "/openapi.json", "/redoc"})
+_EXCLUDE_PREFIXES = ("/api/v1/compliance/verify",)
 
 
 class CorrelationIdMiddleware(BaseHTTPMiddleware):
@@ -42,7 +43,8 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
 
 class TenantMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        if request.url.path in _EXCLUDE:
+        path = request.url.path
+        if path in _EXCLUDE or any(path.startswith(p) for p in _EXCLUDE_PREFIXES):
             return await call_next(request)
         request.state.tenant_slug = request.headers.get("X-Tenant-Id", "default")
         return await call_next(request)

@@ -94,13 +94,19 @@ async def activate_framework(
     if existing is not None:
         raise ConflictError(f"Framework '{body.framework_slug}' already activated for this tenant")
 
-    user_id = user.get("id")
+    user_id_raw = user.get("id")
+    activated_by = None
+    if user_id_raw and user_id_raw != "system":
+        try:
+            activated_by = uuid.UUID(str(user_id_raw))
+        except (ValueError, TypeError):
+            activated_by = None
     act = TenantFrameworkActivation(
         tenant_id=tid,
         framework_id=fw.id,
         is_active=True,
         export_destination=body.export_destination,
-        activated_by=uuid.UUID(str(user_id)) if user_id else None,
+        activated_by=activated_by,
         metadata_=body.metadata or {},
     )
     db.add(act)

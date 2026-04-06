@@ -161,8 +161,8 @@ export const api = {
       post<EventActionResponse>('/api/v1/assets/mint', data, { idempotencyKey }),
     events: (id: string, p?: { offset?: number; limit?: number }) =>
       get<PaginatedResponse<CustodyEvent>>(`/api/v1/assets/${id}/events`, { params: p }),
-    recordEvent: (id: string, data: GenericEventRequest, idempotencyKey?: string) =>
-      post<EventActionResponse>(`/api/v1/assets/${id}/events`, data, { idempotencyKey }),
+    recordEvent: (id: string, data: GenericEventRequest, idempotencyKey?: string, adminKey?: string) =>
+      post<EventActionResponse>(`/api/v1/assets/${id}/events`, data, { idempotencyKey, adminKey }),
     anchor: (assetId: string, eventId: string) =>
       post<CustodyEvent>(`/api/v1/assets/${assetId}/events/${eventId}/anchor`, {}),
   },

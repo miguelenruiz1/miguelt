@@ -90,13 +90,25 @@ class RegistryService:
         )
         log.info("wallet_generated", wallet_id=str(wallet.id), pubkey=pubkey)
 
-        # Attempt devnet airdrop (best-effort, swallow errors)
+        # Attempt devnet airdrop (best-effort) and surface result so the caller
+        # can show it in the UI instead of guessing why a wallet has 0 SOL.
+        airdrop_status = "skipped"
+        airdrop_error: str | None = None
         try:
             airdropped = await client.try_airdrop(pubkey)
             if airdropped:
+                airdrop_status = "success"
                 log.info("wallet_airdrop_success", pubkey=pubkey)
+            else:
+                airdrop_status = "failed"
         except Exception as exc:
-            log.warning("wallet_airdrop_failed", pubkey=pubkey, exc=str(exc))
+            airdrop_status = "failed"
+            airdrop_error = str(exc)[:200]
+            log.warning("wallet_airdrop_failed", pubkey=pubkey, exc=airdrop_error)
+
+        # Stash on the instance (not persisted) so the router can build the response.
+        wallet._airdrop_status = airdrop_status  # type: ignore[attr-defined]
+        wallet._airdrop_error = airdrop_error  # type: ignore[attr-defined]
 
         return wallet
 

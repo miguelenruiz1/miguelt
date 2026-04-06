@@ -12,16 +12,30 @@ from app.api.deps import ModuleUser
 from app.core.errors import ConflictError, NotFoundError
 
 
-def _validate_polygon_requirement(area_ha, geojson_url: str | None, geolocation_type: str | None):
-    """EUDR Art. 9.1.c / Art. 2.28: plots >= 4 ha require polygon geolocation."""
+def _validate_polygon_requirement(
+    area_ha,
+    geojson_url: str | None,
+    geolocation_type: str | None,
+    geojson_data: dict | None = None,
+):
+    """EUDR Art. 9.1.c / Art. 2.28: plots >= 4 ha require polygon geolocation.
+
+    Accepts either a remote `geojson_arweave_url`, a locally-stored `geojson_data`,
+    or `geolocation_type='polygon'` as evidence of polygon coverage.
+    """
     if area_ha is not None and float(area_ha) >= 4.0:
-        if not geojson_url and geolocation_type != "polygon":
+        has_polygon = (
+            bool(geojson_url)
+            or bool(geojson_data)
+            or geolocation_type == "polygon"
+        )
+        if not has_polygon:
             raise HTTPException(
                 status_code=422,
                 detail=(
-                    "Parcelas >= 4 ha requieren poligono completo (geojson_arweave_url) "
-                    "— EUDR Art. 9.1.c / Art. 2.28. Use geolocation_type='polygon' y "
-                    "proporcione geojson_arweave_url con el poligono de la parcela."
+                    "Parcelas >= 4 ha requieren poligono completo "
+                    "— EUDR Art. 9.1.c / Art. 2.28. Use geolocation_type='polygon' "
+                    "y proporcione geojson_data o geojson_arweave_url con el poligono de la parcela."
                 ),
             )
 from app.db.session import get_db_session
@@ -65,7 +79,12 @@ async def create_plot(
     if existing is not None:
         raise ConflictError(f"Plot code '{body.plot_code}' already exists for this tenant")
 
-    _validate_polygon_requirement(body.plot_area_ha, body.geojson_arweave_url, body.geolocation_type)
+    _validate_polygon_requirement(
+        body.plot_area_ha,
+        body.geojson_arweave_url,
+        body.geolocation_type,
+        body.geojson_data,
+    )
 
     data = body.model_dump(exclude_unset=True)
     # Map metadata -> metadata_
@@ -149,7 +168,8 @@ async def update_plot(
     final_area = update_data.get("plot_area_ha", plot.plot_area_ha)
     final_geojson = update_data.get("geojson_arweave_url", plot.geojson_arweave_url)
     final_geotype = update_data.get("geolocation_type", plot.geolocation_type)
-    _validate_polygon_requirement(final_area, final_geojson, final_geotype)
+    final_geojson_data = update_data.get("geojson_data", plot.geojson_data)
+    _validate_polygon_requirement(final_area, final_geojson, final_geotype, final_geojson_data)
 
     if "metadata" in update_data:
         update_data["metadata_"] = update_data.pop("metadata")
@@ -158,6 +178,29 @@ async def update_plot(
 
     await db.flush()
     await db.refresh(plot)
+
+    # Invalidate compliance status of any record linked to this plot — geometry
+    # or area changes can break polygon coverage requirements.
+    from app.models.record import ComplianceRecord
+    linked_record_ids = (
+        await db.execute(
+            select(CompliancePlotLink.record_id).where(
+                CompliancePlotLink.plot_id == plot_id
+            )
+        )
+    ).scalars().all()
+    if linked_record_ids:
+        for rec_id in linked_record_ids:
+            rec = (
+                await db.execute(
+                    select(ComplianceRecord).where(ComplianceRecord.id == rec_id)
+                )
+            ).scalar_one_or_none()
+            if rec and rec.compliance_status in ("compliant", "partial", "ready"):
+                rec.compliance_status = "incomplete"
+                rec.last_validated_at = None
+        await db.flush()
+
     return plot
 
 
@@ -235,11 +278,15 @@ async def screen_deforestation(
             async with httpx.AsyncClient(timeout=10.0) as http:
                 resp = await http.get(plot.geojson_arweave_url)
                 if resp.status_code == 200:
-                    geojson = resp.json()
+                    candidate = resp.json()
+                    if isinstance(candidate, dict) and candidate.get("type") in (
+                        "Polygon", "MultiPolygon", "Feature", "FeatureCollection"
+                    ):
+                        geojson = candidate
         except Exception:
             pass  # Fall back to point buffer
 
-    svc = await DeforestationService.from_db(db)
+    svc = await DeforestationService.from_db(db, tenant_id=tid)
     result = await svc.check_plot(
         lat=plot.lat,
         lng=plot.lng,

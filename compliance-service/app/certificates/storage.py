@@ -1,4 +1,4 @@
-"""Certificate file storage — local or S3."""
+"""Certificate file storage — local, S3, or GCS."""
 from __future__ import annotations
 
 import os
@@ -28,9 +28,13 @@ class IStorage(Protocol):
 
 
 class LocalStorage:
-    """Saves certificate files to the local filesystem."""
+    """Saves certificate files to the local filesystem (DEV ONLY).
 
-    BASE_DIR = Path("/app/uploads/certificates")
+    On Cloud Run / GKE the filesystem is ephemeral and files are lost on
+    container restart. Use S3Storage or GCSStorage in production.
+    """
+
+    BASE_DIR = Path(os.environ.get("CERTIFICATE_LOCAL_DIR", "/app/uploads/certificates"))
 
     async def upload(
         self,
@@ -46,11 +50,7 @@ class LocalStorage:
         file_path = directory / filename
         file_path.write_bytes(data)
 
-        log.info(
-            "local_storage_upload",
-            path=str(file_path),
-            size=len(data),
-        )
+        log.info("local_storage_upload", path=str(file_path), size=len(data))
         return f"file://{file_path}"
 
 
@@ -79,29 +79,73 @@ class S3Storage:
         content_type: str = "application/pdf",
     ) -> str:
         key = f"certificates/{tenant_id}/{year}/{filename}"
-
         self._client.put_object(
             Bucket=self._bucket,
             Key=key,
             Body=data,
             ContentType=content_type,
         )
-
         url = f"https://{self._bucket}.s3.{self._region}.amazonaws.com/{key}"
-        log.info(
-            "s3_storage_upload",
-            bucket=self._bucket,
-            key=key,
-            size=len(data),
-        )
+        log.info("s3_storage_upload", bucket=self._bucket, key=key, size=len(data))
         return url
 
 
+class GCSStorage:
+    """Uploads certificate files to Google Cloud Storage (Cloud Run friendly)."""
+
+    def __init__(self) -> None:
+        settings = get_settings()
+        try:
+            from google.cloud import storage as gcs  # type: ignore
+        except ImportError as exc:
+            raise RuntimeError(
+                "GCS storage requires `google-cloud-storage` to be installed"
+            ) from exc
+
+        self._client = gcs.Client()
+        self._bucket_name = settings.AWS_BUCKET_NAME  # reuse env var
+        self._bucket = self._client.bucket(self._bucket_name)
+
+    async def upload(
+        self,
+        tenant_id: str,
+        year: int,
+        filename: str,
+        data: bytes,
+        content_type: str = "application/pdf",
+    ) -> str:
+        key = f"certificates/{tenant_id}/{year}/{filename}"
+        blob = self._bucket.blob(key)
+        blob.upload_from_string(data, content_type=content_type)
+        url = f"https://storage.googleapis.com/{self._bucket_name}/{key}"
+        log.info("gcs_storage_upload", bucket=self._bucket_name, key=key, size=len(data))
+        return url
+
+
+def _is_running_on_cloud_run() -> bool:
+    return bool(os.environ.get("K_SERVICE")) or bool(os.environ.get("CLOUD_RUN_JOB"))
+
+
 def get_storage() -> IStorage:
-    """Factory: returns the appropriate storage backend based on settings."""
+    """Factory: returns the appropriate storage backend based on settings.
+
+    On Cloud Run, refuses to use LocalStorage (filesystem is ephemeral).
+    """
     settings = get_settings()
-    backend = settings.CERTIFICATE_STORAGE.lower()
+    backend = (settings.CERTIFICATE_STORAGE or "local").lower()
 
     if backend == "s3":
         return S3Storage()
+    if backend == "gcs":
+        return GCSStorage()
+
+    if _is_running_on_cloud_run():
+        log.error(
+            "local_storage_on_cloud_run_refused",
+            hint="Set CERTIFICATE_STORAGE=gcs or s3 — local FS is ephemeral on Cloud Run",
+        )
+        raise RuntimeError(
+            "LocalStorage is not allowed on Cloud Run. "
+            "Set CERTIFICATE_STORAGE=gcs (or s3) and configure bucket credentials."
+        )
     return LocalStorage()

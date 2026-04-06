@@ -420,6 +420,7 @@ class Asset(Base):
     blockchain_tree_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     blockchain_tx_signature: Mapped[str | None] = mapped_column(Text, nullable=True)
     blockchain_status: Mapped[str] = mapped_column(Text, nullable=False, default="SKIPPED")
+    blockchain_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_compressed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     created_at: Mapped[datetime] = mapped_column(

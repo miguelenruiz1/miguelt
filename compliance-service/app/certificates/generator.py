@@ -29,7 +29,7 @@ from app.repositories.certificate_repo import CertificateRepository
 
 log = get_logger(__name__)
 
-VALID_STATUSES_FOR_CERT = {"ready", "declared", "compliant"}
+VALID_STATUSES_FOR_CERT = {"compliant", "partial", "declared", "ready"}
 
 # ── Lookup tables ───────────────────────────────────────────────────────────
 
@@ -95,6 +95,8 @@ RISK_LABELS: dict[str, str] = {
 
 # ── Required-fields validation ──────────────────────────────────────────────
 
+# supplier_email is checked separately because either supplier_email or buyer_email
+# is acceptable (matches submit_to_traces behavior).
 REQUIRED_RECORD_FIELDS = [
     "hs_code",
     "commodity_type",
@@ -105,7 +107,6 @@ REQUIRED_RECORD_FIELDS = [
     "production_period_end",
     "supplier_name",
     "supplier_address",
-    "supplier_email",
 ]
 
 
@@ -121,6 +122,13 @@ def _validate_record_for_certificate(
         if val is None or (isinstance(val, str) and not val.strip()):
             missing.append(field)
 
+    # Either supplier_email or buyer_email is acceptable (operator email)
+    if not (
+        (record.supplier_email and record.supplier_email.strip())
+        or (record.buyer_email and record.buyer_email.strip())
+    ):
+        missing.append("supplier_email or buyer_email (operator email required)")
+
     if not record.deforestation_free_declaration:
         missing.append("deforestation_free_declaration (must be True)")
 
@@ -133,12 +141,16 @@ def _validate_record_for_certificate(
     # EUDR Art. 9.1.c / Art. 2.28: plots >= 4 ha require polygon
     for plot in plots:
         area = plot.get("plot_area_ha")
-        geojson = plot.get("geojson_arweave_url") or plot.get("geojson_hash")
-        geotype = plot.get("geolocation_type", "point")
-        if area and float(area) >= 4.0 and not geojson and geotype != "polygon":
+        has_polygon = (
+            plot.get("geojson_arweave_url")
+            or plot.get("geojson_hash")
+            or plot.get("geojson_data")
+            or plot.get("geolocation_type") == "polygon"
+        )
+        if area and float(area) >= 4.0 and not has_polygon:
             missing.append(
                 f"plot '{plot.get('plot_code', '?')}': parcela >= 4 ha requiere poligono "
-                "(geojson_arweave_url) — EUDR Art. 9.1.c / Art. 2.28"
+                "— EUDR Art. 9.1.c / Art. 2.28"
             )
 
     if missing:
@@ -291,6 +303,9 @@ class CertificateGenerator:
                     "lng_formatted": _fmt_lng(lng),
                     "plot_area_ha": float(plot.plot_area_ha) if plot.plot_area_ha else None,
                     "geolocation_type": getattr(plot, "geolocation_type", None),
+                    "geojson_data": getattr(plot, "geojson_data", None),
+                    "geojson_arweave_url": plot.geojson_arweave_url,
+                    "geojson_hash": plot.geojson_hash,
                     "deforestation_free": plot.deforestation_free,
                     "cutoff_date_compliant": plot.cutoff_date_compliant,
                     "legal_land_use": plot.legal_land_use,
@@ -359,16 +374,17 @@ class CertificateGenerator:
 
             # ── Step 5: Fetch asset data from trace-service (non-fatal) ───────
             asset_data: dict | None = None
-            try:
-                http = get_http_client()
-                resp = await http.get(
-                    f"{self.settings.TRACE_SERVICE_URL}/api/v1/assets/{record.asset_id}",
-                    headers={"X-Tenant-Id": str(tenant_id)},
-                )
-                if resp.status_code == 200:
-                    asset_data = resp.json()
-            except Exception as exc:
-                log.warning("asset_fetch_failed", asset_id=str(record.asset_id), error=str(exc))
+            if record.asset_id is not None:
+                try:
+                    http = get_http_client()
+                    resp = await http.get(
+                        f"{self.settings.TRACE_SERVICE_URL}/api/v1/assets/{record.asset_id}",
+                        headers={"X-Tenant-Id": str(tenant_id)},
+                    )
+                    if resp.status_code == 200:
+                        asset_data = resp.json()
+                except Exception as exc:
+                    log.warning("asset_fetch_failed", asset_id=str(record.asset_id), error=str(exc))
 
             # ── Step 5b: Load risk assessment, supply chain, documents ────────
             risk_assessment_data: dict | None = None
@@ -567,10 +583,8 @@ class CertificateGenerator:
                 generation_error=None,
             )
 
-            # ── Step 10: Supersede previous certs ────────────────────────────
-            await self.repo.supersede_existing(record_id)
-            # Re-activate the current one (supersede_existing sets all active → superseded)
-            cert = await self.repo.update(cert, status="active")
+            # ── Step 10: Supersede previous certs (exclude the one we just made) ─
+            await self.repo.supersede_existing(record_id, exclude_id=cert.id)
 
             log.info(
                 "certificate_generated",

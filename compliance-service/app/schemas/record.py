@@ -13,7 +13,7 @@ class OrmBase(BaseModel):
 
 
 class RecordCreate(BaseModel):
-    asset_id: uuid.UUID
+    asset_id: uuid.UUID | None = None
     framework_slug: str
     hs_code: str | None = None
     commodity_type: str | None = None
@@ -71,7 +71,7 @@ class RecordUpdate(BaseModel):
 class RecordResponse(OrmBase):
     id: uuid.UUID
     tenant_id: uuid.UUID
-    asset_id: uuid.UUID
+    asset_id: uuid.UUID | None = None
     framework_id: uuid.UUID
     framework_slug: str
     hs_code: str | None
@@ -108,7 +108,7 @@ class RecordResponse(OrmBase):
     validation_result: dict | None
     missing_fields: list | None
     documents_retention_until: date | None
-    metadata_: dict
+    metadata_: dict | None = None
     created_at: datetime
     updated_at: datetime
 

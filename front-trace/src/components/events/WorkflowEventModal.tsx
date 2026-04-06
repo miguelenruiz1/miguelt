@@ -36,13 +36,28 @@ function buildSchema(action: AvailableAction) {
     fields.reason = z.string().min(1, 'La razón es obligatoria')
   }
 
-  // QC needs result selector
-  if (action.event_type_slug === 'QC') {
+  if (et?.requires_admin) {
+    fields.admin_key = z.string().min(1, 'Admin key requerida para este evento')
+  }
+
+  if (et?.requires_notes) {
+    fields.notes = z.string().min(1, 'Las notas son obligatorias para este evento')
+  } else {
+    fields.notes = z.string().optional()
+  }
+
+  // QC / pass-fail event needs result selector. Detect by:
+  //  - canonical slug 'QC'
+  //  - workflow event flag is_qc / has_pass_fail (if defined)
+  const isPassFail =
+    action.event_type_slug === 'QC' ||
+    (et as { is_qc?: boolean })?.is_qc === true ||
+    (action as { has_pass_fail?: boolean })?.has_pass_fail === true
+  if (isPassFail) {
     fields.result = z.enum(['pass', 'fail'], { required_error: 'Selecciona el resultado' })
   }
 
   fields.location_label = z.string().optional()
-  fields.notes = z.string().optional()
 
   return z.object(fields)
 }
@@ -118,13 +133,16 @@ export function WorkflowEventModal({ asset, action, open, onClose }: Props) {
 
       // 1. Create the event
       const resp = await recordEvent.mutateAsync({
-        event_type: eventType,
-        to_wallet: data.to_wallet?.trim() || undefined,
-        location: data.location_label ? { label: data.location_label } : undefined,
-        notes: data.notes || undefined,
-        reason: data.reason || undefined,
-        result: data.result || undefined,
-        data: {},
+        data: {
+          event_type: eventType,
+          to_wallet: data.to_wallet?.trim() || undefined,
+          location: data.location_label ? { label: data.location_label } : undefined,
+          notes: data.notes || undefined,
+          reason: data.reason || undefined,
+          result: data.result || undefined,
+          data: {},
+        },
+        adminKey: data.admin_key?.trim() || undefined,
       })
 
       // 2. Upload staged documents to the created event
@@ -249,6 +267,17 @@ export function WorkflowEventModal({ asset, action, open, onClose }: Props) {
             placeholder="Motivo del evento..."
             error={(errors as Record<string, { message?: string }>).reason?.message}
             {...register('reason')}
+          />
+        )}
+
+        {/* Admin key (required for sensitive events like RELEASED/BURN) */}
+        {et?.requires_admin && (
+          <Input
+            type="password"
+            label="Admin Key *"
+            placeholder="Clave admin para confirmar este evento sensible"
+            error={(errors as Record<string, { message?: string }>).admin_key?.message}
+            {...register('admin_key')}
           />
         )}
 

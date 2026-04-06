@@ -28,23 +28,28 @@ BUFFER_DEG = 0.005  # ~500m buffer for point queries
 def _point_to_polygon(lat: float, lng: float, buffer: float = BUFFER_DEG, area_ha: float | None = None) -> dict:
     """Create a square polygon around a point for GFW query.
 
-    If area_ha is provided, calculates buffer to match that area.
-    Otherwise uses the default ~500m buffer.
+    Corrects longitude buffer by cos(lat) so that the square is geometrically
+    accurate at any latitude (not skewed near the poles).
     """
+    import math
     if area_ha and area_ha > 0:
         # 1 hectare = 10,000 m². Side of square = sqrt(area_m2)
-        # 1 degree latitude ≈ 111,320 m
-        import math
         side_m = math.sqrt(area_ha * 10_000)
-        buffer = (side_m / 2) / 111_320  # half-side in degrees
+        half_side_m = side_m / 2
+        buffer_lat = half_side_m / 111_320
+    else:
+        buffer_lat = buffer
+    # 1° longitude shrinks with latitude
+    cos_lat = max(math.cos(math.radians(lat)), 0.001)
+    buffer_lng = buffer_lat / cos_lat
     return {
         "type": "Polygon",
         "coordinates": [[
-            [lng - buffer, lat - buffer],
-            [lng + buffer, lat - buffer],
-            [lng + buffer, lat + buffer],
-            [lng - buffer, lat + buffer],
-            [lng - buffer, lat - buffer],
+            [lng - buffer_lng, lat - buffer_lat],
+            [lng + buffer_lng, lat - buffer_lat],
+            [lng + buffer_lng, lat + buffer_lat],
+            [lng - buffer_lng, lat + buffer_lat],
+            [lng - buffer_lng, lat - buffer_lat],
         ]],
     }
 
@@ -57,10 +62,10 @@ class DeforestationService:
         self._api_key = api_key or get_settings().GFW_API_KEY
 
     @classmethod
-    async def from_db(cls, db) -> "DeforestationService":
-        """Build instance with credentials loaded from DB."""
+    async def from_db(cls, db, tenant_id=None) -> "DeforestationService":
+        """Build instance with per-tenant credentials loaded from DB."""
         from app.services.integration_service import IntegrationCredentialsService
-        svc = IntegrationCredentialsService(db)
+        svc = IntegrationCredentialsService(db, tenant_id=tenant_id)
         creds = await svc.get_credentials("gfw")
         return cls(api_key=creds.get("api_key") or None)
 
@@ -88,10 +93,14 @@ class DeforestationService:
         if not self._api_key:
             return {
                 "deforestation_free": None,
+                "not_configured": True,
                 "alerts_count": 0,
                 "alerts": [],
                 "high_confidence_alerts": 0,
-                "error": "GFW_API_KEY not configured",
+                "error": (
+                    "GFW API key no configurada. Configura la integración en "
+                    "Cumplimiento → Integraciones para habilitar el screening satelital."
+                ),
                 "source": "none",
             }
 
@@ -115,16 +124,31 @@ class DeforestationService:
                 "source": "none",
             }
 
-        # Query GFW
+        # Validate cutoff_date format to prevent SQL injection
+        try:
+            from datetime import datetime as _dt
+            _dt.fromisoformat(cutoff_date)
+        except (TypeError, ValueError):
+            return {
+                "deforestation_free": None,
+                "alerts_count": 0,
+                "alerts": [],
+                "error": f"Invalid cutoff_date format: {cutoff_date}",
+                "source": "gfw_integrated_alerts",
+            }
+
+        # Query GFW (LIMIT to prevent oversized responses)
         sql = (
             f"SELECT latitude, longitude, gfw_integrated_alerts__date, "
             f"gfw_integrated_alerts__confidence "
             f"FROM results "
-            f"WHERE gfw_integrated_alerts__date >= '{cutoff_date}'"
+            f"WHERE gfw_integrated_alerts__date >= '{cutoff_date}' "
+            f"LIMIT 1000"
         )
 
         try:
-            async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as http:
+            timeout = get_settings().GFW_TIMEOUT
+            async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as http:
                 resp = await http.post(
                     f"{GFW_BASE}/dataset/{DATASET}/latest/query/json",
                     headers={"x-api-key": self._api_key, "Content-Type": "application/json"},

@@ -104,6 +104,11 @@ async def generate_wallet(
     )
     await db.commit()
     result = _wallet_response(wallet)
+    # Surface airdrop result so the UI can warn when devnet rate-limits us.
+    result["airdrop"] = {
+        "status": getattr(wallet, "_airdrop_status", "skipped"),
+        "error": getattr(wallet, "_airdrop_error", None),
+    }
     return ORJSONResponse(status_code=status.HTTP_201_CREATED, content=result)
 
 

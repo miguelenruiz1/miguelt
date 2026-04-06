@@ -161,15 +161,40 @@ function CreatePlotModal({ onClose }: { onClose: () => void }) {
       return
     }
     try {
-      // If polygon, derive lat/lng from first vertex (centroid approximation)
+      // For polygons, compute the area-weighted centroid (shoelace formula),
+      // not just the average of vertices, so the point lands inside the polygon.
       let lat = values.lat
       let lng = values.lng
       if (values.geolocation_type === 'polygon' && polygonData?.coordinates?.[0]?.length) {
-        const ring = polygonData.coordinates[0]
-        const avgLng = ring.reduce((s: number, p: number[]) => s + p[0], 0) / ring.length
-        const avgLat = ring.reduce((s: number, p: number[]) => s + p[1], 0) / ring.length
-        lat = avgLat
-        lng = avgLng
+        const ring: number[][] = polygonData.coordinates[0]
+        // Drop closing vertex if present
+        const pts = ring.length > 1 && ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1]
+          ? ring.slice(0, -1)
+          : ring
+        if (pts.length >= 3) {
+          let area = 0
+          let cx = 0
+          let cy = 0
+          for (let i = 0; i < pts.length; i++) {
+            const [x0, y0] = pts[i]
+            const [x1, y1] = pts[(i + 1) % pts.length]
+            const cross = x0 * y1 - x1 * y0
+            area += cross
+            cx += (x0 + x1) * cross
+            cy += (y0 + y1) * cross
+          }
+          area /= 2
+          if (Math.abs(area) > 1e-9) {
+            cx /= 6 * area
+            cy /= 6 * area
+            lng = cx
+            lat = cy
+          } else {
+            // Degenerate — fall back to average
+            lng = pts.reduce((s, p) => s + p[0], 0) / pts.length
+            lat = pts.reduce((s, p) => s + p[1], 0) / pts.length
+          }
+        }
       }
       await create.mutateAsync({
         plot_code: values.plot_code,

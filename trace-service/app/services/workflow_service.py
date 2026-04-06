@@ -331,17 +331,19 @@ class WorkflowService:
             else:
                 return None
 
-        # Multiple transitions with same event_type_slug (e.g., QC → pass/fail)
-        # Use `result` param to pick the right target via data_schema or convention
+        # Multiple transitions with same event_type_slug (e.g., QC → pass/fail).
+        # Match against canonical slugs at word boundaries to avoid e.g.
+        # "pasado_inspeccion" colliding with the substring "pass".
         if qc_result and len(transitions) > 1:
-            # Convention: result="pass" picks first match, result="fail" picks second
-            # Or match by to_state slug containing "pass"/"fail" keywords
+            import re as _re
             result_lower = qc_result.lower()
+            PASS_RE = _re.compile(r"(?:^|[_-])(pass|passed|aprobad[oa]|ok|qc[_-]?passed)(?:$|[_-])")
+            FAIL_RE = _re.compile(r"(?:^|[_-])(fail|failed|fallid[oa]|rechaz[oa]|qc[_-]?failed)(?:$|[_-])")
             for t in transitions:
-                slug = t.to_state.slug if t.to_state else ""
-                if result_lower == "pass" and ("pass" in slug or "aprobad" in slug or "ok" in slug):
+                slug = (t.to_state.slug if t.to_state else "").lower()
+                if result_lower == "pass" and PASS_RE.search(slug):
                     return t, t.to_state
-                if result_lower == "fail" and ("fail" in slug or "fallid" in slug or "rechaz" in slug):
+                if result_lower == "fail" and FAIL_RE.search(slug):
                     return t, t.to_state
             # Fall through to first match
 
@@ -375,6 +377,12 @@ class WorkflowService:
         transitions = await self._transition_repo.get_transitions_from(
             self._tenant_id, from_state.id
         )
+
+        # Count transitions per event_type_slug — used to detect pass/fail events
+        # (more than one transition with the same slug means the user must choose)
+        slug_counts: dict[str | None, int] = {}
+        for t in transitions:
+            slug_counts[t.event_type_slug] = slug_counts.get(t.event_type_slug, 0) + 1
 
         # Group by event_type_slug to avoid duplicate actions
         seen_events: set[str | None] = set()
@@ -418,6 +426,9 @@ class WorkflowService:
                 "event_type_slug": evt_slug,
                 "label": t.label,
                 "event_type": event_type,
+                # True when the same event_type leads to >1 possible target state
+                # (e.g. QC pass / QC fail) — frontend should show a result selector.
+                "has_pass_fail": slug_counts.get(evt_slug, 1) > 1,
             })
 
         return actions

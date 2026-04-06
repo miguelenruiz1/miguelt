@@ -60,17 +60,7 @@ async def _validate_record(
         if val is None or val == "" or val == []:
             missing.append(field_name)
 
-    # Check geolocation requirement
-    if framework.requires_geolocation:
-        # Check linked plots have geolocation
-        links = (
-            await db.execute(
-                select(CompliancePlotLink).where(CompliancePlotLink.record_id == record.id)
-            )
-        ).scalars().all()
-        if not links:
-            missing.append("plots (at least one geolocation-tagged plot required)")
-
+    # Check geolocation requirement (single pass — was duplicated)
     missing_plots = False
     if framework.requires_geolocation:
         links = (
@@ -79,6 +69,7 @@ async def _validate_record(
             )
         ).scalars().all()
         if not links:
+            missing.append("plots (at least one geolocation-tagged plot required)")
             missing_plots = True
 
     # Check scientific name
@@ -127,19 +118,25 @@ async def create_record(
     settings = get_settings()
     http = get_http_client()
 
-    # Validate asset exists via trace-service
-    try:
-        resp = await http.get(
-            f"{settings.TRACE_SERVICE_URL}/api/v1/assets/{body.asset_id}",
-            headers={"X-Tenant-Id": str(tid)},
-        )
-        if resp.status_code != 200:
-            raise NotFoundError(f"Asset '{body.asset_id}' not found in trace-service")
-    except NotFoundError:
-        raise
-    except Exception:
-        # If trace-service is unreachable, allow creation with a warning
-        pass
+    # Validate asset exists via trace-service ONLY if asset_id was provided.
+    # Standalone compliance records (no logistics asset) are allowed.
+    if body.asset_id is not None:
+        try:
+            resp = await http.get(
+                f"{settings.TRACE_SERVICE_URL}/api/v1/assets/{body.asset_id}",
+                headers={"X-Tenant-Id": str(tid)},
+            )
+            if resp.status_code == 404:
+                raise NotFoundError(f"Asset '{body.asset_id}' not found in trace-service")
+        except NotFoundError:
+            raise
+        except Exception as exc:
+            # If trace-service is unreachable, allow creation with a logged warning
+            log.warning(
+                "asset_validation_skipped",
+                asset_id=str(body.asset_id),
+                error=str(exc)[:200],
+            )
 
     # Lookup framework by slug
     fw = (
@@ -150,20 +147,22 @@ async def create_record(
     if fw is None:
         raise NotFoundError(f"Framework '{body.framework_slug}' not found")
 
-    # Check unique asset+framework
-    existing = (
-        await db.execute(
-            select(ComplianceRecord).where(
-                ComplianceRecord.tenant_id == tid,
-                ComplianceRecord.asset_id == body.asset_id,
-                ComplianceRecord.framework_id == fw.id,
+    # Check unique asset+framework — only enforced when an asset_id is given,
+    # so multiple standalone records under the same framework are allowed.
+    if body.asset_id is not None:
+        existing = (
+            await db.execute(
+                select(ComplianceRecord).where(
+                    ComplianceRecord.tenant_id == tid,
+                    ComplianceRecord.asset_id == body.asset_id,
+                    ComplianceRecord.framework_id == fw.id,
+                )
             )
-        )
-    ).scalar_one_or_none()
-    if existing is not None:
-        raise ConflictError(
-            f"Record for asset '{body.asset_id}' and framework '{body.framework_slug}' already exists"
-        )
+        ).scalar_one_or_none()
+        if existing is not None:
+            raise ConflictError(
+                f"Record for asset '{body.asset_id}' and framework '{body.framework_slug}' already exists"
+            )
 
     data = body.model_dump(exclude={"framework_slug"}, exclude_unset=True)
     if "metadata" in data:
@@ -488,12 +487,12 @@ async def validate_record(
         raise NotFoundError("Framework not found for this record")
 
     result = await _validate_record(record, fw, db)
-    # Persist the compliance_status to DB
+    # Persist the compliance_status to DB (session dependency commits)
     record.compliance_status = result.compliance_status
     record.last_validated_at = result.checked_at
     record.validation_result = result.model_dump(mode="json")
     record.missing_fields = result.missing_fields
-    await db.commit()
+    await db.flush()
     return result
 
 
@@ -544,6 +543,8 @@ async def export_dds(
                 "region": plot.region,
                 "risk_level": plot.risk_level,
                 "deforestation_free": plot.deforestation_free,
+                "geojson_data": getattr(plot, "geojson_data", None),
+                "geolocation_type": getattr(plot, "geolocation_type", None),
                 "establishment_date": str(plot.establishment_date) if getattr(plot, "establishment_date", None) else None,
             })
 
@@ -610,10 +611,16 @@ async def submit_to_traces(
     if record is None:
         raise NotFoundError(f"Record '{record_id}' not found")
 
-    if record.compliance_status not in ("ready", "declared", "compliant"):
+    if record.compliance_status not in ("compliant", "partial", "declared", "ready"):
         raise ValidationError(
-            f"Record must be 'ready', 'declared' or 'compliant' to submit. "
+            f"Record must be 'compliant' (or at least 'partial') before submitting. "
             f"Current status: {record.compliance_status}"
+        )
+
+    # Operator email is mandatory for TRACES NT — fail-fast with a clear error.
+    if not (record.buyer_email or record.supplier_email):
+        raise ValidationError(
+            "Falta operator/supplier email — TRACES NT lo requiere para sumisión DDS."
         )
 
     # Load plots
@@ -637,6 +644,8 @@ async def submit_to_traces(
                 "municipality": plot.municipality,
                 "risk_level": plot.risk_level,
                 "deforestation_free": plot.deforestation_free,
+                "geojson_data": getattr(plot, "geojson_data", None),
+                "geolocation_type": getattr(plot, "geolocation_type", None),
                 "establishment_date": str(plot.establishment_date) if getattr(plot, "establishment_date", None) else None,
             })
 
@@ -670,7 +679,7 @@ async def submit_to_traces(
     from app.services.traces_service import build_dds_payload, TracesNTService
     dds = build_dds_payload(record_dict, plots)
 
-    svc = await TracesNTService.from_db(db)
+    svc = await TracesNTService.from_db(db, tenant_id=tid)
     result = await svc.submit_dds(dds)
 
     # If submitted successfully, update record with reference
@@ -679,7 +688,6 @@ async def submit_to_traces(
         record.declaration_status = "submitted"
         record.declaration_submission_date = date.today()
         await db.flush()
-        await db.commit()
         log.info("dds_submitted_traces", record_id=str(record_id), ref=result["reference_number"])
 
     return {

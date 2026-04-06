@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     USER_CACHE_TTL: int = 60
     S2S_SERVICE_TOKEN: str = "s2s-change-me-in-production"
 
+    # Dedicated key for encrypting integration credentials.
+    # If empty, derives one from JWT_SECRET (insecure for prod — set explicitly).
+    FERNET_KEY: str = ""
+
     MODULE_SLUG: str = "compliance"
     MODULE_CACHE_TTL: int = 300
 
@@ -48,6 +52,9 @@ class Settings(BaseSettings):
     TRACES_NT_USERNAME: str = ""
     TRACES_NT_AUTH_KEY: str = ""
     TRACES_NT_ENV: str = "acceptance"  # acceptance | production
+    TRACES_NT_CLIENT_ID: str = "eudr-test"  # webServiceClientId assigned by EU
+    TRACES_NT_TIMEOUT: float = 180.0
+    GFW_TIMEOUT: float = 120.0
 
     # Certificate generation
     CERTIFICATE_STORAGE: str = "local"

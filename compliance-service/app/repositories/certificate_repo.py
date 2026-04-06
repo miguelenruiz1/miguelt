@@ -94,13 +94,18 @@ class CertificateRepository:
         await self.db.refresh(cert)
         return cert
 
-    async def supersede_existing(self, record_id: uuid.UUID) -> None:
+    async def supersede_existing(
+        self, record_id: uuid.UUID, exclude_id: uuid.UUID | None = None
+    ) -> None:
+        conditions = [
+            ComplianceCertificate.record_id == record_id,
+            ComplianceCertificate.status == "active",
+        ]
+        if exclude_id is not None:
+            conditions.append(ComplianceCertificate.id != exclude_id)
         stmt = (
             update(ComplianceCertificate)
-            .where(
-                ComplianceCertificate.record_id == record_id,
-                ComplianceCertificate.status == "active",
-            )
+            .where(*conditions)
             .values(
                 status="superseded",
                 updated_at=datetime.now(timezone.utc),

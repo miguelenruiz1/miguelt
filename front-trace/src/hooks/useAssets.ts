@@ -64,8 +64,11 @@ function invalidateAsset(qc: ReturnType<typeof useQueryClient>, id: string) {
 export function useRecordEvent(assetId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: GenericEventRequest) =>
-      api.assets.recordEvent(assetId, data, newUUID()),
+    mutationFn: (input: GenericEventRequest | { data: GenericEventRequest; adminKey?: string }) => {
+      const { data, adminKey } =
+        'data' in input ? input : { data: input, adminKey: undefined }
+      return api.assets.recordEvent(assetId, data, newUUID(), adminKey)
+    },
     onSuccess: () => invalidateAsset(qc, assetId),
   })
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Satellite, FileCheck, Key, Loader2, CheckCircle2, XCircle, Eye, EyeOff, Save, Zap } from 'lucide-react'
 import { authFetch } from '@/lib/auth-fetch'
@@ -63,6 +63,15 @@ function IntegrationCard({ integration }: { integration: Integration }) {
 
   const handleChange = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }))
 
+  // Seed `env` with the current value so the first save sends an explicit selection.
+  useEffect(() => {
+    if (integration.fields.includes('env') && form.env === undefined) {
+      const current = integration.credentials.env ?? 'acceptance'
+      setForm(f => ({ ...f, env: current }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [integration.provider])
+
   const handleSave = async () => {
     try {
       await updateMut.mutateAsync({ provider: integration.provider, data: form })
@@ -84,6 +93,7 @@ function IntegrationCard({ integration }: { integration: Integration }) {
     username: 'Usuario',
     auth_key: 'Auth Key',
     env: 'Ambiente',
+    client_id: 'Web Service Client ID',
   }
 
   return (
@@ -114,11 +124,12 @@ function IntegrationCard({ integration }: { integration: Integration }) {
       <div className="px-6 py-5 space-y-4">
         {integration.fields.map(field => {
           if (field === 'env') {
+            const currentEnv = form[field] ?? integration.credentials.env ?? 'acceptance'
             return (
               <div key={field}>
                 <label className="text-xs font-semibold text-muted-foreground">{fieldLabel[field] || field}</label>
                 <select
-                  value={form[field] ?? integration.credentials.env ?? 'acceptance'}
+                  value={currentEnv}
                   onChange={e => handleChange(field, e.target.value)}
                   className="w-full mt-1 rounded-xl border border-border bg-muted px-3 py-2.5 text-sm"
                 >

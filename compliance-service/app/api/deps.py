@@ -37,13 +37,30 @@ async def get_redis() -> aioredis.Redis:
 
 # ─── Tenant resolution ────────────────────────────────────────────────────────
 
-async def get_tenant_id(request: Request) -> uuid.UUID:
-    slug = getattr(request.state, "tenant_slug", None) or "default"
+_DEFAULT_TENANT_UUID = uuid.UUID("00000000-0000-0000-0000-000000000001")
+
+
+async def _resolve_tenant_slug_to_uuid(slug: str) -> uuid.UUID:
+    """Resolve a tenant slug or UUID string to a canonical UUID.
+    Caches the slug→UUID mapping in Redis for 5 minutes.
+    """
+    if not slug:
+        return _DEFAULT_TENANT_UUID
     try:
         return uuid.UUID(slug)
     except ValueError:
-        http = get_http_client()
-        settings = get_settings()
+        pass
+    rd = await get_redis()
+    cache_key = f"tenant_slug:{slug}"
+    cached = await rd.get(cache_key)
+    if cached:
+        try:
+            return uuid.UUID(cached)
+        except ValueError:
+            pass
+    http = get_http_client()
+    settings = get_settings()
+    try:
         resp = await http.get(
             f"{settings.TRACE_SERVICE_URL}/api/v1/tenants",
             headers={"X-Tenant-Id": slug},
@@ -51,8 +68,17 @@ async def get_tenant_id(request: Request) -> uuid.UUID:
         if resp.status_code == 200:
             for t in resp.json():
                 if t.get("slug") == slug:
-                    return uuid.UUID(t["id"])
-        return uuid.UUID("00000000-0000-0000-0000-000000000001")
+                    tid = uuid.UUID(t["id"])
+                    await rd.setex(cache_key, 300, str(tid))
+                    return tid
+    except Exception as exc:
+        log.warning("tenant_resolve_failed", slug=slug, exc=str(exc))
+    return _DEFAULT_TENANT_UUID
+
+
+async def get_tenant_id(request: Request) -> uuid.UUID:
+    slug = getattr(request.state, "tenant_slug", None) or "default"
+    return await _resolve_tenant_slug_to_uuid(slug)
 
 
 # ─── JWT auth (same pattern as inventory-service) ─────────────────────────────
@@ -66,10 +92,11 @@ async def get_current_user(
     if service_token:
         settings = get_settings()
         if service_token == settings.S2S_SERVICE_TOKEN:
-            tenant_id = request.headers.get("X-Tenant-Id", "default")
+            raw_tid = request.headers.get("X-Tenant-Id", "default")
+            resolved = await _resolve_tenant_slug_to_uuid(raw_tid)
             return {
                 "id": "system",
-                "tenant_id": tenant_id,
+                "tenant_id": str(resolved),
                 "is_superuser": True,
                 "permissions": [],
                 "email": "system@trace.internal",
@@ -96,9 +123,11 @@ async def get_current_user(
     if not user_id:
         raise UnauthorizedError("Token missing subject")
 
-    # Redis cache
+    # Redis cache (key includes incoming tenant header so superusers across tenants
+    # don't share a stale cached entry)
+    incoming_tid = request.headers.get("X-Tenant-Id", "default")
     rd = await get_redis()
-    cache_key = f"cmp_svc:me:{user_id}"
+    cache_key = f"cmp_svc:me:{user_id}:{incoming_tid}"
     cached = await rd.get(cache_key)
     if cached:
         return json.loads(cached)
@@ -113,6 +142,10 @@ async def get_current_user(
         raise UnauthorizedError("User not found or token expired")
 
     user_data = resp.json()
+    # Resolve tenant slug → UUID so router helpers always get a canonical UUID
+    raw_tid = str(user_data.get("tenant_id", "")) or request.headers.get("X-Tenant-Id", "default")
+    resolved = await _resolve_tenant_slug_to_uuid(raw_tid)
+    user_data["tenant_id"] = str(resolved)
     await rd.setex(cache_key, settings.USER_CACHE_TTL, json.dumps(user_data))
     return user_data
 

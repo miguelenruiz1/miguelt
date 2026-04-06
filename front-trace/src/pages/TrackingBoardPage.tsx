@@ -6,13 +6,24 @@ import { Badge } from '@/components/ui/badge'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import { useQueries } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useWalletList } from '@/hooks/useWallets'
 import { useOrganizations } from '@/hooks/useTaxonomy'
 import { useWorkflowStates } from '@/hooks/useWorkflow'
 import { cn } from '@/lib/utils'
 import type { Asset, WorkflowState } from '@/types/api'
+
+// Fallback when the tenant has no workflow states yet
+const FALLBACK_STATES = [
+  { slug: 'in_custody', label: 'En custodia', color: '#10b981' },
+  { slug: 'in_transit', label: 'En tránsito', color: '#f59e0b' },
+  { slug: 'loaded',     label: 'Cargado',     color: '#6366f1' },
+  { slug: 'qc_passed',  label: 'QC aprobado', color: '#22c55e' },
+  { slug: 'qc_failed',  label: 'QC rechazado',color: '#ef4444' },
+  { slug: 'released',   label: 'Liberado',    color: '#0ea5e9' },
+  { slug: 'burned',     label: 'Quemado',     color: '#71717a' },
+]
 
 /* ── (Legacy states removed — columns are now 100% workflow-driven) ── */
 
@@ -76,13 +87,17 @@ export function TrackingBoardPage() {
   const { data: workflowStates } = useWorkflowStates()
 
   const columns = useMemo(() => {
-    if (!workflowStates?.length) return []
-    return workflowStates.map(ws => ({
-      slug: ws.slug,
-      label: ws.label,
-      color: ws.color,
-    }))
+    if (workflowStates?.length) {
+      return workflowStates.map(ws => ({
+        slug: ws.slug,
+        label: ws.label,
+        color: ws.color,
+      }))
+    }
+    return FALLBACK_STATES
   }, [workflowStates])
+
+  const usingFallback = !workflowStates?.length
 
   // Build a lookup map for badge rendering
   const stateMap = useMemo(() => {

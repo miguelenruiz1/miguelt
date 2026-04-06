@@ -77,6 +77,7 @@ class PlotResponse(OrmBase):
     geolocation_type: str
     lat: Decimal | None
     lng: Decimal | None
+    geojson_data: dict | None = None
     geojson_arweave_url: str | None
     geojson_hash: str | None
     country_code: str
@@ -96,6 +97,6 @@ class PlotResponse(OrmBase):
     satellite_report_hash: str | None
     satellite_verified_at: datetime | None
     is_active: bool
-    metadata_: dict
+    metadata_: dict | None = None
     created_at: datetime
     updated_at: datetime

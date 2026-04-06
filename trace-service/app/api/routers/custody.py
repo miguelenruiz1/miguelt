@@ -230,6 +230,19 @@ async def mint_asset(
                 )
         except Exception as exc:
             log.warning("cnft_mint_post_commit_failed", asset_id=str(asset.id), exc=str(exc))
+            # Mark asset as FAILED so the retry worker / UI can detect the inconsistency.
+            try:
+                async with get_db() as fail_session:
+                    from app.repositories.custody_repo import AssetRepository
+                    repo = AssetRepository(fail_session)
+                    await repo.update_blockchain_fields(
+                        asset_id=asset.id,
+                        blockchain_status="FAILED",
+                        blockchain_error=str(exc)[:500],
+                    )
+                    await fail_session.commit()
+            except Exception as inner_exc:
+                log.error("mint_failed_status_update_error", asset_id=str(asset.id), exc=str(inner_exc))
 
         # Re-read asset from a fresh session to get updated blockchain fields
         async with get_db() as read_session:
@@ -584,6 +597,7 @@ async def record_event(
     asset_id: uuid.UUID,
     body: GenericEventRequest,
     x_user_id: str = Header(..., alias="X-User-Id", description="User ID"),
+    x_admin_key: str | None = Header(None, alias="X-Admin-Key", description="Admin key for sensitive events"),
     db: AsyncSession = Depends(get_db_session),
     tenant_id: uuid.UUID = Depends(get_tenant_id),
 ) -> ORJSONResponse:
@@ -602,6 +616,7 @@ async def record_event(
             notes=body.notes,
             result=body.result,
             reason=body.reason,
+            admin_key=x_admin_key,
         )
         await db.commit()
         await enqueue_anchor(event.id)

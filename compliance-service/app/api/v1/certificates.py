@@ -179,7 +179,17 @@ async def download_certificate(
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="PDF not generated yet")
 
-    # Convert file:// URL to path
+    # Remote URLs (S3/GCS) — redirect the client to download directly.
+    if cert.pdf_url.startswith(("http://", "https://", "gs://")):
+        from fastapi.responses import RedirectResponse
+        target = cert.pdf_url
+        if target.startswith("gs://"):
+            # Convert gs://bucket/key → public https URL
+            without = target[5:]
+            target = f"https://storage.googleapis.com/{without}"
+        return RedirectResponse(url=target)
+
+    # Local file:// URL fallback (DEV only)
     pdf_path = cert.pdf_url.replace("file://", "")
     if not Path(pdf_path).exists():
         from fastapi import HTTPException

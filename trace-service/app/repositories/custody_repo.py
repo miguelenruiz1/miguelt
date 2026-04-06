@@ -120,10 +120,14 @@ class AssetRepository:
             updates["blockchain_status"] = blockchain_status
         if is_compressed is not None:
             updates["is_compressed"] = is_compressed
-        # blockchain_error is not a DB column — it's logged only; skip it
+        if blockchain_error is not None:
+            updates["blockchain_error"] = blockchain_error
         if updates:
             await self._db.execute(
-                update(Asset).where(Asset.id == asset_id).values(**updates)
+                update(Asset)
+                .where(Asset.id == asset_id)
+                .values(**updates)
+                .execution_options(synchronize_session="fetch")
             )
             await self._db.flush()
 

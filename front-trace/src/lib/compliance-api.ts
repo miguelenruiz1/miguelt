@@ -183,7 +183,7 @@ export const complianceApi = {
       request<PlotLink[]>(`/api/v1/compliance/records/${id}/plots`),
 
     linkPlot: (id: string, data: PlotLinkInput) =>
-      request<PlotLink>(`/api/v1/compliance/records/${id}/plots/`, {
+      request<PlotLink>(`/api/v1/compliance/records/${id}/plots`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),

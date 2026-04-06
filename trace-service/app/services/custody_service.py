@@ -23,6 +23,7 @@ from app.core.errors import (
 from app.core.logging import get_logger
 from app.core.settings import get_settings
 from app.db.models import Asset, CustodyEvent
+from app.domain.types import EventType
 from app.domain.schemas import (
     ArrivedRequest,
     HandoffRequest,
@@ -96,6 +97,25 @@ class CustodyService:
             raise WalletNotAllowlistedError(
                 f"Wallet '{pubkey}' is not in the active allowlist",
                 wallet_pubkey=pubkey,
+            )
+
+    async def _assert_current_wallet_active(self, asset: Asset) -> None:
+        """Reject events when the asset's current custodian wallet was revoked.
+
+        Used by ALL state-changing methods (handoff/arrived/loaded/qc/release/burn
+        and the generic record_event) so behavior is consistent.
+        """
+        if not asset.current_custodian_wallet:
+            return
+        current = await self._registry_repo.get_by_pubkey(asset.current_custodian_wallet)
+        if (
+            current is None
+            or current.tenant_id != self._tenant_id
+            or current.status != "active"
+        ):
+            raise AssetStateError(
+                f"Current custodian wallet '{asset.current_custodian_wallet}' "
+                f"is no longer active. Re-assign the asset before recording new events."
             )
 
     async def _get_asset_or_404(self, asset_id: uuid.UUID) -> Asset:
@@ -289,6 +309,7 @@ class CustodyService:
         self, asset_id: uuid.UUID, req: HandoffRequest
     ) -> tuple[Asset, CustodyEvent]:
         asset = await self._get_asset_locked(asset_id)
+        await self._assert_current_wallet_active(asset)
         target_state = await self._assert_valid_transition(asset, "HANDOFF")
         await self._assert_active_wallet(req.to_wallet)
 
@@ -320,6 +341,7 @@ class CustodyService:
         self, asset_id: uuid.UUID, req: ArrivedRequest
     ) -> tuple[Asset, CustodyEvent]:
         asset = await self._get_asset_or_404(asset_id)
+        await self._assert_current_wallet_active(asset)
         target_state = await self._assert_valid_transition(asset, "ARRIVED")
 
         location = req.location.model_dump() if req.location else None
@@ -343,6 +365,7 @@ class CustodyService:
         self, asset_id: uuid.UUID, req: LoadedRequest
     ) -> tuple[Asset, CustodyEvent]:
         asset = await self._get_asset_or_404(asset_id)
+        await self._assert_current_wallet_active(asset)
         target_state = await self._assert_valid_transition(asset, "LOADED")
 
         location = req.location.model_dump() if req.location else None
@@ -366,6 +389,7 @@ class CustodyService:
         self, asset_id: uuid.UUID, req: QCRequest
     ) -> tuple[Asset, CustodyEvent]:
         asset = await self._get_asset_or_404(asset_id)
+        await self._assert_current_wallet_active(asset)
 
         result = req.result.lower()
         target_state = await self._assert_valid_transition(
@@ -400,6 +424,7 @@ class CustodyService:
             raise ForbiddenError("Invalid admin key")
 
         asset = await self._get_asset_locked(asset_id)
+        await self._assert_current_wallet_active(asset)
         target_state = await self._assert_valid_transition(asset, "RELEASED")
 
         event = await self._create_event(
@@ -428,6 +453,7 @@ class CustodyService:
         self, asset_id: uuid.UUID, req: BurnRequest
     ) -> tuple[Asset, CustodyEvent]:
         asset = await self._get_asset_locked(asset_id)
+        await self._assert_current_wallet_active(asset)
         target_state = await self._assert_valid_transition(asset, "BURN")
 
         event = await self._create_event(
@@ -460,12 +486,17 @@ class CustodyService:
         notes: str | None = None,
         result: str | None = None,
         reason: str | None = None,
+        admin_key: str | None = None,
     ) -> tuple[Asset, CustodyEvent]:
         """
         Generic event recorder — workflow engine is the primary source of truth.
         1. Looks up WorkflowEventType for metadata (requires_wallet, etc.)
         2. Uses find_transition_for_event() to resolve target state
         3. Falls back to hardcoded types.py only when no workflow data exists
+
+        Sensitive events (HANDOFF, RELEASED, BURN, LOADED, QC) always take a
+        SELECT FOR UPDATE lock to prevent concurrent double-writes that would
+        break the hash chain.
         """
         event_data = dict(data or {})
 
@@ -476,11 +507,37 @@ class CustodyService:
         needs_wallet = wf_event.requires_wallet if wf_event else False
         needs_lock = (wf_event.requires_admin or wf_event.requires_reason) if wf_event else False
 
+        # Always lock for ANY state-changing event (informational events skip the lock).
+        # This covers custom event types not in SENSITIVE_EVENTS too.
+        if not is_informational:
+            needs_lock = True
+
         if wf_event and not wf_event.is_active:
             raise AssetStateError(f"Event type '{event_type_slug}' is disabled")
 
+        # ── 1b. Admin key check for events flagged requires_admin ─────────────
+        if wf_event and wf_event.requires_admin:
+            settings = get_settings()
+            if not admin_key or admin_key != settings.TRACE_ADMIN_KEY:
+                raise ForbiddenError(
+                    f"Event '{event_type_slug}' requires a valid X-Admin-Key header"
+                )
+
+        # ── 1c. Reason required when flagged ──────────────────────────────────
+        if wf_event and wf_event.requires_reason and not reason:
+            raise AssetStateError(
+                f"Event '{event_type_slug}' requires a non-empty reason"
+            )
+
+        # ── 1d. Notes required when flagged ───────────────────────────────────
+        if wf_event and getattr(wf_event, "requires_notes", False) and not notes:
+            raise AssetStateError(
+                f"Event '{event_type_slug}' requires non-empty notes"
+            )
+
         # ── 2. Wallet validation ──────────────────────────────────────────────
-        if to_wallet:
+        # Skip allowlist check for RELEASED so external (non-allowlisted) wallets work.
+        if to_wallet and event_type_slug.upper() != "RELEASED":
             await self._assert_active_wallet(to_wallet)
 
         # ── 3. Load asset ─────────────────────────────────────────────────────
@@ -488,6 +545,10 @@ class CustodyService:
             asset = await self._get_asset_locked(asset_id)
         else:
             asset = await self._get_asset_or_404(asset_id)
+
+        # ── 3b. Reject events when current custodian wallet was revoked ──────
+        if not is_informational:
+            await self._assert_current_wallet_active(asset)
 
         # ── 4. Resolve target state via workflow engine ───────────────────────
         if is_informational:

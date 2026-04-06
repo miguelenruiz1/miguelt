@@ -222,6 +222,49 @@ async def retry_blockchain_mint(ctx: dict[str, Any], asset_id_str: str) -> None:
     log.info("blockchain_retry_completed", asset_id=asset_id_str)
 
 
+async def sweep_pending_mints(ctx: dict[str, Any]) -> None:
+    """Periodic sweep: re-enqueue mint retries for assets stuck in PENDING/FAILED.
+
+    Catches placeholder mints that never reached CONFIRMED because the
+    fire-and-forget cNFT call failed before marking the asset properly.
+    """
+    db_factory = ctx["db_factory"]
+    settings = ctx["settings"]
+    arq_pool = ctx["arq_pool"]
+
+    async with db_factory() as session:
+        from app.repositories.custody_repo import AssetRepository
+
+        repo = AssetRepository(session)
+        # Find assets in PENDING/FAILED state with placeholder mints older than 5 minutes
+        from sqlalchemy import select
+        from datetime import datetime, timezone, timedelta
+        from app.db.models import Asset
+
+        cutoff = datetime.now(tz=timezone.utc) - timedelta(minutes=5)
+        q = select(Asset).where(
+            Asset.blockchain_status.in_(["PENDING", "FAILED"]),
+            Asset.created_at < cutoff,
+            Asset.asset_mint.like("pending_%"),
+        ).limit(50)
+        rows = (await session.execute(q)).scalars().all()
+
+        enqueued = 0
+        for asset in rows:
+            try:
+                await arq_pool.enqueue_job(
+                    "retry_blockchain_mint",
+                    str(asset.id),
+                    _queue_name=settings.ANCHOR_QUEUE_NAME,
+                )
+                enqueued += 1
+            except Exception as exc:
+                log.warning("sweep_mint_enqueue_failed", asset_id=str(asset.id), exc=str(exc))
+
+    if enqueued:
+        log.info("sweep_enqueued_pending_mints", count=enqueued)
+
+
 async def sweep_pending_anchors(ctx: dict[str, Any]) -> None:
     """
     Periodic sweep for events that never got enqueued or whose jobs were lost.
@@ -341,9 +384,10 @@ def _redis_settings() -> RedisSettings:
 
 
 class WorkerSettings:
-    functions = [anchor_event, retry_blockchain_mint, anchor_generic]
+    functions = [anchor_event, retry_blockchain_mint, anchor_generic, sweep_pending_mints, sweep_pending_anchors]
     cron_jobs = [
-        cron(sweep_pending_anchors, minute={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55})
+        cron(sweep_pending_anchors, minute={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55}),
+        cron(sweep_pending_mints, minute={2, 12, 22, 32, 42, 52}),
     ]
     on_startup = startup
     on_shutdown = shutdown
