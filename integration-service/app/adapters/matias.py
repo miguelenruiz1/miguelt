@@ -7,7 +7,7 @@ Format: UBL 2.1 Colombia
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import httpx
 
@@ -15,6 +15,9 @@ from app.adapters.base import BaseAdapter
 from app.core.errors import AdapterError
 
 MATIAS_BASE_URL = "https://api-v2.matias-api.com/api/ubl2.1"
+
+# Colombia timezone (UTC-5)
+COL_TZ_OFFSET = timezone(timedelta(hours=-5))
 
 
 class MatiasAdapter(BaseAdapter):
@@ -151,7 +154,7 @@ class MatiasAdapter(BaseAdapter):
         """Calculate payment due date from date + payment_terms_days."""
         if data.get("due_date"):
             return data["due_date"]
-        base_date = data.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+        base_date = data.get("date", datetime.now(COL_TZ_OFFSET).strftime("%Y-%m-%d"))
         terms = data.get("payment_terms_days", 0) or 0
         if terms > 0:
             from datetime import timedelta
@@ -252,8 +255,8 @@ class MatiasAdapter(BaseAdapter):
             "prefix": resolution.get("prefix", "SETP"),
             "number": data.get("invoice_number", ""),
             "document_number": int("".join(c for c in str(data.get("invoice_number", "0")) if c.isdigit()) or "0"),
-            "date": data.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
-            "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+            "date": data.get("date", datetime.now(COL_TZ_OFFSET).strftime("%Y-%m-%d")),
+            "time": datetime.now(COL_TZ_OFFSET).strftime("%H:%M:%S"),
             "customer": self._build_customer(customer),
             "legal_monetary_totals": {
                 "line_extension_amount": f"{subtotal:.2f}",
@@ -319,8 +322,8 @@ class MatiasAdapter(BaseAdapter):
             "resolution_number": resolution.get("resolution_number", ""),
             "prefix": resolution.get("prefix", "NC"),
             "number": data.get("credit_note_number", ""),
-            "date": data.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
-            "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+            "date": data.get("date", datetime.now(COL_TZ_OFFSET).strftime("%Y-%m-%d")),
+            "time": datetime.now(COL_TZ_OFFSET).strftime("%H:%M:%S"),
             "billing_reference": {
                 "number": data.get("invoice_number", ""),
                 "uuid": data.get("invoice_cufe", ""),
@@ -351,7 +354,7 @@ class MatiasAdapter(BaseAdapter):
             "payments": [{
                 "payment_form_id": 1,
                 "payment_method_id": 10,
-                "payment_due_date": data.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
+                "payment_due_date": data.get("date", datetime.now(COL_TZ_OFFSET).strftime("%Y-%m-%d")),
             }],
             "lines": invoice_lines,
         }
