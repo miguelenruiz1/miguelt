@@ -83,6 +83,16 @@ async def _validate_record(
     if rules.get("require_legal_declaration") and not record.legal_compliance_declaration:
         missing.append("legal_compliance_declaration")
 
+    # Operator email — required by certificate generator and TRACES NT submit.
+    # Either supplier_email or buyer_email is acceptable. Tracking it here keeps
+    # the validator consistent with _validate_record_for_certificate.
+    has_email = bool(
+        (record.supplier_email and record.supplier_email.strip())
+        or (record.buyer_email and record.buyer_email.strip())
+    )
+    if not has_email:
+        missing.append("operator_email (supplier_email or buyer_email required)")
+
     # Determine status
     if not missing and not missing_plots:
         compliance_status = "compliant"
@@ -452,8 +462,22 @@ async def update_declaration(
             user_id = uuid.UUID(user.get("id")) if user.get("id") not in (None, "system") else None
             await gen.generate(record.id, _tenant_id(user), user_id)
             log.info("auto_regen_on_dds", record_id=str(record.id), new_status=new_status)
+            # Clear any previous error
+            md = dict(record.metadata_ or {})
+            md.pop("last_cert_error", None)
+            record.metadata_ = md
         except Exception as exc:
             log.warning("auto_regen_failed", record_id=str(record.id), exc=str(exc))
+            # Surface the error to the UI via metadata_.last_cert_error so the
+            # user can see why the cert was not generated after the DDS approval.
+            md = dict(record.metadata_ or {})
+            md["last_cert_error"] = {
+                "message": str(exc)[:500],
+                "occurred_at": datetime.now(tz=timezone.utc).isoformat(),
+                "trigger": "auto_regen_on_dds",
+            }
+            record.metadata_ = md
+            await db.flush()
 
     return record
 

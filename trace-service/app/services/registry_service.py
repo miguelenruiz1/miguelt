@@ -69,7 +69,14 @@ class RegistryService:
         status: WalletStatus = WalletStatus.ACTIVE,
         name: str | None = None,
         organization_id: uuid.UUID | None = None,
-    ) -> RegistryWallet:
+    ) -> tuple[RegistryWallet, dict]:
+        """Generate a wallet and attempt a devnet airdrop.
+
+        Returns a tuple `(wallet, airdrop_info)` where `airdrop_info` is
+        `{"status": "success"|"failed"|"skipped", "error": str|None}`. Returning
+        a tuple (rather than stashing on the ORM instance) is robust against
+        future changes to `expire_on_commit`.
+        """
         if organization_id is not None:
             await self._validate_organization_tenant(organization_id)
 
@@ -90,8 +97,6 @@ class RegistryService:
         )
         log.info("wallet_generated", wallet_id=str(wallet.id), pubkey=pubkey)
 
-        # Attempt devnet airdrop (best-effort) and surface result so the caller
-        # can show it in the UI instead of guessing why a wallet has 0 SOL.
         airdrop_status = "skipped"
         airdrop_error: str | None = None
         try:
@@ -106,11 +111,7 @@ class RegistryService:
             airdrop_error = str(exc)[:200]
             log.warning("wallet_airdrop_failed", pubkey=pubkey, exc=airdrop_error)
 
-        # Stash on the instance (not persisted) so the router can build the response.
-        wallet._airdrop_status = airdrop_status  # type: ignore[attr-defined]
-        wallet._airdrop_error = airdrop_error  # type: ignore[attr-defined]
-
-        return wallet
+        return wallet, {"status": airdrop_status, "error": airdrop_error}
 
     async def get_wallet(self, wallet_id: uuid.UUID) -> RegistryWallet:
         wallet = await self._repo.get_by_id(wallet_id)

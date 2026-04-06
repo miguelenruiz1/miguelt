@@ -108,7 +108,8 @@ class RecordResponse(OrmBase):
     validation_result: dict | None
     missing_fields: list | None
     documents_retention_until: date | None
-    metadata_: dict | None = None
+    # NOT NULL in DB; default for safety on legacy rows persisted before server_default was added.
+    metadata_: dict = {}
     created_at: datetime
     updated_at: datetime
 

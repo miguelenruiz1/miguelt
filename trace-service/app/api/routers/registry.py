@@ -96,7 +96,7 @@ async def generate_wallet(
     tenant_id: uuid.UUID = Depends(get_tenant_id),
 ) -> ORJSONResponse:
     svc = RegistryService(db, tenant_id=tenant_id)
-    wallet = await svc.generate_wallet(
+    wallet, airdrop_info = await svc.generate_wallet(
         tags=body.tags,
         status=body.status,
         name=body.name,
@@ -105,10 +105,7 @@ async def generate_wallet(
     await db.commit()
     result = _wallet_response(wallet)
     # Surface airdrop result so the UI can warn when devnet rate-limits us.
-    result["airdrop"] = {
-        "status": getattr(wallet, "_airdrop_status", "skipped"),
-        "error": getattr(wallet, "_airdrop_error", None),
-    }
+    result["airdrop"] = airdrop_info
     return ORJSONResponse(status_code=status.HTTP_201_CREATED, content=result)
 
 

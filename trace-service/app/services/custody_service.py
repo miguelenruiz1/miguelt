@@ -547,8 +547,9 @@ class CustodyService:
             asset = await self._get_asset_or_404(asset_id)
 
         # ── 3b. Reject events when current custodian wallet was revoked ──────
-        if not is_informational:
-            await self._assert_current_wallet_active(asset)
+        # Applies to ALL events, including informational — a revoked wallet must
+        # not be able to log anything (photos, comments, etc.) against the asset.
+        await self._assert_current_wallet_active(asset)
 
         # ── 4. Resolve target state via workflow engine ───────────────────────
         if is_informational:
