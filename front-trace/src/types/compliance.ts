@@ -72,6 +72,7 @@ export interface CompliancePlot {
   geolocation_type: GeolocationType
   lat: number | null
   lng: number | null
+  geojson_data: Record<string, unknown> | null
   geojson_arweave_url: string | null
   geojson_hash: string | null
   country_code: string

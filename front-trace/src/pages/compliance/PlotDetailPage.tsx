@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, MapPin, Satellite, Check, X, Loader2, Calendar, Sprout, Shield, AlertTriangle, FolderOpen } from 'lucide-react'
 import { usePlot, useUpdatePlot, useScreenDeforestation, usePlotDocuments, useAttachPlotDocument, useDetachPlotDocument } from '@/hooks/useCompliance'
@@ -43,6 +43,37 @@ export function PlotDetailPage() {
   const [geojsonData, setGeojsonData] = useState<any>(null)
   const [showGeojsonPicker, setShowGeojsonPicker] = useState(false)
   const [linkingGeojson, setLinkingGeojson] = useState(false)
+  const [uploadingGeojson, setUploadingGeojson] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Load existing geojson_data from plot when available
+  useEffect(() => {
+    if (plot && (plot as any).geojson_data && !geojsonData) {
+      setGeojsonData((plot as any).geojson_data)
+    }
+  }, [plot])
+
+  async function handleGeojsonFileUpload(file: File) {
+    setUploadingGeojson(true)
+    try {
+      const text = await file.text()
+      const parsed = JSON.parse(text)
+      // Validate it's GeoJSON
+      const validTypes = ['Polygon', 'MultiPolygon', 'Feature', 'FeatureCollection']
+      if (!parsed.type || !validTypes.includes(parsed.type)) {
+        throw new Error(`Tipo GeoJSON inválido. Debe ser uno de: ${validTypes.join(', ')}`)
+      }
+      // Save to backend
+      await updatePlot.mutateAsync({ geojson_data: parsed } as any)
+      setGeojsonData(parsed)
+      toast.success('Polígono cargado correctamente')
+    } catch (e: any) {
+      toast.error(e.message || 'Error al procesar el archivo GeoJSON')
+    } finally {
+      setUploadingGeojson(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   if (isLoading) return <div className="flex justify-center py-20 text-muted-foreground">Cargando...</div>
   if (!plot) return <div className="flex justify-center py-20 text-muted-foreground">Parcela no encontrada</div>
@@ -83,14 +114,35 @@ export function PlotDetailPage() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleScreen}
-            disabled={screen.isPending}
-            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-          >
-            {screen.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Satellite className="h-4 w-4" />}
-            Verificar Deforestacion (GFW)
-          </button>
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".geojson,.json,application/json,application/geo+json"
+              className="hidden"
+              onChange={e => {
+                const f = e.target.files?.[0]
+                if (f) handleGeojsonFileUpload(f)
+              }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingGeojson}
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted disabled:opacity-50 transition-colors"
+              title="Subir polígono GeoJSON"
+            >
+              {uploadingGeojson ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderOpen className="h-4 w-4" />}
+              {geojsonData ? 'Cambiar polígono' : 'Subir polígono'}
+            </button>
+            <button
+              onClick={handleScreen}
+              disabled={screen.isPending}
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+            >
+              {screen.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Satellite className="h-4 w-4" />}
+              Verificar Deforestacion (GFW)
+            </button>
+          </div>
         </div>
       </div>
 
