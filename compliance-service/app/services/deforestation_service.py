@@ -42,9 +42,17 @@ def _point_to_polygon(lat: float, lng: float, buffer: float = BUFFER_DEG) -> dic
 class DeforestationService:
     """Check deforestation alerts via Global Forest Watch API."""
 
-    def __init__(self) -> None:
-        settings = get_settings()
-        self._api_key = settings.GFW_API_KEY
+    def __init__(self, api_key: str | None = None) -> None:
+        # Prefer DB-stored key, fallback to env var
+        self._api_key = api_key or get_settings().GFW_API_KEY
+
+    @classmethod
+    async def from_db(cls, db) -> "DeforestationService":
+        """Build instance with credentials loaded from DB."""
+        from app.services.integration_service import IntegrationCredentialsService
+        svc = IntegrationCredentialsService(db)
+        creds = await svc.get_credentials("gfw")
+        return cls(api_key=creds.get("api_key") or None)
 
     async def check_plot(
         self,

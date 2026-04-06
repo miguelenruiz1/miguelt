@@ -670,7 +670,7 @@ async def submit_to_traces(
     from app.services.traces_service import build_dds_payload, TracesNTService
     dds = build_dds_payload(record_dict, plots)
 
-    svc = TracesNTService()
+    svc = await TracesNTService.from_db(db)
     result = await svc.submit_dds(dds)
 
     # If submitted successfully, update record with reference
