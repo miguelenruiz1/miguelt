@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { BookOpen, Search } from 'lucide-react'
 import { useKardex, useProducts, useWarehouses } from '@/hooks/useInventory'
 
+const fmtCOP = (v: number) => `$${v.toLocaleString('es-CO', { maximumFractionDigits: 2 })}`
+
 export function KardexPage() {
   const [productId, setProductId] = useState('')
   const [warehouseId, setWarehouseId] = useState('')
@@ -56,11 +58,11 @@ export function KardexPage() {
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Costo Unit.</span>
-                    <span className="font-mono">${(e.unit_cost ?? 0).toLocaleString()}</span>
+                    <span className="font-mono">{fmtCOP(e.unit_cost ?? 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Costo Prom.</span>
-                    <span className="font-mono text-primary">${(e.avg_cost ?? 0).toLocaleString()}</span>
+                    <span className="font-mono text-primary">{fmtCOP(e.avg_cost ?? 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Saldo</span>
@@ -68,7 +70,7 @@ export function KardexPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Valor</span>
-                    <span className="font-mono text-muted-foreground">{e.value != null ? `$${e.value.toLocaleString()}` : '—'}</span>
+                    <span className="font-mono text-muted-foreground">{e.value != null ? fmtCOP(e.value) : '—'}</span>
                   </div>
                 </div>
               </div>
@@ -94,10 +96,10 @@ export function KardexPage() {
                   <td className="px-6 py-3 text-xs">{e.type}</td>
                   <td className="px-6 py-3 text-xs text-muted-foreground">{e.reference ?? '—'}</td>
                   <td className="px-6 py-3 text-right font-mono">{e.quantity > 0 ? '+' : ''}{e.quantity}</td>
-                  <td className="px-6 py-3 text-right font-mono">${(e.unit_cost ?? 0).toLocaleString()}</td>
-                  <td className="px-6 py-3 text-right font-mono text-primary">${(e.avg_cost ?? 0).toLocaleString()}</td>
+                  <td className="px-6 py-3 text-right font-mono">{fmtCOP(e.unit_cost ?? 0)}</td>
+                  <td className="px-6 py-3 text-right font-mono text-primary">{fmtCOP(e.avg_cost ?? 0)}</td>
                   <td className="px-6 py-3 text-right font-bold">{e.balance ?? 0}</td>
-                  <td className="px-6 py-3 text-right font-mono text-muted-foreground">{e.value != null ? `$${e.value.toLocaleString()}` : '—'}</td>
+                  <td className="px-6 py-3 text-right font-mono text-muted-foreground">{e.value != null ? fmtCOP(e.value) : '—'}</td>
                 </tr>
               ))}
               {entries.length === 0 && <tr><td colSpan={8} className="px-6 py-12 text-center text-muted-foreground">Sin movimientos para este producto</td></tr>}
