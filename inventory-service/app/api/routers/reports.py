@@ -258,6 +258,80 @@ async def get_pnl_ai_analysis(
         "proveedores_activos": suppliers,
     }
 
+    # 2b. Enrich with inventory intelligence for AI
+    from app.db.models.stock import StockMovement, StockLevel
+    from sqlalchemy import func as sa_func, and_
+
+    # Stock alerts: products below min_stock or reorder_point
+    low_stock = []
+    try:
+        low_q = await db.execute(
+            sa_select(Product.sku, Product.name, Product.min_stock_level, Product.reorder_point,
+                      sa_func.coalesce(sa_func.sum(StockLevel.qty_on_hand), 0).label("qty"))
+            .outerjoin(StockLevel, and_(StockLevel.product_id == Product.id, StockLevel.tenant_id == tenant_id))
+            .where(Product.tenant_id == tenant_id, Product.is_active == True)  # noqa: E712
+            .group_by(Product.id)
+            .having(sa_func.coalesce(sa_func.sum(StockLevel.qty_on_hand), 0) <= Product.reorder_point)
+            .limit(10)
+        )
+        for r in low_q.all():
+            low_stock.append({"sku": r.sku, "nombre": r.name, "stock": float(r.qty), "minimo": r.min_stock_level, "reorden": r.reorder_point})
+    except Exception:
+        pass
+    biz_context["alertas_stock_bajo"] = low_stock
+
+    # Cost variations: products where last purchase cost differs > 30% from previous
+    cost_variations = []
+    try:
+        from app.db.models.cost_history import ProductCostHistory
+        cost_q = await db.execute(
+            sa_select(Product.sku, Product.name, ProductCostHistory.unit_cost_base_uom, ProductCostHistory.supplier_name, ProductCostHistory.received_at)
+            .join(Product, ProductCostHistory.product_id == Product.id)
+            .where(ProductCostHistory.tenant_id == tenant_id, ProductCostHistory.received_at >= dt_from)
+            .order_by(ProductCostHistory.received_at.desc())
+            .limit(30)
+        )
+        cost_by_product = {}
+        for r in cost_q.all():
+            if r.sku not in cost_by_product:
+                cost_by_product[r.sku] = []
+            cost_by_product[r.sku].append({"costo": float(r.unit_cost_base_uom or 0), "proveedor": r.supplier_name, "fecha": str(r.received_at.date()) if r.received_at else ""})
+        for sku, costs in cost_by_product.items():
+            if len(costs) >= 2:
+                latest = costs[0]["costo"]
+                previous = costs[1]["costo"]
+                if previous > 0:
+                    variation = abs(latest - previous) / previous * 100
+                    if variation > 30:
+                        cost_variations.append({"sku": sku, "costo_actual": latest, "costo_anterior": previous, "variacion_pct": round(variation, 1), "proveedor": costs[0]["proveedor"]})
+    except Exception:
+        pass
+    biz_context["variaciones_costo_compra"] = cost_variations
+
+    # Recent movements summary (last 7 days)
+    recent_movements = []
+    try:
+        seven_days_ago = _dt.now(_tz.utc) - _dt.resolution * 7 * 24 * 3600 * 1_000_000
+        mov_q = await db.execute(
+            sa_select(StockMovement.movement_type, sa_func.count().label("qty"), sa_func.sum(StockMovement.cost_total).label("valor"))
+            .where(StockMovement.tenant_id == tenant_id, StockMovement.created_at >= dt_from)
+            .group_by(StockMovement.movement_type)
+        )
+        for r in mov_q.all():
+            recent_movements.append({"tipo": str(r.movement_type), "cantidad": r.qty, "valor_total": float(r.valor or 0)})
+    except Exception:
+        pass
+    biz_context["resumen_movimientos"] = recent_movements
+
+    # Products with negative margin in period
+    productos_margen_negativo = []
+    for p in pnl.get("products", []):
+        s = p.get("summary", {})
+        margin = s.get("gross_margin_pct", 0)
+        if margin is not None and margin < 0:
+            productos_margen_negativo.append({"sku": p.get("product_sku"), "nombre": p.get("product_name"), "margen": round(margin, 1), "perdida": round(s.get("gross_profit", 0), 0)})
+    biz_context["productos_margen_negativo"] = productos_margen_negativo
+
     # 3. Call ai-service (forward user's Bearer token)
     auth_header = request.headers.get("authorization", "")
     try:
