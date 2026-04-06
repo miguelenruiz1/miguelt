@@ -627,6 +627,20 @@ function TenantMemoryInspector() {
                   {JSON.stringify(memory, null, 2)}
                 </pre>
               </details>
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={async () => { if (confirm('¿Borrar toda la memoria de IA de este tenant?')) { await subRequest(`/api/v1/memory/${query}`, { method: 'DELETE' }); refetch() } }}
+                  className="text-xs font-medium text-red-600 hover:text-red-700 bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition"
+                >
+                  Borrar memoria
+                </button>
+                <button
+                  onClick={async () => { if (confirm('¿Borrar último análisis cache?')) { await subRequest(`/api/v1/memory/${query}/last`, { method: 'DELETE' }); refetch() } }}
+                  className="text-xs font-medium text-amber-600 hover:text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition"
+                >
+                  Borrar último análisis
+                </button>
+              </div>
             </div>
           )}
         </div>
