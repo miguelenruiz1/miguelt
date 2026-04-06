@@ -32,6 +32,7 @@ class CompliancePlot(Base):
     geolocation_type: Mapped[str] = mapped_column(Text, nullable=False, default="point")
     lat: Mapped[Decimal | None] = mapped_column(Numeric(10, 6), nullable=True)
     lng: Mapped[Decimal | None] = mapped_column(Numeric(10, 6), nullable=True)
+    geojson_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # Local polygon storage
     geojson_arweave_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     geojson_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     country_code: Mapped[str] = mapped_column(Text, nullable=False, default="CO")
