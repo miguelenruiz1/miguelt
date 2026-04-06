@@ -18,9 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter(prefix="/api/v1/warehouses", tags=["warehouses"])
 
 
-def _ip(request: Request) -> str | None:
-    ff = request.headers.get("X-Forwarded-For")
-    return ff.split(",")[0].strip() if ff else (request.client.host if request.client else None)
+from app.api.deps import get_client_ip as _ip  # noqa: F401
 
 
 @router.get("", response_model=PaginatedWarehouses)

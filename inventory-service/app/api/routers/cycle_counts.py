@@ -26,9 +26,7 @@ from app.services.cycle_count_service import CycleCountService
 router = APIRouter(prefix="/api/v1/cycle-counts", tags=["cycle-counts"])
 
 
-def _ip(request: Request) -> str | None:
-    ff = request.headers.get("X-Forwarded-For")
-    return ff.split(",")[0].strip() if ff else (request.client.host if request.client else None)
+from app.api.deps import get_client_ip as _ip  # noqa: F401
 
 
 def _item_to_out(item) -> dict:

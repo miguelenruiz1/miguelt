@@ -108,7 +108,7 @@ services:
     container_name: user-postgres
     environment:
       POSTGRES_USER: user_svc
-      POSTGRES_PASSWORD: userpass
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD:-userpass}
       POSTGRES_DB: userdb
     volumes:
       - user-postgres-data:/var/lib/postgresql/data
@@ -188,7 +188,7 @@ services:
     container_name: subscription-postgres
     environment:
       POSTGRES_USER: sub_svc
-      POSTGRES_PASSWORD: subpass
+      POSTGRES_PASSWORD: ${SUB_DB_PASSWORD:-subpass}
       POSTGRES_DB: subdb
     volumes:
       - subscription-postgres-data:/var/lib/postgresql/data
@@ -247,7 +247,7 @@ services:
     container_name: inventory-postgres
     environment:
       POSTGRES_USER: inv_svc
-      POSTGRES_PASSWORD: invpass
+      POSTGRES_PASSWORD: ${INV_DB_PASSWORD:-invpass}
       POSTGRES_DB: inventorydb
     volumes:
       - inventory-postgres-data:/var/lib/postgresql/data
@@ -310,7 +310,7 @@ services:
     container_name: integration-postgres
     environment:
       POSTGRES_USER: int_svc
-      POSTGRES_PASSWORD: intpass
+      POSTGRES_PASSWORD: ${INT_DB_PASSWORD:-intpass}
       POSTGRES_DB: integrationdb
     volumes:
       - integration-postgres-data:/var/lib/postgresql/data
@@ -370,7 +370,7 @@ services:
     container_name: compliance-postgres
     environment:
       POSTGRES_USER: cmp_svc
-      POSTGRES_PASSWORD: cmppass
+      POSTGRES_PASSWORD: ${CMP_DB_PASSWORD:-cmppass}
       POSTGRES_DB: compliancedb
     volumes:
       - compliance-postgres-data:/var/lib/postgresql/data
@@ -449,7 +449,7 @@ services:
     container_name: ai-postgres
     environment:
       POSTGRES_USER: ai_svc
-      POSTGRES_PASSWORD: aipass
+      POSTGRES_PASSWORD: ${AI_DB_PASSWORD:-aipass}
       POSTGRES_DB: aidb
     volumes:
       - ai-postgres-data:/var/lib/postgresql/data
@@ -504,7 +504,7 @@ services:
     container_name: media-postgres
     environment:
       POSTGRES_USER: media_svc
-      POSTGRES_PASSWORD: mediapass
+      POSTGRES_PASSWORD: ${MEDIA_DB_PASSWORD:-mediapass}
       POSTGRES_DB: mediadb
     volumes:
       - media-postgres-data:/var/lib/postgresql/data

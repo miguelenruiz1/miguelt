@@ -77,6 +77,9 @@ class Settings(BaseSettings):
     TRACE_ADMIN_KEY: str = "change-me-in-production"
     S2S_SERVICE_TOKEN: str = "s2s-change-me-in-production"  # shared secret for inter-service calls
     JWT_SECRET: str = "change-me-in-production-min-32-chars!!"
+    # Fernet key for encrypting wallet secret keys at rest. In production must be
+    # set to a real Fernet.generate_key() value (validator below enforces this).
+    FERNET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
     USER_SERVICE_URL: str = "http://user-api:8001"
     USER_CACHE_TTL: int = 60
@@ -150,6 +153,19 @@ class Settings(BaseSettings):
         env = os.environ.get("ENV", "dev").lower()
         if env in ("prod", "production") and (not v or v.startswith("s2s-change-me")):
             raise ValueError("S2S_SERVICE_TOKEN must be set in production")
+        return v
+
+    @field_validator("FERNET_KEY")
+    @classmethod
+    def validate_fernet_key(cls, v: str) -> str:
+        import os
+        env = os.environ.get("ENV", "dev").lower()
+        if env in ("prod", "production") and not v:
+            raise ValueError(
+                "FERNET_KEY must be set in production for at-rest encryption "
+                "of wallet secret keys. Generate with: "
+                "python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
+            )
         return v
 
 

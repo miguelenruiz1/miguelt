@@ -197,8 +197,15 @@ class AnalysisService:
         if raw:
             try:
                 return json.loads(raw)
-            except Exception:
-                pass
+            except json.JSONDecodeError as exc:
+                # Memory in Redis is corrupted; log and return empty (the next
+                # analysis will rebuild it). Don't crash the analysis flow.
+                from app.core.logging import get_logger
+                get_logger(__name__).warning(
+                    "tenant_memory_corrupt",
+                    tenant_id=tenant_id,
+                    error=str(exc)[:200],
+                )
         return {}
 
     async def _update_tenant_memory(self, tenant_id: str, analysis: PnLAnalysis, pnl_data: dict) -> None:

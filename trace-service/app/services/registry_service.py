@@ -81,10 +81,12 @@ class RegistryService:
             await self._validate_organization_tenant(organization_id)
 
         from app.clients.solana_client import get_solana_client
+        from app.core.crypto import encrypt_secret
         client = get_solana_client()
         pubkey, secret = client.generate_wallet()
-        # TODO: Encrypt the secret key in production environment
-        encrypted_private_key = secret
+        # Encrypt the wallet secret key at rest using Fernet (FERNET_KEY in prod
+        # is required by settings validator; dev derives from JWT_SECRET).
+        encrypted_private_key = encrypt_secret(secret)
 
         wallet = await self._repo.create(
             wallet_pubkey=pubkey,

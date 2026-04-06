@@ -6,7 +6,7 @@ from typing import Annotated
 
 import httpx
 import redis.asyncio as aioredis
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWTError as JWTError
 
@@ -14,6 +14,17 @@ from app.core.security import decode_token
 from app.core.settings import get_settings
 
 _bearer = HTTPBearer(auto_error=True)
+
+
+def get_client_ip(request: Request) -> str | None:
+    """Extract real client IP from `X-Forwarded-For` (first hop) or socket.
+
+    Centralized so all routers don't have to duplicate the same 4-line helper.
+    """
+    ff = request.headers.get("X-Forwarded-For")
+    if ff:
+        return ff.split(",")[0].strip()
+    return request.client.host if request.client else None
 
 _redis_client: aioredis.Redis | None = None
 _http_client: httpx.AsyncClient | None = None
