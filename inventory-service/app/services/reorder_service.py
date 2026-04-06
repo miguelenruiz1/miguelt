@@ -95,7 +95,14 @@ class ReorderService:
         return created_pos
 
     async def get_reorder_config(self, tenant_id: str) -> list[dict]:
-        """Return reorder configuration for all products with auto_reorder enabled."""
+        """Return reorder configuration for all products with auto_reorder enabled.
+
+        Bulk-fetches stock totals and open PO counts in two GROUP BY queries
+        instead of N+1 per product.
+        """
+        from app.db.models import StockLevel, POStatus, PurchaseOrder, PurchaseOrderLine
+        from sqlalchemy import func as _func
+
         result = await self.db.execute(
             select(Product)
             .options(joinedload(Product.preferred_supplier))
@@ -107,11 +114,43 @@ class ReorderService:
             .order_by(Product.name)
         )
         products = list(result.scalars().unique().all())
+        if not products:
+            return []
+        product_ids = [p.id for p in products]
+
+        # Bulk: available stock per product (qty_on_hand - qty_reserved)
+        stock_q = (
+            select(
+                StockLevel.product_id,
+                _func.coalesce(_func.sum(StockLevel.qty_on_hand - StockLevel.qty_reserved), 0).label("available"),
+            )
+            .where(
+                StockLevel.tenant_id == tenant_id,
+                StockLevel.product_id.in_(product_ids),
+            )
+            .group_by(StockLevel.product_id)
+        )
+        stock_rows = (await self.db.execute(stock_q)).all()
+        stock_map = {r.product_id: float(r.available or 0) for r in stock_rows}
+
+        # Bulk: any open auto PO per product (status in draft/sent/confirmed/partial)
+        OPEN_STATUSES = (POStatus.draft, POStatus.sent, POStatus.confirmed, POStatus.partial)
+        open_po_q = (
+            select(PurchaseOrderLine.product_id)
+            .join(PurchaseOrder, PurchaseOrder.id == PurchaseOrderLine.purchase_order_id)
+            .where(
+                PurchaseOrder.tenant_id == tenant_id,
+                PurchaseOrder.status.in_(OPEN_STATUSES),
+                PurchaseOrderLine.product_id.in_(product_ids),
+            )
+            .distinct()
+        )
+        open_po_rows = (await self.db.execute(open_po_q)).all()
+        has_open_set = {r.product_id for r in open_po_rows}
 
         configs = []
         for p in products:
-            available = await self._get_available_stock(p.id, tenant_id)
-            has_open_po = await self._has_open_auto_po(p.id, tenant_id)
+            available = stock_map.get(p.id, 0.0)
             configs.append({
                 "product_id": p.id,
                 "product_name": p.name,
@@ -120,9 +159,9 @@ class ReorderService:
                 "reorder_quantity": p.reorder_quantity,
                 "preferred_supplier_id": p.preferred_supplier_id,
                 "preferred_supplier_name": p.preferred_supplier.name if p.preferred_supplier else None,
-                "current_stock": float(available),
-                "below_rop": available < p.reorder_point,
-                "has_open_po": has_open_po,
+                "current_stock": available,
+                "below_rop": available < (p.reorder_point or 0),
+                "has_open_po": p.id in has_open_set,
             })
         return configs
 

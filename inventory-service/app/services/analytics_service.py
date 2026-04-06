@@ -26,6 +26,28 @@ class AnalyticsService:
         self.production_repo = ProductionRunRepository(db)
 
     async def overview(self, tenant_id: str) -> dict:
+        """Inventory dashboard overview.
+
+        Cached in Redis for 30s per tenant since this endpoint runs ~15
+        sequential queries on every dashboard load. Acceptable staleness
+        for a KPI dashboard; cache is keyed by tenant.
+        """
+        # Try Redis cache first
+        try:
+            import json
+            import redis.asyncio as aioredis
+            from app.core.settings import get_settings
+            settings = get_settings()
+            rd = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+            cache_key = f"inv:overview:{tenant_id}"
+            cached = await rd.get(cache_key)
+            if cached:
+                await rd.aclose()
+                return json.loads(cached)
+        except Exception:
+            rd = None
+            cache_key = None
+
         summary = await self.stock_service.get_summary(tenant_id)
 
         # Pending POs
@@ -223,7 +245,7 @@ class AnalyticsService:
         expiring_batches_count = await self.batch_repo.count_expiring(tenant_id, 30)
         production_runs_this_month = await self.production_repo.count_this_month(tenant_id)
 
-        return {
+        result = {
             **summary,
             "pending_pos": pending_pos,
             "top_products": top_products,
@@ -239,6 +261,17 @@ class AnalyticsService:
             "latest_ira": latest_ira,
             "pending_cycle_counts": pending_cycle_counts,
         }
+
+        # Persist to cache (best-effort, 30s TTL)
+        if rd is not None and cache_key is not None:
+            try:
+                import json as _json
+                await rd.setex(cache_key, 30, _json.dumps(result, default=str))
+                await rd.aclose()
+            except Exception:
+                pass
+
+        return result
 
     async def occupation(self, tenant_id: str, warehouse_id: str | None = None) -> dict:
         """Calculate warehouse occupation KPIs.
@@ -420,8 +453,12 @@ class AnalyticsService:
             result["by_warehouse"] = by_warehouse
         return result
 
-    async def abc_classification(self, tenant_id: str, months: int = 12) -> dict:
-        """Calculate ABC classification based on movement value over last N months."""
+    async def abc_classification(self, tenant_id: str, months: int = 12, top_n: int = 1000) -> dict:
+        """Calculate ABC classification based on movement value over last N months.
+
+        Caps to top N products by value to bound memory and CPU on tenants
+        with very long product catalogs.
+        """
         import math
         since = datetime.now(timezone.utc) - timedelta(days=months * 30)
 
@@ -439,6 +476,7 @@ class AnalyticsService:
             )
             .group_by(StockMovement.product_id)
             .order_by(func.sum(StockMovement.quantity * func.coalesce(StockMovement.unit_cost, 0)).desc())
+            .limit(top_n)
         )
         result = await self.db.execute(q)
         rows = result.fetchall()
@@ -508,8 +546,18 @@ class AnalyticsService:
             "items": items,
         }
 
-    async def eoq(self, tenant_id: str, ordering_cost: float, holding_cost_pct: float) -> dict:
-        """Calculate Economic Order Quantity for each product with movement history."""
+    async def eoq(
+        self,
+        tenant_id: str,
+        ordering_cost: float,
+        holding_cost_pct: float,
+        top_n: int = 1000,
+    ) -> dict:
+        """Calculate Economic Order Quantity for products with movement history.
+
+        Caps to top N by demand to bound memory/CPU on tenants with thousands
+        of SKUs.
+        """
         import math
         since = datetime.now(timezone.utc) - timedelta(days=365)
 
@@ -528,6 +576,8 @@ class AnalyticsService:
                 ]),
             )
             .group_by(StockMovement.product_id)
+            .order_by(func.sum(StockMovement.quantity).desc())
+            .limit(top_n)
         )
         result = await self.db.execute(q)
         rows = result.fetchall()

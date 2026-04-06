@@ -90,3 +90,59 @@ def require_permission(slug: str):
 def get_tenant_id(request: Request) -> str:
     """Read X-Tenant-Id header, default to 'default'."""
     return request.headers.get("X-Tenant-Id", "default")
+
+
+# ─── Rate limiting (Redis-backed sliding window) ────────────────────────────
+
+
+async def rate_limit(
+    request: Request,
+    bucket: str,
+    max_requests: int,
+    window_seconds: int,
+) -> None:
+    """Token-bucket-ish rate limit keyed by `bucket:client_ip`.
+
+    Raises HTTP 429 when the IP exceeds `max_requests` in `window_seconds`.
+
+    Used on hot login/refresh/register/forgot-password endpoints to prevent
+    brute force and email enumeration.
+    """
+    client_ip = (
+        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+        or (request.client.host if request.client else "unknown")
+    )
+    key = f"rl:{bucket}:{client_ip}"
+    rd = get_redis()
+    try:
+        # Atomic INCR + EXPIRE on first hit
+        count = await rd.incr(key)
+        if count == 1:
+            await rd.expire(key, window_seconds)
+        if count > max_requests:
+            ttl = await rd.ttl(key)
+            raise HTTPException(
+                status_code=429,
+                detail=f"Too many requests. Try again in {max(ttl, 1)}s.",
+                headers={"Retry-After": str(max(ttl, 1))},
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        # Fail open: if Redis is down, don't block legitimate users.
+        pass
+
+
+async def login_rate_limit(request: Request) -> None:
+    """5 login attempts per IP per 15 minutes."""
+    await rate_limit(request, "login", 5, 900)
+
+
+async def register_rate_limit(request: Request) -> None:
+    """10 register attempts per IP per hour (anti DoS / spam)."""
+    await rate_limit(request, "register", 10, 3600)
+
+
+async def password_reset_rate_limit(request: Request) -> None:
+    """3 password reset requests per IP per hour."""
+    await rate_limit(request, "pwreset", 3, 3600)

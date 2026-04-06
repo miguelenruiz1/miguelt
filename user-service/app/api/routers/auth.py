@@ -11,7 +11,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, Upload
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser, get_redis, get_tenant_id
+from app.api.deps import (
+    CurrentUser,
+    get_redis,
+    get_tenant_id,
+    login_rate_limit,
+    password_reset_rate_limit,
+    register_rate_limit,
+)
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -81,6 +88,7 @@ async def _build_user_response(user, db: AsyncSession) -> UserResponse:
 async def register(
     body: RegisterRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    _rl: Annotated[None, Depends(register_rate_limit)] = None,
 ) -> UserResponse:
     # Auto-generate tenant slug from company or username when not provided
     tenant_id = body.tenant_id
@@ -112,6 +120,7 @@ async def login(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     redis: Annotated[aioredis.Redis, Depends(get_redis)],
     tenant_id: Annotated[str, Depends(get_tenant_id)],
+    _rl: Annotated[None, Depends(login_rate_limit)] = None,
 ) -> LoginResponse:
     svc = AuthService(db)
     user = await svc.authenticate(body.email, body.password)
@@ -365,6 +374,7 @@ async def forgot_password(
     body: ForgotPasswordRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
     redis: Annotated[aioredis.Redis, Depends(get_redis)],
+    _rl: Annotated[None, Depends(password_reset_rate_limit)] = None,
 ) -> dict:
     svc = AuthService(db)
     await svc.request_password_reset(body.email, redis)

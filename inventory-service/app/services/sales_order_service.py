@@ -283,9 +283,23 @@ class SalesOrderService:
         """draft → confirmed (or pending_approval if threshold exceeded).
 
         Returns dict: { "order": SalesOrder, "backorder": SalesOrder|None, "split_preview": {...}, "approval_required": bool }
+
+        Takes a SELECT FOR UPDATE on the SO row so two concurrent confirms can't
+        both pass the status check and double-reserve stock.
         """
         from app.services.backorder_service import BackorderService
         from app.services.approval_service import ApprovalService
+        from sqlalchemy import select as _select
+        from app.db.models import SalesOrder
+
+        # Lock the SO row first
+        locked = await self.db.execute(
+            _select(SalesOrder)
+            .where(SalesOrder.id == order_id, SalesOrder.tenant_id == tenant_id)
+            .with_for_update()
+        )
+        if locked.scalar_one_or_none() is None:
+            raise NotFoundError(f"Sales order {order_id!r} not found")
 
         order = await self.get(order_id, tenant_id)
 
@@ -494,7 +508,21 @@ class SalesOrderService:
         return result
 
     async def deliver(self, order_id: str, tenant_id: str, user_id: str | None = None):
-        """shipped → delivered: deducts physical stock, consumes reservations, creates sale movements."""
+        """shipped → delivered: deducts physical stock, consumes reservations, creates sale movements.
+
+        SELECT FOR UPDATE on the SO so concurrent deliver/cancel can't both
+        consume the same reservations or double-deduct stock.
+        """
+        from sqlalchemy import select as _select
+        from app.db.models import SalesOrder
+        locked = await self.db.execute(
+            _select(SalesOrder)
+            .where(SalesOrder.id == order_id, SalesOrder.tenant_id == tenant_id)
+            .with_for_update()
+        )
+        if locked.scalar_one_or_none() is None:
+            raise NotFoundError(f"Sales order {order_id!r} not found")
+
         order = await self.get(order_id, tenant_id)
         # Guard against double-delivery (idempotency)
         if order.delivered_date is not None:
@@ -970,7 +998,20 @@ class SalesOrderService:
         return result
 
     async def cancel(self, order_id: str, tenant_id: str, user_id: str | None = None):
-        """Cancel order. If stock was reserved (confirmed/picking/shipped), release it."""
+        """Cancel order. If stock was reserved (confirmed/picking/shipped), release it.
+
+        SELECT FOR UPDATE so cancel + deliver/ship don't race on reservations.
+        """
+        from sqlalchemy import select as _select
+        from app.db.models import SalesOrder
+        locked = await self.db.execute(
+            _select(SalesOrder)
+            .where(SalesOrder.id == order_id, SalesOrder.tenant_id == tenant_id)
+            .with_for_update()
+        )
+        if locked.scalar_one_or_none() is None:
+            raise NotFoundError(f"Sales order {order_id!r} not found")
+
         order = await self.get(order_id, tenant_id)
         self._assert_transition(order, SalesOrderStatus.canceled)
 

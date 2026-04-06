@@ -557,7 +557,11 @@ class CertificateGenerator:
             }
 
             # ── Step 7: Generate PDF with WeasyPrint ─────────────────────────
-            pdf_bytes = render_certificate_pdf(context)
+            # Run WeasyPrint in a thread so the sync render doesn't block the
+            # event loop for 1-10 seconds (a single PDF generation could
+            # otherwise stall every other request on the worker).
+            import asyncio as _asyncio
+            pdf_bytes = await _asyncio.to_thread(render_certificate_pdf, context)
 
             # ── Step 8: Upload PDF to storage ────────────────────────────────
             pdf_filename = f"{cert_number}.pdf"
