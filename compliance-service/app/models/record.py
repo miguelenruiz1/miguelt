@@ -5,7 +5,7 @@ import uuid
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, ForeignKey, Index, Numeric, Text, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, Date, ForeignKey, Index, Numeric, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -19,11 +19,21 @@ def _utcnow() -> datetime:
 class ComplianceRecord(Base):
     __tablename__ = "compliance_records"
     __table_args__ = (
+        # Note: legacy multi-col UNIQUE replaced by partial indexes in mig 017
+        # but kept here as soft fallback during the transition window.
         UniqueConstraint("tenant_id", "asset_id", "framework_id", name="uq_record_asset_framework"),
         Index("ix_records_tenant", "tenant_id"),
         Index("ix_records_asset", "asset_id"),
         Index("ix_records_framework", "framework_id"),
         Index("ix_records_status", "compliance_status"),
+        CheckConstraint(
+            "compliance_status IN ('compliant','partial','incomplete','declared','ready','non_compliant')",
+            name="ck_records_compliance_status",
+        ),
+        CheckConstraint(
+            "declaration_status IN ('not_required','pending','submitted','accepted','rejected')",
+            name="ck_records_declaration_status",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

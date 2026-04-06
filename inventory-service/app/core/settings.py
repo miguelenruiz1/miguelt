@@ -46,6 +46,16 @@ class Settings(BaseSettings):
     AI_SERVICE_URL: str = "http://ai-api:8006"
 
 
+    @field_validator("DB_POOL_SIZE")
+    @classmethod
+    def validate_pool_size(cls, v: int) -> int:
+        # Ensure prod has enough headroom for concurrent users
+        import os
+        env = os.environ.get("ENV", "dev").lower()
+        if env in ("prod", "production") and v < 20:
+            return 20
+        return v
+
     @field_validator("LOG_LEVEL")
     @classmethod
     def validate_log_level(cls, v: str) -> str:

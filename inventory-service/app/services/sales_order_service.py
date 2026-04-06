@@ -134,6 +134,26 @@ class SalesOrderService:
             raise NotFoundError("Sales order not found")
         return o
 
+    async def _load_products_for_order(self, order, tenant_id: str) -> dict:
+        """Bulk-fetch all products referenced in an order's lines.
+
+        Returns dict[product_id -> Product]. Use this in confirm/ship/deliver/
+        cancel/return flows instead of calling product_repo.get_by_id per line
+        (was an N+1 in every flow).
+        """
+        from sqlalchemy import select as _select
+        from app.db.models import Product
+        product_ids = list({line.product_id for line in order.lines})
+        if not product_ids:
+            return {}
+        rows = await self.db.execute(
+            _select(Product).where(
+                Product.id.in_(product_ids),
+                Product.tenant_id == tenant_id,
+            )
+        )
+        return {p.id: p for p in rows.scalars().all()}
+
     async def create(self, tenant_id: str, data: dict, lines: list[dict], user_id: str | None = None):
         customer = await self.customer_repo.get_by_id(data["customer_id"], tenant_id)
         if not customer:
@@ -330,11 +350,14 @@ class SalesOrderService:
 
         self._assert_transition(order, SalesOrderStatus.confirmed)
 
+        # Bulk pre-fetch products to avoid N+1 in the validation loop below
+        product_map = await self._load_products_for_order(order, tenant_id)
+
         # Validate every line has a warehouse (line-level or SO-level)
         for line in order.lines:
             eff_wh = self._effective_warehouse(line, order)
             if not eff_wh:
-                product = await self.product_repo.get_by_id(line.product_id, tenant_id)
+                product = product_map.get(line.product_id)
                 pname = product.name if product else line.product_id[:8]
                 raise ValidationError(
                     f'No se puede confirmar: "{pname}" no tiene bodega asignada. '
@@ -529,6 +552,9 @@ class SalesOrderService:
             raise ValidationError("Esta orden ya fue entregada.")
         self._assert_transition(order, SalesOrderStatus.delivered)
 
+        # Bulk pre-fetch products to avoid N+1 in deliver loop
+        product_map = await self._load_products_for_order(order, tenant_id)
+
         # Consume reservations (releases qty_reserved; stock deduction handled below)
         from app.services.reservation_service import ReservationService
         reservation_svc = ReservationService(self.db)
@@ -539,7 +565,7 @@ class SalesOrderService:
             for line in order.lines:
                 eff_wh = self._effective_warehouse(line, order)
                 if not eff_wh:
-                    product = await self.product_repo.get_by_id(line.product_id, tenant_id)
+                    product = product_map.get(line.product_id)
                     pname = product.name if product else line.product_id[:8]
                     raise ValidationError(
                         f'No se puede entregar: "{pname}" no tiene bodega asignada.'

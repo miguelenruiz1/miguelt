@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from sqlalchemy import (
     ARRAY,
     Boolean,
+    CheckConstraint,
     ForeignKey,
     Index,
     Integer,
@@ -401,6 +402,10 @@ class Asset(Base):
         Index("ix_assets_custodian", "current_custodian_wallet"),
         Index("ix_assets_state", "state"),
         Index("ix_assets_tenant", "tenant_id"),
+        CheckConstraint(
+            "blockchain_status IN ('PENDING','CONFIRMED','FAILED','SIMULATED','SKIPPED')",
+            name="ck_assets_blockchain_status",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(

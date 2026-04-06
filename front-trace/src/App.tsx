@@ -1,126 +1,150 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { Layout } from '@/components/layout/Layout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import { DashboardPage } from '@/pages/DashboardPage'
-import { WalletsPage } from '@/pages/WalletsPage'
-import { AssetsPage } from '@/pages/AssetsPage'
-import { AssetDetailPage } from '@/pages/AssetDetailPage'
-import { SystemPage } from '@/pages/SystemPage'
-import { TaxonomyPage } from '@/pages/TaxonomyPage'
-import { OrganizationDetailPage } from '@/pages/OrganizationDetailPage'
-import { TrackingBoardPage } from '@/pages/TrackingBoardPage'
-import { WalletDetailPage } from '@/pages/WalletDetailPage'
-import { SettingsPage } from '@/pages/SettingsPage'
-import { LoginPage } from '@/pages/LoginPage'
-import { RegisterPage } from '@/pages/RegisterPage'
-import { ProfilePage } from '@/pages/ProfilePage'
-import { UsersPage } from '@/pages/UsersPage'
-import { RolesPage } from '@/pages/RolesPage'
-import { AuditPage } from '@/pages/AuditPage'
-import { SubscriptionsPage } from '@/pages/SubscriptionsPage'
-import { SubscriptionDetailPage } from '@/pages/SubscriptionDetailPage'
-import { PlansPage } from '@/pages/PlansPage'
-import { MarketplacePage } from '@/pages/MarketplacePage'
-import { PaymentsPage } from '@/pages/PaymentsPage'
-import { CheckoutPage } from '@/pages/CheckoutPage'
-import { CheckoutResultPage } from '@/pages/CheckoutResultPage'
-import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage'
-import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
-import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
-import { EmailProvidersPage } from '@/pages/EmailProvidersPage'
-import { InventoryDashboardPage } from '@/pages/inventory/InventoryDashboardPage'
-import { ProductsPage } from '@/pages/inventory/ProductsPage'
-import { WarehousesPage } from '@/pages/inventory/WarehousesPage'
-import { WarehouseDetailPage } from '@/pages/inventory/WarehouseDetailPage'
-import { MovementsPage } from '@/pages/inventory/MovementsPage'
-import { PurchaseOrdersPage } from '@/pages/inventory/PurchaseOrdersPage'
-import { InventoryConfigPage } from '@/pages/inventory/InventoryConfigPage'
-import { ConfigSectionPage } from '@/pages/inventory/ConfigSectionPage'
-import { ProductTypeListPage } from '@/pages/inventory/ProductTypeListPage'
-import { ProductTypeDetailPage } from '@/pages/inventory/ProductTypeDetailPage'
-import { SupplierTypeListPage } from '@/pages/inventory/SupplierTypeListPage'
-import { SupplierTypeDetailPage } from '@/pages/inventory/SupplierTypeDetailPage'
-import { WarehouseTypeListPage } from '@/pages/inventory/WarehouseTypeListPage'
-import { WarehouseTypeDetailPage } from '@/pages/inventory/WarehouseTypeDetailPage'
-import { MovementTypeListPage } from '@/pages/inventory/MovementTypeListPage'
-import { MovementTypeDetailPage } from '@/pages/inventory/MovementTypeDetailPage'
-import { InventoryReportsPage } from '@/pages/inventory/InventoryReportsPage'
-import { EventsPage } from '@/pages/inventory/EventsPage'
-import { SerialsPage } from '@/pages/inventory/SerialsPage'
-import { BatchesPage } from '@/pages/inventory/BatchesPage'
-import { RecipesPage } from '@/pages/inventory/RecipesPage'
-import { ProductionPage } from '@/pages/inventory/ProductionPage'
-import ProductionDashboardPage from '@/pages/production/ProductionDashboardPage'
-import EmissionsPage from '@/pages/production/EmissionsPage'
-import ReceiptsPage from '@/pages/production/ReceiptsPage'
-import ProductionReportsPage from '@/pages/production/ProductionReportsPage'
-import ResourcesPage from '@/pages/production/ResourcesPage'
-import MRPPage from '@/pages/production/MRPPage'
-import { PurchaseOrderDetailPage } from '@/pages/inventory/PurchaseOrderDetailPage'
-import { CycleCountsPage } from '@/pages/inventory/CycleCountsPage'
-import { CycleCountDetailPage } from '@/pages/inventory/CycleCountDetailPage'
-import { InventoryHelpPage } from '@/pages/inventory/InventoryHelpPage'
-import { InventoryAuditPage } from '@/pages/inventory/InventoryAuditPage'
-import { SalesOrdersPage } from '@/pages/inventory/SalesOrdersPage'
-import { PendingApprovalsPage } from '@/pages/inventory/PendingApprovalsPage'
-import { SalesOrderDetailPage } from '@/pages/inventory/SalesOrderDetailPage'
-import { AlertsPage } from '@/pages/inventory/AlertsPage'
-import { KardexPage } from '@/pages/inventory/KardexPage'
-import { VariantsPage } from '@/pages/inventory/VariantsPage'
-import { ScannerPage } from '@/pages/inventory/ScannerPage'
-import { PickingPage } from '@/pages/inventory/PickingPage'
-import TransportAnalyticsPage from '@/pages/logistics/TransportAnalyticsPage'
-import PublicVerifyPage from '@/pages/PublicVerifyPage'
-import { NotFoundPage } from '@/pages/NotFoundPage'
-import { CustomerDetailPage } from '@/pages/inventory/CustomerDetailPage'
-import { CustomerPortalPage } from '@/pages/inventory/CustomerPortalPage'
-import { EInvoicingPage } from '@/pages/EInvoicingPage'
-import { EInvoicingSandboxPage } from '@/pages/EInvoicingSandboxPage'
-import { EInvoicingResolutionPage } from '@/pages/EInvoicingResolutionPage'
-import { CategoriesPage } from '@/pages/inventory/CategoriesPage'
-import { TaxRatesPage } from '@/pages/inventory/TaxRatesPage'
-import { ReorderConfigPage } from '@/pages/inventory/ReorderConfigPage'
-import { CustomerPricesPage } from '@/pages/inventory/CustomerPricesPage'
-import { PnLPage } from '@/pages/inventory/PnLPage'
-import { UoMPage } from '@/pages/inventory/UoMPage'
-import { PartnersPage } from '@/pages/inventory/PartnersPage'
-import { PartnerDetailPage } from '@/pages/inventory/PartnerDetailPage'
-import { OnboardingPage } from '@/pages/OnboardingPage'
-import { WorkflowBuilderPage } from '@/pages/WorkflowBuilderPage'
-const MediaPage = React.lazy(() => import('@/pages/MediaPage'))
-const WebhooksPage = React.lazy(() => import('@/pages/WebhooksPage'))
+
+// Helper for named exports — avoids the verbose .then(m => ({default: m.X})) repetition.
+const named = <K extends string>(loader: () => Promise<Record<K, React.ComponentType<unknown>>>, key: K) =>
+  lazy(() => loader().then((m) => ({ default: m[key] })))
+
+// ── Auth pages (lazy) ───────────────────────────────────────────────────────
+const LoginPage = named(() => import('@/pages/LoginPage'), 'LoginPage')
+const RegisterPage = named(() => import('@/pages/RegisterPage'), 'RegisterPage')
+const AcceptInvitationPage = named(() => import('@/pages/AcceptInvitationPage'), 'AcceptInvitationPage')
+const ForgotPasswordPage = named(() => import('@/pages/ForgotPasswordPage'), 'ForgotPasswordPage')
+const ResetPasswordPage = named(() => import('@/pages/ResetPasswordPage'), 'ResetPasswordPage')
+const ProfilePage = named(() => import('@/pages/ProfilePage'), 'ProfilePage')
+const OnboardingPage = named(() => import('@/pages/OnboardingPage'), 'OnboardingPage')
+
+// ── Logistics pages (lazy) ──────────────────────────────────────────────────
+const DashboardPage = named(() => import('@/pages/DashboardPage'), 'DashboardPage')
+const WalletsPage = named(() => import('@/pages/WalletsPage'), 'WalletsPage')
+const WalletDetailPage = named(() => import('@/pages/WalletDetailPage'), 'WalletDetailPage')
+const AssetsPage = named(() => import('@/pages/AssetsPage'), 'AssetsPage')
+const AssetDetailPage = named(() => import('@/pages/AssetDetailPage'), 'AssetDetailPage')
+const SystemPage = named(() => import('@/pages/SystemPage'), 'SystemPage')
+const TaxonomyPage = named(() => import('@/pages/TaxonomyPage'), 'TaxonomyPage')
+const OrganizationDetailPage = named(() => import('@/pages/OrganizationDetailPage'), 'OrganizationDetailPage')
+const TrackingBoardPage = named(() => import('@/pages/TrackingBoardPage'), 'TrackingBoardPage')
+const WorkflowBuilderPage = named(() => import('@/pages/WorkflowBuilderPage'), 'WorkflowBuilderPage')
+const PublicVerifyPage = lazy(() => import('@/pages/PublicVerifyPage'))
+const NotFoundPage = named(() => import('@/pages/NotFoundPage'), 'NotFoundPage')
+
+// ── Admin pages (lazy) ──────────────────────────────────────────────────────
+const UsersPage = named(() => import('@/pages/UsersPage'), 'UsersPage')
+const RolesPage = named(() => import('@/pages/RolesPage'), 'RolesPage')
+const AuditPage = named(() => import('@/pages/AuditPage'), 'AuditPage')
+const EmailProvidersPage = named(() => import('@/pages/EmailProvidersPage'), 'EmailProvidersPage')
+
+// ── Subscription / commerce pages (lazy) ────────────────────────────────────
+const SubscriptionsPage = named(() => import('@/pages/SubscriptionsPage'), 'SubscriptionsPage')
+const SubscriptionDetailPage = named(() => import('@/pages/SubscriptionDetailPage'), 'SubscriptionDetailPage')
+const PlansPage = named(() => import('@/pages/PlansPage'), 'PlansPage')
+const MarketplacePage = named(() => import('@/pages/MarketplacePage'), 'MarketplacePage')
+const PaymentsPage = named(() => import('@/pages/PaymentsPage'), 'PaymentsPage')
+const CheckoutPage = named(() => import('@/pages/CheckoutPage'), 'CheckoutPage')
+const CheckoutResultPage = named(() => import('@/pages/CheckoutResultPage'), 'CheckoutResultPage')
+const EInvoicingPage = named(() => import('@/pages/EInvoicingPage'), 'EInvoicingPage')
+const EInvoicingSandboxPage = named(() => import('@/pages/EInvoicingSandboxPage'), 'EInvoicingSandboxPage')
+const EInvoicingResolutionPage = named(() => import('@/pages/EInvoicingResolutionPage'), 'EInvoicingResolutionPage')
+
+// ── Inventory pages (lazy) ──────────────────────────────────────────────────
+const InventoryDashboardPage = named(() => import('@/pages/inventory/InventoryDashboardPage'), 'InventoryDashboardPage')
+const ProductsPage = named(() => import('@/pages/inventory/ProductsPage'), 'ProductsPage')
+const WarehousesPage = named(() => import('@/pages/inventory/WarehousesPage'), 'WarehousesPage')
+const WarehouseDetailPage = named(() => import('@/pages/inventory/WarehouseDetailPage'), 'WarehouseDetailPage')
+const MovementsPage = named(() => import('@/pages/inventory/MovementsPage'), 'MovementsPage')
+const PurchaseOrdersPage = named(() => import('@/pages/inventory/PurchaseOrdersPage'), 'PurchaseOrdersPage')
+const PurchaseOrderDetailPage = named(() => import('@/pages/inventory/PurchaseOrderDetailPage'), 'PurchaseOrderDetailPage')
+const InventoryConfigPage = named(() => import('@/pages/inventory/InventoryConfigPage'), 'InventoryConfigPage')
+const ConfigSectionPage = named(() => import('@/pages/inventory/ConfigSectionPage'), 'ConfigSectionPage')
+const ProductTypeListPage = named(() => import('@/pages/inventory/ProductTypeListPage'), 'ProductTypeListPage')
+const ProductTypeDetailPage = named(() => import('@/pages/inventory/ProductTypeDetailPage'), 'ProductTypeDetailPage')
+const SupplierTypeListPage = named(() => import('@/pages/inventory/SupplierTypeListPage'), 'SupplierTypeListPage')
+const SupplierTypeDetailPage = named(() => import('@/pages/inventory/SupplierTypeDetailPage'), 'SupplierTypeDetailPage')
+const WarehouseTypeListPage = named(() => import('@/pages/inventory/WarehouseTypeListPage'), 'WarehouseTypeListPage')
+const WarehouseTypeDetailPage = named(() => import('@/pages/inventory/WarehouseTypeDetailPage'), 'WarehouseTypeDetailPage')
+const MovementTypeListPage = named(() => import('@/pages/inventory/MovementTypeListPage'), 'MovementTypeListPage')
+const MovementTypeDetailPage = named(() => import('@/pages/inventory/MovementTypeDetailPage'), 'MovementTypeDetailPage')
+const InventoryReportsPage = named(() => import('@/pages/inventory/InventoryReportsPage'), 'InventoryReportsPage')
+const EventsPage = named(() => import('@/pages/inventory/EventsPage'), 'EventsPage')
+const SerialsPage = named(() => import('@/pages/inventory/SerialsPage'), 'SerialsPage')
+const BatchesPage = named(() => import('@/pages/inventory/BatchesPage'), 'BatchesPage')
+const RecipesPage = named(() => import('@/pages/inventory/RecipesPage'), 'RecipesPage')
+const ProductionPage = named(() => import('@/pages/inventory/ProductionPage'), 'ProductionPage')
+const CycleCountsPage = named(() => import('@/pages/inventory/CycleCountsPage'), 'CycleCountsPage')
+const CycleCountDetailPage = named(() => import('@/pages/inventory/CycleCountDetailPage'), 'CycleCountDetailPage')
+const InventoryHelpPage = named(() => import('@/pages/inventory/InventoryHelpPage'), 'InventoryHelpPage')
+const InventoryAuditPage = named(() => import('@/pages/inventory/InventoryAuditPage'), 'InventoryAuditPage')
+const SalesOrdersPage = named(() => import('@/pages/inventory/SalesOrdersPage'), 'SalesOrdersPage')
+const PendingApprovalsPage = named(() => import('@/pages/inventory/PendingApprovalsPage'), 'PendingApprovalsPage')
+const SalesOrderDetailPage = named(() => import('@/pages/inventory/SalesOrderDetailPage'), 'SalesOrderDetailPage')
+const AlertsPage = named(() => import('@/pages/inventory/AlertsPage'), 'AlertsPage')
+const KardexPage = named(() => import('@/pages/inventory/KardexPage'), 'KardexPage')
+const VariantsPage = named(() => import('@/pages/inventory/VariantsPage'), 'VariantsPage')
+const ScannerPage = named(() => import('@/pages/inventory/ScannerPage'), 'ScannerPage')
+const PickingPage = named(() => import('@/pages/inventory/PickingPage'), 'PickingPage')
+const CustomerDetailPage = named(() => import('@/pages/inventory/CustomerDetailPage'), 'CustomerDetailPage')
+const CustomerPortalPage = named(() => import('@/pages/inventory/CustomerPortalPage'), 'CustomerPortalPage')
+const CategoriesPage = named(() => import('@/pages/inventory/CategoriesPage'), 'CategoriesPage')
+const TaxRatesPage = named(() => import('@/pages/inventory/TaxRatesPage'), 'TaxRatesPage')
+const ReorderConfigPage = named(() => import('@/pages/inventory/ReorderConfigPage'), 'ReorderConfigPage')
+const CustomerPricesPage = named(() => import('@/pages/inventory/CustomerPricesPage'), 'CustomerPricesPage')
+const PnLPage = named(() => import('@/pages/inventory/PnLPage'), 'PnLPage')
+const UoMPage = named(() => import('@/pages/inventory/UoMPage'), 'UoMPage')
+const PartnersPage = named(() => import('@/pages/inventory/PartnersPage'), 'PartnersPage')
+const PartnerDetailPage = named(() => import('@/pages/inventory/PartnerDetailPage'), 'PartnerDetailPage')
+
+// ── Production pages (lazy, default exports) ───────────────────────────────
+const ProductionDashboardPage = lazy(() => import('@/pages/production/ProductionDashboardPage'))
+const EmissionsPage = lazy(() => import('@/pages/production/EmissionsPage'))
+const ReceiptsPage = lazy(() => import('@/pages/production/ReceiptsPage'))
+const ProductionReportsPage = lazy(() => import('@/pages/production/ProductionReportsPage'))
+const ResourcesPage = lazy(() => import('@/pages/production/ResourcesPage'))
+const MRPPage = lazy(() => import('@/pages/production/MRPPage'))
+const TransportAnalyticsPage = lazy(() => import('@/pages/logistics/TransportAnalyticsPage'))
+// ── Misc lazy ───────────────────────────────────────────────────────────────
+const MediaPage = lazy(() => import('@/pages/MediaPage'))
+const WebhooksPage = lazy(() => import('@/pages/WebhooksPage'))
+
+// Guards (synchronous — used as wrappers, not pages)
 import { ModuleGuard } from '@/components/inventory/ModuleGuard'
 import { ComplianceGuard } from '@/components/compliance/ComplianceGuard'
-
-// ── Compliance pages (lazy-loaded) ──────────────────────────────────────────
-const FrameworksPage = React.lazy(() => import('@/pages/compliance/FrameworksPage'))
-const ActivationsPage = React.lazy(() => import('@/pages/compliance/ActivationsPage'))
-const PlotsPage = React.lazy(() => import('@/pages/compliance/PlotsPage'))
-const PlotDetailPage = React.lazy(() => import('@/pages/compliance/PlotDetailPage').then(m => ({ default: m.PlotDetailPage })))
-const RecordsPage = React.lazy(() => import('@/pages/compliance/RecordsPage'))
-const RecordDetailPage = React.lazy(() => import('@/pages/compliance/RecordDetailPage'))
-const CertificatesPage = React.lazy(() => import('@/pages/compliance/CertificatesPage'))
-const VerifyCertificatePage = React.lazy(() => import('@/pages/compliance/VerifyCertificatePage'))
-const ComplianceIntegrationsPage = React.lazy(() => import('@/pages/compliance/IntegrationsPage').then(m => ({ default: m.ComplianceIntegrationsPage })))
 import { FeatureGuard } from '@/components/inventory/FeatureGuard'
-import { PlatformDashboardPage } from '@/pages/platform/PlatformDashboardPage'
-import { PlatformTenantsPage } from '@/pages/platform/PlatformTenantsPage'
-import { PlatformTenantDetailPage } from '@/pages/platform/PlatformTenantDetailPage'
-import { PlatformAnalyticsPage } from '@/pages/platform/PlatformAnalyticsPage'
-import { PlatformSalesPage } from '@/pages/platform/PlatformSalesPage'
-import { PlatformTeamPage } from '@/pages/platform/PlatformTeamPage'
-import { PlatformOnboardPage } from '@/pages/platform/PlatformOnboardPage'
-import { PlatformUsersPage } from '@/pages/platform/PlatformUsersPage'
-import { PlatformAiSettingsPage } from '@/pages/platform/PlatformAiSettingsPage'
-import { BillingPage } from '@/pages/settings/BillingPage'
+
+// ── Compliance pages (lazy) ────────────────────────────────────────────────
+const FrameworksPage = lazy(() => import('@/pages/compliance/FrameworksPage'))
+const ActivationsPage = lazy(() => import('@/pages/compliance/ActivationsPage'))
+const PlotsPage = lazy(() => import('@/pages/compliance/PlotsPage'))
+const PlotDetailPage = named(() => import('@/pages/compliance/PlotDetailPage'), 'PlotDetailPage')
+const RecordsPage = lazy(() => import('@/pages/compliance/RecordsPage'))
+const RecordDetailPage = lazy(() => import('@/pages/compliance/RecordDetailPage'))
+const CertificatesPage = lazy(() => import('@/pages/compliance/CertificatesPage'))
+const VerifyCertificatePage = lazy(() => import('@/pages/compliance/VerifyCertificatePage'))
+const ComplianceIntegrationsPage = named(() => import('@/pages/compliance/IntegrationsPage'), 'ComplianceIntegrationsPage')
+
+// ── Platform pages (lazy) ──────────────────────────────────────────────────
+const PlatformDashboardPage = named(() => import('@/pages/platform/PlatformDashboardPage'), 'PlatformDashboardPage')
+const PlatformTenantsPage = named(() => import('@/pages/platform/PlatformTenantsPage'), 'PlatformTenantsPage')
+const PlatformTenantDetailPage = named(() => import('@/pages/platform/PlatformTenantDetailPage'), 'PlatformTenantDetailPage')
+const PlatformAnalyticsPage = named(() => import('@/pages/platform/PlatformAnalyticsPage'), 'PlatformAnalyticsPage')
+const PlatformSalesPage = named(() => import('@/pages/platform/PlatformSalesPage'), 'PlatformSalesPage')
+const PlatformTeamPage = named(() => import('@/pages/platform/PlatformTeamPage'), 'PlatformTeamPage')
+const PlatformOnboardPage = named(() => import('@/pages/platform/PlatformOnboardPage'), 'PlatformOnboardPage')
+const PlatformUsersPage = named(() => import('@/pages/platform/PlatformUsersPage'), 'PlatformUsersPage')
+const PlatformAiSettingsPage = named(() => import('@/pages/platform/PlatformAiSettingsPage'), 'PlatformAiSettingsPage')
+const PlatformCmsPage = named(() => import('@/pages/platform/PlatformCmsPage'), 'PlatformCmsPage')
+const PlatformCmsEditorPage = named(() => import('@/pages/platform/PlatformCmsEditorPage'), 'PlatformCmsEditorPage')
+
+// ── Other pages (lazy) ─────────────────────────────────────────────────────
+const SettingsPage = named(() => import('@/pages/SettingsPage'), 'SettingsPage')
+const BillingPage = named(() => import('@/pages/settings/BillingPage'), 'BillingPage')
+const LandingPage = named(() => import('@/pages/LandingPage'), 'LandingPage')
+const EudrLandingPage = named(() => import('@/pages/EudrLandingPage'), 'EudrLandingPage')
+const CmsPublicPage = named(() => import('@/pages/CmsPublicPage'), 'CmsPublicPage')
+
+// Critical synchronous imports (small + always needed at root)
 import { PlanLimitModal } from '@/components/PlanLimitModal'
-import { LandingPage } from '@/pages/LandingPage'
-import { useAuthStore } from '@/store/auth'
-import { EudrLandingPage } from '@/pages/EudrLandingPage'
-import { CmsPublicPage } from '@/pages/CmsPublicPage'
-import { PlatformCmsPage } from '@/pages/platform/PlatformCmsPage'
-import { PlatformCmsEditorPage } from '@/pages/platform/PlatformCmsEditorPage'
 
 // Show landing if not logged in, dashboard if logged in
 const router = createBrowserRouter([
@@ -903,10 +927,23 @@ const router = createBrowserRouter([
   { path: '*', element: <NotFoundPage /> },
 ])
 
+function PageFallback() {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      minHeight: '60vh', color: '#888', fontSize: 14,
+    }}>
+      Cargando…
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <>
-      <RouterProvider router={router} />
+      <Suspense fallback={<PageFallback />}>
+        <RouterProvider router={router} />
+      </Suspense>
       <PlanLimitModal />
     </>
   )
