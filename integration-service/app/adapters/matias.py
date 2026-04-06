@@ -193,6 +193,12 @@ class MatiasAdapter(BaseAdapter):
         elif city:
             full_address = city
 
+        # Resolve municipality_id from city name if default (149)
+        from app.data.municipalities import resolve_municipality_id
+        raw_municipality = customer.get("municipality_id", 149)
+        if raw_municipality == 149 and city:
+            raw_municipality = resolve_municipality_id(city)
+
         result = {
             "identification_number": nit,
             "dni": nit,
@@ -202,7 +208,7 @@ class MatiasAdapter(BaseAdapter):
             "email": customer.get("email", ""),
             "phone": customer.get("phone", ""),
             "address": full_address or "Sin dirección",
-            "municipality_id": customer.get("municipality_id", 149),
+            "municipality_id": raw_municipality,
             "type_document_identification_id": type_doc_id,
             "type_organization_id": org_type,
             "type_regime_id": regime,
@@ -247,6 +253,8 @@ class MatiasAdapter(BaseAdapter):
         subtotal = float(data.get("subtotal", data.get("subtotal_after_discount", 0)))
         tax_amount = float(data.get("tax_amount", 0))
         total = float(data.get("total", subtotal + tax_amount))
+        total_retention = float(data.get("total_retention", 0))
+        total_payable = float(data.get("total_payable", total - total_retention))
 
         payload = {
             "type_document_id": 7,  # Factura electrónica de venta (sandbox/habilitación)
@@ -262,7 +270,7 @@ class MatiasAdapter(BaseAdapter):
                 "line_extension_amount": f"{subtotal:.2f}",
                 "tax_exclusive_amount": f"{subtotal:.2f}",
                 "tax_inclusive_amount": f"{total:.2f}",
-                "payable_amount": f"{total:.2f}",
+                "payable_amount": f"{total_payable:.2f}",
             },
             "tax_totals": [{
                 "tax_id": 1,
@@ -270,12 +278,18 @@ class MatiasAdapter(BaseAdapter):
                 "tax_amount": f"{tax_amount:.2f}",
                 "taxable_amount": f"{subtotal:.2f}",
             }] if tax_amount > 0 else [],
+            "withholding_tax_totals": [{
+                "tax_id": 6,  # Retención en la fuente
+                "percent": f"{(total_retention / subtotal * 100):.2f}" if subtotal > 0 and total_retention > 0 else "0.00",
+                "tax_amount": f"{total_retention:.2f}",
+                "taxable_amount": f"{subtotal:.2f}",
+            }] if total_retention > 0 else [],
             "payments": [{
-                "payment_form_id": data.get("payment_form", 1),  # 1=Contado, 2=Crédito
-                "payment_method_id": 1,  # Instrumento no definido (DIAN catalog)
-                "means_payment_id": data.get("payment_method", 10),  # 10=Efectivo, 42=Consignación, 47=Transferencia, 48=TC, 49=TD
+                "payment_form_id": data.get("payment_form", 1),
+                "payment_method_id": 1,
+                "means_payment_id": data.get("payment_method", 10),
                 "payment_due_date": self._calc_due_date(data),
-                "value_paid": f"{total:.2f}",
+                "value_paid": f"{total_payable:.2f}",
             }],
             "lines": invoice_lines,
             "notes": data.get("notes", ""),
