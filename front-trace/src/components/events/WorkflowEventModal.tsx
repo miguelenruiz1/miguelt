@@ -21,6 +21,18 @@ import { resolveIcon, colorStyle } from '@/lib/icon-map'
 import { Upload, X, FileText, Image, CheckCircle2, AlertTriangle } from 'lucide-react'
 import type { Asset, AvailableAction, DocumentRequirement } from '@/types/api'
 
+/**
+ * Detect events that need a pass/fail result selector.
+ * Covers: canonical 'QC' slug, backend flag `is_qc`, and `has_pass_fail`
+ * (set by the workflow service when there are >1 transitions sharing event_type_slug).
+ */
+function hasPassFailResult(action: AvailableAction): boolean {
+  if (action.event_type_slug === 'QC') return true
+  if ((action as { has_pass_fail?: boolean }).has_pass_fail === true) return true
+  if ((action.event_type as { is_qc?: boolean } | undefined)?.is_qc === true) return true
+  return false
+}
+
 function buildSchema(action: AvailableAction) {
   const et = action.event_type
   const fields: Record<string, z.ZodTypeAny> = {}
@@ -46,14 +58,7 @@ function buildSchema(action: AvailableAction) {
     fields.notes = z.string().optional()
   }
 
-  // QC / pass-fail event needs result selector. Detect by:
-  //  - canonical slug 'QC'
-  //  - workflow event flag is_qc / has_pass_fail (if defined)
-  const isPassFail =
-    action.event_type_slug === 'QC' ||
-    (et as { is_qc?: boolean })?.is_qc === true ||
-    (action as { has_pass_fail?: boolean })?.has_pass_fail === true
-  if (isPassFail) {
+  if (hasPassFailResult(action)) {
     fields.result = z.enum(['pass', 'fail'], { required_error: 'Selecciona el resultado' })
   }
 
@@ -133,7 +138,7 @@ export function WorkflowEventModal({ asset, action, open, onClose }: Props) {
 
       // 1. Create the event
       const resp = await recordEvent.mutateAsync({
-        data: {
+        payload: {
           event_type: eventType,
           to_wallet: data.to_wallet?.trim() || undefined,
           location: data.location_label ? { label: data.location_label } : undefined,
@@ -246,8 +251,8 @@ export function WorkflowEventModal({ asset, action, open, onClose }: Props) {
           <p className="text-xs text-amber-600 -mt-2">No hay otros custodios activos.</p>
         )}
 
-        {/* QC result selector */}
-        {action.event_type_slug === 'QC' && (
+        {/* Pass/Fail result selector (QC + custom slugs with multiple outputs) */}
+        {hasPassFailResult(action) && (
           <Select
             label="Resultado *"
             error={(errors as Record<string, { message?: string }>).result?.message}

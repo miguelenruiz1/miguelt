@@ -60,14 +60,35 @@ function invalidateAsset(qc: ReturnType<typeof useQueryClient>, id: string) {
   qc.invalidateQueries({ queryKey: ['assets', 'board'] })
 }
 
-/** Generic event recorder — the only way to record custody events. */
+/** Generic event recorder — the only way to record custody events.
+ *
+ * Accepts either:
+ *   - A `GenericEventRequest` directly (legacy callers — backwards compatible)
+ *   - A wrapper `{ payload: GenericEventRequest, adminKey?: string }` for events
+ *     that require X-Admin-Key (e.g. RELEASED).
+ */
+type RecordEventInput =
+  | GenericEventRequest
+  | { payload: GenericEventRequest; adminKey?: string }
+
+function isWrapper(
+  input: RecordEventInput,
+): input is { payload: GenericEventRequest; adminKey?: string } {
+  return (
+    typeof input === 'object'
+    && input !== null
+    && 'payload' in input
+    && typeof (input as { payload: unknown }).payload === 'object'
+  )
+}
+
 export function useRecordEvent(assetId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: GenericEventRequest | { data: GenericEventRequest; adminKey?: string }) => {
-      const { data, adminKey } =
-        'data' in input ? input : { data: input, adminKey: undefined }
-      return api.assets.recordEvent(assetId, data, newUUID(), adminKey)
+    mutationFn: (input: RecordEventInput) => {
+      const payload = isWrapper(input) ? input.payload : input
+      const adminKey = isWrapper(input) ? input.adminKey : undefined
+      return api.assets.recordEvent(assetId, payload, newUUID(), adminKey)
     },
     onSuccess: () => invalidateAsset(qc, assetId),
   })

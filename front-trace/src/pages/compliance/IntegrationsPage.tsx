@@ -63,18 +63,24 @@ function IntegrationCard({ integration }: { integration: Integration }) {
 
   const handleChange = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }))
 
-  // Seed `env` with the current value so the first save sends an explicit selection.
+  // Seed `env` with the current value so EVERY save sends an explicit selection.
+  // Re-runs after refetch (updated_at changes) so consecutive saves work too.
   useEffect(() => {
     if (integration.fields.includes('env') && form.env === undefined) {
       const current = integration.credentials.env ?? 'acceptance'
       setForm(f => ({ ...f, env: current }))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [integration.provider])
+  }, [integration.provider, integration.credentials.env, integration.updated_at])
 
   const handleSave = async () => {
     try {
-      await updateMut.mutateAsync({ provider: integration.provider, data: form })
+      // Always send `env` explicitly when applicable (defensive)
+      const payload = { ...form }
+      if (integration.fields.includes('env') && !payload.env) {
+        payload.env = integration.credentials.env ?? 'acceptance'
+      }
+      await updateMut.mutateAsync({ provider: integration.provider, data: payload })
       toast.success(`Credenciales de ${integration.display_name} guardadas`)
       setForm({})
     } catch (e: any) {

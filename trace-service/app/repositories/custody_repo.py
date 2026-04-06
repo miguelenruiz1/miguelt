@@ -12,6 +12,15 @@ from app.db.models import Asset, CustodyEvent
 from app.domain.types import AssetState
 
 
+# Sentinel for "field not provided" — distinguishes from explicit None.
+class _Unset:
+    """Marker class for unset parameters; allows clearing a column to NULL explicitly."""
+    pass
+
+
+_UNSET = _Unset()
+
+
 class AssetRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._db = session
@@ -103,10 +112,15 @@ class AssetRepository:
         blockchain_tree_address: str | None = None,
         blockchain_tx_signature: str | None = None,
         blockchain_status: str | None = None,
-        blockchain_error: str | None = None,
+        blockchain_error: str | None | _Unset = _UNSET,
         is_compressed: bool | None = None,
     ) -> None:
-        """Update only blockchain_* fields on an Asset."""
+        """Update only blockchain_* fields on an Asset.
+
+        `blockchain_error` uses a sentinel: pass `None` explicitly to clear it,
+        or omit it (`_UNSET`) to leave it unchanged. This lets a successful
+        retry mint clear a stale error message.
+        """
         updates: dict[str, Any] = {}
         if blockchain_asset_id is not None:
             updates["blockchain_asset_id"] = blockchain_asset_id
@@ -120,7 +134,7 @@ class AssetRepository:
             updates["blockchain_status"] = blockchain_status
         if is_compressed is not None:
             updates["is_compressed"] = is_compressed
-        if blockchain_error is not None:
+        if blockchain_error is not _UNSET:
             updates["blockchain_error"] = blockchain_error
         if updates:
             await self._db.execute(

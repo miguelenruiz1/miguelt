@@ -83,9 +83,9 @@ def create_app() -> FastAPI:
             "http://localhost:5173",
             "http://localhost:3000",
         ],
-        # Cloud Run canonical pattern: <service>-<hash>-<region>.run.app
-        # plus localhost variants and trace.app subdomains.
-        allow_origin_regex=r"^https?://(localhost(:\d+)?|[a-z0-9-]+-[a-z0-9-]+\.[a-z]{2}\.run\.app|[a-z0-9-]+\.trace\.app)$",
+        # Cloud Run canonical: <svc>-<hash>-<region>.a.run.app (4 segments,
+        # the third segment is always literal "a"). Also allow localhost and trace.app.
+        allow_origin_regex=r"^https?://(localhost(:\d+)?|[a-z0-9-]+\.a\.run\.app|[a-z0-9-]+\.trace\.app)$",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

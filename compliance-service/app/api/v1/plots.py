@@ -196,7 +196,7 @@ async def update_plot(
                     select(ComplianceRecord).where(ComplianceRecord.id == rec_id)
                 )
             ).scalar_one_or_none()
-            if rec and rec.compliance_status in ("compliant", "partial", "ready"):
+            if rec and rec.compliance_status in ("compliant", "partial", "ready", "declared"):
                 rec.compliance_status = "incomplete"
                 rec.last_validated_at = None
         await db.flush()

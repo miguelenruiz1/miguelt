@@ -340,7 +340,7 @@ class CustodyService:
     async def arrived(
         self, asset_id: uuid.UUID, req: ArrivedRequest
     ) -> tuple[Asset, CustodyEvent]:
-        asset = await self._get_asset_or_404(asset_id)
+        asset = await self._get_asset_locked(asset_id)
         await self._assert_current_wallet_active(asset)
         target_state = await self._assert_valid_transition(asset, "ARRIVED")
 
@@ -364,7 +364,7 @@ class CustodyService:
     async def loaded(
         self, asset_id: uuid.UUID, req: LoadedRequest
     ) -> tuple[Asset, CustodyEvent]:
-        asset = await self._get_asset_or_404(asset_id)
+        asset = await self._get_asset_locked(asset_id)
         await self._assert_current_wallet_active(asset)
         target_state = await self._assert_valid_transition(asset, "LOADED")
 
@@ -388,7 +388,7 @@ class CustodyService:
     async def qc(
         self, asset_id: uuid.UUID, req: QCRequest
     ) -> tuple[Asset, CustodyEvent]:
-        asset = await self._get_asset_or_404(asset_id)
+        asset = await self._get_asset_locked(asset_id)
         await self._assert_current_wallet_active(asset)
 
         result = req.result.lower()

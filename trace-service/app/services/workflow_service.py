@@ -378,11 +378,11 @@ class WorkflowService:
             self._tenant_id, from_state.id
         )
 
-        # Count transitions per event_type_slug — used to detect pass/fail events
-        # (more than one transition with the same slug means the user must choose)
-        slug_counts: dict[str | None, int] = {}
+        # Bucket transitions by event_type_slug so we can expose ALL outputs
+        # (not just the first) when an event has multiple outcomes (pass/fail/hold).
+        outputs_by_slug: dict[str | None, list[Any]] = {}
         for t in transitions:
-            slug_counts[t.event_type_slug] = slug_counts.get(t.event_type_slug, 0) + 1
+            outputs_by_slug.setdefault(t.event_type_slug, []).append(t)
 
         # Group by event_type_slug to avoid duplicate actions
         seen_events: set[str | None] = set()
@@ -414,6 +414,19 @@ class WorkflowService:
                         "requires_admin": et.requires_admin,
                     }
 
+            slug_outputs = outputs_by_slug.get(evt_slug, [t])
+            outputs = [
+                {
+                    "transition_id": str(out.id),
+                    "slug": out.to_state.slug if out.to_state else None,
+                    "label": out.to_state.label if out.to_state else None,
+                    "color": out.to_state.color if out.to_state else None,
+                    "icon": out.to_state.icon if out.to_state else None,
+                    "is_terminal": out.to_state.is_terminal if out.to_state else False,
+                }
+                for out in slug_outputs
+            ]
+
             actions.append({
                 "transition_id": str(t.id),
                 "to_state": {
@@ -428,7 +441,9 @@ class WorkflowService:
                 "event_type": event_type,
                 # True when the same event_type leads to >1 possible target state
                 # (e.g. QC pass / QC fail) — frontend should show a result selector.
-                "has_pass_fail": slug_counts.get(evt_slug, 1) > 1,
+                "has_pass_fail": len(slug_outputs) > 1,
+                # Full list of all possible target states for this event type.
+                "outputs": outputs,
             })
 
         return actions
