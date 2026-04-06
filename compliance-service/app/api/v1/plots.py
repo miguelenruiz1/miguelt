@@ -223,17 +223,28 @@ async def screen_deforestation(
     if plot is None:
         raise NotFoundError(f"Plot '{plot_id}' not found")
 
-    # Build geojson if available
+    # Build geojson — prefer local polygon, fallback to point buffer
     geojson = None
-    if plot.geojson_arweave_url:
-        # For now, use point buffer — polygon fetch from arweave would need async download
-        pass
+    if plot.geojson_data:
+        # Local polygon stored in DB
+        geojson = plot.geojson_data
+    elif plot.geojson_arweave_url:
+        # Try to fetch from Arweave (decentralized storage)
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10.0) as http:
+                resp = await http.get(plot.geojson_arweave_url)
+                if resp.status_code == 200:
+                    geojson = resp.json()
+        except Exception:
+            pass  # Fall back to point buffer
 
     svc = await DeforestationService.from_db(db)
     result = await svc.check_plot(
         lat=plot.lat,
         lng=plot.lng,
         geojson=geojson,
+        area_ha=plot.plot_area_ha,
     )
 
     # Auto-update plot flags based on result

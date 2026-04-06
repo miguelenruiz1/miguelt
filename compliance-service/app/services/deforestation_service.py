@@ -25,8 +25,18 @@ DATASET = "gfw_integrated_alerts"
 BUFFER_DEG = 0.005  # ~500m buffer for point queries
 
 
-def _point_to_polygon(lat: float, lng: float, buffer: float = BUFFER_DEG) -> dict:
-    """Create a small square polygon around a point for GFW query."""
+def _point_to_polygon(lat: float, lng: float, buffer: float = BUFFER_DEG, area_ha: float | None = None) -> dict:
+    """Create a square polygon around a point for GFW query.
+
+    If area_ha is provided, calculates buffer to match that area.
+    Otherwise uses the default ~500m buffer.
+    """
+    if area_ha and area_ha > 0:
+        # 1 hectare = 10,000 m². Side of square = sqrt(area_m2)
+        # 1 degree latitude ≈ 111,320 m
+        import math
+        side_m = math.sqrt(area_ha * 10_000)
+        buffer = (side_m / 2) / 111_320  # half-side in degrees
     return {
         "type": "Polygon",
         "coordinates": [[
@@ -60,6 +70,7 @@ class DeforestationService:
         lng: float | Decimal | None,
         geojson: dict | None = None,
         cutoff_date: str = EUDR_CUTOFF,
+        area_ha: float | Decimal | None = None,
     ) -> dict[str, Any]:
         """Check deforestation alerts for a plot.
 
@@ -84,11 +95,17 @@ class DeforestationService:
                 "source": "none",
             }
 
-        # Build geometry
-        if geojson and geojson.get("type") == "Polygon":
-            geometry = geojson
+        # Build geometry — prefer real polygon, fallback to area-based square
+        if geojson:
+            # Accept Polygon, MultiPolygon, Feature, or FeatureCollection
+            if geojson.get("type") == "FeatureCollection" and geojson.get("features"):
+                geometry = geojson["features"][0].get("geometry", geojson)
+            elif geojson.get("type") == "Feature":
+                geometry = geojson.get("geometry", geojson)
+            else:
+                geometry = geojson
         elif lat is not None and lng is not None:
-            geometry = _point_to_polygon(float(lat), float(lng))
+            geometry = _point_to_polygon(float(lat), float(lng), area_ha=float(area_ha) if area_ha else None)
         else:
             return {
                 "deforestation_free": None,
