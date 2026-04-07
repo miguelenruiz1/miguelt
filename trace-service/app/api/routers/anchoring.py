@@ -89,10 +89,20 @@ async def submit_anchor(
             message="Anchor request already exists",
         )
 
+    # Accept either UUID or slug — slug "default" is common from inventory-service.
     try:
         tenant_uuid = uuid.UUID(body.tenant_id)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid tenant_id UUID")
+        if body.tenant_id == "default":
+            tenant_uuid = uuid.UUID("00000000-0000-0000-0000-000000000001")
+        else:
+            from app.db.models import Tenant
+            from sqlalchemy import select
+            res = await db.execute(select(Tenant).where(Tenant.slug == body.tenant_id))
+            tenant = res.scalar_one_or_none()
+            if tenant is None:
+                raise HTTPException(status_code=404, detail=f"Tenant '{body.tenant_id}' not found")
+            tenant_uuid = tenant.id
 
     ar = await repo.create(
         tenant_id=tenant_uuid,

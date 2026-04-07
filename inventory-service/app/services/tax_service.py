@@ -161,22 +161,37 @@ class TaxService:
     async def recalculate_so_taxes(self, so) -> None:
         """Recalculate all line taxes and update SO totals.
 
-        Call after any change to lines, quantities, or prices.
+        Persists *post-discount* values on each line so per-line aggregates
+        always agree with SO totals — previously the lines stored pre-discount
+        values while the SO totals were post-discount, causing DIAN reject and
+        confusing customer-facing PDFs. Also fixes the tax_rate_pct double
+        division by 100 (the column is Numeric(5,4) stored as a fraction).
         """
         total_tax = Decimal("0")
         total_retention = Decimal("0")
         subtotal_before_tax = Decimal("0")
 
+        so_disc_pct = Decimal(str(so.discount_pct or 0))
+        so_disc_factor = (Decimal("1") - so_disc_pct / Decimal("100")) if so_disc_pct > 0 else Decimal("1")
+
         for line in so.lines:
             line_subtotal = Decimal(str(line.unit_price)) * Decimal(str(line.qty_ordered))
             if line.discount_pct:
-                line_subtotal *= (1 - Decimal(str(line.discount_pct)) / 100)
-            line_subtotal = line_subtotal.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                line_subtotal *= (Decimal("1") - Decimal(str(line.discount_pct)) / Decimal("100"))
+            # Apply global SO discount on every line so persisted line totals
+            # match the SO totals.
+            line_subtotal = (line_subtotal * so_disc_factor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
-            tax_rate_pct = Decimal(str(line.tax_rate_pct or line.tax_rate or 0))
+            # tax_rate_pct is Numeric(5,4) and stored as a *fraction* (0.19);
+            # the legacy `tax_rate` column was a percent (19). Distinguish so
+            # we don't divide by 100 twice.
+            if getattr(line, "tax_rate_pct", None) is not None:
+                tax_rate_frac = Decimal(str(line.tax_rate_pct))
+            else:
+                tax_rate_frac = Decimal(str(line.tax_rate or 0)) / Decimal("100")
             retention_pct = Decimal(str(line.retention_pct or 0)) if getattr(line, "retention_pct", None) else None
 
-            taxes = self.calculate_line_taxes(line_subtotal, tax_rate_pct, retention_pct)
+            taxes = self.calculate_line_taxes(line_subtotal, tax_rate_frac, retention_pct)
 
             line.tax_amount = taxes["tax_amount"]
             line.retention_amount = taxes["retention_amount"]
@@ -185,13 +200,6 @@ class TaxService:
             total_tax += taxes["tax_amount"]
             total_retention += taxes["retention_amount"]
             subtotal_before_tax += line_subtotal
-
-        # Apply global SO discount if any
-        if so.discount_pct and float(so.discount_pct) > 0:
-            discount_factor = Decimal("1") - Decimal(str(so.discount_pct)) / 100
-            total_tax = (total_tax * discount_factor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-            total_retention = (total_retention * discount_factor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-            subtotal_before_tax = (subtotal_before_tax * discount_factor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
         so.tax_amount = total_tax.quantize(Decimal("0.01"))
         so.total_retention = total_retention.quantize(Decimal("0.01"))

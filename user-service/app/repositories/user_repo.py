@@ -23,13 +23,29 @@ class UserRepository:
         result = await self.db.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()
 
-    async def get_by_email(self, email: str) -> User | None:
-        result = await self.db.execute(select(User).where(User.email == email))
-        return result.scalar_one_or_none()
+    async def get_by_email(self, email: str, tenant_id: str | None = None) -> User | None:
+        """Lookup by email. Now that email is unique-per-tenant (not global,
+        migration 016), callers MUST pass tenant_id to avoid MultipleResultsFound.
+        For legacy callers without tenant context, returns the first match
+        deterministically (active first, then by creation date).
+        """
+        q = select(User).where(User.email == email)
+        if tenant_id is not None:
+            q = q.where(User.tenant_id == tenant_id)
+        else:
+            # Legacy fallback: prefer active users, oldest first
+            q = q.order_by(User.is_active.desc(), User.created_at.asc()).limit(1)
+        result = await self.db.execute(q)
+        return result.scalars().first()
 
-    async def get_by_username(self, username: str) -> User | None:
-        result = await self.db.execute(select(User).where(User.username == username))
-        return result.scalar_one_or_none()
+    async def get_by_username(self, username: str, tenant_id: str | None = None) -> User | None:
+        q = select(User).where(User.username == username)
+        if tenant_id is not None:
+            q = q.where(User.tenant_id == tenant_id)
+        else:
+            q = q.order_by(User.is_active.desc(), User.created_at.asc()).limit(1)
+        result = await self.db.execute(q)
+        return result.scalars().first()
 
     async def get_by_invitation_token(self, token: str) -> User | None:
         result = await self.db.execute(

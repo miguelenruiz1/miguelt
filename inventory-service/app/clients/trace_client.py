@@ -28,6 +28,15 @@ def _base_url() -> str:
     return get_settings().TRACE_SERVICE_URL.rstrip("/")
 
 
+def _s2s_headers() -> dict[str, str]:
+    """Headers for service-to-service calls to trace-service.
+
+    The X-Service-Token is required by trace-service AuthMiddleware for any
+    non-internal endpoint. Without it the request returns 401.
+    """
+    return {"X-Service-Token": get_settings().S2S_SERVICE_TOKEN}
+
+
 async def anchor_event(
     *,
     tenant_id: str,
@@ -45,6 +54,7 @@ async def anchor_event(
         client = _get_client()
         resp = await client.post(
             f"{_base_url()}/api/v1/anchoring/hash",
+            headers=_s2s_headers(),
             json={
                 "tenant_id": tenant_id,
                 "source_service": "inventory-service",
@@ -102,7 +112,10 @@ async def get_anchor_status(payload_hash: str) -> dict[str, Any] | None:
     """Query the anchoring status of a hash. Returns None on failure."""
     try:
         client = _get_client()
-        resp = await client.get(f"{_base_url()}/api/v1/anchoring/{payload_hash}/status")
+        resp = await client.get(
+            f"{_base_url()}/api/v1/anchoring/{payload_hash}/status",
+            headers=_s2s_headers(),
+        )
         if resp.status_code == 200:
             return resp.json()
         return None
@@ -117,6 +130,7 @@ async def verify_anchor(payload_hash: str) -> dict[str, Any] | None:
         client = _get_client()
         resp = await client.post(
             f"{_base_url()}/api/v1/anchoring/verify",
+            headers=_s2s_headers(),
             json={"payload_hash": payload_hash},
         )
         if resp.status_code == 200:
@@ -164,8 +178,8 @@ async def mint_batch_cnft(
                 "metadata": mint_metadata,
             },
             headers={
+                **_s2s_headers(),
                 "X-Tenant-Id": tenant_id,
-                "X-User-Id": "1",
             },
         )
         if resp.status_code in (200, 201):
@@ -183,10 +197,6 @@ async def mint_batch_cnft(
     except Exception as exc:
         log.warning("batch_cnft_mint_error", exc=str(exc))
         return None
-
-
-def _s2s_headers() -> dict[str, str]:
-    return {"X-Service-Token": get_settings().S2S_SERVICE_TOKEN}
 
 
 async def notify_po_received(

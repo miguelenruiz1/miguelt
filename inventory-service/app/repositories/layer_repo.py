@@ -45,8 +45,17 @@ class LayerRepository:
         entity_id: str,
         warehouse_id: str,
         quantity: Decimal,
+        allow_partial: bool = False,
     ) -> Decimal:
-        """Consume from oldest layers first. Returns total cost consumed."""
+        """Consume from oldest layers first. Returns total cost consumed.
+
+        Raises `ValueError` if there isn't enough layered stock to fulfill
+        the request — previously this method silently consumed less than
+        requested, leading to under-reported COGS and inflated margins.
+
+        Set `allow_partial=True` only when the caller explicitly handles the
+        partial-consumption case (e.g. legacy data migration).
+        """
         result = await self.db.execute(
             select(StockLayer)
             .where(
@@ -68,6 +77,11 @@ class LayerRepository:
             layer.quantity_remaining -= consume
             remaining -= consume
         await self.db.flush()
+        if remaining > 0 and not allow_partial:
+            raise ValueError(
+                f"Insufficient layered stock for product {entity_id} in warehouse "
+                f"{warehouse_id}: requested {quantity}, missing {remaining}"
+            )
         return total_cost
 
     async def get_weighted_average_cost(

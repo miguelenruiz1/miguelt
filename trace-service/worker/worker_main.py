@@ -147,6 +147,20 @@ async def anchor_generic(ctx: dict[str, Any], anchor_request_id: str) -> dict[st
             log.info("anchor_generic_already_done", id=anchor_request_id, sig=ar.solana_tx_sig)
             return {"status": "already_anchored", "sig": ar.solana_tx_sig}
 
+        # Orphan tx recovery: if a previous attempt persisted tx_sig but failed
+        # to commit anchored=True, the memo may already be on-chain. Verify
+        # before re-sending to avoid double-spending fees on Solana.
+        if ar.solana_tx_sig:
+            try:
+                already_on_chain = await solana_client.tx_exists(ar.solana_tx_sig)
+            except Exception:
+                already_on_chain = False
+            if already_on_chain:
+                await repo.mark_anchored(ar.id, ar.solana_tx_sig)
+                await session.commit()
+                log.info("anchor_generic_recovered_orphan", id=anchor_request_id, sig=ar.solana_tx_sig)
+                return {"status": "anchored", "sig": ar.solana_tx_sig}
+
         try:
             tx_sig = await solana_client.send_memo(ar.payload_hash)
             await repo.mark_anchored(ar.id, tx_sig)

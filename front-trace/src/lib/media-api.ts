@@ -13,10 +13,15 @@ interface RequestOptions {
 }
 
 function headers(): Record<string, string> {
-  return {
-    'X-User-Id': useAuthStore.getState().user?.id ?? '1',
-    'X-Tenant-Id': useAuthStore.getState().user?.tenant_id ?? 'default',
+  const store = useAuthStore.getState()
+  const h: Record<string, string> = {
+    'X-Tenant-Id': store.user?.tenant_id ?? 'default',
   }
+  // Auth bearer is REQUIRED — media-service has JWT auth enabled.
+  if (store.accessToken) {
+    h['Authorization'] = `Bearer ${store.accessToken}`
+  }
+  return h
 }
 
 async function request<T>(method: string, path: string, body?: unknown, opts: RequestOptions = {}): Promise<T> {

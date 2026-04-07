@@ -1,20 +1,38 @@
-"""Internal endpoints for inter-service communication — no JWT auth required.
+"""Internal endpoints for inter-service communication.
 
-These endpoints are only accessible within the Docker network (not exposed externally).
-Protected by X-Tenant-Id header presence only (same pattern as subscription-service module checks).
+Auth: ALL endpoints require X-Service-Token (constant-time comparison) so
+the service can't be abused even when port 9004 is exposed to the host.
 """
 from __future__ import annotations
+
+import secrets as _secrets
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.registry import get_adapter
+from app.core.settings import get_settings
 from app.db.session import get_db_session
 from app.domain.schemas.integration import InvoiceResolutionOut
 from app.services.resolution_service import ResolutionService
 from app.services.webhook_service import WebhookService
 
-router = APIRouter(prefix="/api/v1/internal", tags=["internal"])
+
+async def _verify_service_token(
+    x_service_token: str = Header(..., alias="X-Service-Token"),
+) -> str:
+    """Constant-time comparison of the inter-service shared secret."""
+    if not _secrets.compare_digest(x_service_token, get_settings().S2S_SERVICE_TOKEN):
+        raise HTTPException(status_code=401, detail="Invalid service token")
+    return x_service_token
+
+
+# Apply S2S auth to ALL internal routes via router-level dependency
+router = APIRouter(
+    prefix="/api/v1/internal",
+    tags=["internal"],
+    dependencies=[Depends(_verify_service_token)],
+)
 
 
 @router.post("/invoices/{provider_slug}")

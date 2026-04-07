@@ -170,6 +170,34 @@ async def update_plot(
     final_geojson_data = update_data.get("geojson_data", plot.geojson_data)
     _validate_polygon_requirement(final_area, final_geojson, final_geotype, final_geojson_data)
 
+    # EUDR guard: refuse area down-edits that would drop a plot below the 4 ha
+    # polygon threshold while it is linked to compliance records. Forces the
+    # operator to create a new plot rather than silently invalidating evidence.
+    POLYGON_THRESHOLD = 4.0
+    prev_area = plot.plot_area_ha
+    if (
+        prev_area is not None
+        and float(prev_area) >= POLYGON_THRESHOLD
+        and final_area is not None
+        and float(final_area) < POLYGON_THRESHOLD
+    ):
+        linked_count = (
+            await db.execute(
+                select(func.count()).select_from(CompliancePlotLink).where(
+                    CompliancePlotLink.plot_id == plot_id,
+                    CompliancePlotLink.tenant_id == tid,
+                )
+            )
+        ).scalar_one()
+        if linked_count and linked_count > 0:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"No se puede reducir el area de una parcela >=4 ha vinculada "
+                    f"a {linked_count} registro(s) de cumplimiento. Cree una nueva parcela."
+                ),
+            )
+
     if "metadata" in update_data:
         update_data["metadata_"] = update_data.pop("metadata")
     for key, val in update_data.items():

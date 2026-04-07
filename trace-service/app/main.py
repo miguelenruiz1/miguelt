@@ -99,13 +99,18 @@ def create_app() -> FastAPI:
     # Security headers (added before CORS so it runs after CORS in the stack)
     app.add_middleware(SecurityHeadersMiddleware)
 
-    # CORS
+    # CORS — origins come from CORS_ALLOW_ORIGINS env var (comma-separated)
+    # so prod can lock the surface down to its real domains. Local dev still
+    # works via the default localhost list.
+    import os
+    _cors_env = os.environ.get("CORS_ALLOW_ORIGINS", "")
+    if _cors_env.strip():
+        _origins = [o.strip() for o in _cors_env.split(",") if o.strip()]
+    else:
+        _origins = ["http://localhost:5173", "http://localhost:3000"]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:5173",
-            "http://localhost:3000",
-        ],
+        allow_origins=_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

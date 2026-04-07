@@ -42,15 +42,15 @@ class SalesOrder(Base):
     confirmed_at:     Mapped[DateTime | None]   = mapped_column(DateTime(timezone=True), nullable=True)
     shipped_date:     Mapped[DateTime | None]   = mapped_column(DateTime(timezone=True), nullable=True)
     delivered_date:   Mapped[DateTime | None]   = mapped_column(DateTime(timezone=True), nullable=True)
-    subtotal:         Mapped[Decimal]           = mapped_column(Numeric(14, 2), nullable=False, server_default="0")
-    tax_amount:       Mapped[Decimal]           = mapped_column(Numeric(14, 2), nullable=False, server_default="0")
+    subtotal:         Mapped[Decimal]           = mapped_column(Numeric(18, 2), nullable=False, server_default="0")
+    tax_amount:       Mapped[Decimal]           = mapped_column(Numeric(18, 2), nullable=False, server_default="0")
     discount_pct:     Mapped[Decimal]           = mapped_column(Numeric(5, 2), nullable=False, server_default="0")
-    discount_amount:  Mapped[Decimal]           = mapped_column(Numeric(14, 2), nullable=False, server_default="0")
+    discount_amount:  Mapped[Decimal]           = mapped_column(Numeric(18, 2), nullable=False, server_default="0")
     discount_reason:  Mapped[str | None]       = mapped_column(String(255), nullable=True)
-    total:            Mapped[Decimal]           = mapped_column(Numeric(14, 2), nullable=False, server_default="0")
-    total_retention:  Mapped[Decimal]           = mapped_column(Numeric(14, 2), nullable=False, server_default="0")
-    total_with_tax:   Mapped[Decimal]           = mapped_column(Numeric(14, 2), nullable=False, server_default="0")
-    total_payable:    Mapped[Decimal]           = mapped_column(Numeric(14, 2), nullable=False, server_default="0")
+    total:            Mapped[Decimal]           = mapped_column(Numeric(18, 2), nullable=False, server_default="0")
+    total_retention:  Mapped[Decimal]           = mapped_column(Numeric(18, 2), nullable=False, server_default="0")
+    total_with_tax:   Mapped[Decimal]           = mapped_column(Numeric(18, 2), nullable=False, server_default="0")
+    total_payable:    Mapped[Decimal]           = mapped_column(Numeric(18, 2), nullable=False, server_default="0")
     currency:         Mapped[str]              = mapped_column(String(3), nullable=False, server_default="COP")
     payment_form:     Mapped[int]              = mapped_column(Integer, nullable=False, server_default="1")  # 1=Contado, 2=Crédito
     payment_method:   Mapped[int]              = mapped_column(Integer, nullable=False, server_default="10")  # 10=Efectivo
@@ -85,7 +85,7 @@ class SalesOrder(Base):
     debit_note_remote_id:  Mapped[str | None]   = mapped_column(String(255), nullable=True)
     debit_note_status:     Mapped[str | None]   = mapped_column(String(50), nullable=True)
     debit_note_reason:     Mapped[str | None]   = mapped_column(Text, nullable=True)
-    debit_note_amount:     Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    debit_note_amount:     Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
 
     # Backorder support
     is_backorder:     Mapped[bool]             = mapped_column(Boolean, nullable=False, server_default="false")
@@ -167,7 +167,7 @@ class SalesOrderLine(Base):
     retention_pct:     Mapped[Decimal | None] = mapped_column(Numeric(5, 4), nullable=True)
     retention_amount:  Mapped[Decimal]        = mapped_column(Numeric(14, 4), nullable=False, server_default="0")
     line_total_with_tax: Mapped[Decimal]      = mapped_column(Numeric(14, 4), nullable=False, server_default="0")
-    line_total:        Mapped[Decimal]        = mapped_column(Numeric(14, 2), nullable=False, server_default="0")
+    line_total:        Mapped[Decimal]        = mapped_column(Numeric(18, 2), nullable=False, server_default="0")
     notes:             Mapped[str | None]     = mapped_column(Text, nullable=True)
     uom:               Mapped[str | None]     = mapped_column(String(20), nullable=True)
     qty_in_base_uom:   Mapped[Decimal | None] = mapped_column(Numeric(15, 6), nullable=True)
@@ -203,7 +203,7 @@ class SOApprovalLog(Base):
     performed_by:       Mapped[str]              = mapped_column(String(100), nullable=False)
     performed_by_name:  Mapped[str | None]       = mapped_column(String(200), nullable=True)
     reason:             Mapped[str | None]       = mapped_column(String(500), nullable=True)
-    so_total_at_action: Mapped[Decimal]          = mapped_column(Numeric(14, 2), nullable=False, server_default="0")
+    so_total_at_action: Mapped[Decimal]          = mapped_column(Numeric(18, 2), nullable=False, server_default="0")
     created_at:         Mapped[DateTime]         = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
@@ -216,7 +216,7 @@ class TenantInventoryConfig(Base):
 
     id:                     Mapped[str]              = mapped_column(String(36), primary_key=True)
     tenant_id:              Mapped[str]              = mapped_column(String(255), nullable=False, unique=True)
-    so_approval_threshold:  Mapped[Decimal | None]   = mapped_column(Numeric(14, 2), nullable=True)
+    so_approval_threshold:  Mapped[Decimal | None]   = mapped_column(Numeric(18, 2), nullable=True)
     margin_target_global:         Mapped[Decimal]    = mapped_column(Numeric(5, 2), nullable=False, server_default="35.00")
     margin_minimum_global:        Mapped[Decimal]    = mapped_column(Numeric(5, 2), nullable=False, server_default="20.00")
     margin_cost_method_global:    Mapped[str]        = mapped_column(String(20), nullable=False, server_default="last_purchase")

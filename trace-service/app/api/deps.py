@@ -142,7 +142,8 @@ async def get_current_user(
     # Cache user data per tenant header so cross-tenant superusers don't share state
     incoming_tid = request.headers.get("X-Tenant-Id", "default")
     rd = await get_redis()
-    cache_key = f"trace_svc:me:{user_id}:{incoming_tid}"
+    jti = payload.get("jti") or "_"
+    cache_key = f"trace_svc:me:{user_id}:{incoming_tid}:{jti}"
     cached = await rd.get(cache_key)
     if cached:
         return json.loads(cached)

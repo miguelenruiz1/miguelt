@@ -185,9 +185,13 @@ async def wompi_webhook(
     checksum_string = f"{tx_id}{tx_status}{tx_amount}{tx_reference}{tx_currency}{timestamp}{events_secret}"
     expected_checksum = hashlib.sha256(checksum_string.encode("utf-8")).hexdigest()
 
-    if signature_header and not hmac.compare_digest(expected_checksum, signature_header):
-        log.warning("wompi_invalid_signature", tenant_id=tenant_id, tx_id=tx_id)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid signature")
+    # CRITICAL: signature is REQUIRED. Previously the check was
+    # `if signature_header and not hmac.compare_digest(...)` which let an
+    # attacker bypass the signature by simply omitting the X-Event-Checksum
+    # header — they could then mark any invoice as paid.
+    if not signature_header or not hmac.compare_digest(expected_checksum, signature_header):
+        log.warning("wompi_invalid_signature", tenant_id=tenant_id, tx_id=tx_id, has_header=bool(signature_header))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or missing signature")
 
     log.info(
         "wompi_webhook_received",

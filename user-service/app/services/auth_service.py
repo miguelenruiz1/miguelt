@@ -75,11 +75,11 @@ class AuthService:
         job_title: str | None = None,
         company: str | None = None,
     ) -> User:
-        # Uniqueness checks
-        if await self.user_repo.get_by_email(email):
-            raise ConflictError(f"Email already registered: {email}")
-        if await self.user_repo.get_by_username(username):
-            raise ConflictError(f"Username already taken: {username}")
+        # Uniqueness checks PER TENANT (post-mig 016)
+        if await self.user_repo.get_by_email(email, tenant_id=tenant_id):
+            raise ConflictError(f"Email already registered in this tenant: {email}")
+        if await self.user_repo.get_by_username(username, tenant_id=tenant_id):
+            raise ConflictError(f"Username already taken in this tenant: {username}")
 
         # Seed roles/permissions for this tenant if not done yet
         await self._ensure_seeded(tenant_id)
@@ -111,8 +111,11 @@ class AuthService:
         )
         return user
 
-    async def authenticate(self, email: str, password: str) -> User | None:
-        user = await self.user_repo.get_by_email(email)
+    async def authenticate(self, email: str, password: str, tenant_id: str | None = None) -> User | None:
+        """Verify email/password. If tenant_id is given, scope the lookup so
+        users with the same email in different tenants don't collide.
+        """
+        user = await self.user_repo.get_by_email(email, tenant_id=tenant_id)
         if not user:
             return None
         if not user.is_active:
@@ -130,8 +133,9 @@ class AuthService:
         role_ids: list[str],
     ) -> User:
         """Create user without password and send invitation email."""
-        if await self.user_repo.get_by_email(email):
-            raise ConflictError(f"Email already registered: {email}")
+        # Check uniqueness PER TENANT (post-mig 016: email is unique per tenant, not global)
+        if await self.user_repo.get_by_email(email, tenant_id=tenant_id):
+            raise ConflictError(f"Email already registered in this tenant: {email}")
 
         await self._ensure_seeded(tenant_id)
 
@@ -251,6 +255,9 @@ class AuthService:
         import time as _time
         start = _time.perf_counter()
 
+        # Without tenant context: get_by_email falls back to first active user.
+        # Real multi-tenant flow should pass tenant_id; for now we keep the
+        # legacy lookup so password reset still works for the most common case.
         user = await self.user_repo.get_by_email(email)
         if user and user.is_active:
             token = secrets.token_urlsafe(64)

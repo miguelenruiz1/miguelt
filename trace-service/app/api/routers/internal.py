@@ -23,6 +23,33 @@ log = get_logger(__name__)
 router = APIRouter(prefix="/internal", tags=["internal-s2s"])
 
 
+_DEFAULT_TENANT_UUID = uuid.UUID("00000000-0000-0000-0000-000000000001")
+
+
+async def _resolve_tenant(raw: str, db: AsyncSession) -> uuid.UUID:
+    """Resolve a tenant identifier (UUID string OR slug) to a Tenant.id UUID.
+
+    Without this helper, callers like inventory-service that send
+    `tenant_id="default"` (slug) would crash on `uuid.UUID(slug)`.
+    """
+    if not raw:
+        return _DEFAULT_TENANT_UUID
+    try:
+        return uuid.UUID(raw)
+    except ValueError:
+        pass
+    # Slug → lookup
+    from app.db.models import Tenant
+    from sqlalchemy import select
+    if raw == "default":
+        return _DEFAULT_TENANT_UUID
+    result = await db.execute(select(Tenant).where(Tenant.slug == raw))
+    tenant = result.scalar_one_or_none()
+    if tenant is None:
+        raise HTTPException(status_code=404, detail=f"Tenant '{raw}' not found")
+    return tenant.id
+
+
 # ─── Schemas ────────────────────────────────────────────────────────────────
 
 class POReceiptRequest(BaseModel):
@@ -72,7 +99,7 @@ async def create_asset_from_po_receipt(
     Creates an Asset in trace-service with initial workflow state,
     custodian = the receiving warehouse's wallet.
     """
-    tenant_id = uuid.UUID(body.tenant_id)
+    tenant_id = await _resolve_tenant(body.tenant_id, db)
 
     # Find a wallet for the receiving warehouse.
     # Convention: wallet.tags should contain "warehouse:{warehouse_id}"
@@ -152,7 +179,7 @@ async def handoff_assets_from_so(
     """
     from app.domain.schemas import HandoffRequest
 
-    tenant_id = uuid.UUID(body.tenant_id)
+    tenant_id = await _resolve_tenant(body.tenant_id, db)
     svc = CustodyService(db, tenant_id)
 
     handoffs: list[dict[str, str]] = []

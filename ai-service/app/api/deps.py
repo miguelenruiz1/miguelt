@@ -52,9 +52,11 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
 
     tenant_id = payload.get("tenant_id", "")
+    jti = payload.get("jti") or "_"
 
-    # Check Redis cache
-    cache_key = f"ai_svc:me:{user_id}"
+    # Check Redis cache — keyed by jti so a logout/refresh invalidates the
+    # cached "me" the moment a new access token is issued.
+    cache_key = f"ai_svc:me:{user_id}:{jti}"
     cached = await redis.get(cache_key)
     if cached:
         user_data = json.loads(cached)
@@ -154,7 +156,8 @@ async def verify_service_token(
 ) -> str:
     """Validate inter-service calls via shared secret."""
     settings = get_settings()
-    if x_service_token != settings.S2S_SERVICE_TOKEN:
+    import secrets as _secrets
+    if not _secrets.compare_digest(x_service_token or "", settings.S2S_SERVICE_TOKEN):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid service token")
     return x_service_token
 

@@ -63,7 +63,15 @@ async def _resolve_tenant_slug_to_uuid(slug: str) -> uuid.UUID:
     try:
         resp = await http.get(
             f"{settings.TRACE_SERVICE_URL}/api/v1/tenants",
-            headers={"X-Tenant-Id": slug},
+            headers={
+                "X-Tenant-Id": slug,
+                # Critical: trace-service /tenants requires superuser auth.
+                # Without X-Service-Token the request returns 401, the
+                # except block below silently returns _DEFAULT_TENANT_UUID,
+                # and ALL data for non-default tenants gets stored under the
+                # default tenant — silent cross-tenant data corruption.
+                "X-Service-Token": settings.S2S_SERVICE_TOKEN,
+            },
         )
         if resp.status_code == 200:
             for t in resp.json():
@@ -71,9 +79,19 @@ async def _resolve_tenant_slug_to_uuid(slug: str) -> uuid.UUID:
                     tid = uuid.UUID(t["id"])
                     await rd.setex(cache_key, 300, str(tid))
                     return tid
+        else:
+            log.error(
+                "tenant_resolve_unauth_or_missing",
+                slug=slug,
+                status=resp.status_code,
+            )
     except Exception as exc:
-        log.warning("tenant_resolve_failed", slug=slug, exc=str(exc))
-    return _DEFAULT_TENANT_UUID
+        log.error("tenant_resolve_failed", slug=slug, exc=str(exc))
+    # Refuse to silently fall back to the default tenant when we can't resolve.
+    # Returning the default would corrupt cross-tenant data.
+    if slug == "default":
+        return _DEFAULT_TENANT_UUID
+    raise UnauthorizedError(f"Cannot resolve tenant '{slug}'")
 
 
 async def get_tenant_id(request: Request) -> uuid.UUID:
@@ -90,8 +108,9 @@ async def get_current_user(
     # Allow S2S calls with X-Service-Token (bypass JWT)
     service_token = request.headers.get("X-Service-Token")
     if service_token:
+        import secrets as _secrets
         settings = get_settings()
-        if service_token == settings.S2S_SERVICE_TOKEN:
+        if _secrets.compare_digest(service_token, settings.S2S_SERVICE_TOKEN):
             raw_tid = request.headers.get("X-Tenant-Id", "default")
             resolved = await _resolve_tenant_slug_to_uuid(raw_tid)
             return {
@@ -128,7 +147,8 @@ async def get_current_user(
     # don't share a stale cached entry)
     incoming_tid = request.headers.get("X-Tenant-Id", "default")
     rd = await get_redis()
-    cache_key = f"cmp_svc:me:{user_id}:{incoming_tid}"
+    jti = payload.get("jti") or "_"
+    cache_key = f"cmp_svc:me:{user_id}:{incoming_tid}:{jti}"
     cached = await rd.get(cache_key)
     if cached:
         return json.loads(cached)

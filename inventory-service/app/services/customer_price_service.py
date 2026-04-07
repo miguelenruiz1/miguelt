@@ -86,9 +86,32 @@ class CustomerPriceService:
         currency: str = "COP",
         db: AsyncSession | None = None,
     ) -> CustomerPrice:
-        """Create or update a customer price. Logs history on price change."""
+        """Create or update a customer price. Logs history on price change.
+
+        Validates that `new_price >= product.minimum_sale_price` so a sales
+        rep can't bypass the floor by creating a customer-specific price
+        below the minimum.
+        """
         session = db or self.db
         vf = valid_from or date.today()
+
+        # Enforce minimum_sale_price floor
+        from app.db.models import Product
+        prod = (
+            await session.execute(
+                select(Product).where(
+                    Product.id == product_id,
+                    Product.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if prod is not None and prod.minimum_sale_price is not None:
+            if Decimal(str(new_price)) < Decimal(str(prod.minimum_sale_price)):
+                from app.core.errors import ValidationError
+                raise ValidationError(
+                    f"Precio del cliente ({new_price}) por debajo del mínimo "
+                    f"({prod.minimum_sale_price}) para '{prod.name}'."
+                )
 
         # Try to find existing active price for same key
         stmt = select(CustomerPrice).where(

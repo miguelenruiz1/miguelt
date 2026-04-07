@@ -20,6 +20,39 @@ MATIAS_BASE_URL = "https://api-v2.matias-api.com/api/ubl2.1"
 COL_TZ_OFFSET = timezone(timedelta(hours=-5))
 
 
+def _aggregate_tax_totals(invoice_lines: list[dict]) -> list[dict]:
+    """Group line-level taxes by percent so DIAN gets one tax_total per rate.
+
+    Previously the header reported a single hardcoded 19% line. Mixed-rate
+    invoices (5% panela + 19% café) were rejected because the header didn't
+    match the line totals.
+    """
+    from collections import defaultdict
+    buckets: dict[str, dict[str, float]] = defaultdict(lambda: {"tax_amount": 0.0, "taxable_amount": 0.0})
+    for line in invoice_lines:
+        for tax in line.get("tax_totals", []) or []:
+            try:
+                pct = float(tax.get("percent", "0") or 0)
+                tax_amount = float(tax.get("tax_amount", "0") or 0)
+                taxable = float(tax.get("taxable_amount", line.get("line_extension_amount", "0")) or 0)
+            except (TypeError, ValueError):
+                continue
+            key = f"{pct:.2f}"
+            buckets[key]["tax_amount"] += tax_amount
+            buckets[key]["taxable_amount"] += taxable
+    result: list[dict] = []
+    for percent_str, b in sorted(buckets.items(), key=lambda kv: float(kv[0])):
+        if b["tax_amount"] <= 0 and b["taxable_amount"] <= 0:
+            continue
+        result.append({
+            "tax_id": 1,  # IVA
+            "percent": percent_str,
+            "tax_amount": f"{b['tax_amount']:.2f}",
+            "taxable_amount": f"{b['taxable_amount']:.2f}",
+        })
+    return result
+
+
 class MatiasAdapter(BaseAdapter):
     provider_slug = "matias"
     display_name = "MATIAS API — Facturación Electrónica DIAN"
@@ -272,12 +305,9 @@ class MatiasAdapter(BaseAdapter):
                 "tax_inclusive_amount": f"{total:.2f}",
                 "payable_amount": f"{total_payable:.2f}",
             },
-            "tax_totals": [{
-                "tax_id": 1,
-                "percent": "19.00",
-                "tax_amount": f"{tax_amount:.2f}",
-                "taxable_amount": f"{subtotal:.2f}",
-            }] if tax_amount > 0 else [],
+            # Aggregate tax_totals by rate (DIAN rejects mixed-rate invoices
+            # if you report 19% for items that were taxed at 5% or 0%).
+            "tax_totals": _aggregate_tax_totals(invoice_lines),
             "withholding_tax_totals": [{
                 "tax_id": 6,  # Retención en la fuente
                 "percent": f"{(total_retention / subtotal * 100):.2f}" if subtotal > 0 and total_retention > 0 else "0.00",
@@ -359,12 +389,9 @@ class MatiasAdapter(BaseAdapter):
                 "tax_inclusive_amount": f"{total:.2f}",
                 "payable_amount": f"{total:.2f}",
             },
-            "tax_totals": [{
-                "tax_id": 1,
-                "percent": "19.00",
-                "tax_amount": f"{tax_amount:.2f}",
-                "taxable_amount": f"{subtotal:.2f}",
-            }] if tax_amount > 0 else [],
+            # Aggregate tax_totals by rate (DIAN rejects mixed-rate invoices
+            # if you report 19% for items that were taxed at 5% or 0%).
+            "tax_totals": _aggregate_tax_totals(invoice_lines),
             "payments": [{
                 "payment_form_id": 1,
                 "payment_method_id": 10,

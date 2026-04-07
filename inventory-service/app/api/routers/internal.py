@@ -19,7 +19,8 @@ async def _verify_service_token(
     x_service_token: str = Header(..., alias="X-Service-Token"),
 ) -> str:
     settings = get_settings()
-    if x_service_token != settings.S2S_SERVICE_TOKEN:
+    import secrets as _secrets
+    if not _secrets.compare_digest(x_service_token or "", settings.S2S_SERVICE_TOKEN):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid service token",
@@ -50,16 +51,23 @@ class BatchInfoResponse(BaseModel):
 )
 async def get_batch_info(
     batch_id: str,
+    x_tenant_id: str = Header(..., alias="X-Tenant-Id"),
     db: AsyncSession = Depends(get_db_session),
 ) -> BatchInfoResponse:
     """
     Called by trace-service to get batch details for trazability.
     Returns batch_number, expiry_date, manufacture_date, entity_id, quantity.
+
+    Tenant-scoped: requires X-Tenant-Id header so a compromised S2S token
+    can't enumerate batches across tenants.
     """
     from app.db.models.tracking import EntityBatch
 
     result = await db.execute(
-        select(EntityBatch).where(EntityBatch.id == batch_id)
+        select(EntityBatch).where(
+            EntityBatch.id == batch_id,
+            EntityBatch.tenant_id == x_tenant_id,
+        )
     )
     batch = result.scalar_one_or_none()
 

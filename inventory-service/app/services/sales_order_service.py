@@ -11,8 +11,24 @@ Stock reservation flow:
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+
+# Colombia timezone (UTC-5) for DIAN fiscal date stamping
+COL_TZ = timezone(timedelta(hours=-5))
+
+
+def _co_date(dt: datetime | None) -> str | None:
+    """Format a datetime as YYYY-MM-DD in Colombia timezone.
+
+    Critical for DIAN: confirming at 19:30 Bogotá = 00:30 UTC next day, so
+    without this conversion the invoice gets sent with tomorrow's date.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(COL_TZ).strftime("%Y-%m-%d")
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -79,8 +95,13 @@ def recalculate_so_totals(so) -> None:
         taxable = line.line_subtotal * so_disc_factor
         line_tax = (taxable * tax_rate / D100).quantize(Decimal("0.0001"))
 
-        # line_total = line_subtotal + line-level tax (before global discount, for display)
-        line.line_total = (line.line_subtotal + (line.line_subtotal * tax_rate / D100)).quantize(Decimal("0.01"))
+        # line_total = (line_subtotal * so_discount_factor) + line tax — INCLUDES
+        # the global discount so the sum of line totals matches so.total exactly,
+        # avoiding DIAN reject due to header/lines mismatch.
+        line_taxable = line.line_subtotal * so_disc_factor
+        line.line_total = (
+            line_taxable + (line_taxable * tax_rate / D100)
+        ).quantize(Decimal("0.01"))
 
         subtotal += line.line_subtotal
         tax_total += line_tax
@@ -91,15 +112,23 @@ def recalculate_so_totals(so) -> None:
     so.total = (subtotal - so.discount_amount + so.tax_amount).quantize(Decimal("0.01"))
 
     # ── Extended tax fields (retention, totals with tax) ───────────────────
+    # tax_rate_pct is stored as a fraction (Numeric(5,4)): 19% = 0.1900
+    # We must NOT divide by 100 — it's already in fraction form. Multiplying
+    # by D100 would also be wrong.
     total_retention = Decimal("0")
     for line in so.lines:
         line_sub = Decimal(str(line.line_subtotal))
-        tax_rate_pct = Decimal(str(getattr(line, "tax_rate_pct", None) or line.tax_rate or 0))
+        # Prefer stored fraction `tax_rate_pct`. Fallback `line.tax_rate` is in
+        # percent (19) so divide by 100 only in the fallback path.
+        if getattr(line, "tax_rate_pct", None) is not None:
+            tax_rate_frac = Decimal(str(line.tax_rate_pct))
+        else:
+            tax_rate_frac = Decimal(str(line.tax_rate or 0)) / D100
         retention_pct = Decimal(str(line.retention_pct)) if getattr(line, "retention_pct", None) else None
 
-        line_tax = (line_sub * so_disc_factor * tax_rate_pct / D100).quantize(Decimal("0.0001"))
+        line_tax = (line_sub * so_disc_factor * tax_rate_frac).quantize(Decimal("0.0001"))
         line.tax_amount = line_tax
-        line.line_total_with_tax = (line_sub + (line_sub * tax_rate_pct / D100)).quantize(Decimal("0.0001"))
+        line.line_total_with_tax = (line_sub + (line_sub * tax_rate_frac)).quantize(Decimal("0.0001"))
 
         if retention_pct:
             ret = (line_sub * so_disc_factor * retention_pct).quantize(Decimal("0.0001"))
@@ -512,6 +541,38 @@ class SalesOrderService:
 
             line.qty_shipped = qty_primary
 
+        # Auto-create backorder for any line shipped short of ordered. Without
+        # this, the un-shipped quantity vanishes from the system: the SO closes
+        # at "delivered" with less than ordered and the customer commitment is
+        # silently dropped.
+        backorder_pairs: list[tuple] = []
+        confirmable_pairs: list[tuple] = []
+        for line in order.lines:
+            ordered = Decimal(str(line.qty_ordered or 0))
+            shipped = Decimal(str(line.qty_shipped or 0))
+            if shipped < ordered and shipped >= 0:
+                missing = ordered - shipped
+                backorder_pairs.append((line, missing))
+                if shipped > 0:
+                    confirmable_pairs.append((line, shipped))
+        if backorder_pairs and not order.is_backorder:
+            try:
+                from app.services.backorder_service import BackorderService
+                bo_svc = BackorderService(self.db)
+                await bo_svc.create_backorder(
+                    parent_order=order,
+                    backorder_lines=backorder_pairs,
+                    confirmable_lines=confirmable_pairs,
+                    tenant_id=tenant_id,
+                    user_id=user_id,
+                )
+            except Exception as exc:
+                from app.core.logging import get_logger
+                get_logger(__name__).warning(
+                    "ship_backorder_create_failed",
+                    order_id=order.id, error=str(exc),
+                )
+
         order.updated_by = user_id
 
         # Generate remission number
@@ -687,7 +748,7 @@ class SalesOrderService:
             subtotal_after_discount = float(order.subtotal) - float(order.discount_amount)
             payload = {
                 "number": order.order_number,
-                "date": order.confirmed_at.strftime("%Y-%m-%d") if order.confirmed_at else None,
+                "date": _co_date(order.confirmed_at),
                 "currency": order.currency,
                 "payment_form": getattr(order, "payment_form", None) or payment_form,
                 "payment_method": getattr(order, "payment_method", 10),
@@ -798,7 +859,7 @@ class SalesOrderService:
                 "invoice_cufe": order.cufe,
                 "invoice_number": order.invoice_number or order.order_number,
                 "order_number": order.order_number,
-                "date": order.returned_at.strftime("%Y-%m-%d") if order.returned_at else None,
+                "date": _co_date(order.returned_at),
                 "currency": order.currency,
                 "reason": "Devolución de mercancía",
                 "customer": {
@@ -918,7 +979,7 @@ class SalesOrderService:
                 "invoice_cufe": order.cufe,
                 "invoice_number": order.invoice_number or order.order_number,
                 "order_number": order.order_number,
-                "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                "date": _co_date(datetime.now(timezone.utc)),
                 "currency": order.currency,
                 "reason": reason,
                 "adjustment_amount": amount,

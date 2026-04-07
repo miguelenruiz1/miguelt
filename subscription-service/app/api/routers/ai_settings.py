@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Annotated
 
 import redis.asyncio as aioredis
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -107,14 +107,30 @@ async def clear_ai_cache(
     return {"status": "ok", "deleted": count}
 
 
-# ─── Inter-service endpoint (no auth — internal network only) ─────────────────
+# ─── Inter-service endpoint — REQUIRES X-Service-Token ───────────────────────
 
-@router.get("/config")
+async def _verify_service_token(
+    x_service_token: str = Header(..., alias="X-Service-Token"),
+) -> str:
+    """Validate inter-service shared secret. Constant-time comparison."""
+    import secrets as _secrets
+    from app.core.settings import get_settings as _gs
+    if not _secrets.compare_digest(x_service_token, _gs().S2S_SERVICE_TOKEN):
+        raise HTTPException(status_code=401, detail="Invalid service token")
+    return x_service_token
+
+
+@router.get("/config", dependencies=[Depends(_verify_service_token)])
 async def get_ai_config_internal(
     db: AsyncSession = Depends(get_db_session),
     redis: aioredis.Redis = Depends(get_redis),
 ):
-    """Internal endpoint for inventory-service to fetch AI config. No auth required (internal network)."""
+    """S2S endpoint for inventory-service to fetch AI config.
+
+    REQUIRES X-Service-Token header. Previously this was unauthenticated and
+    leaked the Anthropic API key in plaintext to anyone who could reach
+    /api/v1/platform/ai/config (mapped through the gateway).
+    """
     svc = AISettingsService(db, redis)
     s = await svc.get_settings()
     raw_key = await svc.get_decrypted_key()

@@ -20,7 +20,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 from fastapi import HTTPException
-from jose import jwt
+import jwt
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. app/core/security.py — decode_token
@@ -40,14 +40,14 @@ class TestDecodeToken:
         assert result["type"] == "access"
 
     def test_decode_invalid_token_raises(self):
-        from jose import JWTError
+        from jwt import PyJWTError as JWTError
         from app.core.security import decode_token
 
         with pytest.raises(JWTError):
             decode_token("not-a-real-jwt-token")
 
     def test_decode_wrong_secret_raises(self):
-        from jose import JWTError
+        from jwt import PyJWTError as JWTError
         from app.core.security import decode_token
 
         payload = {"sub": "user-1", "type": "access", "exp": 9999999999}

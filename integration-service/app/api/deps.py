@@ -57,7 +57,9 @@ async def get_current_user(
     if not user_id:
         raise credentials_exception
 
-    cache_key = f"int_svc:me:{user_id}"
+    # Key by jti so logout/refresh invalidates the cached "me" immediately.
+    jti = payload.get("jti") or "_"
+    cache_key = f"int_svc:me:{user_id}:{jti}"
     settings = get_settings()
     cached = await redis.get(cache_key)
     if cached:

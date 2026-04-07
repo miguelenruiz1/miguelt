@@ -60,8 +60,12 @@ async def get_current_user(
     if not user_id:
         raise credentials_exception
 
-    # 3. Check Redis cache
-    cache_key = f"sub_svc:me:{user_id}"
+    # 3. Check Redis cache — keyed by jti so a logout (which rotates the jti
+    # via refresh, or blacklists the current one) invalidates the cache the
+    # moment the next access token is issued. Without jti in the key, a stale
+    # cached "me" survives logout for the full TTL window.
+    jti = payload.get("jti") or "_"
+    cache_key = f"sub_svc:me:{user_id}:{jti}"
     settings = get_settings()
     cached = await redis.get(cache_key)
     if cached:

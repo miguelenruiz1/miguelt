@@ -20,7 +20,10 @@ class RegisterRequest(BaseModel):
     phone: str | None = Field(None, max_length=30)
     job_title: str | None = Field(None, max_length=255)
     company: str | None = Field(None, max_length=255)
-    tenant_id: str | None = None
+    # tenant_id intentionally NOT accepted from clients on /register: allowing
+    # it would let an attacker join an existing tenant by guessing its slug
+    # and trip the "first-user-becomes-admin" branch. Tenants are always
+    # auto-generated server-side from company/username.
 
 
 class LoginRequest(BaseModel):

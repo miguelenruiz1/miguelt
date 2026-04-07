@@ -146,6 +146,19 @@ class Settings(BaseSettings):
             raise ValueError("TRACE_ADMIN_KEY must be set in production")
         return v
 
+    @field_validator("REQUIRE_AUTH")
+    @classmethod
+    def validate_require_auth(cls, v: bool) -> bool:
+        """Refuse to start in production with REQUIRE_AUTH=False.
+        Setting it False would bypass JWT enforcement and accept any
+        X-User-Id/X-Tenant-Id from the client.
+        """
+        import os
+        env = os.environ.get("ENV", "dev").lower()
+        if env in ("prod", "production") and v is False:
+            raise ValueError("REQUIRE_AUTH must be True in production")
+        return v
+
     @field_validator("S2S_SERVICE_TOKEN")
     @classmethod
     def validate_s2s_token(cls, v: str) -> str:

@@ -90,14 +90,13 @@ async def register(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     _rl: Annotated[None, Depends(register_rate_limit)] = None,
 ) -> UserResponse:
-    # Auto-generate tenant slug from company or username when not provided
-    tenant_id = body.tenant_id
-    if not tenant_id:
-        import re, secrets
-        base = body.company or body.username
-        slug = re.sub(r"[^a-z0-9]+", "-", base.lower()).strip("-")[:40]
-        suffix = secrets.token_hex(3)
-        tenant_id = f"{slug}-{suffix}"
+    # Always auto-generate tenant slug server-side. Never trust client input
+    # for tenant_id on register — see RegisterRequest comment.
+    import re, secrets
+    base = body.company or body.username
+    slug = re.sub(r"[^a-z0-9]+", "-", base.lower()).strip("-")[:40] or "tenant"
+    suffix = secrets.token_hex(3)
+    tenant_id = f"{slug}-{suffix}"
 
     svc = AuthService(db)
     user = await svc.register(
@@ -123,7 +122,11 @@ async def login(
     _rl: Annotated[None, Depends(login_rate_limit)] = None,
 ) -> LoginResponse:
     svc = AuthService(db)
-    user = await svc.authenticate(body.email, body.password)
+    # Pass tenant_id from X-Tenant-Id header so users with the same email
+    # in different tenants can both log in correctly. If no header is given
+    # (legacy clients), authenticate falls back to the legacy single-match lookup.
+    scope_tid = tenant_id if tenant_id and tenant_id != "default" else None
+    user = await svc.authenticate(body.email, body.password, tenant_id=scope_tid)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 

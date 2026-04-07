@@ -81,7 +81,8 @@ async def get_current_user(
 
     incoming_tid = request.headers.get("X-Tenant-Id", "default")
     rd = await get_redis()
-    cache_key = f"media_svc:me:{user_id}:{incoming_tid}"
+    jti = payload.get("jti") or "_"
+    cache_key = f"media_svc:me:{user_id}:{incoming_tid}:{jti}"
     cached = await rd.get(cache_key)
     if cached:
         return json.loads(cached)

@@ -532,6 +532,38 @@ class StockService:
 
         await self.stock_repo.set_qty(tenant_id, product_id, warehouse_id, new_qty, batch_id, variant_id)
 
+        # Costing engine: positive delta needs a layer at WAC so FIFO has
+        # something to consume; negative delta consumes existing layers.
+        if delta != 0:
+            engine = CostingEngine(self.db)
+            if delta > 0:
+                wac = level.weighted_avg_cost if level and level.weighted_avg_cost else None
+                if wac is None or Decimal(str(wac)) <= 0:
+                    # Fallback: try product standard cost; otherwise skip layer
+                    try:
+                        prod = await self.product_repo.get_by_id(product_id, tenant_id)
+                        wac = getattr(prod, "standard_cost", None) or getattr(prod, "average_cost", None)
+                    except Exception:
+                        wac = None
+                if wac and Decimal(str(wac)) > 0:
+                    await engine.on_stock_in(
+                        tenant_id=tenant_id,
+                        product_id=product_id,
+                        warehouse_id=warehouse_id,
+                        quantity=delta,
+                        unit_cost=Decimal(str(wac)),
+                    )
+            else:
+                try:
+                    await engine.on_stock_out(
+                        tenant_id=tenant_id,
+                        product_id=product_id,
+                        warehouse_id=warehouse_id,
+                        quantity=abs(delta),
+                    )
+                except Exception:
+                    pass
+
         return await self.movement_repo.create({
             "tenant_id": tenant_id,
             "movement_type": movement_type,
@@ -565,6 +597,19 @@ class StockService:
         qty_primary = self._to_primary_qty(quantity, uom, product)
 
         await self.stock_repo.upsert_level(tenant_id, product_id, warehouse_id, qty_primary, variant_id=variant_id, unit_cost=unit_cost)
+
+        # Costing engine: create a FIFO layer for the adjustment-in so future
+        # consumption can value it. Without this, ajuste(+) inflates qty_on_hand
+        # without backing layered cost, causing under-reported COGS.
+        if unit_cost is not None and unit_cost > 0:
+            engine = CostingEngine(self.db)
+            await engine.on_stock_in(
+                tenant_id=tenant_id,
+                product_id=product_id,
+                warehouse_id=warehouse_id,
+                quantity=qty_primary,
+                unit_cost=unit_cost,
+            )
 
         return await self.movement_repo.create({
             "tenant_id": tenant_id,
@@ -652,6 +697,18 @@ class StockService:
                 effective_cost = level.weighted_avg_cost
 
         await self.stock_repo.upsert_level(tenant_id, product_id, warehouse_id, qty_primary, variant_id=variant_id, unit_cost=effective_cost)
+
+        # Costing engine: returns put stock back; create a layer at the
+        # effective cost so subsequent FIFO consumption is valued correctly.
+        if effective_cost is not None and Decimal(str(effective_cost)) > 0:
+            engine = CostingEngine(self.db)
+            await engine.on_stock_in(
+                tenant_id=tenant_id,
+                product_id=product_id,
+                warehouse_id=warehouse_id,
+                quantity=qty_primary,
+                unit_cost=effective_cost,
+            )
 
         return await self.movement_repo.create({
             "tenant_id": tenant_id,

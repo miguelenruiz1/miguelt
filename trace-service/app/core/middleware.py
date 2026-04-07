@@ -106,6 +106,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
     EXCLUDED_PREFIX = (
         "/uploads/",
         "/api/v1/internal/",  # Internal S2S endpoints (use X-Service-Token)
+        "/api/v1/anchoring/",  # S2S anchoring-as-a-service (validates X-Service-Token)
     )
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:

@@ -86,6 +86,16 @@ class Settings(BaseSettings):
             raise ValueError("S2S_SERVICE_TOKEN must be set in production")
         return v
 
+    @field_validator("REQUIRE_AUTH")
+    @classmethod
+    def validate_require_auth(cls, v: bool) -> bool:
+        """Refuse to start in production with REQUIRE_AUTH=False."""
+        import os
+        env = os.environ.get("ENV", "dev").lower()
+        if env in ("prod", "production") and v is False:
+            raise ValueError("REQUIRE_AUTH must be True in production")
+        return v
+
 
 @lru_cache
 def get_settings() -> Settings:

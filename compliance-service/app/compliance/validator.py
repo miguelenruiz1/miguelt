@@ -35,6 +35,7 @@ class ComplianceValidator:
         framework: ComplianceFramework,
         plots_count: int,
         export_destinations: list[str] | None = None,
+        plots: list | None = None,
     ) -> ValidationResult:
         rules: dict = framework.validation_rules or {}
         missing_fields: list[str] = []
@@ -73,6 +74,26 @@ class ComplianceValidator:
                 warnings.append(
                     f"At least {min_plots} plot(s) required; found {plots_count}"
                 )
+
+            # CRITICAL EUDR: every linked plot must be deforestation_free AND
+            # cutoff_date_compliant. Previously only the count was checked, so
+            # a record could be marked "ready" with a non-compliant plot, and
+            # a falsified DDS could be exported to TRACES NT.
+            if plots:
+                for plot in plots:
+                    pcode = getattr(plot, "plot_code", "?")
+                    if not getattr(plot, "deforestation_free", False):
+                        missing_fields.append(
+                            f"plot {pcode}: deforestation_free=False (run GFW screening)"
+                        )
+                    if not getattr(plot, "cutoff_date_compliant", False):
+                        missing_fields.append(
+                            f"plot {pcode}: cutoff_date_compliant=False (post-2020-12-31 land use change)"
+                        )
+                    if not getattr(plot, "legal_land_use", False):
+                        missing_fields.append(
+                            f"plot {pcode}: legal_land_use=False"
+                        )
 
         # ------------------------------------------------------------------
         # 4. Commodity-specific rules

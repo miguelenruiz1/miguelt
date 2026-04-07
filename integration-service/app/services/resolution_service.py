@@ -55,6 +55,17 @@ class ResolutionService:
         if resolution.current_number >= resolution.range_to:
             raise ResolutionExhaustedError()
 
+        # Self-heal pre-existing rows that were created before the
+        # initialization fix: bring counter up to range_from - 1 so the
+        # first emitted number lands inside the authorized range.
+        if resolution.current_number < resolution.range_from - 1:
+            await self.db.execute(
+                update(InvoiceResolution)
+                .where(InvoiceResolution.id == resolution.id)
+                .values(current_number=resolution.range_from - 1)
+            )
+            resolution.current_number = resolution.range_from - 1
+
         # Atomic increment with range guard
         stmt = (
             update(InvoiceResolution)
@@ -88,6 +99,13 @@ class ResolutionService:
             .values(is_active=False)
         )
 
+        # Initial counter must be one less than range_from so the first
+        # increment yields exactly range_from. Defaulting to 0 produced invalid
+        # invoice numbers (e.g. SANDBOX1) when DIAN expected SANDBOX990000001.
+        range_from = int(data["range_from"])
+        initial = data.get("current_number")
+        if initial is None:
+            initial = range_from - 1
         resolution = InvoiceResolution(
             id=str(uuid.uuid4()),
             tenant_id=tenant_id,
@@ -95,9 +113,9 @@ class ResolutionService:
             is_active=True,
             resolution_number=data["resolution_number"],
             prefix=data["prefix"],
-            range_from=data["range_from"],
+            range_from=range_from,
             range_to=data["range_to"],
-            current_number=data.get("current_number", 0),
+            current_number=initial,
             valid_from=data["valid_from"],
             valid_to=data["valid_to"],
         )

@@ -261,9 +261,15 @@ class StockRepository:
         warehouse_id: str,
         qty: Decimal,
         variant_id: str | None = None,
-    ) -> StockLevel:
+        batch_id: str | None = None,
+        location_id: str | None = None,
+    ) -> StockLevel | None:
         """Atomically reserve stock. Uses an UPDATE … WHERE qty_on_hand - qty_reserved >= qty
         statement so two concurrent reservations cannot oversell.
+
+        Filters by batch_id and location_id (when provided, or NULL otherwise)
+        so a product+warehouse with multiple batches/locations doesn't get
+        ALL its rows incremented at once.
         """
         from sqlalchemy import update as _update
         now = datetime.now(timezone.utc)
@@ -277,6 +283,14 @@ class StockRepository:
             conditions.append(StockLevel.variant_id == variant_id)
         else:
             conditions.append(StockLevel.variant_id.is_(None))
+        if batch_id is not None:
+            conditions.append(StockLevel.batch_id == batch_id)
+        else:
+            conditions.append(StockLevel.batch_id.is_(None))
+        if location_id is not None:
+            conditions.append(StockLevel.location_id == location_id)
+        else:
+            conditions.append(StockLevel.location_id.is_(None))
 
         stmt = (
             _update(StockLevel)
@@ -290,8 +304,7 @@ class StockRepository:
         result = await self.db.execute(stmt)
         row = result.first()
         if row is None:
-            # Either no level or insufficient available — disambiguate for error message
-            level = await self.get_level(product_id, warehouse_id, variant_id=variant_id)
+            level = await self.get_level(product_id, warehouse_id, batch_id, variant_id)
             if not level:
                 raise ValueError(
                     f"No stock level for product {product_id} in warehouse {warehouse_id}"
@@ -301,8 +314,7 @@ class StockRepository:
                 f"Insufficient available stock: {available} available, {qty} requested"
             )
         await self.db.flush()
-        # Return refreshed level
-        return await self.get_level(product_id, warehouse_id, variant_id=variant_id)
+        return await self.get_level(product_id, warehouse_id, batch_id, variant_id)
 
     async def release_reservation(
         self,
@@ -310,6 +322,8 @@ class StockRepository:
         warehouse_id: str,
         qty: Decimal,
         variant_id: str | None = None,
+        batch_id: str | None = None,
+        location_id: str | None = None,
     ) -> StockLevel | None:
         """Atomically release a reservation. Refuses to underflow qty_reserved."""
         from sqlalchemy import update as _update
@@ -324,6 +338,14 @@ class StockRepository:
             conditions.append(StockLevel.variant_id == variant_id)
         else:
             conditions.append(StockLevel.variant_id.is_(None))
+        if batch_id is not None:
+            conditions.append(StockLevel.batch_id == batch_id)
+        else:
+            conditions.append(StockLevel.batch_id.is_(None))
+        if location_id is not None:
+            conditions.append(StockLevel.location_id == location_id)
+        else:
+            conditions.append(StockLevel.location_id.is_(None))
 
         stmt = (
             _update(StockLevel)
@@ -335,7 +357,7 @@ class StockRepository:
         )
         await self.db.execute(stmt)
         await self.db.flush()
-        return await self.get_level(product_id, warehouse_id, variant_id=variant_id)
+        return await self.get_level(product_id, warehouse_id, batch_id, variant_id)
 
     async def get_available_stock(self, tenant_id: str, product_id: str, warehouse_id: str | None = None):
         """Get stock availability summary: on_hand, reserved, available, in_transit."""
