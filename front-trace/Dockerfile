@@ -1,7 +1,7 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci && npm i @rollup/rollup-linux-x64-gnu
+RUN npm install --no-audit --no-fund && npm i @rollup/rollup-linux-x64-gnu
 COPY . .
 # Fix Windows case-insensitive filenames for Linux
 RUN cd src/components/ui && for f in *.tsx; do lower=$(echo "$f" | tr 'A-Z' 'a-z'); [ "$f" != "$lower" ] && mv "$f" "$lower"; done 2>/dev/null; true

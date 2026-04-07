@@ -19,8 +19,15 @@ branch_labels = None
 depends_on = None
 
 
+_UUID_REGEX = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+
+
 def upgrade() -> None:
     conn = op.get_bind()
+
+    # sequence_counters.tenant_id is uuid; some tenant ids in the source
+    # tables are slug strings (e.g. "chape-5f2a09"). Skip those — they are
+    # young tenants that never had pre-counter PO/SO numbers anyway.
 
     year = datetime.utcnow().year
     # Look back 5 years to cover any year transitions in long-lived tenants
@@ -40,12 +47,13 @@ def upgrade() -> None:
                 FROM purchase_orders
                 WHERE po_number LIKE :prefix
                   AND po_number ~ ('^PO-' || :ystr || '-[0-9]+$')
+                  AND tenant_id ~ :uuid_re
                 GROUP BY tenant_id
                 ON CONFLICT (tenant_id, scope) DO UPDATE
                     SET value = GREATEST(sequence_counters.value, EXCLUDED.value)
                 """
             ),
-            {"scope": f"po-{y}", "prefix": f"PO-{y}-%", "ystr": str(y)},
+            {"scope": f"po-{y}", "prefix": f"PO-{y}-%", "ystr": str(y), "uuid_re": _UUID_REGEX},
         )
 
         # SO numbers: SO-{year}-{seq}
@@ -61,12 +69,13 @@ def upgrade() -> None:
                 FROM sales_orders
                 WHERE order_number LIKE :prefix
                   AND order_number ~ ('^SO-' || :ystr || '-[0-9]+$')
+                  AND tenant_id ~ :uuid_re
                 GROUP BY tenant_id
                 ON CONFLICT (tenant_id, scope) DO UPDATE
                     SET value = GREATEST(sequence_counters.value, EXCLUDED.value)
                 """
             ),
-            {"scope": f"so-{y}", "prefix": f"SO-{y}-%", "ystr": str(y)},
+            {"scope": f"so-{y}", "prefix": f"SO-{y}-%", "ystr": str(y), "uuid_re": _UUID_REGEX},
         )
 
         # Remission numbers: REM-{year}-{seq}
@@ -82,12 +91,13 @@ def upgrade() -> None:
                 FROM sales_orders
                 WHERE remission_number LIKE :prefix
                   AND remission_number ~ ('^REM-' || :ystr || '-[0-9]+$')
+                  AND tenant_id ~ :uuid_re
                 GROUP BY tenant_id
                 ON CONFLICT (tenant_id, scope) DO UPDATE
                     SET value = GREATEST(sequence_counters.value, EXCLUDED.value)
                 """
             ),
-            {"scope": f"rem-{y}", "prefix": f"REM-{y}-%", "ystr": str(y)},
+            {"scope": f"rem-{y}", "prefix": f"REM-{y}-%", "ystr": str(y), "uuid_re": _UUID_REGEX},
         )
 
 

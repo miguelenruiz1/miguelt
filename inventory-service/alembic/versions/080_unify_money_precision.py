@@ -33,7 +33,22 @@ MONEY_COLUMNS = [
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
     for table, col in MONEY_COLUMNS:
+        # Skip if the column doesn't exist (model drift across services).
+        exists = bind.execute(
+            sa.text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_name = :t AND column_name = :c"
+            ),
+            {"t": table, "c": col},
+        ).first()
+        if not exists:
+            continue
+        # SAVEPOINT per ALTER so a single failure doesn't poison the
+        # surrounding alembic transaction (which then makes every subsequent
+        # ALTER fail with InFailedSQLTransactionError on PostgreSQL).
+        nested = bind.begin_nested()
         try:
             op.alter_column(
                 table,
@@ -43,13 +58,24 @@ def upgrade() -> None:
                 existing_nullable=True,
                 postgresql_using=f"{col}::numeric(18,2)",
             )
+            nested.commit()
         except Exception:
-            # Column might be Numeric(18,2) already or missing — best effort
-            pass
+            nested.rollback()
 
 
 def downgrade() -> None:
+    bind = op.get_bind()
     for table, col in MONEY_COLUMNS:
+        exists = bind.execute(
+            sa.text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_name = :t AND column_name = :c"
+            ),
+            {"t": table, "c": col},
+        ).first()
+        if not exists:
+            continue
+        nested = bind.begin_nested()
         try:
             op.alter_column(
                 table,
@@ -59,5 +85,6 @@ def downgrade() -> None:
                 existing_nullable=True,
                 postgresql_using=f"{col}::numeric(14,2)",
             )
+            nested.commit()
         except Exception:
-            pass
+            nested.rollback()
