@@ -564,6 +564,9 @@ services:
     build: ./gateway
     image: trace-gateway:latest
     container_name: trace-gateway
+    # Override the Cloud Run entrypoint: in compose we use the static
+    # nginx.conf baked into the image (upstreams point to compose hostnames).
+    command: ["nginx", "-g", "daemon off;"]
     ports:
       - "9000:9000"
     depends_on:

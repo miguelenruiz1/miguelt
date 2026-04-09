@@ -12,7 +12,7 @@ Stock reservation flow:
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 # Colombia timezone (UTC-5) for DIAN fiscal date stamping
 COL_TZ = timezone(timedelta(hours=-5))
@@ -64,14 +64,20 @@ _RESERVED_STATES = {SalesOrderStatus.confirmed, SalesOrderStatus.picking, SalesO
 def recalculate_so_totals(so) -> None:
     """Recalculate all amounts on the SO from its lines. Modifies in-place.
 
-    Order of application:
+    Multi-stack aware: if a line has any rows in its `line_taxes` collection,
+    those override the legacy single tax_rate/retention_pct path. Each line_tax
+    references a tax_rate whose `category.behavior` ('addition' | 'withholding')
+    determines whether it sums into tax_amount or retention_amount, and whose
+    `category.base_kind` ('subtotal' | 'subtotal_with_other_additions') controls
+    cumulative bases (Brazil IPI on top of ICMS).
+
+    Order of application for the legacy path:
       1. Per-line: discount_amount = unit_price * qty * discount_pct / 100
       2. Per-line: line_subtotal = unit_price * qty - discount_amount
       3. Per-line: line_total = line_subtotal * (1 - so_discount_pct/100) * (1 + tax_rate/100)
-         (but line_total stores pre-global-discount value for display: line_subtotal + line_tax)
       4. SO: subtotal = sum(line_subtotal)
       5. SO: discount_amount = subtotal * discount_pct / 100
-      6. SO: tax_amount = sum of per-line taxes (on line_subtotal * (1 - so_discount_pct/100))
+      6. SO: tax_amount = sum of per-line taxes
       7. SO: total = subtotal - discount_amount + tax_amount
     """
     D100 = Decimal("100")
@@ -112,31 +118,99 @@ def recalculate_so_totals(so) -> None:
     so.total = (subtotal - so.discount_amount + so.tax_amount).quantize(Decimal("0.01"))
 
     # ── Extended tax fields (retention, totals with tax) ───────────────────
-    # tax_rate_pct is stored as a fraction (Numeric(5,4)): 19% = 0.1900
-    # We must NOT divide by 100 — it's already in fraction form. Multiplying
-    # by D100 would also be wrong.
+    # If a line has any line_taxes (multi-stack), use those. Otherwise fall
+    # back to the legacy single tax_rate_pct + retention_pct columns.
     total_retention = Decimal("0")
+    total_addition_override = Decimal("0")
+    any_multi_stack = False
+
     for line in so.lines:
         line_sub = Decimal(str(line.line_subtotal))
-        # Prefer stored fraction `tax_rate_pct`. Fallback `line.tax_rate` is in
-        # percent (19) so divide by 100 only in the fallback path.
-        if getattr(line, "tax_rate_pct", None) is not None:
-            tax_rate_frac = Decimal(str(line.tax_rate_pct))
+        line_taxes = list(getattr(line, "line_taxes", None) or [])
+
+        if line_taxes:
+            any_multi_stack = True
+            line_addition = Decimal("0")
+            line_withholding = Decimal("0")
+            taxable_base = (line_sub * so_disc_factor).quantize(Decimal("0.0001"))
+
+            # Pass 1: non-cumulative additions on the subtotal
+            non_cumulative_total = Decimal("0")
+            for lt in line_taxes:
+                rate = getattr(lt, "rate", None)
+                cat = getattr(rate, "category", None) if rate else None
+                if cat is None or cat.behavior != "addition":
+                    continue
+                if cat.base_kind == "subtotal_with_other_additions":
+                    continue
+                rate_frac = Decimal(str(rate.rate))
+                amount = (taxable_base * rate_frac).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                lt.rate_pct = rate_frac
+                lt.base_amount = taxable_base
+                lt.tax_amount = amount
+                lt.behavior = "addition"
+                line_addition += amount
+                non_cumulative_total += amount
+
+            # Pass 2: cumulative additions (Brazil IPI on top of ICMS)
+            for lt in line_taxes:
+                rate = getattr(lt, "rate", None)
+                cat = getattr(rate, "category", None) if rate else None
+                if cat is None or cat.behavior != "addition":
+                    continue
+                if cat.base_kind != "subtotal_with_other_additions":
+                    continue
+                rate_frac = Decimal(str(rate.rate))
+                base = taxable_base + non_cumulative_total
+                amount = (base * rate_frac).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                lt.rate_pct = rate_frac
+                lt.base_amount = base
+                lt.tax_amount = amount
+                lt.behavior = "addition"
+                line_addition += amount
+
+            # Pass 3: withholdings (always on subtotal)
+            for lt in line_taxes:
+                rate = getattr(lt, "rate", None)
+                cat = getattr(rate, "category", None) if rate else None
+                if cat is None or cat.behavior != "withholding":
+                    continue
+                rate_frac = Decimal(str(rate.rate))
+                amount = (taxable_base * rate_frac).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                lt.rate_pct = rate_frac
+                lt.base_amount = taxable_base
+                lt.tax_amount = amount
+                lt.behavior = "withholding"
+                line_withholding += amount
+
+            line.tax_amount = line_addition
+            line.retention_amount = line_withholding
+            line.line_total_with_tax = (line_sub + line_addition).quantize(Decimal("0.0001"))
+            total_addition_override += line_addition
+            total_retention += line_withholding
+
         else:
-            tax_rate_frac = Decimal(str(line.tax_rate or 0)) / D100
-        retention_pct = Decimal(str(line.retention_pct)) if getattr(line, "retention_pct", None) else None
+            # Legacy single-tax path
+            if getattr(line, "tax_rate_pct", None) is not None:
+                tax_rate_frac = Decimal(str(line.tax_rate_pct))
+            else:
+                tax_rate_frac = Decimal(str(line.tax_rate or 0)) / D100
+            retention_pct = Decimal(str(line.retention_pct)) if getattr(line, "retention_pct", None) else None
 
-        line_tax = (line_sub * so_disc_factor * tax_rate_frac).quantize(Decimal("0.0001"))
-        line.tax_amount = line_tax
-        line.line_total_with_tax = (line_sub + (line_sub * tax_rate_frac)).quantize(Decimal("0.0001"))
+            line_tax = (line_sub * so_disc_factor * tax_rate_frac).quantize(Decimal("0.0001"))
+            line.tax_amount = line_tax
+            line.line_total_with_tax = (line_sub + (line_sub * tax_rate_frac)).quantize(Decimal("0.0001"))
 
-        if retention_pct:
-            ret = (line_sub * so_disc_factor * retention_pct).quantize(Decimal("0.0001"))
-            line.retention_amount = ret
-            total_retention += ret
-        else:
-            line.retention_amount = Decimal("0")
+            if retention_pct:
+                ret = (line_sub * so_disc_factor * retention_pct).quantize(Decimal("0.0001"))
+                line.retention_amount = ret
+                total_retention += ret
+            else:
+                line.retention_amount = Decimal("0")
 
+    if any_multi_stack:
+        so.tax_amount = total_addition_override.quantize(Decimal("0.01"))
+        so.total = (so.subtotal - so.discount_amount + so.tax_amount).quantize(Decimal("0.01"))
     so.total_retention = total_retention.quantize(Decimal("0.01"))
     so.total_with_tax = (so.subtotal - so.discount_amount + so.tax_amount).quantize(Decimal("0.01"))
     so.total_payable = (so.total_with_tax - so.total_retention).quantize(Decimal("0.01"))
@@ -297,14 +371,22 @@ class SalesOrderService:
                 "notes": line.get("notes"),
                 "price_source": price_source,
                 "customer_price_id": customer_price_id,
+                # Multi-stack tax rates (passed through to repo for line_taxes creation)
+                "_tax_rate_ids": line.get("tax_rate_ids") or [],
             })
 
         so_discount_pct = Decimal(str(data.get("discount_pct", 0)))
+        # Resolve warehouse_id: explicit → tenant default → null
+        order_warehouse_id = data.get("warehouse_id")
+        if not order_warehouse_id:
+            default_wh = await self.warehouse_repo.get_default(tenant_id)
+            if default_wh is not None:
+                order_warehouse_id = default_wh.id
         order_data = {
             "tenant_id": tenant_id,
             "order_number": order_number,
             "customer_id": data["customer_id"],
-            "warehouse_id": data.get("warehouse_id"),
+            "warehouse_id": order_warehouse_id,
             "shipping_address": data.get("shipping_address"),
             "expected_date": data.get("expected_date"),
             "discount_pct": so_discount_pct,
@@ -783,8 +865,65 @@ class SalesOrderService:
                 "total": float(order.total),
                 "notes": order.notes or "",
             }
+            # DIAN tax_id mapping by category slug.
+            # Reference: DIAN Tipos de Tributo (anexo técnico facturación
+            # electrónica). Most providers (MATIAS, Factura1, Factus, etc.)
+            # follow these codes:
+            #   01 = IVA
+            #   02 = IC  (Impuesto al Consumo)  ← INC
+            #   03 = ICA
+            #   04 = INC (alias de IC en algunos catálogos)
+            #   05 = ReteIVA
+            #   06 = ReteRenta (Retefuente)
+            #   07 = ReteICA
+            DIAN_TAX_ID_BY_SLUG = {
+                "iva":        1,
+                "vat":        1,
+                "impuesto":   1,  # generic addition fallback
+                "ic":         2,
+                "consumo":    2,
+                "inc":        4,
+                "ica":        3,
+                "reteiva":    5,
+                "retefuente": 6,
+                "retencion":  6,
+                "retention":  6,
+                "irpf":       6,  # closest equivalent for export
+                "withholding": 6,
+                "reteica":    7,
+            }
+            DEFAULT_TAX_ID = 1  # if slug unknown, default to IVA
+
             for line in order.lines:
                 product_name = getattr(line, "product_name", "") or (line.product.name if hasattr(line, "product") and line.product else "")
+                line_taxes = list(getattr(line, "line_taxes", None) or [])
+
+                # Build tax_totals (additions) and withholding_totals (withholdings)
+                tax_totals_payload: list[dict] = []
+                withholding_totals_payload: list[dict] = []
+                for lt in line_taxes:
+                    rate = getattr(lt, "rate", None)
+                    cat = getattr(rate, "category", None) if rate else None
+                    if not rate:
+                        continue
+                    slug = (cat.slug if cat else "iva").lower()
+                    tax_id = DIAN_TAX_ID_BY_SLUG.get(slug, DEFAULT_TAX_ID)
+                    entry = {
+                        "tax_id": tax_id,
+                        "percent": f"{float(lt.rate_pct) * 100:.2f}",  # rate_pct is fraction
+                        "tax_amount": f"{float(lt.tax_amount):.2f}",
+                        "taxable_amount": f"{float(lt.base_amount):.2f}",
+                    }
+                    behavior = (cat.behavior if cat else "addition")
+                    if behavior == "withholding":
+                        withholding_totals_payload.append(entry)
+                    else:
+                        tax_totals_payload.append(entry)
+
+                # Legacy single-tax fallback (old SOs with no line_taxes)
+                legacy_tax_rate = float(line.tax_rate or 0)
+                legacy_retention_pct = float(line.retention_pct or 0) * 100 if line.retention_pct else 0
+
                 payload["items"].append({
                     "description": product_name,
                     "sku": getattr(line, "product_sku", "") or (line.product.sku if hasattr(line, "product") and line.product else ""),
@@ -793,9 +932,14 @@ class SalesOrderService:
                     "unit_price": float(line.unit_price),
                     "discount_rate": float(line.discount_pct) / 100 if line.discount_pct else 0,
                     "discount_amount": float(line.discount_amount or 0),
-                    "tax_rate": float(line.tax_rate),
-                    "retention_pct": float(line.retention_pct or 0) * 100 if line.retention_pct else 0,
+                    # Legacy single-tax fields (kept for backwards compat)
+                    "tax_rate": legacy_tax_rate,
+                    "retention_pct": legacy_retention_pct,
                     "retention_amount": float(line.retention_amount or 0),
+                    # Multi-stack: pre-built tax_totals/withholding_totals.
+                    # MATIAS adapter prefers these if present.
+                    "tax_totals": tax_totals_payload,
+                    "withholding_totals": withholding_totals_payload,
                     "subtotal": float(line.line_subtotal or 0),
                     "total": float(line.line_total or 0),
                 })

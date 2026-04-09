@@ -134,6 +134,32 @@ específico), lo digo explícitamente: *"hice el cambio pero no lo probé contra
 la DB con datos reales — confirmá vos antes de cerrar"*. No vendo como
 verificado lo que no verifiqué.
 
+## 11. Git flow: feature → develop → staging → main
+
+Este repo sigue un flujo de ramas estricto:
+
+- **`feature/*` o `fix/*`**: ramas de trabajo. Se crean desde `develop`.
+- **`develop`**: integración. Los PR de features se mergean aquí.
+- **`staging`**: pre-producción. Se mergea `develop` → `staging` para QA.
+- **`main`**: producción. Solo se mergea desde `staging` después de validar.
+
+Reglas:
+- **Nunca** hacer push directo a `main`, `staging` o `develop`.
+- Siempre crear PR para mergear entre ramas.
+- Antes de hacer `git push` o crear un commit, **siempre preguntar al
+  usuario**: mostrar qué archivos cambiaron, qué queda pendiente, y a
+  qué rama se va a subir. No asumir que el usuario quiere pushear.
+- Antes de desplegar a GCP, confirmar con el usuario qué servicios se
+  van a actualizar y en qué rama está el código.
+
+## 12. Antes de git commit/push: listar cambios pendientes
+
+Antes de cualquier operación git (commit, push, merge), **siempre**:
+1. Mostrar `git status` resumido al usuario.
+2. Listar los archivos modificados que NO son parte del fix/feature actual.
+3. Preguntar explícitamente: "¿Hago commit de [archivos]? ¿Push a [rama]?"
+4. No mezclar cambios de distintas features en un solo commit.
+
 ---
 
 ## Comandos útiles del proyecto

@@ -88,6 +88,7 @@ const CustomerDetailPage = named(() => import('@/pages/inventory/CustomerDetailP
 const CustomerPortalPage = named(() => import('@/pages/inventory/CustomerPortalPage'), 'CustomerPortalPage')
 const CategoriesPage = named(() => import('@/pages/inventory/CategoriesPage'), 'CategoriesPage')
 const TaxRatesPage = named(() => import('@/pages/inventory/TaxRatesPage'), 'TaxRatesPage')
+const TaxCategoriesPage = named(() => import('@/pages/inventory/TaxCategoriesPage'), 'TaxCategoriesPage')
 const ReorderConfigPage = named(() => import('@/pages/inventory/ReorderConfigPage'), 'ReorderConfigPage')
 const CustomerPricesPage = named(() => import('@/pages/inventory/CustomerPricesPage'), 'CustomerPricesPage')
 const PnLPage = named(() => import('@/pages/inventory/PnLPage'), 'PnLPage')
@@ -585,6 +586,22 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute permission="inventory.manage">
             <ModuleGuard><TaxRatesPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inventario/impuestos',
+        element: (
+          <ProtectedRoute permission="inventory.manage">
+            <ModuleGuard><TaxRatesPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inventario/configuracion/categorias-impuesto',
+        element: (
+          <ProtectedRoute permission="inventory.manage">
+            <ModuleGuard><TaxCategoriesPage /></ModuleGuard>
           </ProtectedRoute>
         ),
       },

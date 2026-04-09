@@ -69,16 +69,41 @@ class SalesOrderRepository:
 
     async def create(self, data: dict, lines: list[dict]) -> SalesOrder:
         from app.services.sales_order_service import recalculate_so_totals
+        from app.db.models.tax import SalesOrderLineTax
+        from decimal import Decimal
 
         order = SalesOrder(id=str(uuid.uuid4()), **data)
         self.db.add(order)
         await self.db.flush()
         order_lines = []
+        # Pop multi-stack tax_rate_ids from line dicts before constructing the model
+        line_tax_ids_per_line: list[list[str]] = []
         for line_data in lines:
+            tax_rate_ids = line_data.pop("_tax_rate_ids", []) or []
+            line_tax_ids_per_line.append(tax_rate_ids)
             line = SalesOrderLine(id=str(uuid.uuid4()), tenant_id=order.tenant_id, order_id=order.id, **line_data)
             self.db.add(line)
             order_lines.append(line)
         await self.db.flush()
+
+        # Create line_taxes rows for any line that received multi-stack rates.
+        # Amounts are placeholders here — recalculate_so_taxes will set them.
+        for line, tax_rate_ids in zip(order_lines, line_tax_ids_per_line):
+            for trid in tax_rate_ids:
+                lt = SalesOrderLineTax(
+                    id=str(uuid.uuid4()),
+                    tenant_id=order.tenant_id,
+                    line_id=line.id,
+                    tax_rate_id=trid,
+                    rate_pct=Decimal("0"),
+                    base_amount=Decimal("0"),
+                    tax_amount=Decimal("0"),
+                    behavior="addition",
+                )
+                self.db.add(lt)
+        if any(line_tax_ids_per_line):
+            await self.db.flush()
+
         # Eagerly load the lines relationship to avoid MissingGreenlet on assignment
         await self.db.refresh(order, ["lines"])
         recalculate_so_totals(order)

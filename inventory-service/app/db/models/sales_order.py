@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from app.db.models.tracking import EntityBatch
     from app.db.models.variant import ProductVariant
     from app.db.models.warehouse import Warehouse
+    from app.db.models.tax import SalesOrderLineTax
 
 
 class SalesOrder(Base):
@@ -185,6 +186,9 @@ class SalesOrderLine(Base):
     variant:   Mapped[ProductVariant | None] = relationship("ProductVariant")
     batch:     Mapped[EntityBatch | None]  = relationship("EntityBatch", lazy="noload")
     warehouse: Mapped[Warehouse | None]    = relationship("Warehouse", lazy="joined")
+    line_taxes: Mapped[list["SalesOrderLineTax"]] = relationship(
+        "SalesOrderLineTax", back_populates="line", cascade="all, delete-orphan", lazy="selectin",
+    )
 
     __table_args__ = (
         Index("ix_sales_order_lines_order_id", "order_id"),
