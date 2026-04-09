@@ -46,11 +46,13 @@ async function request<T>(
   body?: unknown,
   options: RequestOptions = {},
 ): Promise<T> {
+  const authState = useAuthStore.getState()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'X-User-Id': useAuthStore.getState().user?.id ?? '1',
-    'X-Tenant-Id': options.tenantId ?? useAuthStore.getState().user?.tenant_id ?? 'default',
+    'X-User-Id': authState.user?.id ?? '1',
+    'X-Tenant-Id': options.tenantId ?? authState.user?.tenant_id ?? 'default',
   }
+  if (authState.accessToken) headers['Authorization'] = `Bearer ${authState.accessToken}`
   if (options.idempotencyKey) headers['Idempotency-Key'] = options.idempotencyKey
   if (options.adminKey) headers['X-Admin-Key'] = options.adminKey
 

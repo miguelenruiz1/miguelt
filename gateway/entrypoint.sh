@@ -91,6 +91,7 @@ server {
     location /api/v1/reports         { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
     location /api/v1/events          { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
     location /api/v1/config          { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
+    location /api/v1/config/workflow { proxy_pass https://${TRACE_UPSTREAM}; proxy_set_header Host ${TRACE_UPSTREAM}; }
     location /api/v1/kardex          { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
 
     # Integration Service
