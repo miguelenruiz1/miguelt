@@ -18,6 +18,7 @@ RUN printf 'server {\n\
   index index.html;\n\
   location / {\n\
     try_files $uri $uri/ /index.html;\n\
+    add_header Cache-Control "no-cache, no-store, must-revalidate";\n\
   }\n\
   location /assets/ {\n\
     expires 1y;\n\
