@@ -85,7 +85,8 @@ server {
     location /api/v1/alerts          { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
     location /api/v1/portal          { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
     location /api/v1/reorder         { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
-    location /api/v1/tax             { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
+    location /api/v1/tax-rates       { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
+    location /api/v1/tax-categories  { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
     location /api/v1/uom             { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
     location /api/v1/variant         { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
     location /api/v1/reports         { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
