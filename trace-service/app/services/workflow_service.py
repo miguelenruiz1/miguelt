@@ -317,16 +317,30 @@ class WorkflowService:
         )
         if not transitions:
             # Fallback: look for transitions with NULL event_type_slug
-            # (presets that weren't migrated with event_type_slug links)
+            # Match by label (synthetic slug = LABEL.upper().replace(" ","_"))
             all_from = await self._transition_repo.get_transitions_from(
                 self._tenant_id, from_state.id
             )
             null_transitions = [t for t in all_from if t.event_type_slug is None]
+
+            # Try matching by synthetic slug (label-based)
+            for t in null_transitions:
+                synthetic = (t.label or "").upper().replace(" ", "_")
+                if synthetic and synthetic == event_type_slug.upper():
+                    return t, t.to_state
+
+            # Try matching by transition ID (frontend sends transition_id as event_type)
+            try:
+                evt_uuid = uuid.UUID(event_type_slug)
+                for t in null_transitions:
+                    if t.id == evt_uuid:
+                        return t, t.to_state
+            except (ValueError, AttributeError):
+                pass
+
             if len(null_transitions) == 1:
-                # Only one possible transition — use it
                 transitions = null_transitions
             elif null_transitions:
-                # Multiple options — can't auto-resolve
                 transitions = null_transitions
             else:
                 return None
@@ -380,39 +394,83 @@ class WorkflowService:
 
         # Bucket transitions by event_type_slug so we can expose ALL outputs
         # (not just the first) when an event has multiple outcomes (pass/fail/hold).
-        outputs_by_slug: dict[str | None, list[Any]] = {}
+        # Transitions WITHOUT event_type_slug are treated individually (each is its own action).
+        outputs_by_slug: dict[str, list[Any]] = {}
         for t in transitions:
-            outputs_by_slug.setdefault(t.event_type_slug, []).append(t)
+            if t.event_type_slug:
+                outputs_by_slug.setdefault(t.event_type_slug, []).append(t)
 
-        # Group by event_type_slug to avoid duplicate actions
-        seen_events: set[str | None] = set()
+        seen_events: set[str] = set()
         actions: list[dict[str, Any]] = []
 
         for t in transitions:
             evt_slug = t.event_type_slug
+
+            # ── Transitions WITHOUT event_type: each is an independent action ──
+            if not evt_slug:
+                # Use the transition label as a synthetic event slug
+                synthetic_slug = (t.label or "").upper().replace(" ", "_") or f"TRANSITION_{t.id}"
+                to_state_info = {
+                    "slug": t.to_state.slug,
+                    "label": t.to_state.label,
+                    "color": t.to_state.color,
+                    "icon": t.to_state.icon,
+                    "is_terminal": t.to_state.is_terminal,
+                } if t.to_state else None
+                actions.append({
+                    "transition_id": str(t.id),
+                    "to_state": to_state_info,
+                    "event_type_slug": synthetic_slug,
+                    "label": t.label or (t.to_state.label if t.to_state else "Acción"),
+                    "event_type": {
+                        "slug": synthetic_slug,
+                        "name": t.label or (t.to_state.label if t.to_state else "Acción"),
+                        "description": None,
+                        "icon": t.to_state.icon if t.to_state else None,
+                        "color": t.to_state.color if t.to_state else "#6366f1",
+                        "is_informational": False,
+                        "requires_wallet": False,
+                        "requires_notes": False,
+                        "requires_reason": False,
+                        "requires_admin": False,
+                    },
+                    "has_pass_fail": False,
+                    "outputs": [
+                        {
+                            "transition_id": str(t.id),
+                            "slug": t.to_state.slug if t.to_state else None,
+                            "label": t.to_state.label if t.to_state else None,
+                            "color": t.to_state.color if t.to_state else None,
+                            "icon": t.to_state.icon if t.to_state else None,
+                            "is_terminal": t.to_state.is_terminal if t.to_state else False,
+                        }
+                    ],
+                })
+                continue
+
+            # ── Transitions WITH event_type: group by slug ─────────────────
             if evt_slug in seen_events:
                 continue
             seen_events.add(evt_slug)
 
             # Look up event type metadata
             event_type = None
-            if evt_slug:
-                et = await self._event_type_repo.get_by_slug(self._tenant_id, evt_slug)
-                if et and not et.is_active:
-                    continue  # Skip disabled event types
-                if et:
-                    event_type = {
-                        "slug": et.slug,
-                        "name": et.name,
-                        "description": et.description,
-                        "icon": et.icon,
-                        "color": et.color,
-                        "is_informational": et.is_informational,
-                        "requires_wallet": et.requires_wallet,
-                        "requires_notes": et.requires_notes,
-                        "requires_reason": et.requires_reason,
-                        "requires_admin": et.requires_admin,
-                    }
+            et = await self._event_type_repo.get_by_slug(self._tenant_id, evt_slug)
+            if et and not et.is_active:
+                continue  # Skip disabled event types
+            if et:
+                event_type = {
+                    "slug": et.slug,
+                    "name": et.name,
+                    "description": et.description,
+                    "icon": et.icon,
+                    "color": et.color,
+                    "is_informational": et.is_informational,
+                    "requires_wallet": et.requires_wallet,
+                    "requires_notes": et.requires_notes,
+                    "requires_reason": et.requires_reason,
+                    "requires_admin": et.requires_admin,
+                }
 
             slug_outputs = outputs_by_slug.get(evt_slug, [t])
             outputs = [
@@ -439,10 +497,7 @@ class WorkflowService:
                 "event_type_slug": evt_slug,
                 "label": t.label,
                 "event_type": event_type,
-                # True when the same event_type leads to >1 possible target state
-                # (e.g. QC pass / QC fail) — frontend should show a result selector.
                 "has_pass_fail": len(slug_outputs) > 1,
-                # Full list of all possible target states for this event type.
                 "outputs": outputs,
             })
 
