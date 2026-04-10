@@ -453,7 +453,8 @@ async def release(
     from app.core.errors import ForbiddenError
     from app.core.settings import get_settings
     has_valid_key = bool(x_admin_key) and _secrets.compare_digest(x_admin_key, get_settings().TRACE_ADMIN_KEY)
-    is_admin_user = current_user.get('is_superuser') or 'logistics.admin' in (current_user.get('permissions') or [])
+    user_perms = current_user.get('permissions') or []
+    is_admin_user = current_user.get('is_superuser') or 'logistics.manage' in user_perms or 'logistics.admin' in user_perms
     if not (has_valid_key or is_admin_user):
         raise ForbiddenError("Requires admin privileges or valid admin key")
 
@@ -896,7 +897,8 @@ async def delete_asset(
 
     settings = get_settings()
     has_valid_key = bool(admin_key) and _secrets.compare_digest(admin_key, settings.TRACE_ADMIN_KEY)
-    is_admin_user = current_user.get('is_superuser') or 'logistics.admin' in (current_user.get('permissions') or [])
+    user_perms = current_user.get('permissions') or []
+    is_admin_user = current_user.get('is_superuser') or 'logistics.manage' in user_perms or 'logistics.admin' in user_perms
     if not (has_valid_key or is_admin_user):
         raise ForbiddenError("Requires admin privileges or valid admin key")
 

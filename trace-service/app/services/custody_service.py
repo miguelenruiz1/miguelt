@@ -525,7 +525,8 @@ class CustodyService:
             settings = get_settings()
             has_valid_key = bool(admin_key) and _secrets.compare_digest(admin_key, settings.TRACE_ADMIN_KEY)
             caller = getattr(self, '_current_user', None) or {}
-            is_admin_user = caller.get('is_superuser') or 'logistics.admin' in (caller.get('permissions') or [])
+            user_perms = caller.get('permissions') or []
+            is_admin_user = caller.get('is_superuser') or 'logistics.manage' in user_perms or 'logistics.admin' in user_perms
             if not (has_valid_key or is_admin_user):
                 raise ForbiddenError(
                     f"Event '{event_type_slug}' requires admin privileges or a valid X-Admin-Key header"
