@@ -501,9 +501,51 @@ class WorkflowService:
                 "outputs": outputs,
             })
 
-        # ── Append ALL other active event types not already in actions ──────
+        # ── Append free moves to ALL other states not already covered ────────
+        # Users can move cargo to any state, not just predefined transitions.
+        covered_to_slugs = {a["to_state"]["slug"] for a in actions if a.get("to_state")}
+        if from_state:
+            covered_to_slugs.add(from_state.slug)  # exclude current state
+        all_states = await self._state_repo.list_by_tenant(self._tenant_id)
+        for s in all_states:
+            if s.slug in covered_to_slugs:
+                continue
+            actions.append({
+                "transition_id": f"free_{s.slug}",
+                "to_state": {
+                    "slug": s.slug,
+                    "label": s.label,
+                    "color": s.color,
+                    "icon": s.icon,
+                    "is_terminal": s.is_terminal,
+                },
+                "event_type_slug": f"MOVE_TO_{s.slug.upper()}",
+                "label": f"Mover a {s.label}",
+                "event_type": {
+                    "slug": f"MOVE_TO_{s.slug.upper()}",
+                    "name": f"Mover a {s.label}",
+                    "description": None,
+                    "icon": s.icon,
+                    "color": s.color,
+                    "is_informational": False,
+                    "requires_wallet": False,
+                    "requires_notes": False,
+                    "requires_reason": False,
+                    "requires_admin": False,
+                },
+                "has_pass_fail": False,
+                "outputs": [{
+                    "transition_id": f"free_{s.slug}",
+                    "slug": s.slug,
+                    "label": s.label,
+                    "color": s.color,
+                    "icon": s.icon,
+                    "is_terminal": s.is_terminal,
+                }],
+            })
+
+        # ── Append ALL other active event types not already in actions ────
         # This lets users record any event (informational, fortuito, etc.)
-        # regardless of whether a transition exists for it.
         used_slugs = {a.get("event_type_slug") for a in actions}
         all_event_types = await self._event_type_repo.list_by_tenant(self._tenant_id, active_only=True)
         for et in all_event_types:

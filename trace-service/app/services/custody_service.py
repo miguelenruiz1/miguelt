@@ -574,8 +574,17 @@ class CustodyService:
                 _transition, target_state = result_transition
                 new_state = target_state.slug
             else:
-                # No transition found — record event without state change
-                new_state = asset.state
+                # Check for free move (MOVE_TO_<state_slug>)
+                if event_type_slug.upper().startswith("MOVE_TO_"):
+                    target_slug = event_type_slug[8:].lower()  # strip "MOVE_TO_"
+                    target_ws = await self._workflow_svc.resolve_state_slug(target_slug)
+                    if target_ws and target_ws.tenant_id == self._tenant_id:
+                        new_state = target_ws.slug
+                    else:
+                        raise AssetStateError(f"State '{target_slug}' not found in workflow")
+                else:
+                    # No transition found — record event without state change
+                    new_state = asset.state
 
         # ── 5. Enrich event data ──────────────────────────────────────────────
         if notes:
