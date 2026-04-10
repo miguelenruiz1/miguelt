@@ -501,6 +501,35 @@ class WorkflowService:
                 "outputs": outputs,
             })
 
+        # ── Append ALL other active event types not already in actions ──────
+        # This lets users record any event (informational, fortuito, etc.)
+        # regardless of whether a transition exists for it.
+        used_slugs = {a.get("event_type_slug") for a in actions}
+        all_event_types = await self._event_type_repo.list_by_tenant(self._tenant_id, active_only=True)
+        for et in all_event_types:
+            if et.slug in used_slugs:
+                continue
+            actions.append({
+                "transition_id": f"evt_{et.slug}",
+                "to_state": None,
+                "event_type_slug": et.slug,
+                "label": et.name,
+                "event_type": {
+                    "slug": et.slug,
+                    "name": et.name,
+                    "description": et.description,
+                    "icon": et.icon,
+                    "color": et.color,
+                    "is_informational": et.is_informational,
+                    "requires_wallet": et.requires_wallet,
+                    "requires_notes": et.requires_notes,
+                    "requires_reason": et.requires_reason,
+                    "requires_admin": et.requires_admin,
+                },
+                "has_pass_fail": False,
+                "outputs": [],
+            })
+
         return actions
 
     async def resolve_state_slug(self, slug_or_legacy: str) -> WorkflowState | None:

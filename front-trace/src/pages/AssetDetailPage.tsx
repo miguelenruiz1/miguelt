@@ -72,14 +72,18 @@ export function AssetDetailPage() {
       .sort((a, b) => a.sort_order - b.sort_order)
   }, [workflowStates])
 
-  // Separate actions: regular vs terminal
+  // Separate actions: regular transitions, terminal, and extra events (no transition)
   const regularActions = useMemo(() =>
     (availableActions ?? []).filter(a =>
-      !a.to_state?.is_terminal && !a.event_type?.is_informational
+      a.to_state && !a.to_state.is_terminal && !a.event_type?.is_informational
     ), [availableActions])
   const terminalActions = useMemo(() =>
     (availableActions ?? []).filter(a =>
       a.to_state?.is_terminal && !a.event_type?.is_informational
+    ), [availableActions])
+  const extraEvents = useMemo(() =>
+    (availableActions ?? []).filter(a =>
+      !a.to_state || a.event_type?.is_informational
     ), [availableActions])
 
   if (isLoading) return (
@@ -409,6 +413,35 @@ export function AssetDetailPage() {
                       </button>
                     )
                   })}
+                  {extraEvents.length > 0 && (
+                    <>
+                      {(regularActions.length > 0 || terminalActions.length > 0) && (
+                        <div className="border-t border-border my-2" />
+                      )}
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                        Registrar evento
+                      </p>
+                      {extraEvents.map(action => {
+                        const EvIcon = resolveIcon(action.event_type?.icon)
+                        return (
+                          <button
+                            key={action.event_type_slug}
+                            onClick={() => setActiveAction(action)}
+                            className="flex items-center gap-3 rounded-xl border border-dashed px-3 py-2 text-left transition-all hover:bg-muted/50"
+                            style={colorStyle(action.event_type?.color || '#94a3b8')}
+                          >
+                            <EvIcon className="h-4 w-4 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium">{action.event_type?.name || action.label}</p>
+                              {action.event_type?.description && (
+                                <p className="text-[10px] opacity-60">{action.event_type.description}</p>
+                              )}
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </>
+                  )}
                 </div>
               </Card>
             )}
