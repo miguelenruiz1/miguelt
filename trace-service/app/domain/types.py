@@ -64,6 +64,8 @@ class EventType(StrEnum):
     DECONSOLIDATED = "DECONSOLIDATED"       # desconsolidado
     NOTE = "NOTE"                           # nota/anotación libre
     RETURN = "RETURN"                       # devolución / logística inversa
+    # ─── Compliance events ───────────────────────────────────────────────────
+    COMPLIANCE_VERIFIED = "COMPLIANCE_VERIFIED"  # EUDR screening anclado
 
 
 # ─── Informational events: do NOT change asset state ──────────────────────────
@@ -73,6 +75,7 @@ INFORMATIONAL_EVENTS: frozenset[EventType] = frozenset({
     EventType.CONSOLIDATED,
     EventType.DECONSOLIDATED,
     EventType.NOTE,
+    EventType.COMPLIANCE_VERIFIED,
 })
 
 
@@ -174,4 +177,5 @@ VALID_FROM_STATES: dict[EventType, frozenset[AssetState]] = {
     EventType.CONSOLIDATED: _NON_TERMINAL,
     EventType.DECONSOLIDATED: _NON_TERMINAL,
     EventType.NOTE: _NON_TERMINAL,
+    EventType.COMPLIANCE_VERIFIED: _NON_TERMINAL,
 }

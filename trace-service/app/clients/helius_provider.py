@@ -262,11 +262,13 @@ class HeliusProvider(IBlockchainProvider):
             "imageUrl": metadata.get("image_url", ""),
             "externalUrl": metadata.get("external_url", ""),
             "sellerFeeBasisPoints": 0,
-            # Do NOT pass "uri" — let Helius auto-host the metadata JSON.
-            # Helius reads name/description/attributes/imageUrl and generates
-            # a hosted metadata URI that explorers (XRAY, etc.) can fetch.
             "confirmTransaction": True,
         }
+        # Self-hosted metadata URI — Helius auto-hosting is broken (returns
+        # garbage Arweave URLs). We serve our own Metaplex-standard JSON.
+        metadata_uri = metadata.get("_metadata_uri")
+        if metadata_uri:
+            params["uri"] = metadata_uri
         if tree_address:
             params["treeAddress"] = tree_address
 

@@ -155,6 +155,16 @@ export function useScreenDeforestation() {
   })
 }
 
+export function useScreenDeforestationFull() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => complianceApi.plots.screenDeforestationFull(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.plots })
+    },
+  })
+}
+
 // ─── Records ─────────────────────────────────────────────────────────────────
 
 export function useRecords(params?: {

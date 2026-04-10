@@ -107,6 +107,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         "/uploads/",
         "/api/v1/internal/",  # Internal S2S endpoints (use X-Service-Token)
         "/api/v1/anchoring/",  # S2S anchoring-as-a-service (validates X-Service-Token)
+        "/api/v1/assets/metadata/",  # Public cNFT metadata (Solana explorers need unauthenticated access)
     )
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:

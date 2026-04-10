@@ -159,6 +159,60 @@ async def _idempotent_post(
 
 # ─── Assets ───────────────────────────────────────────────────────────────────
 
+@router.get(
+    "/metadata/{asset_id}.json",
+    summary="Public cNFT metadata (Metaplex standard) — no auth required",
+)
+async def asset_metadata_json(
+    asset_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    """Serves Metaplex-compatible metadata JSON for on-chain cNFTs.
+
+    Solana explorers (XRAY, Solana Explorer, etc.) fetch this URI to display
+    the cNFT name, image, and attributes. Must be publicly accessible.
+    """
+    from app.db.models import Asset
+    result = await db.execute(select(Asset).where(Asset.id == asset_id))
+    asset = result.scalar_one_or_none()
+    if not asset:
+        raise NotFoundError(f"Asset {asset_id} not found")
+
+    meta = asset.metadata_ or {}
+    name = meta.get("name", asset.product_type)
+    image = meta.get("image_url") or (
+        f"https://api.dicebear.com/9.x/shapes/svg"
+        f"?seed={asset_id}&backgroundColor=6366f1,3b82f6,22c55e,f59e0b,ef4444"
+    )
+
+    # Build Metaplex-standard attributes
+    attrs = []
+    field_labels = {
+        "product_type": "Tipo de Producto", "weight": "Peso",
+        "weight_unit": "Unidad", "quality_grade": "Calidad",
+        "origin": "Origen", "batch_number": "Lote",
+    }
+    for key, val in meta.items():
+        if key in ("name", "image_url", "description") or val is None:
+            continue
+        label = field_labels.get(key, key)
+        attrs.append({"trait_type": label, "value": str(val)})
+    attrs.append({"trait_type": "Tipo de Producto", "value": asset.product_type})
+
+    return ORJSONResponse(content={
+        "name": name,
+        "symbol": "TRC",
+        "description": meta.get("description", f"Carga de {asset.product_type} — Trace Platform"),
+        "image": image,
+        "external_url": f"https://trace.app/assets/{asset_id}",
+        "attributes": attrs,
+        "properties": {
+            "category": "logistics",
+            "creators": [{"address": asset.current_custodian_wallet, "share": 100}],
+        },
+    })
+
+
 @router.post(
     "",
     status_code=status.HTTP_201_CREATED,

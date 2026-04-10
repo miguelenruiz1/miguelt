@@ -63,6 +63,18 @@ export interface TenantFrameworkActivation {
   framework_slug: string
 }
 
+// EUDR Art. 8.2.f — tipos reconocidos de derecho de uso de la zona
+export type TenureType =
+  | 'owned'
+  | 'leased'
+  | 'sharecropped'
+  | 'concession'
+  | 'indigenous_collective'
+  | 'afro_collective'
+  | 'baldio_adjudicado'
+  | 'occupation'
+  | 'other'
+
 export interface CompliancePlot {
   id: string
   tenant_id: string
@@ -80,6 +92,18 @@ export interface CompliancePlot {
   municipality: string | null
   land_title_number: string | null
   land_title_hash: string | null
+  // Tenencia y propiedad (EUDR Art. 8.2.f)
+  owner_name: string | null
+  owner_id_type: string | null
+  owner_id_number: string | null
+  producer_name: string | null
+  producer_id_type: string | null
+  producer_id_number: string | null
+  cadastral_id: string | null
+  tenure_type: TenureType | null
+  tenure_start_date: string | null
+  tenure_end_date: string | null
+  indigenous_territory_flag: boolean
   deforestation_free: boolean
   cutoff_date_compliant: boolean
   legal_land_use: boolean
@@ -204,6 +228,47 @@ export interface PublicVerification {
   message: string | null
 }
 
+// ─── Multi-source EUDR screening ────────────────────────────────────────────
+
+export type EudrRiskLevel = 'none' | 'low' | 'medium' | 'high'
+
+export interface SourceResult {
+  source: string
+  name: string
+  institution: string
+  description: string
+  eudr_role: string
+  reference_url: string
+  dataset: string
+  checked_at: string
+  error?: string | null
+  // GFW-specific
+  alerts_count?: number
+  high_confidence_alerts?: number
+  deforestation_free?: boolean | null
+  cutoff_date?: string
+  // Hansen-specific
+  loss_pixels?: number
+  has_loss?: boolean | null
+  loss_by_year?: Record<number, number>
+  cutoff_year?: number
+  // JRC-specific
+  forest_pixel_count?: number
+  was_forest_2020?: boolean | null
+}
+
+export interface FullScreeningResult {
+  plot_id: string
+  plot_code: string
+  eudr_compliant: boolean | null
+  eudr_risk: EudrRiskLevel
+  risk_reason: string
+  checked_at: string
+  elapsed_seconds: number
+  failed_sources: string[]
+  sources: Record<string, SourceResult>
+}
+
 // ─── Input types ────────────────────────────────────────────────────────────
 
 export interface CreatePlotInput {
@@ -213,6 +278,7 @@ export interface CreatePlotInput {
   geolocation_type?: string
   lat?: number | null
   lng?: number | null
+  geojson_data?: Record<string, unknown> | null
   geojson_arweave_url?: string | null
   geojson_hash?: string | null
   country_code?: string
@@ -220,6 +286,18 @@ export interface CreatePlotInput {
   municipality?: string | null
   land_title_number?: string | null
   land_title_hash?: string | null
+  // Tenencia y propiedad (EUDR Art. 8.2.f)
+  owner_name?: string | null
+  owner_id_type?: string | null
+  owner_id_number?: string | null
+  producer_name?: string | null
+  producer_id_type?: string | null
+  producer_id_number?: string | null
+  cadastral_id?: string | null
+  tenure_type?: TenureType | null
+  tenure_start_date?: string | null
+  tenure_end_date?: string | null
+  indigenous_territory_flag?: boolean
   deforestation_free?: boolean
   cutoff_date_compliant?: boolean
   legal_land_use?: boolean
@@ -236,8 +314,21 @@ export interface UpdatePlotInput {
   geolocation_type?: string | null
   lat?: number | null
   lng?: number | null
+  geojson_data?: Record<string, unknown> | null
   geojson_arweave_url?: string | null
   geojson_hash?: string | null
+  // Tenencia y propiedad (EUDR Art. 8.2.f)
+  owner_name?: string | null
+  owner_id_type?: string | null
+  owner_id_number?: string | null
+  producer_name?: string | null
+  producer_id_type?: string | null
+  producer_id_number?: string | null
+  cadastral_id?: string | null
+  tenure_type?: TenureType | null
+  tenure_start_date?: string | null
+  tenure_end_date?: string | null
+  indigenous_territory_flag?: boolean
   country_code?: string | null
   region?: string | null
   municipality?: string | null

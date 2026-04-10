@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker, GeoJSON, LayersControl, useMap } from 'react-leaflet'
 
 const { BaseLayer } = LayersControl
@@ -23,12 +23,22 @@ const RISK_COLORS: Record<string, string> = {
 function FitBounds({ plots }: { plots: CompliancePlot[] }) {
   const map = useMap()
   useEffect(() => {
-    const points = plots
-      .filter(p => p.lat != null && p.lng != null)
-      .map(p => [Number(p.lat), Number(p.lng)] as [number, number])
-    if (points.length > 0) {
-      const bounds = L.latLngBounds(points)
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 })
+    const allBounds = L.latLngBounds([])
+    for (const p of plots) {
+      // Include polygon bounds if available
+      const gj = (p as any).geojson_data
+      if (gj) {
+        try {
+          const layer = L.geoJSON(gj as any)
+          const b = layer.getBounds()
+          if (b.isValid()) allBounds.extend(b)
+        } catch { /* ignore */ }
+      } else if (p.lat != null && p.lng != null) {
+        allBounds.extend([Number(p.lat), Number(p.lng)])
+      }
+    }
+    if (allBounds.isValid()) {
+      map.fitBounds(allBounds, { padding: [40, 40], maxZoom: 14 })
     }
   }, [plots, map])
   return null
@@ -87,23 +97,46 @@ export function PlotMap({ plots, height = '400px', onPlotClick, selectedPlotId }
           const lat = Number(plot.lat)
           const lng = Number(plot.lng)
           const color = RISK_COLORS[plot.risk_level] || RISK_COLORS.standard
+          const fillColor = plot.deforestation_free ? color : '#ef4444'
           const isSelected = plot.id === selectedPlotId
-          const radius = plot.plot_area_ha ? Math.max(8, Math.min(20, Math.sqrt(Number(plot.plot_area_ha)) * 4)) : 10
+          const geojson = (plot as any).geojson_data
 
-          return (
+          return geojson ? (
+            <GeoJSON
+              key={`${plot.id}-${isSelected}`}
+              data={geojson}
+              style={() => ({
+                color: isSelected ? '#4f46e5' : color,
+                fillColor,
+                fillOpacity: isSelected ? 0.5 : 0.3,
+                weight: isSelected ? 3 : 2,
+              })}
+              eventHandlers={{ click: () => onPlotClick?.(plot) }}
+              onEachFeature={(_feature, layer) => {
+                layer.bindPopup(`
+                  <div style="font-size:12px;min-width:140px">
+                    <p style="font-weight:bold;font-size:13px;margin:0 0 4px">${plot.plot_code}</p>
+                    ${plot.municipality ? `<p style="margin:0">${plot.municipality}, ${plot.region || ''}</p>` : ''}
+                    ${plot.plot_area_ha ? `<p style="margin:0">Area: ${Number(plot.plot_area_ha).toFixed(2)} ha</p>` : ''}
+                    <p style="margin:2px 0 0">Deforestacion:
+                      <strong style="color:${plot.deforestation_free ? '#16a34a' : '#dc2626'}">${plot.deforestation_free ? 'Libre' : 'Con alertas'}</strong>
+                    </p>
+                  </div>
+                `)
+              }}
+            />
+          ) : (
             <CircleMarker
               key={plot.id}
               center={[lat, lng]}
-              radius={isSelected ? radius + 4 : radius}
+              radius={isSelected ? 14 : 10}
               pathOptions={{
                 color: isSelected ? '#4f46e5' : color,
-                fillColor: plot.deforestation_free ? color : '#ef4444',
+                fillColor,
                 fillOpacity: isSelected ? 0.8 : 0.6,
                 weight: isSelected ? 3 : 2,
               }}
-              eventHandlers={{
-                click: () => onPlotClick?.(plot),
-              }}
+              eventHandlers={{ click: () => onPlotClick?.(plot) }}
             >
               <Popup>
                 <div className="text-xs space-y-1 min-w-40">

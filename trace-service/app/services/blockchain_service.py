@@ -90,6 +90,12 @@ class BlockchainService:
             normalized_meta = self._build_metadata(product_type, metadata, asset_id)
             normalized_meta["metadata_hash"] = self._compute_metadata_hash(normalized_meta)
 
+            # Self-hosted metadata URI (Helius's auto-hosting is broken)
+            from app.core.settings import get_settings as _gs
+            public_url = _gs().PUBLIC_BASE_URL.rstrip("/")
+            metadata_uri = f"{public_url}/api/v1/assets/metadata/{asset_id}.json"
+            normalized_meta["_metadata_uri"] = metadata_uri
+
             result = await self._provider.mint_cnft(
                 tree_address=tree_address,
                 owner_pubkey=owner_pubkey,

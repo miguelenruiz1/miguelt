@@ -560,8 +560,9 @@ async def export_dds(
     if record is None:
         raise NotFoundError(f"Record '{record_id}' not found")
 
-    # Load linked plots
+    # Load linked plots + their evidence documents (Art. 9.4 retention).
     from app.models.plot import CompliancePlot
+    from app.models.document_link import CompliancePlotDocument, ComplianceRecordDocument
     links = (await db.execute(
         select(CompliancePlotLink).where(CompliancePlotLink.record_id == record_id)
     )).scalars().all()
@@ -572,6 +573,11 @@ async def export_dds(
             select(CompliancePlot).where(CompliancePlot.id == link.plot_id)
         )).scalar_one_or_none()
         if plot:
+            plot_docs = (await db.execute(
+                select(CompliancePlotDocument).where(
+                    CompliancePlotDocument.plot_id == plot.id,
+                )
+            )).scalars().all()
             plots.append({
                 "plot_code": plot.plot_code,
                 "lat": float(plot.lat) if plot.lat else None,
@@ -583,9 +589,45 @@ async def export_dds(
                 "risk_level": plot.risk_level,
                 "deforestation_free": plot.deforestation_free,
                 "geojson_data": getattr(plot, "geojson_data", None),
+                "geojson_arweave_url": getattr(plot, "geojson_arweave_url", None),
+                "geojson_hash": getattr(plot, "geojson_hash", None),
+                "satellite_report_url": getattr(plot, "satellite_report_url", None),
+                "satellite_report_hash": getattr(plot, "satellite_report_hash", None),
                 "geolocation_type": getattr(plot, "geolocation_type", None),
                 "establishment_date": str(plot.establishment_date) if getattr(plot, "establishment_date", None) else None,
+                "land_title_number": getattr(plot, "land_title_number", None),
+                # EUDR Art. 8.2.f — derecho de uso / tenencia / titular
+                "owner_name": getattr(plot, "owner_name", None),
+                "owner_id_type": getattr(plot, "owner_id_type", None),
+                "owner_id_number": getattr(plot, "owner_id_number", None),
+                "producer_name": getattr(plot, "producer_name", None),
+                "producer_id_type": getattr(plot, "producer_id_type", None),
+                "producer_id_number": getattr(plot, "producer_id_number", None),
+                "cadastral_id": getattr(plot, "cadastral_id", None),
+                "tenure_type": getattr(plot, "tenure_type", None),
+                "tenure_start_date": str(plot.tenure_start_date) if getattr(plot, "tenure_start_date", None) else None,
+                "tenure_end_date": str(plot.tenure_end_date) if getattr(plot, "tenure_end_date", None) else None,
+                "indigenous_territory_flag": bool(getattr(plot, "indigenous_territory_flag", False)),
+                "documents": [
+                    {
+                        "id": str(d.id),
+                        "media_file_id": str(d.media_file_id),
+                        "document_type": d.document_type,
+                        "filename": d.filename,
+                        "file_hash": d.file_hash,
+                        "description": d.description,
+                        "uploaded_at": d.uploaded_at.isoformat() if d.uploaded_at else None,
+                    }
+                    for d in plot_docs
+                ],
             })
+
+    # Tambien documentos a nivel del record
+    record_docs = (await db.execute(
+        select(ComplianceRecordDocument).where(
+            ComplianceRecordDocument.record_id == record_id,
+        )
+    )).scalars().all()
 
     # Build record dict
     record_dict = {
@@ -613,6 +655,21 @@ async def export_dds(
         "signatory_role": getattr(record, "signatory_role", None),
         "signatory_date": str(getattr(record, "signatory_date", "")) if getattr(record, "signatory_date", None) else "",
         "prior_dds_references": getattr(record, "prior_dds_references", None),
+        "asset_id": str(record.asset_id) if record.asset_id else None,
+        "certificate_number": getattr(record, "certificate_number", None),
+        "geo_location_confidential": getattr(record, "geo_location_confidential", False),
+        "documents": [
+            {
+                "id": str(d.id),
+                "media_file_id": str(d.media_file_id),
+                "document_type": d.document_type,
+                "filename": d.filename,
+                "file_hash": d.file_hash,
+                "description": d.description,
+                "uploaded_at": d.uploaded_at.isoformat() if d.uploaded_at else None,
+            }
+            for d in record_docs
+        ],
     }
 
     # Fetch custody events from trace-service for full traceability
@@ -710,8 +767,9 @@ async def submit_to_traces(
             "Falta operator/supplier email — TRACES NT lo requiere para sumisión DDS."
         )
 
-    # Load plots
+    # Load plots + their evidence documents (Art. 9.4 retention)
     from app.models.plot import CompliancePlot
+    from app.models.document_link import CompliancePlotDocument, ComplianceRecordDocument
     links = (await db.execute(
         select(CompliancePlotLink).where(CompliancePlotLink.record_id == record_id)
     )).scalars().all()
@@ -722,6 +780,11 @@ async def submit_to_traces(
             select(CompliancePlot).where(CompliancePlot.id == link.plot_id)
         )).scalar_one_or_none()
         if plot:
+            plot_docs = (await db.execute(
+                select(CompliancePlotDocument).where(
+                    CompliancePlotDocument.plot_id == plot.id,
+                )
+            )).scalars().all()
             plots.append({
                 "plot_code": plot.plot_code,
                 "lat": float(plot.lat) if plot.lat else None,
@@ -729,12 +792,48 @@ async def submit_to_traces(
                 "plot_area_ha": float(plot.plot_area_ha) if plot.plot_area_ha else None,
                 "country_code": plot.country_code,
                 "municipality": plot.municipality,
+                "region": plot.region,
                 "risk_level": plot.risk_level,
                 "deforestation_free": plot.deforestation_free,
                 "geojson_data": getattr(plot, "geojson_data", None),
+                "geojson_arweave_url": getattr(plot, "geojson_arweave_url", None),
+                "geojson_hash": getattr(plot, "geojson_hash", None),
+                "satellite_report_url": getattr(plot, "satellite_report_url", None),
+                "satellite_report_hash": getattr(plot, "satellite_report_hash", None),
                 "geolocation_type": getattr(plot, "geolocation_type", None),
                 "establishment_date": str(plot.establishment_date) if getattr(plot, "establishment_date", None) else None,
+                "land_title_number": getattr(plot, "land_title_number", None),
+                # EUDR Art. 8.2.f — derecho de uso / tenencia / titular
+                "owner_name": getattr(plot, "owner_name", None),
+                "owner_id_type": getattr(plot, "owner_id_type", None),
+                "owner_id_number": getattr(plot, "owner_id_number", None),
+                "producer_name": getattr(plot, "producer_name", None),
+                "producer_id_type": getattr(plot, "producer_id_type", None),
+                "producer_id_number": getattr(plot, "producer_id_number", None),
+                "cadastral_id": getattr(plot, "cadastral_id", None),
+                "tenure_type": getattr(plot, "tenure_type", None),
+                "tenure_start_date": str(plot.tenure_start_date) if getattr(plot, "tenure_start_date", None) else None,
+                "tenure_end_date": str(plot.tenure_end_date) if getattr(plot, "tenure_end_date", None) else None,
+                "indigenous_territory_flag": bool(getattr(plot, "indigenous_territory_flag", False)),
+                "documents": [
+                    {
+                        "id": str(d.id),
+                        "media_file_id": str(d.media_file_id),
+                        "document_type": d.document_type,
+                        "filename": d.filename,
+                        "file_hash": d.file_hash,
+                        "description": d.description,
+                        "uploaded_at": d.uploaded_at.isoformat() if d.uploaded_at else None,
+                    }
+                    for d in plot_docs
+                ],
             })
+
+    record_docs_submit = (await db.execute(
+        select(ComplianceRecordDocument).where(
+            ComplianceRecordDocument.record_id == record_id,
+        )
+    )).scalars().all()
 
     record_dict = {
         "id": str(record.id),
@@ -757,6 +856,21 @@ async def submit_to_traces(
         "activity_type": getattr(record, "activity_type", "export"),
         "deforestation_free_declaration": record.deforestation_free_declaration,
         "legal_compliance_declaration": record.legal_compliance_declaration,
+        "asset_id": str(record.asset_id) if record.asset_id else None,
+        "certificate_number": getattr(record, "certificate_number", None),
+        "geo_location_confidential": getattr(record, "geo_location_confidential", False),
+        "documents": [
+            {
+                "id": str(d.id),
+                "media_file_id": str(d.media_file_id),
+                "document_type": d.document_type,
+                "filename": d.filename,
+                "file_hash": d.file_hash,
+                "description": d.description,
+                "uploaded_at": d.uploaded_at.isoformat() if d.uploaded_at else None,
+            }
+            for d in record_docs_submit
+        ],
         "signatory_name": getattr(record, "signatory_name", None),
         "signatory_role": getattr(record, "signatory_role", None),
         "signatory_date": str(getattr(record, "signatory_date", "")) if getattr(record, "signatory_date", None) else "",

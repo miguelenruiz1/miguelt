@@ -117,6 +117,7 @@ import { FeatureGuard } from '@/components/inventory/FeatureGuard'
 const FrameworksPage = lazy(() => import('@/pages/compliance/FrameworksPage'))
 const ActivationsPage = lazy(() => import('@/pages/compliance/ActivationsPage'))
 const PlotsPage = lazy(() => import('@/pages/compliance/PlotsPage'))
+const CreatePlotPage = lazy(() => import('@/pages/compliance/CreatePlotPage'))
 const PlotDetailPage = named(() => import('@/pages/compliance/PlotDetailPage'), 'PlotDetailPage')
 const RecordsPage = lazy(() => import('@/pages/compliance/RecordsPage'))
 const RecordDetailPage = lazy(() => import('@/pages/compliance/RecordDetailPage'))
@@ -892,6 +893,14 @@ const router = createBrowserRouter([
         element: (
           <React.Suspense fallback={null}>
             <ComplianceGuard><PlotsPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+      {
+        path: 'cumplimiento/parcelas/nueva',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><CreatePlotPage /></ComplianceGuard>
           </React.Suspense>
         ),
       },

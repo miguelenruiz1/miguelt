@@ -30,12 +30,41 @@ import type {
 
 const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
+/**
+ * Extrae un mensaje legible del error JSON devuelto por compliance-api.
+ *
+ * Soporta varios shapes:
+ *   { detail: "string" }                      → FastAPI HTTPException
+ *   { detail: [{ msg, loc }] }                → Pydantic validation error
+ *   { error: { message: "...", code: "..." } } → wrapper interno
+ *   string                                    → fallback raw
+ *
+ * Crítico para EUDR: el validador GeoJSON devuelve mensajes en `detail`
+ * con instrucciones específicas (precision insuficiente, polygon con holes,
+ * etc). Estos mensajes deben llegar al usuario.
+ */
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (typeof err === 'string') return err
+  if (!err || typeof err !== 'object') return fallback
+  const e = err as Record<string, any>
+  if (typeof e.error?.message === 'string') return e.error.message
+  if (typeof e.detail === 'string') return e.detail
+  if (Array.isArray(e.detail)) {
+    return e.detail
+      .map((d: any) =>
+        typeof d === 'string' ? d : d?.msg ?? JSON.stringify(d),
+      )
+      .join('; ')
+  }
+  if (typeof e.message === 'string') return e.message
+  return fallback
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await authFetch(`${BASE}${path}`, options)
   if (!res.ok) {
     const err = await res.json().catch(() => null)
-    const msg = err?.error?.message ?? err?.detail ?? res.statusText
-    throw new Error(msg)
+    throw new Error(extractErrorMessage(err, res.statusText))
   }
   return res.json()
 }
@@ -44,8 +73,7 @@ async function requestVoid(path: string, options: RequestInit = {}): Promise<voi
   const res = await authFetch(`${BASE}${path}`, options)
   if (!res.ok) {
     const err = await res.json().catch(() => null)
-    const msg = err?.error?.message ?? err?.detail ?? res.statusText
-    throw new Error(msg)
+    throw new Error(extractErrorMessage(err, res.statusText))
   }
 }
 
@@ -58,8 +86,7 @@ async function publicRequest<T>(path: string): Promise<T> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => null)
-    const msg = err?.error?.message ?? err?.detail ?? res.statusText
-    throw new Error(msg)
+    throw new Error(extractErrorMessage(err, res.statusText))
   }
   return res.json()
 }
@@ -134,6 +161,12 @@ export const complianceApi = {
 
     screenDeforestation: (id: string) =>
       request<any>(`/api/v1/compliance/plots/${id}/screen-deforestation`, { method: 'POST' }),
+
+    screenDeforestationFull: (id: string) =>
+      request<import('@/types/compliance').FullScreeningResult>(
+        `/api/v1/compliance/plots/${id}/screen-deforestation-full`,
+        { method: 'POST' },
+      ),
 
     documents: (id: string) =>
       request<DocumentLink[]>(`/api/v1/compliance/plots/${id}/documents`),

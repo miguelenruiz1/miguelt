@@ -5,7 +5,7 @@ import uuid
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Boolean, CheckConstraint, Date, Index, Integer, Numeric, Text, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, Date, Index, Integer, Numeric, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -43,6 +43,23 @@ class CompliancePlot(Base):
             "geolocation_type IN ('point','polygon','multipolygon')",
             name="ck_compliance_plots_geo_type",
         ),
+        CheckConstraint(
+            "tenure_type IS NULL OR tenure_type IN ("
+            "'owned','leased','sharecropped','concession',"
+            "'indigenous_collective','afro_collective','baldio_adjudicado',"
+            "'occupation','other')",
+            name="ck_compliance_plots_tenure_type",
+        ),
+        CheckConstraint(
+            "tenure_start_date IS NULL OR tenure_end_date IS NULL "
+            "OR tenure_end_date >= tenure_start_date",
+            name="ck_compliance_plots_tenure_dates",
+        ),
+        Index(
+            "ix_plots_cadastral",
+            "cadastral_id",
+            postgresql_where=text("cadastral_id IS NOT NULL"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -61,6 +78,18 @@ class CompliancePlot(Base):
     municipality: Mapped[str | None] = mapped_column(Text, nullable=True)
     land_title_number: Mapped[str | None] = mapped_column(Text, nullable=True)
     land_title_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Tenencia y propiedad (EUDR Art. 8.2.f — derecho legal de uso de la zona)
+    owner_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    owner_id_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    owner_id_number: Mapped[str | None] = mapped_column(Text, nullable=True)
+    producer_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    producer_id_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    producer_id_number: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cadastral_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tenure_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tenure_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    tenure_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    indigenous_territory_flag: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     deforestation_free: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     cutoff_date_compliant: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     legal_land_use: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

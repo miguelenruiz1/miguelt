@@ -138,7 +138,8 @@ def _validate_record_for_certificate(
     if not plots:
         missing.append("plots (at least 1 plot must be linked)")
 
-    # EUDR Art. 9.1.c / Art. 2.28: plots >= 4 ha require polygon
+    # EUDR Art. 9.1.c / Art. 2(28): plots > 4 ha require polygon (strict).
+    # "more than four hectares" en el reglamento → comparacion estricta.
     for plot in plots:
         area = plot.get("plot_area_ha")
         has_polygon = (
@@ -147,10 +148,10 @@ def _validate_record_for_certificate(
             or plot.get("geojson_data")
             or plot.get("geolocation_type") == "polygon"
         )
-        if area and float(area) >= 4.0 and not has_polygon:
+        if area and float(area) > 4.0 and not has_polygon:
             missing.append(
-                f"plot '{plot.get('plot_code', '?')}': parcela >= 4 ha requiere poligono "
-                "— EUDR Art. 9.1.c / Art. 2.28"
+                f"plot '{plot.get('plot_code', '?')}': parcela mayor a 4 ha requiere poligono "
+                "— EUDR Art. 9.1.c / Art. 2(28)"
             )
 
     if missing:

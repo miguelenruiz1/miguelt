@@ -505,7 +505,11 @@ class CustodyService:
         # ── 1. Load event type metadata from workflow engine ──────────────────
         wf_event = await self._workflow_svc.get_event_type_by_slug(event_type_slug)
 
-        is_informational = wf_event.is_informational if wf_event else False
+        # Fallback: check INFORMATIONAL_EVENTS set when no DB record exists
+        # (e.g. COMPLIANCE_VERIFIED added to enum but not yet seeded in workflow DB)
+        from app.domain.types import INFORMATIONAL_EVENTS, EventType as _ET
+        _is_info_enum = event_type_slug in {e.value for e in INFORMATIONAL_EVENTS}
+        is_informational = wf_event.is_informational if wf_event else _is_info_enum
         needs_wallet = wf_event.requires_wallet if wf_event else False
         needs_lock = (wf_event.requires_admin or wf_event.requires_reason) if wf_event else False
 
