@@ -167,6 +167,8 @@ export const api = {
       post<EventActionResponse>(`/api/v1/assets/${id}/events`, data, { idempotencyKey, adminKey }),
     anchor: (assetId: string, eventId: string) =>
       post<CustodyEvent>(`/api/v1/assets/${assetId}/events/${eventId}/anchor`, {}),
+    delete: (id: string, adminKey?: string) =>
+      del<void>(`/api/v1/assets/${id}`, { adminKey: adminKey || undefined }),
   },
 
   solana: {

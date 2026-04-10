@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
-  ArrowLeft, Package, RefreshCw, ShieldOff, MapPin, Zap,
+  ArrowLeft, Package, RefreshCw, ShieldOff, MapPin, Zap, Trash2,
   CheckCircle2, ExternalLink, Link2, XCircle, FlaskConical, FileDown,
   ShieldCheck, Clock, ChevronDown, ChevronUp, User, Hash,
   Anchor,
@@ -10,7 +10,7 @@ import { useSettingsStore, explorerAddressUrl, explorerTxUrl, xrayAssetUrl } fro
 import type { BlockchainStatus, AvailableAction } from '@/types/api'
 
 const isSimulated = (s: string) => s.startsWith('sim') || s.startsWith('SIM_')
-import { useAsset, useAssetEvents } from '@/hooks/useAssets'
+import { useAsset, useAssetEvents, useDeleteAsset } from '@/hooks/useAssets'
 import { useWalletList } from '@/hooks/useWallets'
 import { useWorkflowStates, useWorkflowEventTypes, useAvailableActions } from '@/hooks/useWorkflow'
 import { Topbar } from '@/components/layout/Topbar'
@@ -32,6 +32,8 @@ export function AssetDetailPage() {
   const navigate = useNavigate()
   const [activeAction, setActiveAction] = useState<AvailableAction | null>(null)
   const [showBlockchainDetails, setShowBlockchainDetails] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const deleteAsset = useDeleteAsset()
 
   const { data: asset, isLoading, refetch, isFetching } = useAsset(id)
   const { data: eventsData, isLoading: eventsLoading } = useAssetEvents(id)
@@ -440,6 +442,46 @@ export function AssetDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete asset (only terminal states) */}
+      {asset && isInactive && (
+        <div className="px-6 pb-6">
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-red-600">Eliminar carga</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Esta accion es irreversible. Se eliminara la carga y todos sus eventos.</p>
+              </div>
+              {!showDeleteConfirm ? (
+                <Button variant="destructive" size="sm" onClick={() => setShowDeleteConfirm(true)}>
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                  Eliminar
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)}>Cancelar</Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={deleteAsset.isPending}
+                    onClick={async () => {
+                      const adminKey = useSettingsStore.getState().adminKey || ''
+                      try {
+                        await deleteAsset.mutateAsync({ id: asset.id, adminKey })
+                        navigate('/assets')
+                      } catch (e: any) {
+                        alert(e.message || 'Error al eliminar')
+                      }
+                    }}
+                  >
+                    {deleteAsset.isPending ? 'Eliminando...' : 'Confirmar eliminacion'}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {asset && activeAction && (
         <WorkflowEventModal
