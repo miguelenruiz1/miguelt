@@ -72,7 +72,7 @@ class CustodianTypeResponse(OrmBase):
     name: str
     slug: str
     color: str
-    icon: str
+    icon: str | None = None
     description: str | None
     sort_order: int
     created_at: datetime
@@ -320,7 +320,7 @@ class EventTypeConfigResponse(OrmBase):
     slug: str
     name: str
     description: str | None
-    icon: str
+    icon: str | None = None
     color: str
     from_states: list[str]
     to_state: str | None
@@ -437,7 +437,7 @@ class WorkflowEventTypeResponse(OrmBase):
     slug: str
     name: str
     description: str | None
-    icon: str
+    icon: str | None = None
     color: str
     is_informational: bool
     requires_wallet: bool
@@ -467,7 +467,7 @@ class ActionEventTypeInfo(BaseModel):
     slug: str
     name: str
     description: str | None = None
-    icon: str
+    icon: str | None = None
     color: str
     is_informational: bool = False
     requires_wallet: bool = False
