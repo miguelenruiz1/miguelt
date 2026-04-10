@@ -303,7 +303,22 @@ export function WorkflowEventModal({ asset, action, open, onClose }: Props) {
           {...register('notes')}
         />
 
-        {/* Document uploads */}
+        {/* Evidence upload — always available */}
+        <div className="border-t border-border pt-3 mt-1">
+          <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+            <Image className="h-3.5 w-3.5" />
+            Evidencia (opcional)
+          </p>
+          <DocumentDropZone
+            requirement={{ type: 'evidence', label: 'Foto, PDF o documento', required: false, accept: ['image/*', 'application/pdf', '.pdf'], max_count: 5 }}
+            files={stagedFiles['evidence'] ?? []}
+            onAdd={(files) => addFiles('evidence', files)}
+            onRemove={(idx) => removeFile('evidence', idx)}
+            isCompliance={false}
+          />
+        </div>
+
+        {/* Compliance document uploads */}
         {requirements.length > 0 && (
           <div className="border-t border-border pt-3 mt-1">
             <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
