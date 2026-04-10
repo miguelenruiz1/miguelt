@@ -615,12 +615,45 @@ async def export_dds(
         "prior_dds_references": getattr(record, "prior_dds_references", None),
     }
 
+    # Fetch custody events from trace-service for full traceability
+    traceability_events = []
+    try:
+        settings = get_settings()
+        trace_url = getattr(settings, "TRACE_SERVICE_URL", "")
+        if trace_url and record.asset_id:
+            http = get_http_client()
+            resp = await http.get(
+                f"{trace_url}/api/v1/assets/{record.asset_id}/events?limit=200",
+                headers={
+                    "X-Tenant-Id": user.get("tenant_id", "default") if isinstance(user, dict) else "default",
+                    "X-Service-Token": settings.S2S_SERVICE_TOKEN,
+                },
+            )
+            if resp.status_code == 200:
+                events_data = resp.json().get("items", [])
+                for ev in events_data:
+                    traceability_events.append({
+                        "event_id": ev.get("id"),
+                        "event_type": ev.get("event_type"),
+                        "timestamp": ev.get("timestamp"),
+                        "from_wallet": ev.get("from_wallet"),
+                        "to_wallet": ev.get("to_wallet"),
+                        "location": ev.get("location"),
+                        "notes": ev.get("notes"),
+                        "event_hash": ev.get("event_hash"),
+                        "anchored": ev.get("anchored", False),
+                        "solana_tx_sig": ev.get("solana_tx_sig"),
+                    })
+    except Exception as exc:
+        log.warning("dds_traceability_fetch_failed", record_id=str(record_id), exc=str(exc))
+
     from app.services.traces_service import build_dds_payload
     dds = build_dds_payload(record_dict, plots)
 
     return {
         "record_id": str(record_id),
         "dds_payload": dds,
+        "traceability": traceability_events,
         "traces_nt_configured": bool(get_settings().TRACES_NT_USERNAME),
         "format": "TRACES NT DDS v2",
     }

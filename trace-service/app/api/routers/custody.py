@@ -254,6 +254,37 @@ async def mint_asset(
             except Exception as inner_exc:
                 log.error("mint_failed_status_update_error", asset_id=str(asset.id), exc=str(inner_exc))
 
+        # Auto-create EUDR compliance record if compliance module is active
+        try:
+            from app.core.settings import get_settings
+            settings = get_settings()
+            compliance_url = getattr(settings, 'COMPLIANCE_SERVICE_URL', '')
+            if compliance_url:
+                import httpx as _httpx
+                async with _httpx.AsyncClient(timeout=10.0) as hc:
+                    resp = await hc.post(
+                        f"{compliance_url}/api/v1/compliance/records/",
+                        json={
+                            "framework_slug": "eudr",
+                            "asset_id": str(asset.id),
+                            "commodity_type": body.metadata.get("commodity_type", "cafe"),
+                            "product_description": body.metadata.get("description", body.product_type),
+                            "country_of_production": body.metadata.get("country", "CO"),
+                            "quantity_kg": body.metadata.get("weight", 0),
+                            "activity_type": "export",
+                        },
+                        headers={
+                            "X-Tenant-Id": request.headers.get("X-Tenant-Id", "default"),
+                            "X-Service-Token": settings.S2S_SERVICE_TOKEN,
+                        },
+                    )
+                    if resp.status_code == 201:
+                        log.info("auto_compliance_record_created", asset_id=str(asset.id))
+                    else:
+                        log.info("auto_compliance_record_skipped", asset_id=str(asset.id), status=resp.status_code)
+        except Exception as exc:
+            log.warning("auto_compliance_record_failed", asset_id=str(asset.id), exc=str(exc))
+
         # Re-read asset from a fresh session to get updated blockchain fields
         async with get_db() as read_session:
             from app.repositories.custody_repo import AssetRepository
