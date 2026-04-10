@@ -126,18 +126,25 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if request.method == "OPTIONS":
             return await call_next(request)
 
-        # Accept either Bearer JWT or X-Service-Token
+        # Accept either Bearer JWT or valid X-Service-Token
         has_bearer = (request.headers.get("Authorization", "").lower().startswith("bearer "))
-        has_s2s = bool(request.headers.get("X-Service-Token"))
+        s2s_token = request.headers.get("X-Service-Token")
+        has_valid_s2s = False
+        if s2s_token:
+            import secrets as _secrets
+            has_valid_s2s = _secrets.compare_digest(s2s_token, settings.S2S_SERVICE_TOKEN)
 
-        if not (has_bearer or has_s2s):
+        if not (has_bearer or has_valid_s2s):
             from fastapi.responses import ORJSONResponse
+            status = 401 if not s2s_token else 403
+            msg = ("Missing Authorization header (Bearer JWT) or X-Service-Token"
+                   if not s2s_token else "Invalid service token")
             return ORJSONResponse(
-                status_code=401,
+                status_code=status,
                 content={
                     "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Missing Authorization header (Bearer JWT) or X-Service-Token",
+                        "message": msg,
                     }
                 },
             )

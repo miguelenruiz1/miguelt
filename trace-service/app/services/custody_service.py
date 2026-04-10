@@ -46,9 +46,10 @@ _DEFAULT_TENANT_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
 
 class CustodyService:
-    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID | None = None) -> None:
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID | None = None, current_user: dict | None = None) -> None:
         self._db = session
         self._tenant_id = tenant_id or _DEFAULT_TENANT_ID
+        self._current_user = current_user
         self._asset_repo = AssetRepository(session)
         self._event_repo = CustodyEventRepository(session)
         self._registry_repo = RegistryRepository(session)
@@ -517,12 +518,17 @@ class CustodyService:
             raise AssetStateError(f"Event type '{event_type_slug}' is disabled")
 
         # ── 1b. Admin key check for events flagged requires_admin ─────────────
+        #   Accepts EITHER a valid X-Admin-Key OR the request coming from a
+        #   tenant admin / superuser (checked via current_user dict).
         if wf_event and wf_event.requires_admin:
             import secrets as _secrets
             settings = get_settings()
-            if not _secrets.compare_digest(admin_key or "", settings.TRACE_ADMIN_KEY):
+            has_valid_key = bool(admin_key) and _secrets.compare_digest(admin_key, settings.TRACE_ADMIN_KEY)
+            caller = getattr(self, '_current_user', None) or {}
+            is_admin_user = caller.get('is_superuser') or 'logistics.admin' in (caller.get('permissions') or [])
+            if not (has_valid_key or is_admin_user):
                 raise ForbiddenError(
-                    f"Event '{event_type_slug}' requires a valid X-Admin-Key header"
+                    f"Event '{event_type_slug}' requires admin privileges or a valid X-Admin-Key header"
                 )
 
         # ── 1c. Reason required when flagged ──────────────────────────────────

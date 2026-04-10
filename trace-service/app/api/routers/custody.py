@@ -6,9 +6,10 @@ import uuid
 from fastapi import APIRouter, Depends, File, Header, Query, Request, UploadFile, status
 from fastapi.responses import ORJSONResponse
 from starlette.responses import Response
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import ConflictError
+from app.core.errors import ConflictError, ForbiddenError, NotFoundError
 from app.core.logging import get_logger
 from app.db.session import get_db_session
 from app.domain.schemas import (
@@ -26,7 +27,7 @@ from app.domain.schemas import (
     ReleaseRequest,
     BurnRequest,
 )
-from app.api.deps import get_tenant_id
+from app.api.deps import get_tenant_id, CurrentUser
 from app.services.anchor_service import enqueue_anchor
 from app.services.custody_service import CustodyService
 
@@ -442,6 +443,7 @@ async def release(
     request: Request,
     asset_id: uuid.UUID,
     body: ReleaseRequest,
+    current_user: CurrentUser,
     x_user_id: str = Header(..., alias="X-User-Id", description="User ID"),
     x_admin_key: str | None = Header(None, alias="X-Admin-Key", description="Admin secret key"),
     db: AsyncSession = Depends(get_db_session),
@@ -450,11 +452,13 @@ async def release(
     import secrets as _secrets
     from app.core.errors import ForbiddenError
     from app.core.settings import get_settings
-    if not _secrets.compare_digest(x_admin_key or "", get_settings().TRACE_ADMIN_KEY):
-        raise ForbiddenError("Invalid admin key")
+    has_valid_key = bool(x_admin_key) and _secrets.compare_digest(x_admin_key, get_settings().TRACE_ADMIN_KEY)
+    is_admin_user = current_user.get('is_superuser') or 'logistics.admin' in (current_user.get('permissions') or [])
+    if not (has_valid_key or is_admin_user):
+        raise ForbiddenError("Requires admin privileges or valid admin key")
 
     idempotency_key = getattr(request.state, "idempotency_key", None)
-    svc = CustodyService(db, tenant_id=tenant_id)
+    svc = CustodyService(db, tenant_id=tenant_id, current_user=current_user)
 
     async def _handler():
         from app.core.settings import get_settings
@@ -606,13 +610,14 @@ async def record_event(
     request: Request,
     asset_id: uuid.UUID,
     body: GenericEventRequest,
+    current_user: CurrentUser,
     x_user_id: str = Header(..., alias="X-User-Id", description="User ID"),
     x_admin_key: str | None = Header(None, alias="X-Admin-Key", description="Admin key for sensitive events"),
     db: AsyncSession = Depends(get_db_session),
     tenant_id: uuid.UUID = Depends(get_tenant_id),
 ) -> ORJSONResponse:
     idempotency_key = getattr(request.state, "idempotency_key", None)
-    svc = CustodyService(db, tenant_id=tenant_id)
+    svc = CustodyService(db, tenant_id=tenant_id, current_user=current_user)
 
     location = body.location.model_dump() if body.location else None
 
@@ -870,6 +875,60 @@ async def list_event_documents(
         "documents": [_link_resp(link, link.media_file) for link in links],
         "completeness": completeness,
     })
+
+
+@router.delete(
+    "/{asset_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    summary="Delete an asset (only if in terminal state)",
+)
+async def delete_asset(
+    asset_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db_session),
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    admin_key: str | None = Header(None, alias="X-Admin-Key"),
+):
+    """Delete an asset and its events. Only allowed for terminal states (released, burned, delivered)."""
+    from app.core.settings import get_settings
+    import secrets as _secrets
+
+    settings = get_settings()
+    has_valid_key = bool(admin_key) and _secrets.compare_digest(admin_key, settings.TRACE_ADMIN_KEY)
+    is_admin_user = current_user.get('is_superuser') or 'logistics.admin' in (current_user.get('permissions') or [])
+    if not (has_valid_key or is_admin_user):
+        raise ForbiddenError("Requires admin privileges or valid admin key")
+
+    from app.db.models import Asset, CustodyEvent, WorkflowState
+
+    result = await db.execute(
+        select(Asset).where(Asset.id == asset_id, Asset.tenant_id == tenant_id)
+    )
+    asset = result.scalar_one_or_none()
+    if not asset:
+        raise NotFoundError(f"Asset {asset_id} not found")
+
+    # Check terminal state via workflow engine
+    if asset.workflow_state_id:
+        ws_result = await db.execute(
+            select(WorkflowState).where(WorkflowState.id == asset.workflow_state_id)
+        )
+        ws = ws_result.scalar_one_or_none()
+        if ws and not ws.is_terminal:
+            raise ForbiddenError(f"Asset must be in a terminal state to delete (current: {ws.label})")
+    elif asset.state not in ("released", "burned", "delivered"):
+        raise ForbiddenError(f"Asset must be in a terminal state to delete (current: {asset.state})")
+
+    # Delete events first, then asset
+    await db.execute(
+        CustodyEvent.__table__.delete().where(CustodyEvent.asset_id == asset_id)
+    )
+    await db.delete(asset)
+    await db.commit()
+
+    log.info("asset_deleted", asset_id=str(asset_id), tenant_id=str(tenant_id))
+    return Response(status_code=204)
 
 
 @router.delete(
