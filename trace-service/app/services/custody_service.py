@@ -564,9 +564,18 @@ class CustodyService:
         if is_informational:
             new_state = asset.state
         else:
-            new_state = await self._assert_valid_transition(
-                asset, event_type_slug, qc_result=result
+            # Try to find a matching transition; if none exists, record the
+            # event without changing state (free/fortuitous event).
+            effective_slug = await self._get_effective_state_slug(asset)
+            result_transition = await self._workflow_svc.find_transition_for_event(
+                effective_slug, event_type_slug, qc_result=result
             )
+            if result_transition:
+                _transition, target_state = result_transition
+                new_state = target_state.slug
+            else:
+                # No transition found — record event without state change
+                new_state = asset.state
 
         # ── 5. Enrich event data ──────────────────────────────────────────────
         if notes:
