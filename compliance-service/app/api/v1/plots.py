@@ -10,11 +10,62 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import ModuleUser
 from app.compliance.geojson_validator import (
     GeoJsonValidationError,
+    bbox_overlap_ratio,
+    geojson_bbox,
     parse_decimal_geojson_from_body,
     polygon_area_ha_from_geojson,
     validate_geojson_strict,
 )
 from app.core.errors import ConflictError, NotFoundError
+
+
+async def _assert_point_precision_from_request(request: Request) -> None:
+    """EUDR Art. 2(28): point coordinates require >= 6 decimal places.
+
+    Pydantic has already collapsed floats by the time the handler runs, so we
+    re-parse the raw body with ``parse_float=Decimal`` to inspect the user's
+    original precision. If ``geolocation_type == 'point'`` and lat/lng are
+    present but either has fewer than 6 decimal places, raise 422.
+
+    Only enforced for point mode. Polygon mode is validated separately by
+    ``validate_geojson_strict`` which already checks per-coordinate precision.
+    """
+    from decimal import Decimal
+    import json as _json
+    raw = await request.body()
+    if not raw:
+        return
+    try:
+        data = _json.loads(raw, parse_float=Decimal, parse_int=Decimal)
+    except (_json.JSONDecodeError, ValueError, TypeError):
+        return
+    if not isinstance(data, dict):
+        return
+    geo_type = data.get("geolocation_type", "point")
+    if geo_type != "point":
+        return
+    lat = data.get("lat")
+    lng = data.get("lng")
+    if lat is None or lng is None:
+        return
+    for label, value in (("lat", lat), ("lng", lng)):
+        try:
+            d = value if isinstance(value, Decimal) else Decimal(str(value))
+        except Exception:
+            raise HTTPException(
+                status_code=422,
+                detail=f"{label} debe ser numerico (Art. 2(28))",
+            )
+        # exponent tells us digits after the decimal point: -6 = 6 decimals
+        exp = d.as_tuple().exponent
+        if not isinstance(exp, int) or exp > -6:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"{label} debe tener al menos 6 cifras decimales "
+                    f"(EUDR Art. 2(28)). Recibido: {value}"
+                ),
+            )
 
 
 async def _strict_validate_geojson_from_request(
@@ -81,16 +132,16 @@ def _validate_polygon_requirement(
     declararse con un solo punto. Solo a partir de 4.000001 ha es obligatorio
     el poligono.
 
-    Accepts either a remote `geojson_arweave_url`, a locally-stored `geojson_data`,
-    or `geolocation_type='polygon'` as evidence of polygon coverage.
+    Two checks:
+      1. >4 ha → must have actual polygon data (not just the type flag).
+      2. geolocation_type='polygon' → must have geojson_data or geojson_url
+         even at smaller areas (otherwise the type flag is a lie that hides
+         missing geometry from downstream screening).
     """
+    has_polygon_data = bool(geojson_url) or bool(geojson_data)
+
     if area_ha is not None and float(area_ha) > 4.0:
-        has_polygon = (
-            bool(geojson_url)
-            or bool(geojson_data)
-            or geolocation_type == "polygon"
-        )
-        if not has_polygon:
+        if not has_polygon_data and geolocation_type != "polygon":
             raise HTTPException(
                 status_code=422,
                 detail=(
@@ -99,6 +150,17 @@ def _validate_polygon_requirement(
                     "y proporcione geojson_data o geojson_arweave_url con el poligono de la parcela."
                 ),
             )
+
+    if geolocation_type == "polygon" and not has_polygon_data:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "geolocation_type='polygon' requiere geojson_data o "
+                "geojson_arweave_url con la geometria real. No basta con "
+                "marcar el tipo — el screening satelital y el DDS necesitan "
+                "los vertices."
+            ),
+        )
 from app.db.session import get_db_session
 from app.models.plot import CompliancePlot
 from app.models.plot_link import CompliancePlotLink
@@ -110,6 +172,53 @@ router = APIRouter(
     prefix="/api/v1/compliance/plots",
     tags=["plots"],
 )
+
+
+PROXIMITY_OVERLAP_THRESHOLD = 0.90
+
+
+async def _check_proximity_overlap(
+    db: AsyncSession,
+    tenant_id: uuid.UUID,
+    new_geojson: dict,
+    exclude_plot_id: uuid.UUID | None = None,
+) -> None:
+    """Reject creation/update if another plot in the same tenant overlaps > 90%.
+
+    Uses bbox overlap as a cheap, dependency-free heuristic. Catches the common
+    case of a user accidentally duplicating the same parcel twice. Not a
+    replacement for a real PostGIS ST_Overlaps — polygons with disjoint
+    footprints but overlapping bboxes will pass through.
+    """
+    new_bbox = geojson_bbox(new_geojson)
+    if new_bbox is None:
+        return
+    q = select(CompliancePlot.id, CompliancePlot.plot_code, CompliancePlot.geojson_data).where(
+        CompliancePlot.tenant_id == tenant_id,
+        CompliancePlot.geojson_data.isnot(None),
+        CompliancePlot.is_active.is_(True),
+    )
+    if exclude_plot_id is not None:
+        q = q.where(CompliancePlot.id != exclude_plot_id)
+    rows = (await db.execute(q)).all()
+    for row in rows:
+        other = row[2]
+        if not isinstance(other, dict):
+            continue
+        other_bbox = geojson_bbox(other)
+        if other_bbox is None:
+            continue
+        ratio = bbox_overlap_ratio(new_bbox, other_bbox)
+        if ratio >= PROXIMITY_OVERLAP_THRESHOLD:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"La parcela solapa {ratio * 100:.1f}% con la parcela existente "
+                    f"'{row[1]}' ({row[0]}). Si son parcelas distintas ajuste los "
+                    "vertices; si es duplicada, actualice la existente en lugar "
+                    "de crear una nueva."
+                ),
+            )
 
 
 def _tenant_id(user: dict) -> uuid.UUID:
@@ -148,6 +257,9 @@ async def create_plot(
         body.geolocation_type,
         body.geojson_data,
     )
+    # EUDR Art. 2(28): reject point coordinates with <6 decimals. Re-parses
+    # the raw body because Pydantic has already collapsed the trailing zeros.
+    await _assert_point_precision_from_request(request)
 
     # EUDR Art. 2(28): validar y normalizar geometria antes de persistir.
     # Re-parsea el body crudo para preservar ceros finales (4.654400 vs 4.6544).
@@ -166,6 +278,8 @@ async def create_plot(
         poly_area = polygon_area_ha_from_geojson(normalized)
         if poly_area > 0:
             data["plot_area_ha"] = round(poly_area, 4)
+        # G19: rechazar duplicados silenciosos contra parcelas existentes
+        await _check_proximity_overlap(db, tid, normalized)
     # Map metadata -> metadata_
     if "metadata" in data:
         data["metadata_"] = data.pop("metadata")
@@ -261,6 +375,8 @@ async def update_plot(
             poly_area = polygon_area_ha_from_geojson(normalized)
             if poly_area > 0:
                 update_data["plot_area_ha"] = round(poly_area, 4)
+        # G19: proximity check — exclude the plot being edited
+        await _check_proximity_overlap(db, tid, normalized, exclude_plot_id=plot_id)
 
     # Validate polygon requirement with merged values (post-normalizacion).
     final_area = update_data.get("plot_area_ha", plot.plot_area_ha)
@@ -269,6 +385,10 @@ async def update_plot(
     final_geojson_data = update_data.get("geojson_data", plot.geojson_data)
     _validate_polygon_requirement(final_area, final_geojson, final_geotype, final_geojson_data)
     _validate_positive_area(final_area)
+    # EUDR Art. 2(28): same precision check on PATCH when the caller updates
+    # point coordinates.
+    if "lat" in update_data or "lng" in update_data:
+        await _assert_point_precision_from_request(request)
 
     # Guard: rechazar borrado explicito de geojson_data en parcelas linkeadas
     # a registros de cumplimiento que requieren poligono (>4 ha). Sin esto,
@@ -566,6 +686,15 @@ async def screen_deforestation_full(
             "source": jrc_src.get("source"),
         }
 
+    wdpa_src = result.get("sources", {}).get("wdpa_protected_areas", {})
+    if wdpa_src:
+        meta["wdpa_screening"] = {
+            "inside_protected_area": wdpa_src.get("inside_protected_area"),
+            "pixel_count": wdpa_src.get("pixel_count", 0),
+            "checked_at": wdpa_src.get("checked_at"),
+            "source": wdpa_src.get("source"),
+        }
+
     meta["eudr_full_screening"] = {
         "eudr_compliant": result.get("eudr_compliant"),
         "eudr_risk": result.get("eudr_risk"),
@@ -573,6 +702,11 @@ async def screen_deforestation_full(
         "checked_at": result.get("checked_at"),
         "elapsed_seconds": result.get("elapsed_seconds"),
         "failed_sources": result.get("failed_sources", []),
+        "convergence_score": result.get("convergence_score"),
+        "convergence_level": result.get("convergence_level"),
+        "convergence_details": result.get("convergence_details", []),
+        "inside_protected_area": result.get("inside_protected_area"),
+        "wdpa_warning": result.get("wdpa_warning"),
     }
 
     plot.metadata_ = meta
@@ -644,6 +778,144 @@ async def screen_deforestation_full(
         "plot_code": plot.plot_code,
         **result,
         "anchor": anchor_results[0] if anchor_results else None,
+    }
+
+
+# ─── Asset Registry readiness (Fase C — G22) ─────────────────────────────────
+
+@router.get("/{plot_id}/asset-registry.json")
+async def asset_registry_export(
+    plot_id: uuid.UUID,
+    user: ModuleUser,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Export the plot as a GeoJSON-LD document with a stable global @id.
+
+    Positions Trace for the Asset Registry initiative described in MITECO
+    webinar 2 (Tomás, EFI): an open, global parcel registry where each
+    parcel has a stable, content-addressed identifier that is stable across
+    operators. We derive ``@id`` as
+    ``blake2b(normalized_geom || commodity || country_code || cadastral_id)``
+    so the same parcel re-declared by a different operator lands on the
+    same ID without leaking owner PII.
+
+    Spec-like shape (not the real Asset Registry schema, which doesn't
+    exist yet — this is a draft that will be easy to migrate).
+    """
+    import hashlib
+    import json as _json
+
+    tid = _tenant_id(user)
+    plot = (
+        await db.execute(
+            select(CompliancePlot).where(
+                CompliancePlot.id == plot_id,
+                CompliancePlot.tenant_id == tid,
+            )
+        )
+    ).scalar_one_or_none()
+    if plot is None:
+        raise NotFoundError(f"Plot '{plot_id}' not found")
+
+    # Build a stable payload for the content-address. Only geometry +
+    # commodity + country + cadastral. Owner PII is intentionally NOT
+    # included so the ID is portable and anonymous.
+    normalized = {
+        "geometry": plot.geojson_data or {
+            "type": "Point",
+            "coordinates": [
+                float(plot.lng) if plot.lng is not None else None,
+                float(plot.lat) if plot.lat is not None else None,
+            ],
+        },
+        "commodity": (plot.crop_type or "").lower() or None,
+        "country_code": plot.country_code,
+        "cadastral_id": plot.cadastral_id,
+    }
+    canonical = _json.dumps(normalized, sort_keys=True, separators=(",", ":"))
+    digest = hashlib.blake2b(canonical.encode("utf-8"), digest_size=16).hexdigest()
+    asset_registry_id = f"urn:trace:plot:{digest}"
+
+    doc = {
+        "@context": [
+            "https://geojson.org/geojson-ld/geojson-context.jsonld",
+            {
+                "trace": "https://trace.app/vocab/",
+                "commodity": "trace:commodity",
+                "country_code": "trace:countryCode",
+                "producer_scale": "trace:producerScale",
+                "cadastral_id": "trace:cadastralId",
+                "area_ha": "trace:areaHa",
+                "capture_method": "trace:captureMethod",
+                "gps_accuracy_m": "trace:gpsAccuracyM",
+            },
+        ],
+        "@id": asset_registry_id,
+        "@type": "Feature",
+        "geometry": plot.geojson_data or {
+            "type": "Point",
+            "coordinates": [
+                float(plot.lng) if plot.lng is not None else None,
+                float(plot.lat) if plot.lat is not None else None,
+            ],
+        },
+        "properties": {
+            "commodity": normalized["commodity"],
+            "country_code": plot.country_code,
+            "producer_scale": plot.producer_scale,
+            "cadastral_id": plot.cadastral_id,
+            "area_ha": (
+                float(plot.plot_area_ha) if plot.plot_area_ha is not None else None
+            ),
+            "capture_method": plot.capture_method,
+            "gps_accuracy_m": (
+                float(plot.gps_accuracy_m) if plot.gps_accuracy_m is not None else None
+            ),
+            "issued_by": {
+                "@type": "Organization",
+                "name": "Trace",
+                "url": "https://trace.app/",
+            },
+            "issued_at": plot.updated_at.isoformat() if plot.updated_at else None,
+        },
+    }
+    return doc
+
+
+# ─── Composite risk decision (Fase B — G9/G10/G11) ───────────────────────────
+
+@router.post("/{plot_id}/risk-decision")
+async def risk_decision(
+    plot_id: uuid.UUID,
+    user: ModuleUser,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Run the composite RiskDecisionTree over all available evidence.
+
+    Combines satellite screening results (from metadata_.eudr_full_screening),
+    legal compliance checklist, country risk benchmark, producer scale,
+    tenure type and capture metadata into a single defensible risk label.
+    """
+    from app.services.risk_decision_tree import RiskDecisionTree
+
+    tid = _tenant_id(user)
+    plot = (
+        await db.execute(
+            select(CompliancePlot).where(
+                CompliancePlot.id == plot_id,
+                CompliancePlot.tenant_id == tid,
+            )
+        )
+    ).scalar_one_or_none()
+    if plot is None:
+        raise NotFoundError(f"Plot '{plot_id}' not found")
+
+    engine = RiskDecisionTree(db)
+    decision = await engine.decide(plot)
+    return {
+        "plot_id": str(plot_id),
+        "plot_code": plot.plot_code,
+        **decision,
     }
 
 

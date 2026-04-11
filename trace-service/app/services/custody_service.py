@@ -144,8 +144,19 @@ class CustodyService:
         new_custodian: str | None = None,
         timestamp: datetime | None = None,
         parent_event_id: uuid.UUID | None = None,
+        custody_mode: str | None = None,
     ) -> CustodyEvent:
         ts = timestamp or datetime.now(tz=timezone.utc)
+
+        # Resolve custody_mode: explicit > last event's mode > "segregated"
+        # This is shared across typed endpoints (handoff/arrived/loaded/qc/
+        # release/burn) and the generic record_event path, so all events
+        # for the same asset keep a consistent custody mode unless the
+        # caller explicitly changes it.
+        resolved_mode = custody_mode
+        if resolved_mode is None:
+            prior = await self._event_repo.get_last_event_mode(asset.id)
+            resolved_mode = prior or "segregated"
 
         event_hash = compute_event_hash(
             asset_id=asset.id,
@@ -170,6 +181,7 @@ class CustodyService:
             event_hash=event_hash,
             tenant_id=self._tenant_id,
             parent_event_id=parent_event_id,
+            custody_mode=resolved_mode,
         )
 
         # Resolve workflow_state_id from the new state slug
@@ -492,6 +504,7 @@ class CustodyService:
         reason: str | None = None,
         admin_key: str | None = None,
         parent_event_id: uuid.UUID | None = None,
+        custody_mode: str | None = None,
     ) -> tuple[Asset, CustodyEvent]:
         """
         Generic event recorder — workflow engine is the primary source of truth.
@@ -504,6 +517,14 @@ class CustodyService:
         break the hash chain.
         """
         event_data = dict(data or {})
+
+        # Normalize the slug to uppercase. Both `EventType` enum values and
+        # `WorkflowEventType.slug` are constrained to `^[A-Z0-9_]+$` by the
+        # schema, so a client sending "note" used to silently become a
+        # state-changing event because the INFORMATIONAL_EVENTS check is
+        # case-sensitive. Normalizing here fixes every downstream check.
+        if isinstance(event_type_slug, str):
+            event_type_slug = event_type_slug.upper()
 
         # ── 1. Load event type metadata from workflow engine ──────────────────
         wf_event = await self._workflow_svc.get_event_type_by_slug(event_type_slug)
@@ -616,6 +637,7 @@ class CustodyService:
                     resolved_parent_id = last_root.id
 
         # ── 7. Create event ───────────────────────────────────────────────────
+        # custody_mode is resolved inside _create_event (explicit > prior > 'segregated')
         from_wallet = asset.current_custodian_wallet
         new_custodian = to_wallet if to_wallet else None
 
@@ -629,6 +651,7 @@ class CustodyService:
             new_state=new_state,
             new_custodian=new_custodian,
             parent_event_id=resolved_parent_id,
+            custody_mode=custody_mode,
         )
 
         updated_asset = await self._asset_repo.get_by_id(asset_id)

@@ -301,17 +301,39 @@ class HeliusProvider(IBlockchainProvider):
             except Exception as exc:
                 log.warning("cnft_asset_id_lookup_failed", tx=tx_sig, exc=str(exc))
 
+        # Resolve actual tree address. When the caller used the shared tree
+        # (empty tree_address), Helius's mintCompressedNft response doesn't
+        # echo it back — we have to look it up via DAS getAsset. Without
+        # this, the asset row ends up with blockchain_tree_address="" even
+        # though the cNFT is on-chain in a real tree.
+        resolved_tree = result.get("treeAddress") or tree_address
+        leaf_index = result.get("leafIndex")
+        if not resolved_tree and asset_id:
+            try:
+                das = await self._rpc("getAsset", [asset_id])
+                compression = (das or {}).get("compression") or {}
+                resolved_tree = compression.get("tree") or ""
+                if leaf_index is None:
+                    leaf_index = compression.get("leaf_id")
+            except Exception as exc:
+                log.warning(
+                    "cnft_tree_lookup_failed",
+                    asset_id=asset_id,
+                    exc=str(exc),
+                )
+
         log.info(
             "helius_mint_success",
             asset_id=asset_id,
             tx=tx_sig,
+            tree=resolved_tree,
         )
 
         return MintResult(
             asset_id=asset_id,
             tx_signature=tx_sig,
-            tree_address=result.get("treeAddress", tree_address),
-            leaf_index=result.get("leafIndex"),
+            tree_address=resolved_tree,
+            leaf_index=leaf_index,
             is_simulated=False,
         )
 

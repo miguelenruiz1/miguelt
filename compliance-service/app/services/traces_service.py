@@ -428,7 +428,11 @@ def build_dds_payload(
         "operator": {
             "name": record.get("buyer_name") or record.get("supplier_name") or "",
             "address": record.get("buyer_address") or record.get("supplier_address") or "",
-            "email": record.get("buyer_email") or record.get("supplier_email") or "",
+            # Email is PII and carries semantic meaning — do NOT fall back to
+            # supplier_email if buyer_email is missing. Leaving this empty is
+            # preferable to contaminating the operator block with the
+            # supplier's contact details.
+            "email": record.get("buyer_email") or "",
             "eoriNumber": record.get("operator_eori"),
             "country": (record.get("operator_country") or record.get("country_of_production") or "CO").upper()[:2],
         },

@@ -5,7 +5,29 @@ import uuid
 from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, Query, Response, status
-from sqlalchemy import select
+from sqlalchemy import func, select
+
+async def _resolve_active_cert_number(db, record_id, tenant_id) -> str | None:
+    """Return the active ComplianceCertificate number for a record, or None.
+
+    Used by DDS builders — previously they called
+    ``getattr(record, 'certificate_number', None)`` which always returned None
+    because the record model has no such field.
+    """
+    from app.models.certificate import ComplianceCertificate
+    row = (
+        await db.execute(
+            select(ComplianceCertificate.certificate_number)
+            .where(
+                ComplianceCertificate.record_id == record_id,
+                ComplianceCertificate.tenant_id == tenant_id,
+                ComplianceCertificate.status == "active",
+            )
+            .order_by(ComplianceCertificate.generated_at.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    return row
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import ModuleUser, get_http_client
@@ -157,8 +179,17 @@ async def create_record(
     if fw is None:
         raise NotFoundError(f"Framework '{body.framework_slug}' not found")
 
-    # Check unique asset+framework — only enforced when an asset_id is given,
-    # so multiple standalone records under the same framework are allowed.
+    # Upsert semantics (MITECO/QA feedback): the auto-create-on-mint flow
+    # pre-populates a shell record when an asset is minted, so a subsequent
+    # POST with the same (asset_id, framework) used to collide. Treat the
+    # POST as an idempotent upsert: if a record already exists AND it is
+    # still pending/not_required (i.e. the operator hasn't submitted it),
+    # merge the new fields into it and return 200. If it's already been
+    # submitted, still 409 because overwriting submitted evidence is unsafe.
+    data = body.model_dump(exclude={"framework_slug"}, exclude_unset=True)
+    if "metadata" in data:
+        data["metadata_"] = data.pop("metadata")
+
     if body.asset_id is not None:
         existing = (
             await db.execute(
@@ -170,14 +201,20 @@ async def create_record(
             )
         ).scalar_one_or_none()
         if existing is not None:
-            raise ConflictError(
-                f"Record for asset '{body.asset_id}' and framework '{body.framework_slug}' already exists"
-            )
+            if existing.declaration_status not in ("not_required", "pending"):
+                raise ConflictError(
+                    f"Record for asset '{body.asset_id}' already submitted "
+                    f"(declaration_status='{existing.declaration_status}'). "
+                    "Use PATCH to update specific fields."
+                )
+            # Merge — only overwrite fields the client actually sent.
+            for key, val in data.items():
+                setattr(existing, key, val)
+            await db.flush()
+            await db.refresh(existing)
+            return existing
 
-    data = body.model_dump(exclude={"framework_slug"}, exclude_unset=True)
-    if "metadata" in data:
-        data["metadata_"] = data.pop("metadata")
-    else:
+    if "metadata_" not in data:
         data["metadata_"] = {}
 
     record = ComplianceRecord(
@@ -304,6 +341,34 @@ async def delete_record(
         raise ValidationError(
             f"Cannot delete record with declaration_status='{record.declaration_status}'. "
             "Only records with status 'not_required' or 'pending' can be deleted."
+        )
+
+    # EUDR Art. 12: 5-year retention — block deletion if retention watermark
+    # is set and still in the future. Applies even to 'not_required' records
+    # if a manual retention date was set.
+    if record.documents_retention_until is not None and record.documents_retention_until > date.today():
+        raise ValidationError(
+            f"Record está en periodo de retención EUDR hasta "
+            f"{record.documents_retention_until.isoformat()} (Art. 12, 5 años). "
+            "No se puede eliminar hasta esa fecha."
+        )
+
+    # Pre-check: a record with an issued certificate cannot be deleted.
+    # Without this check the cascade blows up with a 500 on the FK to
+    # compliance_certificates.record_id.
+    from app.models.certificate import ComplianceCertificate as _Cert
+    cert_count = (
+        await db.execute(
+            select(func.count())
+            .select_from(_Cert)
+            .where(_Cert.record_id == record_id, _Cert.tenant_id == tid)
+        )
+    ).scalar_one()
+    if cert_count and cert_count > 0:
+        raise ConflictError(
+            f"No se puede eliminar: el record tiene {cert_count} certificado(s) "
+            "emitido(s). Revoque primero los certificados o use el flujo de "
+            "archivado si necesita conservar la evidencia."
         )
 
     await db.delete(record)
@@ -656,7 +721,7 @@ async def export_dds(
         "signatory_date": str(getattr(record, "signatory_date", "")) if getattr(record, "signatory_date", None) else "",
         "prior_dds_references": getattr(record, "prior_dds_references", None),
         "asset_id": str(record.asset_id) if record.asset_id else None,
-        "certificate_number": getattr(record, "certificate_number", None),
+        "certificate_number": await _resolve_active_cert_number(db, record_id, tid),
         "geo_location_confidential": getattr(record, "geo_location_confidential", False),
         "documents": [
             {
@@ -857,7 +922,7 @@ async def submit_to_traces(
         "deforestation_free_declaration": record.deforestation_free_declaration,
         "legal_compliance_declaration": record.legal_compliance_declaration,
         "asset_id": str(record.asset_id) if record.asset_id else None,
-        "certificate_number": getattr(record, "certificate_number", None),
+        "certificate_number": await _resolve_active_cert_number(db, record_id, tid),
         "geo_location_confidential": getattr(record, "geo_location_confidential", False),
         "documents": [
             {
@@ -887,7 +952,14 @@ async def submit_to_traces(
     if result.get("submitted") and result.get("reference_number"):
         record.declaration_reference = result["reference_number"]
         record.declaration_status = "submitted"
-        record.declaration_submission_date = date.today()
+        submission_day = date.today()
+        record.declaration_submission_date = submission_day
+        # EUDR Art. 12: keep evidence accessible for at least 5 years after
+        # submission. Set the retention watermark unless already set to a
+        # later date (eg. manual override).
+        retention_target = date(submission_day.year + 5, submission_day.month, submission_day.day)
+        if record.documents_retention_until is None or record.documents_retention_until < retention_target:
+            record.documents_retention_until = retention_target
         await db.flush()
         log.info("dds_submitted_traces", record_id=str(record_id), ref=result["reference_number"])
 

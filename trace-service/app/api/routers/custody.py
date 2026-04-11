@@ -314,6 +314,22 @@ async def mint_asset(
             settings = get_settings()
             compliance_url = getattr(settings, 'COMPLIANCE_SERVICE_URL', '')
             if compliance_url:
+                # Pull quantity from any of the common metadata keys clients
+                # use. Older code only checked "weight", which silently
+                # zero'd out 500 kg lots tagged with "quantity_kg".
+                meta = body.metadata or {}
+                quantity = (
+                    meta.get("quantity_kg")
+                    or meta.get("quantityKg")
+                    or meta.get("weight_kg")
+                    or meta.get("weight")
+                    or meta.get("quantity")
+                    or 0
+                )
+                try:
+                    quantity = float(quantity)
+                except (TypeError, ValueError):
+                    quantity = 0
                 import httpx as _httpx
                 async with _httpx.AsyncClient(timeout=10.0) as hc:
                     resp = await hc.post(
@@ -321,10 +337,13 @@ async def mint_asset(
                         json={
                             "framework_slug": "eudr",
                             "asset_id": str(asset.id),
-                            "commodity_type": body.metadata.get("commodity_type", "cafe"),
-                            "product_description": body.metadata.get("description", body.product_type),
-                            "country_of_production": body.metadata.get("country", "CO"),
-                            "quantity_kg": body.metadata.get("weight", 0),
+                            "commodity_type": meta.get("commodity_type")
+                                or meta.get("commodity")
+                                or body.product_type
+                                or "cafe",
+                            "product_description": meta.get("description", body.product_type),
+                            "country_of_production": meta.get("country") or meta.get("country_of_production") or "CO",
+                            "quantity_kg": quantity,
                             "activity_type": "export",
                         },
                         headers={
@@ -719,6 +738,7 @@ async def record_event(
             reason=body.reason,
             admin_key=x_admin_key,
             parent_event_id=body.parent_event_id,
+            custody_mode=body.custody_mode,
         )
         await db.commit()
         await enqueue_anchor(event.id)
