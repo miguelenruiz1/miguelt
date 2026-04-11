@@ -7,10 +7,10 @@ steps:
       - --build-arg
       - VITE_TENANT_ID=default
       - -t
-      - southamerica-east1-docker.pkg.dev/trace-log/trace/front-trace:ac5c916
+      - southamerica-east1-docker.pkg.dev/trace-log/trace/front-trace:1504c52
       - .
 images:
-  - southamerica-east1-docker.pkg.dev/trace-log/trace/front-trace:ac5c916
+  - southamerica-east1-docker.pkg.dev/trace-log/trace/front-trace:1504c52
 options:
   machineType: E2_HIGHCPU_8
   logging: CLOUD_LOGGING_ONLY
