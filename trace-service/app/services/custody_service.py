@@ -143,6 +143,7 @@ class CustodyService:
         new_state: str,
         new_custodian: str | None = None,
         timestamp: datetime | None = None,
+        parent_event_id: uuid.UUID | None = None,
     ) -> CustodyEvent:
         ts = timestamp or datetime.now(tz=timezone.utc)
 
@@ -168,6 +169,7 @@ class CustodyService:
             prev_event_hash=asset.last_event_hash,
             event_hash=event_hash,
             tenant_id=self._tenant_id,
+            parent_event_id=parent_event_id,
         )
 
         # Resolve workflow_state_id from the new state slug
@@ -489,6 +491,7 @@ class CustodyService:
         result: str | None = None,
         reason: str | None = None,
         admin_key: str | None = None,
+        parent_event_id: uuid.UUID | None = None,
     ) -> tuple[Asset, CustodyEvent]:
         """
         Generic event recorder — workflow engine is the primary source of truth.
@@ -598,7 +601,21 @@ class CustodyService:
         if result:
             event_data["result"] = result
 
-        # ── 6. Create event ───────────────────────────────────────────────────
+        # ── 6. Resolve parent_event_id (hierarchical timeline) ────────────────
+        # Informational events (NOTE, INSPECTION, COMPLIANCE_VERIFIED, etc.)
+        # auto-link as children of the most recent ROOT event for this asset.
+        # Caller can override by passing parent_event_id explicitly. State
+        # transitions are always roots and ignore the field.
+        resolved_parent_id = None
+        if is_informational:
+            if parent_event_id is not None:
+                resolved_parent_id = parent_event_id
+            else:
+                last_root = await self._event_repo.get_last_root_event(asset_id)
+                if last_root is not None:
+                    resolved_parent_id = last_root.id
+
+        # ── 7. Create event ───────────────────────────────────────────────────
         from_wallet = asset.current_custodian_wallet
         new_custodian = to_wallet if to_wallet else None
 
@@ -611,6 +628,7 @@ class CustodyService:
             data=event_data,
             new_state=new_state,
             new_custodian=new_custodian,
+            parent_event_id=resolved_parent_id,
         )
 
         updated_asset = await self._asset_repo.get_by_id(asset_id)

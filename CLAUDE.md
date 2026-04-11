@@ -160,6 +160,110 @@ Antes de cualquier operación git (commit, push, merge), **siempre**:
 3. Preguntar explícitamente: "¿Hago commit de [archivos]? ¿Push a [rama]?"
 4. No mezclar cambios de distintas features en un solo commit.
 
+## 13. Leer el Dockerfile antes de buildear cualquier imagen
+
+Antes de correr `gcloud builds submit`, `docker build` o equivalente para
+**re-buildear una imagen ya existente** (no la primera vez), **siempre**:
+
+1. Leer el Dockerfile completo del servicio.
+2. Listar todos los `ARG` declarados.
+3. Para cada ARG sin default, verificar cómo se está pasando al build.
+
+**Específicamente para front-trace** (y cualquier frontend Vite):
+- El Dockerfile tiene `ARG VITE_API_URL` sin default. Si no lo paso al builder,
+  el bundle JS queda con `VITE_API_URL=""` y el browser intenta llamar a
+  `localhost:9000` en producción → toda la app se cae silenciosamente.
+- `gcloud builds submit --tag IMAGE` **NO acepta `--build-arg`** y los ignora
+  silenciosamente. Para frontends con build args, **siempre** usar
+  `gcloud builds submit --config front-trace/cloudbuild.yaml` (ya existe en
+  el repo).
+- Verificación post-build: descargar la imagen y `docker run --rm IMAGE cat
+  /usr/share/nginx/html/assets/index-*.js | grep -o 'gateway-[a-z0-9-]*\.run\.app'`
+  debe devolver la URL del gateway de producción, NO `localhost`.
+
+**Este error específico ya pasó (10/4/2026)**: front-trace desplegado con
+VITE_API_URL vacío rompió la app entera para todos los usuarios hasta el
+rollback.
+
+## 14. Smoke test post-deploy (Cloud Run o local)
+
+Después de **cualquier** deploy de un backend, **antes** de avisarle al usuario
+que ya está, hacer al menos:
+
+1. `gcloud run services logs read SERVICE --region southamerica-east1
+   --project trace-log --limit 50 | grep -iE "error|exception|traceback"`
+   — debe estar **vacío** o solo contener errores de pre-arranque ya
+   resueltos.
+2. `curl` a un endpoint **listado** del servicio vía el gateway (no directo).
+   Endpoints listados ejecutan la serialización Pydantic completa, que es
+   donde aparecen los `ResponseValidationError` causados por columnas NULL
+   en DB que el schema no acepta.
+3. Si el deploy tocó migraciones alembic, verificar en logs:
+   `grep "Running upgrade" en los logs del primer arranque del servicio.
+
+**Este error específico ya pasó (10/4/2026)**: trace-api con
+`ResponseValidationError` en `/api/v1/config/workflow/states/*/actions` por
+`event_type.icon = NULL` en DB que el schema declaraba como `str` no nullable.
+El frontend recibía 500, ocultaba el card de "Siguiente paso" y los
+operadores no podían mover cargas.
+
+## 15. Cambios pre-existentes WIP: separar y testear
+
+Cuando el working tree tiene cambios pre-existentes (modificados antes de
+empezar la sesión actual) que **yo no escribí ni testée**:
+
+1. Identificarlos vía `git status` al inicio de la sesión y separarlos
+   mentalmente del scope actual.
+2. Si el usuario dice "commitea todo" o equivalente, **no** los meto en el
+   mismo commit que mi feature. Hago **un commit aparte** con prefijo
+   `wip:` y un mensaje que advierta explícitamente: "código pre-existente
+   no probado en esta sesión".
+3. Si el deploy va a incluir esos cambios pre-existentes, **smoke-testear
+   los endpoints/pantallas afectados** según la regla #14 antes de declarar
+   el deploy completo.
+4. Si no puedo testearlos (porque requieren auth, datos específicos, etc.),
+   le aviso al usuario: "incluí estos archivos pre-existentes pero no los
+   probé — confirma vos antes de cerrar".
+
+**Este error específico ya pasó (10/4/2026)**: incluí cambios de trace-service
+en el commit "todo" sin testear el endpoint de workflow actions, que era el
+único afectado por el bug del schema. El usuario detectó el bug en producción.
+
+## 16. Pre-deploy GCP: checklist obligatorio
+
+Antes de lanzar `gcloud builds submit` para un deploy a producción:
+
+1. **Verificar que las APIs necesarias están habilitadas**:
+   ```bash
+   gcloud services list --enabled --filter="cloudbuild OR run OR artifactregistry" \
+     --project trace-log
+   ```
+   Si alguna falta, habilitarla con `gcloud services enable ... --project trace-log`
+   y **esperar 30 segundos** para propagación antes de lanzar builds.
+
+2. **Conocer la imagen anterior** (para rollback rápido si algo falla):
+   ```bash
+   gcloud run services list --region southamerica-east1 --project trace-log \
+     --format="table(metadata.name,spec.template.spec.containers[0].image)"
+   ```
+   Anotar el tag de la imagen actual de cada servicio que voy a actualizar.
+   Si el deploy nuevo falla, rollback es:
+   `gcloud run deploy SERVICE --image OLD_TAG --region southamerica-east1`
+
+3. **Builds en paralelo solo si son independientes**: si los servicios
+   comparten infraestructura (ej: un cambio de schema afecta a varios
+   servicios al mismo tiempo), deployarlos en orden controlado, no en
+   paralelo, para que un fallo de uno no contamine al otro.
+
+4. **Cloud Build con `--tag` vs `--config`**:
+   - `--tag IMAGE` solo sirve para servicios sin build args (compliance,
+     trace, gateway). NO usar para frontends con `VITE_*`.
+   - `--config path/to/cloudbuild.yaml` para servicios que necesitan
+     build args (front-trace).
+
+5. **Después del deploy**: aplicar la regla #14 (smoke test). No declarar
+   el deploy "completo" sin curl OK + logs limpios.
+
 ---
 
 ## Comandos útiles del proyecto

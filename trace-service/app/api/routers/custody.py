@@ -718,6 +718,7 @@ async def record_event(
             result=body.result,
             reason=body.reason,
             admin_key=x_admin_key,
+            parent_event_id=body.parent_event_id,
         )
         await db.commit()
         await enqueue_anchor(event.id)

@@ -483,6 +483,14 @@ class CustodyEvent(Base):
     shipment_leg_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), nullable=True
     )
+    # Hierarchical timeline: state transitions are root, informational events
+    # (notes, inspections, compliance verifications) link to the most recent
+    # transition for the same asset. NULL = root event (transition or legacy).
+    parent_event_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("custody_events.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     # Proof of Delivery evidence
     evidence_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     evidence_hash: Mapped[str | None] = mapped_column(Text, nullable=True)

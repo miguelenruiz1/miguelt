@@ -184,6 +184,7 @@ class CustodyEventRepository:
         prev_event_hash: str | None,
         event_hash: str,
         tenant_id: uuid.UUID | None = None,
+        parent_event_id: uuid.UUID | None = None,
     ) -> CustodyEvent:
         now = datetime.now(tz=timezone.utc)
         event = CustodyEvent(
@@ -201,10 +202,30 @@ class CustodyEventRepository:
             anchored=False,
             anchor_attempts=0,
             created_at=now,
+            parent_event_id=parent_event_id,
         )
         self._db.add(event)
         await self._db.flush()
         return event
+
+    async def get_last_root_event(
+        self, asset_id: uuid.UUID
+    ) -> CustodyEvent | None:
+        """Return the most recent ROOT event for the asset (parent_event_id IS NULL).
+
+        Used to auto-link informational events as children of the most recent
+        state transition.
+        """
+        result = await self._db.execute(
+            select(CustodyEvent)
+            .where(
+                CustodyEvent.asset_id == asset_id,
+                CustodyEvent.parent_event_id.is_(None),
+            )
+            .order_by(CustodyEvent.timestamp.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
 
     async def get_by_id(self, event_id: uuid.UUID) -> CustodyEvent | None:
         result = await self._db.execute(

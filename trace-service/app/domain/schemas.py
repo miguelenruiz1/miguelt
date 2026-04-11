@@ -251,6 +251,14 @@ class GenericEventRequest(BaseModel):
     notes: str | None = None
     result: Literal["pass", "fail"] | None = Field(None, description="For QC/INSPECTION events")
     reason: str | None = Field(None, description="For RELEASED/BURN/DAMAGED events")
+    parent_event_id: uuid.UUID | None = Field(
+        None,
+        description=(
+            "Optional parent event for hierarchical timeline. "
+            "If omitted, informational events auto-link to the most recent "
+            "transition for the same asset."
+        ),
+    )
 
 
 class CustodyEventResponse(OrmBase):
@@ -272,6 +280,7 @@ class CustodyEventResponse(OrmBase):
     evidence_url: str | None = None
     evidence_hash: str | None = None
     evidence_type: str | None = None
+    parent_event_id: uuid.UUID | None = None
     created_at: datetime
 
 
