@@ -573,6 +573,78 @@ def parse_decimal_geojson_from_body(raw_body: bytes | str) -> Any | None:
     return data.get("geojson_data")
 
 
+def _iter_rings(geojson: dict):
+    """Yield (ring_coords) for every outer ring in a Polygon/MultiPolygon/Feature[Collection]."""
+    gtype = geojson.get("type")
+    if gtype == "Feature":
+        yield from _iter_rings(geojson.get("geometry") or {})
+        return
+    if gtype == "FeatureCollection":
+        for feat in geojson.get("features") or []:
+            yield from _iter_rings(feat)
+        return
+    if gtype == "Polygon":
+        rings = geojson.get("coordinates") or []
+        if rings:
+            yield rings[0]
+        return
+    if gtype == "MultiPolygon":
+        for poly in geojson.get("coordinates") or []:
+            if poly:
+                yield poly[0]
+        return
+
+
+def geojson_bbox(geojson: dict) -> tuple[float, float, float, float] | None:
+    """Return (min_lng, min_lat, max_lng, max_lat) of any Polygon-like geometry."""
+    min_lng = min_lat = float("inf")
+    max_lng = max_lat = float("-inf")
+    seen = False
+    for ring in _iter_rings(geojson):
+        for pt in ring:
+            try:
+                lng = float(pt[0])
+                lat = float(pt[1])
+            except (TypeError, ValueError, IndexError):
+                continue
+            seen = True
+            if lng < min_lng:
+                min_lng = lng
+            if lng > max_lng:
+                max_lng = lng
+            if lat < min_lat:
+                min_lat = lat
+            if lat > max_lat:
+                max_lat = lat
+    if not seen:
+        return None
+    return (min_lng, min_lat, max_lng, max_lat)
+
+
+def _bbox_area(bbox: tuple[float, float, float, float]) -> float:
+    return max(0.0, bbox[2] - bbox[0]) * max(0.0, bbox[3] - bbox[1])
+
+
+def bbox_overlap_ratio(
+    a: tuple[float, float, float, float],
+    b: tuple[float, float, float, float],
+) -> float:
+    """Return the fraction of bbox ``a`` covered by the intersection with ``b``.
+
+    0.0 means disjoint, 1.0 means ``a`` is fully inside ``b``. Used as a
+    cheap proximity heuristic before attempting a precise polygon overlap.
+    """
+    inter_lng = min(a[2], b[2]) - max(a[0], b[0])
+    inter_lat = min(a[3], b[3]) - max(a[1], b[1])
+    if inter_lng <= 0 or inter_lat <= 0:
+        return 0.0
+    inter_area = inter_lng * inter_lat
+    a_area = _bbox_area(a)
+    if a_area <= 0:
+        return 0.0
+    return inter_area / a_area
+
+
 def polygon_area_ha_from_geojson(geojson: dict) -> float:
     """Devuelve el area total en hectareas del Polygon/MultiPolygon dado.
 

@@ -36,6 +36,7 @@ PER_SOURCE_TIMEOUT = 30.0  # seconds per individual source query
 DS_GFW_ALERTS = "gfw_integrated_alerts"
 DS_HANSEN = "umd_tree_cover_loss"
 DS_JRC = "jrc_global_forest_cover"
+DS_WDPA = "wdpa_protected_areas"
 
 # ---------------------------------------------------------------------------
 # Official source metadata — shown to the user so they know which
@@ -91,6 +92,23 @@ SOURCE_METADATA: dict[str, dict[str, str]] = {
         ),
         "reference_url": "https://forest-observatory.ec.europa.eu/",
         "dataset": DS_JRC,
+    },
+    DS_WDPA: {
+        "name": "World Database on Protected Areas (WDPA)",
+        "institution": "UNEP-WCMC + IUCN (protectedplanet.net)",
+        "description": (
+            "Base de datos mundial de áreas protegidas — parques nacionales, "
+            "reservas, territorios indígenas reconocidos. Usada por organismos "
+            "internacionales como referencia de zonas con restricciones de uso."
+        ),
+        "eudr_role": (
+            "Cruza la parcela contra áreas protegidas: una parcela dentro de "
+            "un AP levanta una alerta de legalidad (ámbito uso de suelo y "
+            "medio ambiente). La base WDPA puede tener errores; debe "
+            "contrastarse con el registro nacional cuando exista."
+        ),
+        "reference_url": "https://www.protectedplanet.net/",
+        "dataset": DS_WDPA,
     },
 }
 
@@ -418,6 +436,40 @@ class DeforestationService:
             }
 
     # ------------------------------------------------------------------
+    # 3b. WDPA — World Database on Protected Areas
+    # ------------------------------------------------------------------
+    async def check_plot_wdpa(self, geometry: dict) -> dict[str, Any]:
+        """Check whether the plot intersects a WDPA-listed protected area.
+
+        WDPA is exposed via GFW Data API. ``count(*) > 0`` means there is at
+        least one pixel of overlap between the plot and any protected area.
+        This is a warning, not an auto-rejection, because many countries have
+        legal exceptions (plots predating AP designation — e.g. Ghana cocoa).
+        """
+        source = DS_WDPA
+        sql = "SELECT count(*) FROM results"
+        try:
+            data = await self._query_dataset(source, sql, geometry)
+            rows = data.get("data", [])
+            pixel_count = rows[0].get("count", 0) if rows else 0
+            inside = pixel_count > 0
+            return {
+                "source": source,
+                "inside_protected_area": inside,
+                "pixel_count": pixel_count,
+                "checked_at": _now_iso(),
+                "error": None,
+                **SOURCE_METADATA[source],
+            }
+        except Exception as exc:
+            log.warning("wdpa_check_error", exc=str(exc))
+            return {
+                **_error_result(source, str(exc)),
+                "inside_protected_area": None,
+                "pixel_count": 0,
+            }
+
+    # ------------------------------------------------------------------
     # 4. Full multi-source EUDR screening
     # ------------------------------------------------------------------
     async def check_plot_full(
@@ -456,12 +508,13 @@ class DeforestationService:
                 "checked_at": _now_iso(),
             }
 
-        # Run all three in parallel — exceptions are captured, not raised
+        # Run all four sources in parallel — exceptions are captured, not raised
         t0 = time.monotonic()
-        gfw_result, hansen_result, jrc_result = await asyncio.gather(
+        gfw_result, hansen_result, jrc_result, wdpa_result = await asyncio.gather(
             self.check_plot(lat, lng, geojson, cutoff_date, area_ha),
             self.check_plot_hansen(geometry),
             self.check_plot_jrc(geometry, area_ha=area_ha),
+            self.check_plot_wdpa(geometry),
             return_exceptions=True,
         )
         elapsed = round(time.monotonic() - t0, 2)
@@ -472,6 +525,7 @@ class DeforestationService:
             (DS_GFW_ALERTS, gfw_result),
             (DS_HANSEN, hansen_result),
             (DS_JRC, jrc_result),
+            (DS_WDPA, wdpa_result),
         ]:
             if isinstance(res, BaseException):
                 sources[key] = _error_result(key, str(res))
@@ -571,6 +625,79 @@ class DeforestationService:
                     "(31 de diciembre de 2020)."
                 )
 
+        # --- WDPA warning ---
+        wdpa_src = sources.get(DS_WDPA, {})
+        inside_wdpa = wdpa_src.get("inside_protected_area")
+        wdpa_warning = None
+        if inside_wdpa is True:
+            wdpa_warning = (
+                "La parcela intersecta un área protegida según WDPA. "
+                "Verifique con el registro nacional si existe una excepción legal "
+                "(parcelas admitidas o predecesoras a la designación del AP)."
+            )
+
+        # --- Convergence score (0–5) ---
+        # MITECO Carlos Riaño: ningún mapa es infalible; la convergencia de
+        # múltiples fuentes es lo que defiende una decisión ante un inspector.
+        #
+        # +1 JRC respondió (baseline forestal conocido)
+        # +1 Hansen respondió (historia de pérdida conocida)
+        # +1 GFW alerts respondió (alertas post-2020 conocidas)
+        # +1 WDPA respondió (estado de protección conocido)
+        # +1 Geometría consistente con área declarada
+        convergence_score = 0
+        convergence_details: list[str] = []
+
+        if jrc_was_forest is not None:
+            convergence_score += 1
+            convergence_details.append("JRC baseline OK")
+        else:
+            convergence_details.append("JRC no verificable")
+
+        if hansen_has_loss is not None:
+            convergence_score += 1
+            convergence_details.append("Hansen OK")
+        else:
+            convergence_details.append("Hansen no verificable")
+
+        if gfw_clean is not None:
+            convergence_score += 1
+            convergence_details.append("GFW alerts OK")
+        else:
+            convergence_details.append("GFW no verificable")
+
+        if inside_wdpa is not None:
+            convergence_score += 1
+            convergence_details.append(
+                "WDPA OK" + (" (dentro de AP)" if inside_wdpa else " (fuera de AP)")
+            )
+        else:
+            convergence_details.append("WDPA no verificable")
+
+        if sources.get(DS_JRC, {}).get("jrc_geometry_valid") is not False:
+            convergence_score += 1
+            convergence_details.append("Geometría consistente")
+        else:
+            convergence_details.append("Geometría inconsistente")
+
+        if convergence_score >= 4:
+            convergence_level = "high"
+        elif convergence_score >= 2:
+            convergence_level = "medium"
+        else:
+            convergence_level = "low"
+
+        # If convergence is low, cap composite risk as "medium" at worst unless
+        # already high — we don't trust a "low risk" verdict built on one source.
+        if convergence_level == "low" and eudr_risk == "low":
+            eudr_risk = "medium"
+            eudr_compliant = None
+            risk_reason = (
+                "Convergencia de evidencia baja: menos de 2 fuentes satelitales "
+                "respondieron. No se puede afirmar cumplimiento EUDR. Reintente "
+                "el screening o realice verificación manual."
+            )
+
         result = {
             "eudr_compliant": eudr_compliant,
             "eudr_risk": eudr_risk,
@@ -580,11 +707,18 @@ class DeforestationService:
             "elapsed_seconds": elapsed,
             "failed_sources": failed_sources,
             "geometry_warnings": geometry_warnings,
+            "wdpa_warning": wdpa_warning,
+            "inside_protected_area": inside_wdpa,
+            "convergence_score": convergence_score,
+            "convergence_level": convergence_level,
+            "convergence_details": convergence_details,
         }
 
         log.info(
             "eudr_full_screening_complete",
             eudr_risk=eudr_risk, eudr_compliant=eudr_compliant,
             elapsed_s=elapsed, failed=failed_sources,
+            convergence_score=convergence_score,
+            inside_wdpa=inside_wdpa,
         )
         return result

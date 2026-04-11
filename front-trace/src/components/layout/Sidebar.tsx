@@ -100,6 +100,8 @@ const cumplimientoItems = [
   { to: '/cumplimiento/parcelas', icon: MapPin, label: 'Parcelas' },
   { to: '/cumplimiento/registros', icon: FileText, label: 'Registros' },
   { to: '/cumplimiento/certificados', icon: Award, label: 'Certificados' },
+  { to: '/cumplimiento/certificaciones', icon: Shield, label: 'Certificaciones' },
+  { to: '/cumplimiento/biblioteca-legal', icon: CircleHelp, label: 'Biblioteca legal' },
   { to: '/cumplimiento/integraciones', icon: Key, label: 'Integraciones' },
 ]
 

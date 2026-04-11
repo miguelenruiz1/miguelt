@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, MapPin, Check, X, Loader2, Calendar, Sprout, Shield, AlertTriangle, FolderOpen, ShieldCheck, ExternalLink } from 'lucide-react'
-import { usePlot, useUpdatePlot, useScreenDeforestationFull, usePlotDocuments, useAttachPlotDocument, useDetachPlotDocument } from '@/hooks/useCompliance'
+import { usePlot, useUpdatePlot, useScreenDeforestationFull, usePlotDocuments, useAttachPlotDocument, useDetachPlotDocument, usePlotLegalStatus, useUpdatePlotLegalRequirement, useCountryRisk, useRiskDecision } from '@/hooks/useCompliance'
+import type { RiskDecisionResponse } from '@/types/compliance'
 import { SinglePlotMap } from '@/components/compliance/PlotMap'
 import { PlotPolygonEditor } from '@/components/compliance/PlotPolygonEditor'
 import DocumentUploader from '@/components/compliance/DocumentUploader'
@@ -739,6 +740,56 @@ export function PlotDetailPage() {
                   </span>
                 </div>
 
+                {/* Convergencia multi-fuente (G25) + WDPA (G28) */}
+                {typeof fullScreening.convergence_score === 'number' && (
+                  <div className="flex flex-wrap items-center gap-3 text-[11px]">
+                    {(() => {
+                      const score = fullScreening.convergence_score as number
+                      const level = (fullScreening.convergence_level as 'low' | 'medium' | 'high') ?? 'medium'
+                      const color =
+                        level === 'high'
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                          : level === 'medium'
+                          ? 'bg-amber-100 text-amber-800 border-amber-300'
+                          : 'bg-red-100 text-red-800 border-red-300'
+                      const label =
+                        level === 'high' ? 'Alta' : level === 'medium' ? 'Media' : 'Baja'
+                      return (
+                        <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-bold ${color}`}>
+                          Convergencia: {label} ({score}/5)
+                        </span>
+                      )
+                    })()}
+                    {fullScreening.inside_protected_area === true && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 font-semibold text-amber-800">
+                        <AlertTriangle className="h-3 w-3" /> Dentro de area protegida (WDPA)
+                      </span>
+                    )}
+                    {fullScreening.inside_protected_area === false && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 font-semibold text-emerald-800">
+                        <Check className="h-3 w-3" /> Fuera de areas protegidas
+                      </span>
+                    )}
+                  </div>
+                )}
+                {fullScreening.wdpa_warning && (
+                  <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
+                    {fullScreening.wdpa_warning}
+                  </div>
+                )}
+                {Array.isArray(fullScreening.convergence_details) && fullScreening.convergence_details.length > 0 && (
+                  <details className="text-[10px] text-muted-foreground">
+                    <summary className="cursor-pointer select-none hover:text-foreground">
+                      Detalle de convergencia
+                    </summary>
+                    <ul className="mt-1 list-disc pl-5 space-y-0.5">
+                      {fullScreening.convergence_details.map((d: string, i: number) => (
+                        <li key={i}>{d}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+
                 {/* Per-source summary lines */}
                 <div className="bg-background rounded-lg border p-3 space-y-1.5">
                   {(() => {
@@ -1014,6 +1065,18 @@ export function PlotDetailPage() {
             }
           }} saving={updatePlot.isPending} />
 
+          {/* Captura del poligono — MITECO EFI Tomas */}
+          <CaptureMetadataSection plot={plot} />
+
+          {/* Checklist legal EUDR — MITECO EFI Alice */}
+          <LegalComplianceSection plotId={plot.id} />
+
+          {/* Riesgo pais */}
+          <CountryRiskSection countryCode={plot.country_code} />
+
+          {/* Decision tree compuesta — Fase B */}
+          <RiskDecisionSection plotId={plot.id} />
+
           {/* Satellite */}
           {plot.satellite_report_url && (
             <div className="bg-card rounded-xl border border-border  p-5 space-y-3">
@@ -1148,6 +1211,457 @@ export function PlotDetailPage() {
           onDetach={async (docId) => { await detachDoc.mutateAsync(docId) }}
           isPending={detachDoc.isPending}
         />
+      </div>
+    </div>
+  )
+}
+
+
+// ─── Capture metadata section ───────────────────────────────────────────────
+const CAPTURE_METHOD_LABELS: Record<string, string> = {
+  handheld_gps: 'GPS de mano / smartphone',
+  rtk_gps: 'GPS RTK (centimetrico)',
+  drone: 'Dron / fotogrametria',
+  manual_map: 'Trazado manual sobre imagen satelital',
+  cadastral: 'Importado de catastro',
+  survey: 'Levantamiento topografico',
+  unknown: 'Desconocido',
+}
+const PRODUCER_SCALE_LABELS: Record<string, string> = {
+  smallholder: 'Pequeno productor (<4 ha)',
+  medium: 'Mediano (4-50 ha)',
+  industrial: 'Industrial (>50 ha)',
+}
+
+function CaptureMetadataSection({ plot }: { plot: any }) {
+  const method = plot.capture_method as string | null
+  const scale = plot.producer_scale as string | null
+  const accuracy = plot.gps_accuracy_m != null ? Number(plot.gps_accuracy_m) : null
+  const device = plot.capture_device as string | null
+  const captureDate = plot.capture_date as string | null
+
+  const hasAny = method || scale || accuracy != null || device || captureDate
+  const accuracyWarn = accuracy != null && accuracy > 10
+  return (
+    <div className="bg-card rounded-xl border border-border p-5 space-y-3">
+      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
+        Metodo de Captura
+      </h3>
+      <p className="text-xs text-muted-foreground">
+        EFI / MITECO: un poligono sin metadata de captura es indefendible ante
+        un inspector EUDR.
+      </p>
+      {!hasAny ? (
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          Sin metadata de captura. Editalo desde el boton "Editar" de la parcela
+          para agregar metodo, dispositivo y exactitud GPS.
+        </div>
+      ) : (
+        <dl className="space-y-2 text-xs">
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">Metodo</dt>
+            <dd className="font-medium text-foreground text-right">
+              {method ? CAPTURE_METHOD_LABELS[method] ?? method : '—'}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">Escala</dt>
+            <dd className="font-medium text-foreground text-right">
+              {scale ? PRODUCER_SCALE_LABELS[scale] ?? scale : '—'}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">Exactitud GPS</dt>
+            <dd className={`font-medium text-right ${accuracyWarn ? 'text-amber-700' : 'text-foreground'}`}>
+              {accuracy != null ? `${accuracy.toFixed(2)} m` : '—'}
+              {accuracyWarn && <span className="ml-1 text-[10px]">(alta)</span>}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">Dispositivo</dt>
+            <dd className="font-medium text-foreground text-right">{device ?? '—'}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">Fecha captura</dt>
+            <dd className="font-medium text-foreground text-right">{captureDate ?? '—'}</dd>
+          </div>
+        </dl>
+      )}
+    </div>
+  )
+}
+
+
+// ─── Country risk section ───────────────────────────────────────────────────
+const COUNTRY_RISK_COLORS: Record<string, string> = {
+  negligible: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  low: 'bg-lime-100 text-lime-800 border-lime-300',
+  standard: 'bg-amber-100 text-amber-800 border-amber-300',
+  high: 'bg-orange-100 text-orange-800 border-orange-300',
+  critical: 'bg-red-100 text-red-800 border-red-300',
+}
+
+const COUNTRY_RISK_LABELS: Record<string, string> = {
+  negligible: 'Negligible',
+  low: 'Bajo',
+  standard: 'Estandar',
+  high: 'Alto',
+  critical: 'Critico',
+}
+
+const DEF_PREV_LABELS: Record<string, string> = {
+  very_low: 'Muy baja',
+  low: 'Baja',
+  medium: 'Media',
+  high: 'Alta',
+  very_high: 'Muy alta',
+}
+
+function CountryRiskSection({ countryCode }: { countryCode: string }) {
+  const { data: bench, isLoading, error } = useCountryRisk(countryCode)
+  return (
+    <div className="bg-card rounded-xl border border-border p-5 space-y-3">
+      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
+        Riesgo de Pais ({countryCode})
+      </h3>
+      {isLoading ? (
+        <div className="text-xs text-muted-foreground">Cargando benchmark...</div>
+      ) : error || !bench ? (
+        <div className="text-xs text-muted-foreground">
+          No hay benchmark disponible para este pais.
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${COUNTRY_RISK_COLORS[bench.risk_level] ?? ''}`}>
+              {COUNTRY_RISK_LABELS[bench.risk_level] ?? bench.risk_level}
+            </span>
+            {bench.conflict_flag && (
+              <span className="inline-flex items-center rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700">
+                Conflicto activo
+              </span>
+            )}
+            {bench.indigenous_risk_flag && (
+              <span className="inline-flex items-center rounded-full border border-purple-300 bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700">
+                Riesgo indigena
+              </span>
+            )}
+          </div>
+          <dl className="grid grid-cols-2 gap-2 text-xs">
+            {bench.cpi_score != null && (
+              <>
+                <dt className="text-muted-foreground">CPI Transparency Intl.</dt>
+                <dd className="text-right font-semibold text-foreground">
+                  {bench.cpi_score}/100 {bench.cpi_rank ? `(rank ${bench.cpi_rank})` : ''}
+                </dd>
+              </>
+            )}
+            {bench.deforestation_prevalence && (
+              <>
+                <dt className="text-muted-foreground">Prevalencia deforestacion</dt>
+                <dd className="text-right font-semibold text-foreground">
+                  {DEF_PREV_LABELS[bench.deforestation_prevalence] ?? bench.deforestation_prevalence}
+                </dd>
+              </>
+            )}
+            <dt className="text-muted-foreground">Actualizado</dt>
+            <dd className="text-right font-medium text-foreground">{bench.as_of_date}</dd>
+          </dl>
+          {bench.notes && (
+            <p className="text-[11px] text-muted-foreground leading-snug">{bench.notes}</p>
+          )}
+          <p className="text-[10px] text-muted-foreground italic">Fuente: {bench.source}</p>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── Risk decision tree section ─────────────────────────────────────────────
+const FINAL_RISK_COLORS: Record<string, string> = {
+  low: 'bg-emerald-100 text-emerald-800 border-emerald-400',
+  medium: 'bg-amber-100 text-amber-800 border-amber-400',
+  high: 'bg-orange-100 text-orange-800 border-orange-400',
+  critical: 'bg-red-100 text-red-800 border-red-400',
+  requires_field_visit: 'bg-blue-100 text-blue-800 border-blue-400',
+}
+
+const FINAL_RISK_LABELS: Record<string, string> = {
+  low: 'BAJO',
+  medium: 'MEDIO',
+  high: 'ALTO',
+  critical: 'CRITICO',
+  requires_field_visit: 'REQUIERE VISITA EN TERRENO',
+}
+
+function RiskDecisionSection({ plotId }: { plotId: string }) {
+  const decision = useRiskDecision()
+  const [result, setResult] = useState<RiskDecisionResponse | null>(null)
+
+  async function run() {
+    try {
+      const res = await decision.mutateAsync(plotId)
+      setResult(res)
+    } catch (e: any) {
+      console.error(e)
+    }
+  }
+
+  return (
+    <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
+            Decision de Riesgo Compuesta
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Composicion final: screening + legalidad + pais + escala + tenencia.
+          </p>
+        </div>
+        <button
+          onClick={run}
+          disabled={decision.isPending}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {decision.isPending ? 'Calculando...' : 'Calcular decision'}
+        </button>
+      </div>
+
+      {result && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <span className={`inline-flex items-center rounded-full border-2 px-4 py-1.5 text-sm font-bold ${FINAL_RISK_COLORS[result.final_risk] ?? ''}`}>
+              {FINAL_RISK_LABELS[result.final_risk] ?? result.final_risk}
+            </span>
+          </div>
+
+          <div className="rounded-md bg-muted/40 border border-border px-3 py-2 text-xs text-foreground">
+            <strong>Accion recomendada: </strong>
+            {result.recommended_action}
+          </div>
+
+          {result.drivers.length > 0 && (
+            <div>
+              <div className="text-[11px] font-semibold text-red-700 uppercase tracking-wide mb-1">
+                Drivers bloqueantes
+              </div>
+              <ul className="list-disc pl-5 space-y-0.5 text-xs text-red-800">
+                {result.drivers.map((d, i) => <li key={i}>{d}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {result.warnings.length > 0 && (
+            <div>
+              <div className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide mb-1">
+                Advertencias
+              </div>
+              <ul className="list-disc pl-5 space-y-0.5 text-xs text-amber-800">
+                {result.warnings.map((w, i) => <li key={i}>{w}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {result.positives.length > 0 && (
+            <div>
+              <div className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide mb-1">
+                Positivos
+              </div>
+              <ul className="list-disc pl-5 space-y-0.5 text-xs text-emerald-800">
+                {result.positives.map((p, i) => <li key={i}>{p}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Legal compliance checklist section ────────────────────────────────────
+const AMBITO_LABELS: Record<string, string> = {
+  land_use_rights: 'Uso de suelo',
+  environmental_protection: 'Medio ambiente',
+  labor_rights: 'Laboral',
+  human_rights: 'Derechos humanos',
+  third_party_rights_fpic: 'Terceros / FPIC',
+  fiscal_customs_anticorruption: 'Fiscal / aduanero',
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  satisfied: 'Cumple',
+  missing: 'Falta',
+  na: 'No aplica',
+  pending: 'Pendiente',
+}
+
+function LegalComplianceSection({ plotId }: { plotId: string }) {
+  const { data: summary, isLoading, error } = usePlotLegalStatus(plotId)
+  const update = useUpdatePlotLegalRequirement(plotId)
+
+  if (isLoading) {
+    return (
+      <div className="bg-card rounded-xl border border-border p-5">
+        <div className="text-sm text-muted-foreground">Cargando checklist legal...</div>
+      </div>
+    )
+  }
+  if (error || !summary) {
+    return (
+      <div className="bg-card rounded-xl border border-border p-5">
+        <h3 className="text-sm font-bold text-foreground uppercase tracking-wide mb-2">
+          Legalidad EUDR
+        </h3>
+        <div className="text-xs text-muted-foreground">
+          No se pudo cargar el catalogo legal.
+        </div>
+      </div>
+    )
+  }
+  if (!summary.catalog_id || summary.items.length === 0) {
+    return (
+      <div className="bg-card rounded-xl border border-border p-5">
+        <h3 className="text-sm font-bold text-foreground uppercase tracking-wide mb-2">
+          Legalidad EUDR
+        </h3>
+        <div className="text-xs text-muted-foreground">
+          No hay catalogo legal para ({(summary as any).country_code ?? 'este pais'} / {(summary as any).commodity ?? 'este commodity'}).
+          Defini el tipo de cultivo en la parcela para activar el checklist.
+        </div>
+      </div>
+    )
+  }
+
+  // Group items by ambito
+  const groups: Record<string, typeof summary.items> = {}
+  for (const it of summary.items) {
+    const key = it.requirement.ambito
+    if (!groups[key]) groups[key] = []
+    groups[key].push(it)
+  }
+
+  const pct = summary.applicable_requirements > 0
+    ? Math.round((summary.satisfied / summary.applicable_requirements) * 100)
+    : 0
+
+  return (
+    <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+      <div>
+        <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
+          Legalidad EUDR
+        </h3>
+        <p className="text-xs text-muted-foreground">
+          Art. 9.1 — 6 ambitos legales. Los requisitos aplicables dependen de la
+          escala del productor.
+        </p>
+      </div>
+
+      {/* Summary bar */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-muted-foreground">
+            {summary.satisfied} / {summary.applicable_requirements} cumplidos
+            {summary.blocking_missing > 0 && (
+              <span className="ml-2 text-red-700 font-semibold">
+                · {summary.blocking_missing} bloqueantes faltando
+              </span>
+            )}
+          </span>
+          <span className="font-semibold text-foreground">{pct}%</span>
+        </div>
+        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+          <div
+            className={`h-full transition-all ${
+              summary.blocking_missing > 0 ? 'bg-red-500' : pct >= 80 ? 'bg-emerald-500' : 'bg-amber-500'
+            }`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Grouped requirements */}
+      <div className="space-y-4">
+        {Object.entries(groups).map(([ambito, items]) => (
+          <div key={ambito} className="space-y-2">
+            <h4 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              {AMBITO_LABELS[ambito] ?? ambito}
+            </h4>
+            {items.map((it) => {
+              const status = it.compliance?.status ?? 'pending'
+              const applies =
+                it.requirement.applies_to_scale === 'all' ||
+                (summary.producer_scale &&
+                  (it.requirement.applies_to_scale === summary.producer_scale ||
+                    (it.requirement.applies_to_scale === 'medium_or_industrial' &&
+                      (summary.producer_scale === 'medium' ||
+                        summary.producer_scale === 'industrial'))))
+              const statusColor =
+                status === 'satisfied'
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                  : status === 'missing'
+                  ? 'bg-red-100 text-red-800 border-red-300'
+                  : status === 'na'
+                  ? 'bg-slate-100 text-slate-700 border-slate-300'
+                  : 'bg-amber-100 text-amber-800 border-amber-300'
+              return (
+                <div
+                  key={it.requirement.id}
+                  className={`rounded-lg border px-3 py-2 space-y-1 ${
+                    !applies ? 'opacity-50' : ''
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-mono text-muted-foreground">
+                          {it.requirement.code}
+                        </span>
+                        {it.requirement.is_blocking && (
+                          <span className="inline-flex rounded-full bg-red-50 px-1.5 py-[1px] text-[9px] font-semibold text-red-700">
+                            BLOQUEANTE
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs font-semibold text-foreground leading-snug">
+                        {it.requirement.title}
+                      </div>
+                      {it.requirement.description && (
+                        <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+                          {it.requirement.description}
+                        </p>
+                      )}
+                      {it.requirement.legal_reference && (
+                        <p className="mt-0.5 text-[10px] text-muted-foreground italic">
+                          {it.requirement.legal_reference}
+                        </p>
+                      )}
+                    </div>
+                    <select
+                      disabled={!applies || update.isPending}
+                      value={status}
+                      onChange={(e) =>
+                        update.mutate({
+                          requirementId: it.requirement.id,
+                          body: {
+                            status: e.target.value as any,
+                            evidence_media_id: it.compliance?.evidence_media_id ?? null,
+                            evidence_notes: it.compliance?.evidence_notes ?? null,
+                          },
+                        })
+                      }
+                      className={`text-[10px] font-bold rounded-full border px-2 py-1 ${statusColor}`}
+                    >
+                      <option value="pending">{STATUS_LABELS.pending}</option>
+                      <option value="satisfied">{STATUS_LABELS.satisfied}</option>
+                      <option value="missing">{STATUS_LABELS.missing}</option>
+                      <option value="na">{STATUS_LABELS.na}</option>
+                    </select>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ))}
       </div>
     </div>
   )

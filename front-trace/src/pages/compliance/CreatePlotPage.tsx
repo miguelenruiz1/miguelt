@@ -18,6 +18,28 @@ const TENURE_TYPES = [
   'occupation', 'other',
 ] as const
 
+const CAPTURE_METHODS = [
+  'handheld_gps', 'rtk_gps', 'drone', 'manual_map', 'cadastral', 'survey', 'unknown',
+] as const
+
+const CAPTURE_METHOD_LABELS: Record<(typeof CAPTURE_METHODS)[number], string> = {
+  handheld_gps: 'GPS de mano / smartphone',
+  rtk_gps: 'GPS RTK (precision centimetrica)',
+  drone: 'Dron / fotogrametria',
+  manual_map: 'Trazado manual sobre imagen satelital',
+  cadastral: 'Importado de catastro oficial',
+  survey: 'Levantamiento topografico profesional',
+  unknown: 'Desconocido',
+}
+
+const PRODUCER_SCALES = ['smallholder', 'medium', 'industrial'] as const
+
+const PRODUCER_SCALE_LABELS: Record<(typeof PRODUCER_SCALES)[number], string> = {
+  smallholder: 'Pequeno productor (<4 ha)',
+  medium: 'Mediano (4-50 ha)',
+  industrial: 'Industrial (>50 ha)',
+}
+
 const plotSchema = z.object({
   plot_code: z.string().min(1, 'Codigo requerido'),
   organization_id: z.string().optional().nullable(),
@@ -49,6 +71,13 @@ const plotSchema = z.object({
   tenure_end_date: z.string().optional().nullable(),
   indigenous_territory_flag: z.boolean().default(false),
   land_title_number: z.string().optional().nullable(),
+  // Capture metadata (MITECO EFI Tomas)
+  gps_accuracy_m: z.coerce.number().nonnegative().optional().nullable(),
+  capture_method: z.enum(CAPTURE_METHODS).optional().nullable(),
+  capture_device: z.string().optional().nullable(),
+  capture_date: z.string().optional().nullable(),
+  // Producer scale (MITECO EFI Alice — legalidad diferencial)
+  producer_scale: z.enum(PRODUCER_SCALES).optional().nullable(),
 })
 
 type PlotFormValues = z.infer<typeof plotSchema>
@@ -102,6 +131,11 @@ export default function CreatePlotPage() {
       tenure_end_date: null,
       indigenous_territory_flag: false,
       land_title_number: null,
+      gps_accuracy_m: null,
+      capture_method: null,
+      capture_device: null,
+      capture_date: null,
+      producer_scale: null,
     },
   })
 
@@ -174,6 +208,11 @@ export default function CreatePlotPage() {
         tenure_end_date: values.tenure_end_date || null,
         indigenous_territory_flag: values.indigenous_territory_flag,
         land_title_number: values.land_title_number || null,
+        gps_accuracy_m: values.gps_accuracy_m ?? null,
+        capture_method: values.capture_method || null,
+        capture_device: values.capture_device || null,
+        capture_date: values.capture_date || null,
+        producer_scale: values.producer_scale || null,
       })
       toast.success('Parcela creada')
       navigate('/cumplimiento/parcelas')
@@ -348,6 +387,79 @@ export default function CreatePlotPage() {
                   <Check className="h-3 w-3" /> Poligono dibujado
                 </div>
               )}
+            </div>
+          )}
+        </div>
+
+        {/* Captura y escala — MITECO EFI Tomas + Alice */}
+        <div className={sectionCls}>
+          <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">
+            Metodo de captura y escala del productor
+          </h2>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Datos obligatorios para defender la parcela ante una inspeccion EUDR.
+            Un poligono sin metadata de captura es indefendible.
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Metodo de captura</label>
+              <select {...register('capture_method')} className={inputCls}>
+                <option value="">Seleccionar...</option>
+                {CAPTURE_METHODS.map((m) => (
+                  <option key={m} value={m}>{CAPTURE_METHOD_LABELS[m]}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Escala del productor *</label>
+              <select {...register('producer_scale')} className={inputCls}>
+                <option value="">Seleccionar...</option>
+                {PRODUCER_SCALES.map((s) => (
+                  <option key={s} value={s}>{PRODUCER_SCALE_LABELS[s]}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className={labelCls}>Exactitud GPS (m)</label>
+              <input
+                {...register('gps_accuracy_m')}
+                type="number"
+                step="0.1"
+                min="0"
+                className={inputCls}
+                placeholder="5.0"
+              />
+              <p className="mt-0.5 text-[10px] text-muted-foreground">
+                Tipico GPS mano: 3-10 m. RTK: 0.01-0.05 m. Drone: 0.1-0.5 m.
+              </p>
+            </div>
+            <div>
+              <label className={labelCls}>Dispositivo usado</label>
+              <input
+                {...register('capture_device')}
+                className={inputCls}
+                placeholder="Garmin eTrex / iPhone 13 / DJI Mavic"
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Fecha de captura</label>
+              <input type="date" {...register('capture_date')} className={inputCls} />
+            </div>
+          </div>
+          {watch('producer_scale') === 'smallholder' && watch('geolocation_type') === 'polygon' && (
+            <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900">
+              Para parcelas &lt;4 ha EUDR acepta geolocalizacion de punto. Dibujar
+              un poligono es opcional; un punto + area declarada + metodo de captura
+              es suficiente para smallholders.
+            </div>
+          )}
+          {watch('producer_scale') === 'industrial' && (
+            <div className="rounded-md bg-indigo-50 border border-indigo-200 px-3 py-2 text-xs text-indigo-900">
+              Produccion industrial: se aplicaran requisitos legales adicionales
+              (licencia ambiental, contratos laborales, EIA, aportes seguridad
+              social). Revisa el tablero de legalidad tras crear la parcela.
             </div>
           )}
         </div>

@@ -185,6 +185,7 @@ class CustodyEventRepository:
         event_hash: str,
         tenant_id: uuid.UUID | None = None,
         parent_event_id: uuid.UUID | None = None,
+        custody_mode: str = "segregated",
     ) -> CustodyEvent:
         now = datetime.now(tz=timezone.utc)
         event = CustodyEvent(
@@ -203,10 +204,25 @@ class CustodyEventRepository:
             anchor_attempts=0,
             created_at=now,
             parent_event_id=parent_event_id,
+            custody_mode=custody_mode,
         )
         self._db.add(event)
         await self._db.flush()
         return event
+
+    async def get_last_event_mode(self, asset_id: uuid.UUID) -> str | None:
+        """Return the custody_mode of the most recent event for an asset.
+
+        Used to default a new event's mode when the caller doesn't specify one.
+        """
+        from sqlalchemy import select
+        result = await self._db.execute(
+            select(CustodyEvent.custody_mode)
+            .where(CustodyEvent.asset_id == asset_id)
+            .order_by(CustodyEvent.timestamp.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
 
     async def get_last_root_event(
         self, asset_id: uuid.UUID
@@ -256,10 +272,17 @@ class CustodyEventRepository:
         return list(result.scalars().all())
 
     async def mark_anchored(self, event_id: uuid.UUID, tx_sig: str) -> None:
+        # Also increment anchor_attempts so auditors can see how many tries
+        # it took before the anchor landed (including the successful one).
         await self._db.execute(
             update(CustodyEvent)
             .where(CustodyEvent.id == event_id)
-            .values(anchored=True, solana_tx_sig=tx_sig, anchor_last_error=None)
+            .values(
+                anchored=True,
+                solana_tx_sig=tx_sig,
+                anchor_last_error=None,
+                anchor_attempts=CustodyEvent.anchor_attempts + 1,
+            )
         )
         await self._db.flush()
 

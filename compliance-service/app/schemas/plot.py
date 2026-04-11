@@ -22,6 +22,18 @@ TenureType = Literal[
     "other",
 ]
 
+CaptureMethod = Literal[
+    "handheld_gps",
+    "rtk_gps",
+    "drone",
+    "manual_map",
+    "cadastral",
+    "survey",
+    "unknown",
+]
+
+ProducerScale = Literal["smallholder", "medium", "industrial"]
+
 # Tipos de identificacion legal de personas/empresas. Cubre Colombia (CC, CE,
 # NIT, RUT, PASAPORTE) + cross-LATAM mas comunes (RUC Peru/Ecuador, CURP/RFC
 # Mexico, CPF/CNPJ Brasil, CI Bolivia/Paraguay/Uruguay).
@@ -49,6 +61,11 @@ class OrmBase(BaseModel):
 class _PlotTenureFields(BaseModel):
     """Mixin con los campos de tenencia/propiedad EUDR Art. 8.2.f."""
 
+    # Reject unknown fields so typos like `latitude` instead of `lat`,
+    # `area_hectares` instead of `plot_area_ha`, etc. fail loudly with 422
+    # instead of silently dropping data and creating half-empty plot rows.
+    model_config = ConfigDict(extra="forbid")
+
     owner_name: str | None = Field(default=None, max_length=200)
     owner_id_type: IdentifierType | None = None
     owner_id_number: str | None = Field(default=None, max_length=50)
@@ -60,6 +77,13 @@ class _PlotTenureFields(BaseModel):
     tenure_start_date: date | None = None
     tenure_end_date: date | None = None
     indigenous_territory_flag: bool | None = None
+    # Capture metadata (MITECO EFI Tomás — precisión vs exactitud)
+    gps_accuracy_m: Decimal | None = None
+    capture_method: CaptureMethod | None = None
+    capture_device: str | None = Field(default=None, max_length=120)
+    capture_date: date | None = None
+    # Producer scale (MITECO EFI Alice — legalidad diferencial)
+    producer_scale: ProducerScale | None = None
 
     @model_validator(mode="after")
     def _check_tenure_dates(self) -> "_PlotTenureFields":
@@ -168,6 +192,11 @@ class PlotResponse(OrmBase):
     tenure_start_date: date | None = None
     tenure_end_date: date | None = None
     indigenous_territory_flag: bool = False
+    gps_accuracy_m: Decimal | None = None
+    capture_method: str | None = None
+    capture_device: str | None = None
+    capture_date: date | None = None
+    producer_scale: str | None = None
     deforestation_free: bool
     cutoff_date_compliant: bool
     legal_land_use: bool

@@ -237,6 +237,9 @@ class BurnRequest(BaseModel):
     data: dict[str, Any] = Field(default_factory=dict)
 
 
+CustodyMode = Literal["identity_preserved", "segregated", "mass_balance"]
+
+
 class GenericEventRequest(BaseModel):
     """Flexible event request for all event types (system + custom).
 
@@ -257,6 +260,14 @@ class GenericEventRequest(BaseModel):
             "Optional parent event for hierarchical timeline. "
             "If omitted, informational events auto-link to the most recent "
             "transition for the same asset."
+        ),
+    )
+    custody_mode: CustodyMode | None = Field(
+        None,
+        description=(
+            "Custody mode per MITECO/EFI: identity_preserved, segregated, "
+            "or mass_balance. Defaults to the previous event's mode on the "
+            "same asset, or 'segregated' for the first event."
         ),
     )
 
@@ -281,6 +292,7 @@ class CustodyEventResponse(OrmBase):
     evidence_hash: str | None = None
     evidence_type: str | None = None
     parent_event_id: uuid.UUID | None = None
+    custody_mode: str = "segregated"
     created_at: datetime
 
 

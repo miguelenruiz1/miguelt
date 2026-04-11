@@ -124,6 +124,8 @@ const RecordDetailPage = lazy(() => import('@/pages/compliance/RecordDetailPage'
 const CertificatesPage = lazy(() => import('@/pages/compliance/CertificatesPage'))
 const VerifyCertificatePage = lazy(() => import('@/pages/compliance/VerifyCertificatePage'))
 const ComplianceIntegrationsPage = named(() => import('@/pages/compliance/IntegrationsPage'), 'ComplianceIntegrationsPage')
+const CertificationsPage = lazy(() => import('@/pages/compliance/CertificationsPage'))
+const LegalResourcesPage = lazy(() => import('@/pages/compliance/LegalResourcesPage'))
 
 // ── Platform pages (lazy) ──────────────────────────────────────────────────
 const PlatformDashboardPage = named(() => import('@/pages/platform/PlatformDashboardPage'), 'PlatformDashboardPage')
@@ -933,6 +935,22 @@ const router = createBrowserRouter([
         element: (
           <React.Suspense fallback={null}>
             <ComplianceGuard><CertificatesPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+      {
+        path: 'cumplimiento/certificaciones',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><CertificationsPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+      {
+        path: 'cumplimiento/biblioteca-legal',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><LegalResourcesPage /></ComplianceGuard>
           </React.Suspense>
         ),
       },

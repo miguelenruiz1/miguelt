@@ -168,6 +168,12 @@ export const complianceApi = {
         { method: 'POST' },
       ),
 
+    riskDecision: (id: string) =>
+      request<import('@/types/compliance').RiskDecisionResponse>(
+        `/api/v1/compliance/plots/${id}/risk-decision`,
+        { method: 'POST' },
+      ),
+
     documents: (id: string) =>
       request<DocumentLink[]>(`/api/v1/compliance/plots/${id}/documents`),
 
@@ -340,6 +346,70 @@ export const complianceApi = {
 
     delete: (id: string) =>
       requestVoid(`/api/v1/compliance/risk-assessments/${id}`, { method: 'DELETE' }),
+  },
+
+  // ── Certification schemes (MITECO EFI credibility scoring) ──────────────
+  certifications: {
+    list: (params?: { commodity?: string; scope?: string; is_active?: boolean }) =>
+      request<import('@/types/compliance').CertificationScheme[]>(
+        `/api/v1/compliance/certifications/${qs(params)}`,
+      ),
+
+    get: (slug: string) =>
+      request<import('@/types/compliance').CertificationScheme>(
+        `/api/v1/compliance/certifications/${slug}`,
+      ),
+
+    update: (slug: string, body: import('@/types/compliance').CertificationSchemeUpdate) =>
+      request<import('@/types/compliance').CertificationScheme>(
+        `/api/v1/compliance/certifications/${slug}`,
+        { method: 'PATCH', body: JSON.stringify(body) },
+      ),
+  },
+
+  // ── Country risk benchmarks ─────────────────────────────────────────────
+  countryRisk: {
+    list: (params?: { only_current?: boolean }) =>
+      request<import('@/types/compliance').CountryRiskBenchmark[]>(
+        `/api/v1/compliance/country-risk/${qs(params)}`,
+      ),
+
+    get: (code: string) =>
+      request<import('@/types/compliance').CountryRiskBenchmark>(
+        `/api/v1/compliance/country-risk/${code}`,
+      ),
+  },
+
+  // ── Legal requirements catalog (EUDR Art. 9.1 legalidad) ─────────────────
+  legal: {
+    listCatalogs: (params?: { country_code?: string; commodity?: string; is_active?: boolean }) =>
+      request<import('@/types/compliance').LegalCatalog[]>(
+        `/api/v1/compliance/legal/catalogs${qs(params)}`,
+      ),
+
+    getCatalog: (id: string) =>
+      request<import('@/types/compliance').LegalCatalog>(
+        `/api/v1/compliance/legal/catalogs/${id}`,
+      ),
+
+    getPlotStatus: (plotId: string) =>
+      request<import('@/types/compliance').PlotLegalComplianceSummary>(
+        `/api/v1/compliance/legal/plots/${plotId}/status`,
+      ),
+
+    updatePlotRequirement: (
+      plotId: string,
+      requirementId: string,
+      body: {
+        status: 'satisfied' | 'missing' | 'na' | 'pending'
+        evidence_media_id?: string | null
+        evidence_notes?: string | null
+      },
+    ) =>
+      request<import('@/types/compliance').PlotLegalComplianceRow>(
+        `/api/v1/compliance/legal/plots/${plotId}/requirements/${requirementId}`,
+        { method: 'PATCH', body: JSON.stringify(body) },
+      ),
   },
 
   // ── Public verification (no auth) ────────────────────────────────────────

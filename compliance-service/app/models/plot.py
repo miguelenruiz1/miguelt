@@ -55,6 +55,19 @@ class CompliancePlot(Base):
             "OR tenure_end_date >= tenure_start_date",
             name="ck_compliance_plots_tenure_dates",
         ),
+        CheckConstraint(
+            "capture_method IS NULL OR capture_method IN ("
+            "'handheld_gps','rtk_gps','drone','manual_map','cadastral','survey','unknown')",
+            name="ck_compliance_plots_capture_method",
+        ),
+        CheckConstraint(
+            "producer_scale IS NULL OR producer_scale IN ('smallholder','medium','industrial')",
+            name="ck_compliance_plots_producer_scale",
+        ),
+        CheckConstraint(
+            "gps_accuracy_m IS NULL OR gps_accuracy_m >= 0",
+            name="ck_compliance_plots_gps_accuracy_positive",
+        ),
         Index(
             "ix_plots_cadastral",
             "cadastral_id",
@@ -90,6 +103,13 @@ class CompliancePlot(Base):
     tenure_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     tenure_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     indigenous_territory_flag: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Capture metadata (MITECO EFI Tomas — precision vs accuracy, SOP trace)
+    gps_accuracy_m: Mapped[Decimal | None] = mapped_column(Numeric(8, 2), nullable=True)
+    capture_method: Mapped[str | None] = mapped_column(Text, nullable=True)
+    capture_device: Mapped[str | None] = mapped_column(Text, nullable=True)
+    capture_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # Producer scale — differentiates legal requirements (MITECO EFI Alice)
+    producer_scale: Mapped[str | None] = mapped_column(Text, nullable=True)
     deforestation_free: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     cutoff_date_compliant: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     legal_land_use: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
