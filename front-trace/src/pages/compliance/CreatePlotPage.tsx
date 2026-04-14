@@ -13,9 +13,9 @@ import { PlotPolygonEditor } from '@/components/compliance/PlotPolygonEditor'
 // ─── Colombia-specific constants ────────────────────────────────────────────
 
 const COMMODITIES = [
-  { value: 'cafe', label: 'Cafe', scientific: 'Coffea arabica' },
-  { value: 'cacao', label: 'Cacao', scientific: 'Theobroma cacao' },
-  { value: 'palma', label: 'Palma de aceite', scientific: 'Elaeis guineensis' },
+  { value: 'cafe',  label: 'Cafe',             scientific: 'Coffea arabica L.',        commodity: 'coffee' as const },
+  { value: 'cacao', label: 'Cacao',            scientific: 'Theobroma cacao L.',       commodity: 'cacao'  as const },
+  { value: 'palma', label: 'Palma de aceite',  scientific: 'Elaeis guineensis Jacq.',  commodity: 'palm'   as const },
 ] as const
 
 const TENURE_TYPES = [
@@ -78,6 +78,7 @@ const plotSchema = z.object({
   gps_accuracy_m: z.coerce.number().nonnegative().optional().nullable(),
   // Cultivo
   crop_type: z.string().min(1, 'Seleccione el cultivo'),
+  commodity_type: z.enum(['coffee', 'cacao', 'palm', 'other']).optional().nullable(),
   scientific_name: z.string().optional().nullable(),
   establishment_date: z.string().optional().nullable(),
   last_harvest_date: z.string().optional().nullable(),
@@ -130,7 +131,7 @@ export default function CreatePlotPage() {
       region: '', municipality: '', vereda: null, frontera_agricola_status: null,
       plot_area_ha: null, geolocation_type: 'point', lat: null, lng: null,
       capture_method: null, capture_device: null, capture_date: null, gps_accuracy_m: null,
-      crop_type: '', scientific_name: null, establishment_date: null, last_harvest_date: null,
+      crop_type: '', commodity_type: null, scientific_name: null, establishment_date: null, last_harvest_date: null,
       renovation_date: null, renovation_type: null, producer_scale: '',
       producer_name: '', producer_id_type: '', producer_id_number: '',
       owner_name: null, owner_id_type: null, owner_id_number: null,
@@ -174,7 +175,9 @@ export default function CreatePlotPage() {
         geojson_data: polygonData,
         capture_method: values.capture_method || null, capture_device: values.capture_device || null,
         capture_date: values.capture_date || null, gps_accuracy_m: values.gps_accuracy_m ?? null,
-        crop_type: values.crop_type, scientific_name: values.scientific_name || null,
+        crop_type: values.crop_type,
+        commodity_type: values.commodity_type || null,
+        scientific_name: values.scientific_name || null,
         establishment_date: values.establishment_date || null, last_harvest_date: values.last_harvest_date || null,
         renovation_date: values.renovation_date || null, renovation_type: values.renovation_type || null,
         producer_scale: values.producer_scale || null,
@@ -429,7 +432,10 @@ export default function CreatePlotPage() {
               <select {...register('crop_type', {
                 onChange: (e) => {
                   const c = COMMODITIES.find(c => c.value === e.target.value)
-                  if (c) setValue('scientific_name', c.scientific)
+                  if (c) {
+                    setValue('scientific_name', c.scientific)
+                    setValue('commodity_type', c.commodity)
+                  }
                 },
               })} className={cls}>
                 <option value="">— Seleccionar —</option>

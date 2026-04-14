@@ -29,6 +29,9 @@ export interface Product {
   preferred_currency: string
   weight_per_unit: number | null
   volume_per_unit: number | null
+  origin_plot_id?: string | null
+  origin_plot_code?: string | null
+  commodity_type?: string | null
   tax_rate_id: string | null
   is_tax_exempt: boolean
   retention_rate: number | null
@@ -1144,6 +1147,8 @@ export interface SalesOrderLine {
   line_total_with_tax?: number
   line_total: number
   notes: string | null
+  hs_code?: string | null
+  incoterm?: string | null
   backorder_line_id: string | null
   price_source?: string | null
   customer_price_id?: string | null
@@ -1207,6 +1212,7 @@ export interface SalesOrder {
   incoterm: string | null
   origin_country: string | null
   destination_country: string | null
+  commodity_type: string | null
   notes: string | null
   shipping_info: ShippingInfo | null
   cufe: string | null

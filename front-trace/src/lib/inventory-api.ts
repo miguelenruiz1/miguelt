@@ -1245,3 +1245,56 @@ export const inventoryPartnersApi = {
   delete: (id: string) =>
     requestVoid(`/api/v1/partners/${id}`, { method: 'DELETE' }),
 }
+
+// ─── Quality tests & batch plot origins ─────────────────────────────────────
+
+export interface QualityTest {
+  id: string
+  tenant_id: string
+  batch_id: string
+  test_type: string
+  value: number
+  unit: string
+  threshold_min: number | null
+  threshold_max: number | null
+  passed: boolean | null
+  lab: string | null
+  test_date: string
+  doc_hash: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface BatchPlotOrigin {
+  id: string
+  tenant_id: string
+  batch_id: string
+  plot_id: string
+  plot_code: string | null
+  origin_quantity_kg: number
+  created_at: string
+}
+
+export const inventoryQualityTestsApi = {
+  create: (data: {
+    batch_id: string
+    test_type: string
+    value: number
+    unit: string
+    threshold_min?: number | null
+    threshold_max?: number | null
+    lab?: string | null
+    test_date: string
+    doc_hash?: string | null
+    notes?: string | null
+  }) => request<QualityTest>('/api/v1/quality-tests', { method: 'POST', body: JSON.stringify(data) }),
+  listForBatch: (batchId: string) =>
+    request<QualityTest[]>(`/api/v1/batches/${batchId}/quality-tests`),
+}
+
+export const inventoryBatchOriginsApi = {
+  create: (batchId: string, data: { plot_id: string; plot_code?: string | null; origin_quantity_kg: number }) =>
+    request<BatchPlotOrigin>(`/api/v1/batches/${batchId}/origins`, { method: 'POST', body: JSON.stringify(data) }),
+  listForBatch: (batchId: string) =>
+    request<BatchPlotOrigin[]>(`/api/v1/batches/${batchId}/origins`),
+}
