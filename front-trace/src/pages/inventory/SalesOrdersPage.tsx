@@ -18,7 +18,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useToast } from '@/store/toast'
 import { VariantPicker } from '@/components/inventory/VariantPicker'
 import { inventoryPricingApi } from '@/lib/inventory-api'
-import type { SalesOrder, SalesOrderStatus, ConfirmWithBackorderOut, PriceLookupResponse } from '@/types/inventory'
+import type { SalesOrder, SalesOrderStatus, ConfirmWithBackorderOut, PriceLookupResponse, TaxRate } from '@/types/inventory'
 
 function PriceSemaphore({ productId, unitPrice }: { productId: string; unitPrice: number }) {
   const { data } = useQuery({
@@ -77,7 +77,7 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: 'rejected', label: 'Rechazado' },
 ]
 
-interface SOLine { product_id: string; variant_id: string; warehouse_id: string; qty_ordered: string; unit_price: string; discount_pct: string; tax_rate: string }
+interface SOLine { product_id: string; variant_id: string; warehouse_id: string; qty_ordered: string; unit_price: string; discount_pct: string; tax_rate: string; tax_rate_ids: string[] }
 
 function CreateSOModal({ onClose }: { onClose: () => void }) {
   const { data: partnersData } = usePartners({ limit: 200 })
@@ -86,7 +86,6 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
   const create = useCreateSalesOrder()
   const priceLookupMut = usePriceLookup()
   const { data: taxRates = [] } = useTaxRates({ is_active: true })
-  const ivaRates = taxRates.filter(r => r.tax_type === 'iva')
   const { data: stockLevels = [] } = useStockLevels({ limit: 500 })
   const partners = partnersData?.items ?? []
   const allProducts = productsData?.items ?? []
@@ -98,7 +97,7 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
   const products = allProducts.filter(p => p.is_active && productsWithStock.has(p.id))
 
   const [form, setForm] = useState({ customer_id: '', warehouse_id: '', expected_date: '', notes: '', discount_pct: '0', discount_reason: '', payment_form: '1', payment_method: '10' })
-  const [lines, setLines] = useState<SOLine[]>([{ product_id: '', variant_id: '', warehouse_id: '', qty_ordered: '1', unit_price: '0', discount_pct: '0', tax_rate: '19' }])
+  const [lines, setLines] = useState<SOLine[]>([{ product_id: '', variant_id: '', warehouse_id: '', qty_ordered: '1', unit_price: '0', discount_pct: '0', tax_rate: '0', tax_rate_ids: [] }])
   const [linePriceSources, setLinePriceSources] = useState<Record<number, PriceLookupResponse>>({})
 
   // Lookup price via API (checks customer special prices first, then base)
@@ -129,7 +128,7 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
   }
 
   function addLine() {
-    setLines(l => [...l, { product_id: '', variant_id: '', warehouse_id: '', qty_ordered: '1', unit_price: '0', discount_pct: '0', tax_rate: '19' }])
+    setLines(l => [...l, { product_id: '', variant_id: '', warehouse_id: '', qty_ordered: '1', unit_price: '0', discount_pct: '0', tax_rate: '0', tax_rate_ids: [] }])
   }
   function removeLine(i: number) {
     setLines(l => l.filter((_, idx) => idx !== i))
@@ -198,6 +197,7 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
         unit_price: Number(l.unit_price),
         discount_pct: Number(l.discount_pct),
         tax_rate: Number(l.tax_rate),
+        tax_rate_ids: l.tax_rate_ids,
       })),
     })
     onClose()
@@ -319,14 +319,15 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
                     )}
                   </div>
                   <input type="number" step="0.01" min={0} max={100} value={line.discount_pct} onChange={e => updateLine(i, 'discount_pct', e.target.value)} className="w-16 rounded-xl border border-border px-2 py-1.5 text-xs" placeholder="Desc%" title="Descuento linea %" />
-                  <select value={line.tax_rate} onChange={e => updateLine(i, 'tax_rate', e.target.value)} className="w-20 rounded-xl border border-border px-1 py-1.5 text-xs focus:ring-2 focus:ring-ring" title="IVA %">
-                    <option value="0">0%</option>
-                    <option value="5">5%</option>
-                    <option value="19">19%</option>
-                    {ivaRates.filter(r => ![0, 0.05, 0.19].includes(Number(r.rate))).map(r => (
-                      <option key={r.id} value={String(Number(r.rate) * 100)}>{(Number(r.rate) * 100).toFixed(0)}%</option>
-                    ))}
-                  </select>
+                  <LineTaxPicker
+                    allRates={taxRates}
+                    selectedIds={line.tax_rate_ids}
+                    onChange={(ids) =>
+                      setLines((l) =>
+                        l.map((ln, idx) => (idx === i ? { ...ln, tax_rate_ids: ids } : ln)),
+                      )
+                    }
+                  />
                   {lines.length > 1 && <button type="button" onClick={() => removeLine(i)} className="text-red-400 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>}
                 </div>
                 {line.product_id && Number(line.unit_price) > 0 && <PriceSemaphore productId={line.product_id} unitPrice={Number(line.unit_price)} />}
@@ -528,6 +529,143 @@ export function SalesOrdersPage() {
       )}
 
       {showCreate && <CreateSOModal onClose={() => setShowCreate(false)} />}
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// LineTaxPicker — multi-select dropdown for assigning tax rates to a SO line.
+// Click the button to open a small popover with checkboxes grouped by category.
+// Supports any country: addition (IVA/VAT/GST/ICMS/IPI), withholding
+// (Retefuente/IRPF/withholding), and cumulative bases (Brazil IPI on top of ICMS).
+// ──────────────────────────────────────────────────────────────────────────
+
+function LineTaxPicker({
+  allRates,
+  selectedIds,
+  onChange,
+}: {
+  allRates: TaxRate[]
+  selectedIds: string[]
+  onChange: (ids: string[]) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const selected = allRates.filter((r) => selectedIds.includes(r.id))
+
+  // Group rates by category for display
+  const grouped = new Map<string, { name: string; behavior: string; rates: TaxRate[] }>()
+  for (const r of allRates) {
+    const key = r.category?.id ?? 'sin-categoria'
+    const name = r.category?.name ?? 'Sin categoría'
+    const behavior = r.category?.behavior ?? 'addition'
+    if (!grouped.has(key)) grouped.set(key, { name, behavior, rates: [] })
+    grouped.get(key)!.rates.push(r)
+  }
+
+  const summary =
+    selected.length === 0
+      ? 'Impuestos'
+      : selected.length === 1
+        ? `${selected[0].name}`
+        : `${selected.length} impuestos`
+
+  const toggle = (id: string) => {
+    if (selectedIds.includes(id)) {
+      onChange(selectedIds.filter((x) => x !== id))
+    } else {
+      onChange([...selectedIds, id])
+    }
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`min-w-[80px] rounded-xl border px-2 py-1.5 text-xs flex items-center justify-between gap-1 ${
+          selected.length > 0
+            ? 'border-blue-400 bg-blue-50 text-blue-800'
+            : 'border-border text-muted-foreground'
+        }`}
+        title="Seleccionar impuestos para esta línea"
+      >
+        <span className="truncate max-w-[100px]">{summary}</span>
+        <svg className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <>
+          {/* Click-away backdrop */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute right-0 top-full mt-1 z-50 w-72 max-h-96 overflow-y-auto rounded-xl border border-border bg-card shadow-2xl p-2">
+            {allRates.length === 0 ? (
+              <div className="text-xs text-muted-foreground p-3 text-center">
+                No hay tarifas configuradas. Creá categorías y tarifas en{' '}
+                <a href="/inventario/impuestos" className="text-primary underline">
+                  Impuestos
+                </a>
+                .
+              </div>
+            ) : (
+              Array.from(grouped.entries()).map(([key, group]) => (
+                <div key={key} className="mb-2">
+                  <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    {group.name}
+                    <span
+                      className={`text-[9px] px-1 py-0.5 rounded ${
+                        group.behavior === 'addition'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      {group.behavior === 'addition' ? 'suma' : 'retiene'}
+                    </span>
+                  </div>
+                  {group.rates.map((r) => (
+                    <label
+                      key={r.id}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(r.id)}
+                        onChange={() => toggle(r.id)}
+                      />
+                      <span className="flex-1">{r.name}</span>
+                      <span className="text-xs font-mono text-muted-foreground">
+                        {(Number(r.rate) * 100).toFixed(2)}%
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              ))
+            )}
+            {allRates.length > 0 && (
+              <div className="border-t border-border mt-2 pt-2 px-2 flex justify-between items-center text-xs">
+                <button
+                  type="button"
+                  onClick={() => onChange([])}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Limpiar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="text-primary font-semibold"
+                >
+                  Listo
+                </button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }

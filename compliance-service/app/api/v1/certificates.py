@@ -73,6 +73,28 @@ async def generate_certificate(
     generator = CertificateGenerator(db)
     cert = await generator.generate(record_id=record_id, tenant_id=tid, user_id=uid)
 
+    # EUDR Art. 12: certificate issuance is the commitment moment — the
+    # operator is vouching for the evidence. Set the 5-year retention
+    # watermark on the record so deletion is blocked.
+    from datetime import date as _date
+    record = (
+        await db.execute(
+            select(ComplianceRecord).where(
+                ComplianceRecord.id == record_id,
+                ComplianceRecord.tenant_id == tid,
+            )
+        )
+    ).scalar_one_or_none()
+    if record is not None:
+        today = _date.today()
+        target = _date(today.year + 5, today.month, today.day)
+        if (
+            record.documents_retention_until is None
+            or record.documents_retention_until < target
+        ):
+            record.documents_retention_until = target
+            await db.flush()
+
     return cert
 
 

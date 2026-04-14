@@ -54,3 +54,36 @@ class ConvertResponse(BaseModel):
     to_uom: str
     result: Decimal
     factor: Decimal
+
+
+class CategoryBaseChoice(BaseModel):
+    category: str
+    base_symbol: str
+
+
+class SetupRequest(BaseModel):
+    bases: list[CategoryBaseChoice]
+
+
+class SetupResponse(BaseModel):
+    created: int
+    categories_set_up: list[str]
+    skipped: list[str] = []
+
+
+class ChangeBaseRequest(BaseModel):
+    new_base_id: str
+
+
+class ChangeBaseResponse(BaseModel):
+    old_base: str
+    new_base: str
+    pivot: str
+    affected: dict[str, int]
+
+
+class StandardCategory(BaseModel):
+    """Catalog entry returned to the frontend so the wizard can render options."""
+    category: str
+    label: str
+    options: list[dict]  # [{symbol, name, suggested_default: bool}]

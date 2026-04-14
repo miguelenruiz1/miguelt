@@ -82,10 +82,36 @@ class ComplianceValidator:
             if plots:
                 for plot in plots:
                     pcode = getattr(plot, "plot_code", "?")
-                    if not getattr(plot, "deforestation_free", False):
-                        missing_fields.append(
-                            f"plot {pcode}: deforestation_free=False (run GFW screening)"
-                        )
+                    meta = getattr(plot, "metadata_", None) or {}
+                    full = meta.get("eudr_full_screening")
+
+                    # If multi-source screening exists, use its composite risk
+                    if full:
+                        eudr_risk = full.get("eudr_risk")
+                        if eudr_risk == "high":
+                            missing_fields.append(
+                                f"plot {pcode}: eudr_risk=high — screening multi-fuente "
+                                f"detectó deforestación ({full.get('risk_reason', '')})"
+                            )
+                        elif eudr_risk == "medium":
+                            warnings.append(
+                                f"plot {pcode}: eudr_risk=medium — verificación incompleta, "
+                                f"se recomienda reintentar screening multi-fuente"
+                            )
+                        # eudr_risk none/low → compliant, no error needed
+                    else:
+                        # Legacy single-source check
+                        if not getattr(plot, "deforestation_free", False):
+                            missing_fields.append(
+                                f"plot {pcode}: deforestation_free=False (ejecutar screening satelital)"
+                            )
+                        # Warn if only GFW without multi-source
+                        if meta.get("gfw_screening") and not full:
+                            warnings.append(
+                                f"plot {pcode}: solo verificado con GFW — se recomienda "
+                                f"screening multi-fuente (GFW + Hansen + JRC) para mayor certeza EUDR"
+                            )
+
                     if not getattr(plot, "cutoff_date_compliant", False):
                         missing_fields.append(
                             f"plot {pcode}: cutoff_date_compliant=False (post-2020-12-31 land use change)"

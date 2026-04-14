@@ -5,7 +5,29 @@ import uuid
 from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, Query, Response, status
-from sqlalchemy import select
+from sqlalchemy import func, select
+
+async def _resolve_active_cert_number(db, record_id, tenant_id) -> str | None:
+    """Return the active ComplianceCertificate number for a record, or None.
+
+    Used by DDS builders — previously they called
+    ``getattr(record, 'certificate_number', None)`` which always returned None
+    because the record model has no such field.
+    """
+    from app.models.certificate import ComplianceCertificate
+    row = (
+        await db.execute(
+            select(ComplianceCertificate.certificate_number)
+            .where(
+                ComplianceCertificate.record_id == record_id,
+                ComplianceCertificate.tenant_id == tenant_id,
+                ComplianceCertificate.status == "active",
+            )
+            .order_by(ComplianceCertificate.generated_at.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    return row
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import ModuleUser, get_http_client
@@ -157,8 +179,17 @@ async def create_record(
     if fw is None:
         raise NotFoundError(f"Framework '{body.framework_slug}' not found")
 
-    # Check unique asset+framework — only enforced when an asset_id is given,
-    # so multiple standalone records under the same framework are allowed.
+    # Upsert semantics (MITECO/QA feedback): the auto-create-on-mint flow
+    # pre-populates a shell record when an asset is minted, so a subsequent
+    # POST with the same (asset_id, framework) used to collide. Treat the
+    # POST as an idempotent upsert: if a record already exists AND it is
+    # still pending/not_required (i.e. the operator hasn't submitted it),
+    # merge the new fields into it and return 200. If it's already been
+    # submitted, still 409 because overwriting submitted evidence is unsafe.
+    data = body.model_dump(exclude={"framework_slug"}, exclude_unset=True)
+    if "metadata" in data:
+        data["metadata_"] = data.pop("metadata")
+
     if body.asset_id is not None:
         existing = (
             await db.execute(
@@ -170,14 +201,20 @@ async def create_record(
             )
         ).scalar_one_or_none()
         if existing is not None:
-            raise ConflictError(
-                f"Record for asset '{body.asset_id}' and framework '{body.framework_slug}' already exists"
-            )
+            if existing.declaration_status not in ("not_required", "pending"):
+                raise ConflictError(
+                    f"Record for asset '{body.asset_id}' already submitted "
+                    f"(declaration_status='{existing.declaration_status}'). "
+                    "Use PATCH to update specific fields."
+                )
+            # Merge — only overwrite fields the client actually sent.
+            for key, val in data.items():
+                setattr(existing, key, val)
+            await db.flush()
+            await db.refresh(existing)
+            return existing
 
-    data = body.model_dump(exclude={"framework_slug"}, exclude_unset=True)
-    if "metadata" in data:
-        data["metadata_"] = data.pop("metadata")
-    else:
+    if "metadata_" not in data:
         data["metadata_"] = {}
 
     record = ComplianceRecord(
@@ -304,6 +341,34 @@ async def delete_record(
         raise ValidationError(
             f"Cannot delete record with declaration_status='{record.declaration_status}'. "
             "Only records with status 'not_required' or 'pending' can be deleted."
+        )
+
+    # EUDR Art. 12: 5-year retention — block deletion if retention watermark
+    # is set and still in the future. Applies even to 'not_required' records
+    # if a manual retention date was set.
+    if record.documents_retention_until is not None and record.documents_retention_until > date.today():
+        raise ValidationError(
+            f"Record está en periodo de retención EUDR hasta "
+            f"{record.documents_retention_until.isoformat()} (Art. 12, 5 años). "
+            "No se puede eliminar hasta esa fecha."
+        )
+
+    # Pre-check: a record with an issued certificate cannot be deleted.
+    # Without this check the cascade blows up with a 500 on the FK to
+    # compliance_certificates.record_id.
+    from app.models.certificate import ComplianceCertificate as _Cert
+    cert_count = (
+        await db.execute(
+            select(func.count())
+            .select_from(_Cert)
+            .where(_Cert.record_id == record_id, _Cert.tenant_id == tid)
+        )
+    ).scalar_one()
+    if cert_count and cert_count > 0:
+        raise ConflictError(
+            f"No se puede eliminar: el record tiene {cert_count} certificado(s) "
+            "emitido(s). Revoque primero los certificados o use el flujo de "
+            "archivado si necesita conservar la evidencia."
         )
 
     await db.delete(record)
@@ -560,8 +625,9 @@ async def export_dds(
     if record is None:
         raise NotFoundError(f"Record '{record_id}' not found")
 
-    # Load linked plots
+    # Load linked plots + their evidence documents (Art. 9.4 retention).
     from app.models.plot import CompliancePlot
+    from app.models.document_link import CompliancePlotDocument, ComplianceRecordDocument
     links = (await db.execute(
         select(CompliancePlotLink).where(CompliancePlotLink.record_id == record_id)
     )).scalars().all()
@@ -572,6 +638,11 @@ async def export_dds(
             select(CompliancePlot).where(CompliancePlot.id == link.plot_id)
         )).scalar_one_or_none()
         if plot:
+            plot_docs = (await db.execute(
+                select(CompliancePlotDocument).where(
+                    CompliancePlotDocument.plot_id == plot.id,
+                )
+            )).scalars().all()
             plots.append({
                 "plot_code": plot.plot_code,
                 "lat": float(plot.lat) if plot.lat else None,
@@ -583,9 +654,45 @@ async def export_dds(
                 "risk_level": plot.risk_level,
                 "deforestation_free": plot.deforestation_free,
                 "geojson_data": getattr(plot, "geojson_data", None),
+                "geojson_arweave_url": getattr(plot, "geojson_arweave_url", None),
+                "geojson_hash": getattr(plot, "geojson_hash", None),
+                "satellite_report_url": getattr(plot, "satellite_report_url", None),
+                "satellite_report_hash": getattr(plot, "satellite_report_hash", None),
                 "geolocation_type": getattr(plot, "geolocation_type", None),
                 "establishment_date": str(plot.establishment_date) if getattr(plot, "establishment_date", None) else None,
+                "land_title_number": getattr(plot, "land_title_number", None),
+                # EUDR Art. 8.2.f — derecho de uso / tenencia / titular
+                "owner_name": getattr(plot, "owner_name", None),
+                "owner_id_type": getattr(plot, "owner_id_type", None),
+                "owner_id_number": getattr(plot, "owner_id_number", None),
+                "producer_name": getattr(plot, "producer_name", None),
+                "producer_id_type": getattr(plot, "producer_id_type", None),
+                "producer_id_number": getattr(plot, "producer_id_number", None),
+                "cadastral_id": getattr(plot, "cadastral_id", None),
+                "tenure_type": getattr(plot, "tenure_type", None),
+                "tenure_start_date": str(plot.tenure_start_date) if getattr(plot, "tenure_start_date", None) else None,
+                "tenure_end_date": str(plot.tenure_end_date) if getattr(plot, "tenure_end_date", None) else None,
+                "indigenous_territory_flag": bool(getattr(plot, "indigenous_territory_flag", False)),
+                "documents": [
+                    {
+                        "id": str(d.id),
+                        "media_file_id": str(d.media_file_id),
+                        "document_type": d.document_type,
+                        "filename": d.filename,
+                        "file_hash": d.file_hash,
+                        "description": d.description,
+                        "uploaded_at": d.uploaded_at.isoformat() if d.uploaded_at else None,
+                    }
+                    for d in plot_docs
+                ],
             })
+
+    # Tambien documentos a nivel del record
+    record_docs = (await db.execute(
+        select(ComplianceRecordDocument).where(
+            ComplianceRecordDocument.record_id == record_id,
+        )
+    )).scalars().all()
 
     # Build record dict
     record_dict = {
@@ -613,7 +720,54 @@ async def export_dds(
         "signatory_role": getattr(record, "signatory_role", None),
         "signatory_date": str(getattr(record, "signatory_date", "")) if getattr(record, "signatory_date", None) else "",
         "prior_dds_references": getattr(record, "prior_dds_references", None),
+        "asset_id": str(record.asset_id) if record.asset_id else None,
+        "certificate_number": await _resolve_active_cert_number(db, record_id, tid),
+        "geo_location_confidential": getattr(record, "geo_location_confidential", False),
+        "documents": [
+            {
+                "id": str(d.id),
+                "media_file_id": str(d.media_file_id),
+                "document_type": d.document_type,
+                "filename": d.filename,
+                "file_hash": d.file_hash,
+                "description": d.description,
+                "uploaded_at": d.uploaded_at.isoformat() if d.uploaded_at else None,
+            }
+            for d in record_docs
+        ],
     }
+
+    # Fetch custody events from trace-service for full traceability
+    traceability_events = []
+    try:
+        settings = get_settings()
+        trace_url = getattr(settings, "TRACE_SERVICE_URL", "")
+        if trace_url and record.asset_id:
+            http = get_http_client()
+            resp = await http.get(
+                f"{trace_url}/api/v1/assets/{record.asset_id}/events?limit=200",
+                headers={
+                    "X-Tenant-Id": user.get("tenant_id", "default") if isinstance(user, dict) else "default",
+                    "X-Service-Token": settings.S2S_SERVICE_TOKEN,
+                },
+            )
+            if resp.status_code == 200:
+                events_data = resp.json().get("items", [])
+                for ev in events_data:
+                    traceability_events.append({
+                        "event_id": ev.get("id"),
+                        "event_type": ev.get("event_type"),
+                        "timestamp": ev.get("timestamp"),
+                        "from_wallet": ev.get("from_wallet"),
+                        "to_wallet": ev.get("to_wallet"),
+                        "location": ev.get("location"),
+                        "notes": ev.get("notes"),
+                        "event_hash": ev.get("event_hash"),
+                        "anchored": ev.get("anchored", False),
+                        "solana_tx_sig": ev.get("solana_tx_sig"),
+                    })
+    except Exception as exc:
+        log.warning("dds_traceability_fetch_failed", record_id=str(record_id), exc=str(exc))
 
     from app.services.traces_service import build_dds_payload
     dds = build_dds_payload(record_dict, plots)
@@ -621,6 +775,7 @@ async def export_dds(
     return {
         "record_id": str(record_id),
         "dds_payload": dds,
+        "traceability": traceability_events,
         "traces_nt_configured": bool(get_settings().TRACES_NT_USERNAME),
         "format": "TRACES NT DDS v2",
     }
@@ -677,8 +832,9 @@ async def submit_to_traces(
             "Falta operator/supplier email — TRACES NT lo requiere para sumisión DDS."
         )
 
-    # Load plots
+    # Load plots + their evidence documents (Art. 9.4 retention)
     from app.models.plot import CompliancePlot
+    from app.models.document_link import CompliancePlotDocument, ComplianceRecordDocument
     links = (await db.execute(
         select(CompliancePlotLink).where(CompliancePlotLink.record_id == record_id)
     )).scalars().all()
@@ -689,6 +845,11 @@ async def submit_to_traces(
             select(CompliancePlot).where(CompliancePlot.id == link.plot_id)
         )).scalar_one_or_none()
         if plot:
+            plot_docs = (await db.execute(
+                select(CompliancePlotDocument).where(
+                    CompliancePlotDocument.plot_id == plot.id,
+                )
+            )).scalars().all()
             plots.append({
                 "plot_code": plot.plot_code,
                 "lat": float(plot.lat) if plot.lat else None,
@@ -696,12 +857,48 @@ async def submit_to_traces(
                 "plot_area_ha": float(plot.plot_area_ha) if plot.plot_area_ha else None,
                 "country_code": plot.country_code,
                 "municipality": plot.municipality,
+                "region": plot.region,
                 "risk_level": plot.risk_level,
                 "deforestation_free": plot.deforestation_free,
                 "geojson_data": getattr(plot, "geojson_data", None),
+                "geojson_arweave_url": getattr(plot, "geojson_arweave_url", None),
+                "geojson_hash": getattr(plot, "geojson_hash", None),
+                "satellite_report_url": getattr(plot, "satellite_report_url", None),
+                "satellite_report_hash": getattr(plot, "satellite_report_hash", None),
                 "geolocation_type": getattr(plot, "geolocation_type", None),
                 "establishment_date": str(plot.establishment_date) if getattr(plot, "establishment_date", None) else None,
+                "land_title_number": getattr(plot, "land_title_number", None),
+                # EUDR Art. 8.2.f — derecho de uso / tenencia / titular
+                "owner_name": getattr(plot, "owner_name", None),
+                "owner_id_type": getattr(plot, "owner_id_type", None),
+                "owner_id_number": getattr(plot, "owner_id_number", None),
+                "producer_name": getattr(plot, "producer_name", None),
+                "producer_id_type": getattr(plot, "producer_id_type", None),
+                "producer_id_number": getattr(plot, "producer_id_number", None),
+                "cadastral_id": getattr(plot, "cadastral_id", None),
+                "tenure_type": getattr(plot, "tenure_type", None),
+                "tenure_start_date": str(plot.tenure_start_date) if getattr(plot, "tenure_start_date", None) else None,
+                "tenure_end_date": str(plot.tenure_end_date) if getattr(plot, "tenure_end_date", None) else None,
+                "indigenous_territory_flag": bool(getattr(plot, "indigenous_territory_flag", False)),
+                "documents": [
+                    {
+                        "id": str(d.id),
+                        "media_file_id": str(d.media_file_id),
+                        "document_type": d.document_type,
+                        "filename": d.filename,
+                        "file_hash": d.file_hash,
+                        "description": d.description,
+                        "uploaded_at": d.uploaded_at.isoformat() if d.uploaded_at else None,
+                    }
+                    for d in plot_docs
+                ],
             })
+
+    record_docs_submit = (await db.execute(
+        select(ComplianceRecordDocument).where(
+            ComplianceRecordDocument.record_id == record_id,
+        )
+    )).scalars().all()
 
     record_dict = {
         "id": str(record.id),
@@ -724,6 +921,21 @@ async def submit_to_traces(
         "activity_type": getattr(record, "activity_type", "export"),
         "deforestation_free_declaration": record.deforestation_free_declaration,
         "legal_compliance_declaration": record.legal_compliance_declaration,
+        "asset_id": str(record.asset_id) if record.asset_id else None,
+        "certificate_number": await _resolve_active_cert_number(db, record_id, tid),
+        "geo_location_confidential": getattr(record, "geo_location_confidential", False),
+        "documents": [
+            {
+                "id": str(d.id),
+                "media_file_id": str(d.media_file_id),
+                "document_type": d.document_type,
+                "filename": d.filename,
+                "file_hash": d.file_hash,
+                "description": d.description,
+                "uploaded_at": d.uploaded_at.isoformat() if d.uploaded_at else None,
+            }
+            for d in record_docs_submit
+        ],
         "signatory_name": getattr(record, "signatory_name", None),
         "signatory_role": getattr(record, "signatory_role", None),
         "signatory_date": str(getattr(record, "signatory_date", "")) if getattr(record, "signatory_date", None) else "",
@@ -740,7 +952,14 @@ async def submit_to_traces(
     if result.get("submitted") and result.get("reference_number"):
         record.declaration_reference = result["reference_number"]
         record.declaration_status = "submitted"
-        record.declaration_submission_date = date.today()
+        submission_day = date.today()
+        record.declaration_submission_date = submission_day
+        # EUDR Art. 12: keep evidence accessible for at least 5 years after
+        # submission. Set the retention watermark unless already set to a
+        # later date (eg. manual override).
+        retention_target = date(submission_day.year + 5, submission_day.month, submission_day.day)
+        if record.documents_retention_until is None or record.documents_retention_until < retention_target:
+            record.documents_retention_until = retention_target
         await db.flush()
         log.info("dds_submitted_traces", record_id=str(record_id), ref=result["reference_number"])
 

@@ -16,7 +16,7 @@ from app.db.models.config import (
 )
 from app.db.models.category import Category
 from app.db.models.entity import Product
-from app.db.models.tax import TaxRate
+from app.db.models.tax import TaxRate, TaxCategory, SalesOrderLineTax
 from app.db.models.warehouse import Warehouse, WarehouseLocation
 from app.db.models.stock import StockLevel, StockMovement, StockReservation
 from app.db.models.supplier import Supplier
@@ -68,7 +68,7 @@ __all__ = [
     # Entity
     "Product",
     # Tax
-    "TaxRate",
+    "TaxRate", "TaxCategory", "SalesOrderLineTax",
     # Warehouse
     "Warehouse", "WarehouseLocation",
     # Stock

@@ -57,7 +57,24 @@ class WarehouseRepository:
         )
         return result.scalar_one_or_none()
 
+    async def _demote_other_defaults(self, tenant_id: str, exclude_id: str | None = None) -> None:
+        """Ensure only one warehouse per tenant has is_default=True.
+
+        Called whenever a warehouse is created or updated with is_default=True.
+        """
+        from sqlalchemy import update as sa_update
+        stmt = sa_update(Warehouse).where(
+            Warehouse.tenant_id == tenant_id,
+            Warehouse.is_default == True,  # noqa: E712
+        ).values(is_default=False)
+        if exclude_id is not None:
+            stmt = stmt.where(Warehouse.id != exclude_id)
+        await self.db.execute(stmt)
+
     async def create(self, data: dict) -> Warehouse:
+        # Enforce single default per tenant
+        if data.get("is_default") and data.get("tenant_id"):
+            await self._demote_other_defaults(data["tenant_id"])
         wh = Warehouse(id=str(uuid.uuid4()), **data)
         self.db.add(wh)
         await self.db.flush()
@@ -65,6 +82,10 @@ class WarehouseRepository:
         return wh
 
     async def update(self, wh: Warehouse, data: dict) -> Warehouse:
+        # If this update marks the warehouse as default, demote any other
+        # default for the same tenant first.
+        if data.get("is_default") is True:
+            await self._demote_other_defaults(wh.tenant_id, exclude_id=wh.id)
         for k, v in data.items():
             setattr(wh, k, v)
         await self.db.flush()

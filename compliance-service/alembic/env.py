@@ -21,6 +21,13 @@ from app.models.activation import TenantFrameworkActivation  # noqa: F401, E402
 from app.models.plot import CompliancePlot  # noqa: F401, E402
 from app.models.record import ComplianceRecord  # noqa: F401, E402
 from app.models.plot_link import CompliancePlotLink  # noqa: F401, E402
+from app.models.legal_catalog import (  # noqa: F401, E402
+    LegalRequirementCatalog,
+    LegalRequirement,
+    PlotLegalCompliance,
+)
+from app.models.certification import CertificationScheme  # noqa: F401, E402
+from app.models.country_risk import CountryRiskBenchmark  # noqa: F401, E402
 
 target_metadata = Base.metadata
 

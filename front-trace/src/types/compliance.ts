@@ -63,6 +63,30 @@ export interface TenantFrameworkActivation {
   framework_slug: string
 }
 
+// EUDR Art. 8.2.f — tipos reconocidos de derecho de uso de la zona
+export type TenureType =
+  | 'owned'
+  | 'leased'
+  | 'sharecropped'
+  | 'concession'
+  | 'indigenous_collective'
+  | 'afro_collective'
+  | 'baldio_adjudicado'
+  | 'occupation'
+  | 'other'
+
+// MITECO EFI Tomás — metadatos de captura del polígono
+export type CaptureMethod =
+  | 'handheld_gps'
+  | 'rtk_gps'
+  | 'drone'
+  | 'manual_map'
+  | 'cadastral'
+  | 'survey'
+  | 'unknown'
+
+export type ProducerScale = 'smallholder' | 'medium' | 'industrial'
+
 export interface CompliancePlot {
   id: string
   tenant_id: string
@@ -78,9 +102,37 @@ export interface CompliancePlot {
   country_code: string
   region: string | null
   municipality: string | null
+  vereda: string | null
+  frontera_agricola_status: string | null
   land_title_number: string | null
   land_title_hash: string | null
+  // Tenencia y propiedad (EUDR Art. 8.2.f)
+  owner_name: string | null
+  owner_id_type: string | null
+  owner_id_number: string | null
+  producer_name: string | null
+  producer_id_type: string | null
+  producer_id_number: string | null
+  cadastral_id: string | null
+  tenure_type: TenureType | null
+  tenure_start_date: string | null
+  tenure_end_date: string | null
+  indigenous_territory_flag: boolean
+  // Capture metadata
+  gps_accuracy_m: number | null
+  capture_method: CaptureMethod | null
+  capture_device: string | null
+  capture_date: string | null
+  // Producer scale
+  crop_type: string | null
+  scientific_name: string | null
+  establishment_date: string | null
+  renovation_date: string | null
+  renovation_type: string | null
+  last_harvest_date: string | null
+  producer_scale: ProducerScale | null
   deforestation_free: boolean
+  degradation_free: boolean
   cutoff_date_compliant: boolean
   legal_land_use: boolean
   risk_level: RiskLevel
@@ -204,6 +256,221 @@ export interface PublicVerification {
   message: string | null
 }
 
+// ─── Multi-source EUDR screening ────────────────────────────────────────────
+
+export type EudrRiskLevel = 'none' | 'low' | 'medium' | 'high'
+
+export interface SourceResult {
+  source: string
+  name: string
+  institution: string
+  description: string
+  eudr_role: string
+  reference_url: string
+  dataset: string
+  checked_at: string
+  error?: string | null
+  // GFW-specific
+  alerts_count?: number
+  high_confidence_alerts?: number
+  deforestation_free?: boolean | null
+  cutoff_date?: string
+  // Hansen-specific
+  loss_pixels?: number
+  has_loss?: boolean | null
+  loss_by_year?: Record<number, number>
+  cutoff_year?: number
+  // JRC-specific
+  forest_pixel_count?: number
+  was_forest_2020?: boolean | null
+}
+
+export interface FullScreeningResult {
+  plot_id: string
+  plot_code: string
+  eudr_compliant: boolean | null
+  eudr_risk: EudrRiskLevel
+  risk_reason: string
+  checked_at: string
+  elapsed_seconds: number
+  failed_sources: string[]
+  sources: Record<string, SourceResult>
+  // Convergence (Fase A — G25)
+  convergence_score?: number | null
+  convergence_level?: 'low' | 'medium' | 'high' | null
+  convergence_details?: string[] | null
+  inside_protected_area?: boolean | null
+  wdpa_warning?: string | null
+}
+
+// ─── Legal catalog (EUDR Art. 9.1 legalidad) ────────────────────────────────
+
+export type LegalAmbito =
+  | 'land_use_rights'
+  | 'environmental_protection'
+  | 'labor_rights'
+  | 'human_rights'
+  | 'third_party_rights_fpic'
+  | 'fiscal_customs_anticorruption'
+
+export type LegalAppliesToScale =
+  | 'all'
+  | 'smallholder'
+  | 'medium'
+  | 'industrial'
+  | 'medium_or_industrial'
+
+export type LegalComplianceStatus = 'satisfied' | 'missing' | 'na' | 'pending'
+
+export interface LegalRequirement {
+  id: string
+  catalog_id: string
+  ambito: LegalAmbito
+  code: string
+  title: string
+  description: string | null
+  legal_reference: string | null
+  applies_to_scale: LegalAppliesToScale
+  required_document_type: string | null
+  is_blocking: boolean
+  sort_order: number
+}
+
+export interface LegalCatalog {
+  id: string
+  country_code: string
+  commodity: string
+  version: string
+  source: string | null
+  source_url: string | null
+  is_active: boolean
+  created_at: string
+  requirements?: LegalRequirement[]
+}
+
+export interface PlotLegalComplianceRow {
+  id: string
+  plot_id: string
+  requirement_id: string
+  status: LegalComplianceStatus
+  evidence_media_id: string | null
+  evidence_notes: string | null
+  reviewed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PlotLegalComplianceItem {
+  requirement: LegalRequirement
+  compliance: PlotLegalComplianceRow | null
+}
+
+export interface PlotLegalComplianceSummary {
+  plot_id: string
+  catalog_id: string | null
+  producer_scale: ProducerScale | null
+  total_requirements: number
+  applicable_requirements: number
+  satisfied: number
+  missing: number
+  pending: number
+  na: number
+  blocking_missing: number
+  items: PlotLegalComplianceItem[]
+}
+
+// ─── Certification schemes (MITECO EFI Alice credibility framework) ─────────
+
+export type SchemeType = 'commodity_specific' | 'generic' | 'national'
+export type SchemeScope = 'legality' | 'chain_of_custody' | 'sustainability' | 'full'
+
+export interface CertificationScheme {
+  id: string
+  slug: string
+  name: string
+  scheme_type: SchemeType
+  scope: SchemeScope
+  commodities: string[]
+  ownership_score: number
+  transparency_score: number
+  audit_score: number
+  grievance_score: number
+  total_score: number
+  covers_eudr_ambitos: string[]
+  reference_url: string | null
+  notes: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CertificationSchemeUpdate {
+  name?: string
+  scheme_type?: SchemeType
+  scope?: SchemeScope
+  commodities?: string[]
+  ownership_score?: number
+  transparency_score?: number
+  audit_score?: number
+  grievance_score?: number
+  covers_eudr_ambitos?: string[]
+  reference_url?: string | null
+  notes?: string | null
+  is_active?: boolean
+}
+
+// ─── Country risk benchmarks ────────────────────────────────────────────────
+
+export type CountryRiskLevel = 'negligible' | 'low' | 'standard' | 'high' | 'critical'
+export type DeforestationPrevalence = 'very_low' | 'low' | 'medium' | 'high' | 'very_high'
+
+export interface CountryRiskBenchmark {
+  id: string
+  country_code: string
+  risk_level: CountryRiskLevel
+  cpi_score: number | null
+  cpi_rank: number | null
+  conflict_flag: boolean
+  deforestation_prevalence: DeforestationPrevalence | null
+  indigenous_risk_flag: boolean
+  notes: string | null
+  source: string
+  as_of_date: string
+  is_current: boolean
+  created_at: string
+}
+
+// ─── Composite risk decision ────────────────────────────────────────────────
+
+export type FinalRiskLabel = 'low' | 'medium' | 'high' | 'critical' | 'requires_field_visit'
+
+export interface RiskDecisionResponse {
+  plot_id: string
+  plot_code: string
+  final_risk: FinalRiskLabel
+  drivers: string[]
+  warnings: string[]
+  positives: string[]
+  recommended_action: string
+  inputs: {
+    eudr_risk?: string | null
+    convergence_score?: number | null
+    convergence_level?: 'low' | 'medium' | 'high' | null
+    inside_protected_area?: boolean | null
+    country_risk?: (Partial<CountryRiskBenchmark> & { as_of_date?: string }) | null
+    legal_summary?: {
+      satisfied: number
+      missing: number
+      blocking_missing: number
+      applicable: number
+    } | null
+    producer_scale?: ProducerScale | null
+    tenure_type?: string | null
+    gps_accuracy_m?: number | null
+    capture_method?: string | null
+  }
+}
+
 // ─── Input types ────────────────────────────────────────────────────────────
 
 export interface CreatePlotInput {
@@ -213,6 +480,7 @@ export interface CreatePlotInput {
   geolocation_type?: string
   lat?: number | null
   lng?: number | null
+  geojson_data?: Record<string, unknown> | null
   geojson_arweave_url?: string | null
   geojson_hash?: string | null
   country_code?: string
@@ -220,6 +488,23 @@ export interface CreatePlotInput {
   municipality?: string | null
   land_title_number?: string | null
   land_title_hash?: string | null
+  // Tenencia y propiedad (EUDR Art. 8.2.f)
+  owner_name?: string | null
+  owner_id_type?: string | null
+  owner_id_number?: string | null
+  producer_name?: string | null
+  producer_id_type?: string | null
+  producer_id_number?: string | null
+  cadastral_id?: string | null
+  tenure_type?: TenureType | null
+  tenure_start_date?: string | null
+  tenure_end_date?: string | null
+  indigenous_territory_flag?: boolean
+  gps_accuracy_m?: number | null
+  capture_method?: CaptureMethod | null
+  capture_device?: string | null
+  capture_date?: string | null
+  producer_scale?: ProducerScale | null
   deforestation_free?: boolean
   cutoff_date_compliant?: boolean
   legal_land_use?: boolean
@@ -236,8 +521,26 @@ export interface UpdatePlotInput {
   geolocation_type?: string | null
   lat?: number | null
   lng?: number | null
+  geojson_data?: Record<string, unknown> | null
   geojson_arweave_url?: string | null
   geojson_hash?: string | null
+  // Tenencia y propiedad (EUDR Art. 8.2.f)
+  owner_name?: string | null
+  owner_id_type?: string | null
+  owner_id_number?: string | null
+  producer_name?: string | null
+  producer_id_type?: string | null
+  producer_id_number?: string | null
+  cadastral_id?: string | null
+  tenure_type?: TenureType | null
+  tenure_start_date?: string | null
+  tenure_end_date?: string | null
+  indigenous_territory_flag?: boolean
+  gps_accuracy_m?: number | null
+  capture_method?: CaptureMethod | null
+  capture_device?: string | null
+  capture_date?: string | null
+  producer_scale?: ProducerScale | null
   country_code?: string | null
   region?: string | null
   municipality?: string | null
@@ -334,7 +637,72 @@ export type EvidenceDocumentType =
   | 'transport_doc'
   | 'geojson_boundary'
   | 'other'
+  // Fase B — tipos especificos por ambito legal (MITECO EFI Alice)
+  | 'eia_report'                    // Estudio impacto ambiental
+  | 'fpic_record'                   // Consulta previa libre e informada
+  | 'labor_contract'                // Contrato laboral escrito
+  | 'pila_statement'                // Aportes seguridad social CO
+  | 'plame_statement'               // Planilla electronica PE
+  | 'iess_statement'                // Seguridad social EC
+  | 'environmental_license'         // Licencia ambiental
+  | 'child_labor_affidavit'         // Declaracion ausencia trabajo infantil
+  | 'forced_labor_affidavit'        // Declaracion ausencia trabajo forzoso
+  | 'epp_training_record'           // Formacion EPP / pesticidas
+  | 'clmrs_enrollment'              // Child Labour Monitoring CI
+  | 'community_agreement'           // Acuerdo con chefferie villageoise
+  | 'rut'                           // Registro tributario
+  | 'ruc'                           // Registro tributario PE/EC
+  | 'ccc_registration'              // Conseil Cafe-Cacao CI
+  | 'cadastral_certificate'         // Folio matricula / cadastre
+  | 'ica_invoice'                   // Agroquimicos CO
+  | 'protected_area_check'          // Cross-check WDPA/nacional
+  | 'car_certificate'               // CAR Brasil
+  | 'rl_app_declaration'            // Reserva Legal / APP Brasil
+  | 'ibama_embargo_check'           // Lista suja IBAMA
+  | 'mte_slave_labor_check'         // Lista suja MTE
+  | 'soy_moratorium_declaration'    // Moratoria Soja Brasil
+  | 'indigenous_quilombola_check'   // TI / Quilombola Brasil
+  | 'zoning_certificate'            // Zonificacion
+  | 'gre_document'                  // Guia remision electronica
   | string
+
+// Metadata for display of evidence document types
+export const EVIDENCE_DOC_LABELS: Record<string, string> = {
+  land_title: 'Titulo / tenencia legal',
+  legal_cert: 'Certificado legal generico',
+  deforestation_report: 'Reporte deforestacion',
+  satellite_image: 'Imagen satelital',
+  supplier_declaration: 'Declaracion del proveedor',
+  transport_doc: 'Documento de transporte',
+  geojson_boundary: 'Poligono GeoJSON',
+  eia_report: 'Estudio impacto ambiental (EIA)',
+  fpic_record: 'Consulta previa (FPIC)',
+  labor_contract: 'Contrato laboral',
+  pila_statement: 'PILA (Seguridad Social CO)',
+  plame_statement: 'PLAME (Seguridad Social PE)',
+  iess_statement: 'IESS (Seguridad Social EC)',
+  environmental_license: 'Licencia ambiental',
+  child_labor_affidavit: 'Decl. ausencia trabajo infantil',
+  forced_labor_affidavit: 'Decl. ausencia trabajo forzoso',
+  epp_training_record: 'Formacion EPP / pesticidas',
+  clmrs_enrollment: 'CLMRS (trabajo infantil CI)',
+  community_agreement: 'Acuerdo comunitario',
+  rut: 'RUT (Colombia)',
+  ruc: 'RUC (Peru / Ecuador)',
+  ccc_registration: 'Conseil Cafe-Cacao (CI)',
+  cadastral_certificate: 'Certificado catastral',
+  ica_invoice: 'Factura ICA (agroquimicos)',
+  protected_area_check: 'Cross-check areas protegidas',
+  car_certificate: 'CAR (Cadastro Ambiental Rural BR)',
+  rl_app_declaration: 'Reserva Legal / APP (Brasil)',
+  ibama_embargo_check: 'Lista suja IBAMA',
+  mte_slave_labor_check: 'Lista suja MTE',
+  soy_moratorium_declaration: 'Moratoria Soja (Brasil)',
+  indigenous_quilombola_check: 'Cross-check TI / Quilombola',
+  zoning_certificate: 'Certificado de zonificacion',
+  gre_document: 'Guia de remision electronica',
+  other: 'Otro',
+}
 
 export interface DocumentLink {
   id: string

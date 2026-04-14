@@ -85,11 +85,10 @@ function AdminKeySection() {
         Debe coincidir con <code className="bg-secondary px-1.5 py-0.5 rounded text-xs font-mono">TRACE_ADMIN_KEY</code> en el <code className="bg-secondary px-1.5 py-0.5 rounded text-xs font-mono">.env</code> del servidor.
       </p>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
-        <p className="text-xs text-amber-800 font-semibold">Valor actual en el servidor:</p>
-        <code className="text-sm font-mono text-amber-900 break-all">super-secret-admin-key-change-me</code>
-        <p className="text-[11px] text-amber-600 mt-1">
-          Cambia este valor en <code className="font-mono">.env</code> antes de producción real.
+      <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4">
+        <p className="text-xs text-blue-800 font-semibold">
+          La clave debe coincidir con la variable <code className="font-mono">TRACE_ADMIN_KEY</code> configurada en el servidor.
+          Solicita el valor al administrador del sistema.
         </p>
       </div>
 

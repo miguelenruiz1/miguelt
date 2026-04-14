@@ -44,6 +44,25 @@ async def ready() -> ORJSONResponse:
         checks["redis"] = f"error: {exc}"
         overall = "degraded"
 
+    # Check Solana / Blockchain
+    try:
+        settings = get_settings()
+        checks["solana_simulation"] = str(settings.SOLANA_SIMULATION).lower()
+        checks["solana_network"] = getattr(settings, "SOLANA_NETWORK", "devnet")
+        from app.clients.solana_client import get_solana_client
+        client = get_solana_client()
+        try:
+            kp = client._load_keypair()
+            if kp:
+                pubkey = str(kp.pubkey())
+                checks["solana_fee_payer"] = pubkey
+                bal = await client.get_balance(pubkey)
+                checks["solana_balance"] = str(bal)
+        except Exception:
+            pass
+    except Exception:
+        pass
+
     status_code = 200 if overall == "ok" else 503
     return ORJSONResponse(
         status_code=status_code,
