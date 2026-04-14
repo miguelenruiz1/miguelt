@@ -155,6 +155,16 @@ export function useScreenDeforestation() {
   })
 }
 
+export function useScreenDeforestationFull() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => complianceApi.plots.screenDeforestationFull(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.plots })
+    },
+  })
+}
+
 // ─── Records ─────────────────────────────────────────────────────────────────
 
 export function useRecords(params?: {
@@ -519,5 +529,95 @@ export function useVerifyCertificate(certificateNumber: string) {
     queryKey: KEYS.verify(certificateNumber),
     queryFn: () => complianceApi.verify(certificateNumber),
     enabled: Boolean(certificateNumber),
+  })
+}
+
+// ─── Legal catalog (EUDR Art. 9.1 legalidad) ────────────────────────────────
+
+const LEGAL_KEYS = {
+  catalogs: (p: object) => ['compliance', 'legal', 'catalogs', p] as const,
+  plotStatus: (plotId: string) => ['compliance', 'legal', 'plots', plotId] as const,
+}
+
+export function useLegalCatalogs(params?: {
+  country_code?: string
+  commodity?: string
+  is_active?: boolean
+}) {
+  return useQuery({
+    queryKey: LEGAL_KEYS.catalogs(params ?? {}),
+    queryFn: () => complianceApi.legal.listCatalogs(params),
+  })
+}
+
+export function usePlotLegalStatus(plotId: string | undefined) {
+  return useQuery({
+    queryKey: LEGAL_KEYS.plotStatus(plotId ?? ''),
+    queryFn: () => complianceApi.legal.getPlotStatus(plotId as string),
+    enabled: Boolean(plotId),
+  })
+}
+
+export function useCertifications(params?: { commodity?: string; scope?: string }) {
+  return useQuery({
+    queryKey: ['compliance', 'certifications', params ?? {}] as const,
+    queryFn: () => complianceApi.certifications.list(params),
+  })
+}
+
+export function useCertification(slug: string | undefined) {
+  return useQuery({
+    queryKey: ['compliance', 'certifications', 'get', slug ?? ''] as const,
+    queryFn: () => complianceApi.certifications.get(slug as string),
+    enabled: Boolean(slug),
+  })
+}
+
+export function useUpdateCertification() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (args: { slug: string; body: import('@/types/compliance').CertificationSchemeUpdate }) =>
+      complianceApi.certifications.update(args.slug, args.body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['compliance', 'certifications'] })
+    },
+  })
+}
+
+export function useCountryRiskList() {
+  return useQuery({
+    queryKey: ['compliance', 'country-risk', 'list'] as const,
+    queryFn: () => complianceApi.countryRisk.list({ only_current: true }),
+  })
+}
+
+export function useCountryRisk(code: string | undefined) {
+  return useQuery({
+    queryKey: ['compliance', 'country-risk', code ?? ''] as const,
+    queryFn: () => complianceApi.countryRisk.get(code as string),
+    enabled: Boolean(code),
+  })
+}
+
+export function useRiskDecision() {
+  return useMutation({
+    mutationFn: (plotId: string) => complianceApi.plots.riskDecision(plotId),
+  })
+}
+
+export function useUpdatePlotLegalRequirement(plotId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (args: {
+      requirementId: string
+      body: {
+        status: 'satisfied' | 'missing' | 'na' | 'pending'
+        evidence_media_id?: string | null
+        evidence_notes?: string | null
+      }
+    }) => complianceApi.legal.updatePlotRequirement(plotId, args.requirementId, args.body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: LEGAL_KEYS.plotStatus(plotId) })
+    },
   })
 }

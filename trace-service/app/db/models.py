@@ -455,6 +455,10 @@ class CustodyEvent(Base):
         Index("ix_custody_events_asset_timestamp", "asset_id", "timestamp"),
         Index("ix_custody_events_anchored", "anchored"),
         Index("ix_custody_events_tenant", "tenant_id"),
+        CheckConstraint(
+            "custody_mode IN ('identity_preserved','segregated','mass_balance')",
+            name="ck_custody_events_custody_mode",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -483,10 +487,23 @@ class CustodyEvent(Base):
     shipment_leg_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), nullable=True
     )
+    # Hierarchical timeline: state transitions are root, informational events
+    # (notes, inspections, compliance verifications) link to the most recent
+    # transition for the same asset. NULL = root event (transition or legacy).
+    parent_event_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("custody_events.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     # Proof of Delivery evidence
     evidence_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     evidence_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     evidence_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Custody mode — MITECO webinar 3 (Fredy, EFI).
+    # identity_preserved > segregated > mass_balance in credibility.
+    custody_mode: Mapped[str] = mapped_column(
+        Text, nullable=False, default="segregated"
+    )
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=_utcnow
     )

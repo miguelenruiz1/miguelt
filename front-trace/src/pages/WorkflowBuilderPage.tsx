@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import {
   Plus, Trash2, GripVertical, ArrowRight, Sparkles, Settings2,
   Circle, CheckCircle, AlertTriangle, Loader2,
@@ -6,6 +6,23 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import {
   useWorkflowStates,
   useCreateWorkflowState,
@@ -105,17 +122,119 @@ export function WorkflowBuilderPage() {
    States Tab
    ════════════════════════════════════════════════════════════════════ */
 
+/* ── Sortable state row ─────────────────────────────────────────── */
+
+function SortableStateRow({
+  state,
+  onDelete,
+}: {
+  state: WorkflowState
+  onDelete: (s: WorkflowState) => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: state.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/20 transition-colors',
+        isDragging && 'shadow-lg bg-background ring-2 ring-primary/20',
+      )}
+    >
+      <button
+        type="button"
+        className="cursor-grab active:cursor-grabbing touch-none"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground/40" />
+      </button>
+      <div
+        className="h-5 w-5 rounded-md shrink-0"
+        style={{ backgroundColor: state.color }}
+      />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm">{state.label}</span>
+          <code className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+            {state.slug}
+          </code>
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5">
+        {state.is_initial && (
+          <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-300">
+            Inicial
+          </Badge>
+        )}
+        {state.is_terminal && (
+          <Badge variant="outline" className="text-[10px] text-red-500 border-red-300">
+            Terminal
+          </Badge>
+        )}
+      </div>
+      <Button
+        variant="ghost" size="icon"
+        className="h-7 w-7 text-muted-foreground hover:text-red-500"
+        onClick={() => onDelete(state)}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  )
+}
+
 function StatesTab({ states, loading }: { states: WorkflowState[]; loading: boolean }) {
   const toast = useToast()
   const confirm = useConfirm()
   const createState = useCreateWorkflowState()
   const deleteState = useDeleteWorkflowState()
   const updateState = useUpdateWorkflowState()
+  const reorderStates = useReorderWorkflowStates()
 
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<WorkflowStateCreate>({
     slug: '', label: '', color: '#6366f1', is_initial: false, is_terminal: false, sort_order: states.length,
   })
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event
+      if (!over || active.id === over.id) return
+
+      const oldIndex = states.findIndex(s => s.id === active.id)
+      const newIndex = states.findIndex(s => s.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) return
+
+      const reordered = arrayMove(states, oldIndex, newIndex)
+      try {
+        await reorderStates.mutateAsync(reordered.map(s => s.id))
+        toast.success('Orden actualizado')
+      } catch (e: any) {
+        toast.error(e.message)
+      }
+    },
+    [states, reorderStates, toast],
+  )
 
   const handleCreate = async () => {
     if (!form.slug || !form.label) return
@@ -167,48 +286,16 @@ function StatesTab({ states, loading }: { states: WorkflowState[]; loading: bool
         </div>
       )}
 
-      {/* State list */}
-      <div className="space-y-2">
-        {states.map(s => (
-          <div
-            key={s.id}
-            className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/20 transition-colors"
-          >
-            <GripVertical className="h-4 w-4 text-muted-foreground/40" />
-            <div
-              className="h-5 w-5 rounded-md shrink-0"
-              style={{ backgroundColor: s.color }}
-            />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">{s.label}</span>
-                <code className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                  {s.slug}
-                </code>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {s.is_initial && (
-                <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-300">
-                  Inicial
-                </Badge>
-              )}
-              {s.is_terminal && (
-                <Badge variant="outline" className="text-[10px] text-red-500 border-red-300">
-                  Terminal
-                </Badge>
-              )}
-            </div>
-            <Button
-              variant="ghost" size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-red-500"
-              onClick={() => handleDelete(s)}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+      {/* State list — sortable via drag & drop */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={states.map(s => s.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-2">
+            {states.map(s => (
+              <SortableStateRow key={s.id} state={s} onDelete={handleDelete} />
+            ))}
           </div>
-        ))}
-      </div>
+        </SortableContext>
+      </DndContext>
 
       {/* Add state form */}
       {showForm ? (

@@ -48,7 +48,7 @@ export function LegacyDialog({
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        <div className="py-2">{children}</div>
+        <div className="py-2 overflow-y-auto max-h-[calc(80vh-10rem)]">{children}</div>
         {footer && <DialogFooter>{footer}</DialogFooter>}
       </DialogContent>
     </Dialog>

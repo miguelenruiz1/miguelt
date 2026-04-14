@@ -26,7 +26,7 @@ server {
 
     add_header Access-Control-Allow-Origin \$http_origin always;
     add_header Access-Control-Allow-Methods "GET,POST,PUT,PATCH,DELETE,OPTIONS" always;
-    add_header Access-Control-Allow-Headers "Authorization,Content-Type,X-Tenant-Id,X-User-Id,X-Service-Token,X-Correlation-Id" always;
+    add_header Access-Control-Allow-Headers "Authorization,Content-Type,X-Tenant-Id,X-User-Id,X-Service-Token,X-Correlation-Id,Idempotency-Key,X-Admin-Key" always;
     add_header Access-Control-Allow-Credentials "true" always;
     add_header Access-Control-Max-Age 86400 always;
 
@@ -37,6 +37,12 @@ server {
         return 200 '{"status":"ok","service":"gateway"}';
         add_header Content-Type application/json;
     }
+
+    # Readiness (proxied to trace-api for Solana/DB/Redis checks)
+    location = /ready { proxy_pass https://${TRACE_UPSTREAM}; proxy_set_header Host ${TRACE_UPSTREAM}; }
+
+    # Public cNFT metadata (no auth, Solana explorers need access)
+    location /api/v1/assets/metadata/ { proxy_pass https://${TRACE_UPSTREAM}; proxy_set_header Host ${TRACE_UPSTREAM}; }
 
     # User Service
     location /api/v1/auth            { proxy_pass https://${USER_UPSTREAM}; proxy_set_header Host ${USER_UPSTREAM}; }
@@ -85,12 +91,14 @@ server {
     location /api/v1/alerts          { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
     location /api/v1/portal          { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
     location /api/v1/reorder         { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
-    location /api/v1/tax             { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
+    location /api/v1/tax-rates       { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
+    location /api/v1/tax-categories  { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
     location /api/v1/uom             { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
     location /api/v1/variant         { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
     location /api/v1/reports         { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
     location /api/v1/events          { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
     location /api/v1/config          { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
+    location /api/v1/config/workflow { proxy_pass https://${TRACE_UPSTREAM}; proxy_set_header Host ${TRACE_UPSTREAM}; }
     location /api/v1/kardex          { proxy_pass https://${INVENTORY_UPSTREAM}; proxy_set_header Host ${INVENTORY_UPSTREAM}; }
 
     # Integration Service

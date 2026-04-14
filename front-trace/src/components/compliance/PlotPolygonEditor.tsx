@@ -19,7 +19,8 @@ interface PlotPolygonEditorProps {
   initialLng?: number | null
   initialGeojson?: any
   height?: string
-  onSave: (geojson: any) => Promise<void> | void
+  declaredAreaHa?: number | null
+  onSave: (geojson: any, calculatedAreaHa?: number) => Promise<void> | void
   saving?: boolean
 }
 
@@ -86,7 +87,29 @@ function pointsToGeojson(points: [number, number][]): any {
   }
 }
 
-export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, height = '400px', onSave, saving }: PlotPolygonEditorProps) {
+/** Calculate polygon area in hectares using the Shoelace formula with geodesic correction. */
+function calcPolygonAreaHa(points: [number, number][]): number {
+  if (points.length < 3) return 0
+  const n = points.length
+  // points are [lat, lng]
+  const midLat = points.reduce((s, p) => s + p[0], 0) / n
+  const mPerDegLat = 111_320
+  const mPerDegLng = 111_320 * Math.cos((midLat * Math.PI) / 180)
+
+  let area = 0
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n
+    // Convert to meters for area calc
+    const x0 = points[i][1] * mPerDegLng
+    const y0 = points[i][0] * mPerDegLat
+    const x1 = points[j][1] * mPerDegLng
+    const y1 = points[j][0] * mPerDegLat
+    area += x0 * y1 - x1 * y0
+  }
+  return Math.abs(area) / 2 / 10_000 // m² → ha
+}
+
+export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, height = '400px', declaredAreaHa, onSave, saving }: PlotPolygonEditorProps) {
   const [points, setPoints] = useState<[number, number][]>(() => geojsonToPoints(initialGeojson))
   const [editing, setEditing] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
@@ -95,8 +118,8 @@ export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, heig
   const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null)
   const [searchError, setSearchError] = useState<string | null>(null)
 
-  async function handleSearch(e?: React.FormEvent) {
-    e?.preventDefault()
+  async function handleSearch(e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) {
+    e?.preventDefault?.()
     if (!searchQuery.trim()) return
     setSearching(true)
     setSearchError(null)
@@ -164,7 +187,8 @@ export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, heig
   const handleSave = async () => {
     const geojson = pointsToGeojson(points)
     if (!geojson) return
-    await onSave(geojson)
+    const areaHa = calcPolygonAreaHa(points)
+    await onSave(geojson, areaHa)
     setEditing(false)
     setHasChanges(false)
   }
@@ -176,23 +200,37 @@ export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, heig
   }
 
   const canSave = points.length >= 3
+  const calculatedArea = points.length >= 3 ? calcPolygonAreaHa(points) : 0
+  const areaRatio = declaredAreaHa && calculatedArea > 0 ? calculatedArea / declaredAreaHa : null
+  const areaWarning = areaRatio !== null && (areaRatio > 3 || areaRatio < 0.1)
 
   return (
     <div className="space-y-3">
-      {/* Search bar */}
-      <form onSubmit={handleSearch} className="flex items-center gap-2">
+      {/* Search bar — usamos div en vez de form para no anidar forms HTML
+          (los forms anidados no son validos y el button submit del form interno
+          dispararia el submit del form padre cuando el editor se renderiza
+          dentro de una pagina con <form>, ej. CreatePlotPage). */}
+      <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                e.stopPropagation()
+                handleSearch(e)
+              }
+            }}
             placeholder="Buscar dirección, ciudad, finca... (ej: Jardín Antioquia)"
             className="w-full rounded-lg border border-border bg-card pl-9 pr-3 py-2 text-sm focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-ring/20"
           />
         </div>
         <button
-          type="submit"
+          type="button"
+          onClick={(e) => handleSearch(e)}
           disabled={searching || !searchQuery.trim()}
           className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
         >
@@ -209,7 +247,7 @@ export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, heig
           <Navigation className="h-3.5 w-3.5" />
           Mi ubicación
         </button>
-      </form>
+      </div>
       {searchError && (
         <p className="text-xs text-red-600">{searchError}</p>
       )}
@@ -263,12 +301,39 @@ export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, heig
         </MapContainer>
       </div>
 
+      {/* Area validation */}
+      {points.length >= 3 && (
+        <div className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs ${
+          areaWarning ? 'bg-red-50 border border-red-200' : 'bg-muted/50'
+        }`}>
+          <div>
+            <span className="text-muted-foreground">Area del poligono: </span>
+            <span className="font-bold text-foreground">{calculatedArea.toFixed(2)} ha</span>
+          </div>
+          {declaredAreaHa != null && (
+            <div>
+              <span className="text-muted-foreground">Area declarada: </span>
+              <span className="font-bold text-foreground">{Number(declaredAreaHa).toFixed(2)} ha</span>
+            </div>
+          )}
+          {areaWarning && (
+            <span className="text-red-600 font-semibold">
+              El poligono dibujado ({calculatedArea.toFixed(1)} ha) no coincide con el area declarada ({Number(declaredAreaHa).toFixed(1)} ha).
+              Verifica los vertices — el screening satelital sera impreciso si el poligono es incorrecto.
+            </span>
+          )}
+          {areaRatio !== null && !areaWarning && (
+            <span className="text-emerald-600 font-medium">Area consistente</span>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <MapPin className="h-3.5 w-3.5" />
           <span>{points.length} {points.length === 1 ? 'punto' : 'puntos'}</span>
           {points.length > 0 && points.length < 3 && (
-            <span className="text-amber-600">— Mínimo 3 puntos para formar polígono</span>
+            <span className="text-amber-600">— Minimo 3 puntos para formar poligono</span>
           )}
           {editing && (
             <span className="text-emerald-600 font-medium">— Haz clic en el mapa para agregar puntos</span>
@@ -278,6 +343,7 @@ export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, heig
         <div className="flex items-center gap-2">
           {!editing ? (
             <button
+              type="button"
               onClick={() => setEditing(true)}
               className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
             >
@@ -287,6 +353,7 @@ export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, heig
           ) : (
             <>
               <button
+                type="button"
                 onClick={handleRemoveLast}
                 disabled={points.length === 0}
                 className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
@@ -295,6 +362,7 @@ export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, heig
                 ↶ Deshacer
               </button>
               <button
+                type="button"
                 onClick={handleClear}
                 disabled={points.length === 0}
                 className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
@@ -303,6 +371,7 @@ export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, heig
                 Limpiar
               </button>
               <button
+                type="button"
                 onClick={handleCancel}
                 className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted"
               >
@@ -310,6 +379,7 @@ export function PlotPolygonEditor({ initialLat, initialLng, initialGeojson, heig
                 Cancelar
               </button>
               <button
+                type="button"
                 onClick={handleSave}
                 disabled={!canSave || saving || !hasChanges}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"

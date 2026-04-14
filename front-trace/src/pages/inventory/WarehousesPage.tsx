@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFormValidation } from '@/hooks/useFormValidation'
+import { useIsModuleActive } from '@/hooks/useModules'
 import { CopyableId } from '@/components/inventory/CopyableId'
 import {
   useWarehouses, useCreateWarehouse, useUpdateWarehouse, useDeleteWarehouse,
@@ -34,8 +35,12 @@ function WarehouseModal({
   const create = useCreateWarehouse()
   const update = useUpdateWarehouse()
   const remove = useDeleteWarehouse()
+  const isComplianceActive = useIsModuleActive('compliance')
   const [confirmDelete, setConfirmDelete] = useState(false)
 
+  // Address is stored as a JSONB blob server-side. We expose individual
+  // fields here and recompose them on submit.
+  const initialAddress = (warehouse?.address ?? {}) as Record<string, any>
   const [form, setForm] = useState({
     name: warehouse?.name ?? '',
     code: warehouse?.code ?? '',
@@ -46,10 +51,39 @@ function WarehouseModal({
     cost_per_sqm: warehouse?.cost_per_sqm ?? null as number | null,
     total_area_sqm: warehouse?.total_area_sqm ?? null as number | null,
     max_stock_capacity: warehouse?.max_stock_capacity ?? null as number | null,
+    addr_line1: initialAddress.line1 ?? initialAddress.address_line ?? '',
+    addr_city: initialAddress.city ?? '',
+    addr_state: initialAddress.state ?? '',
+    addr_zip: initialAddress.zip ?? initialAddress.postal_code ?? '',
+    addr_country: initialAddress.country ?? 'CO',
+    addr_lat: initialAddress.latitude ?? '',
+    addr_lon: initialAddress.longitude ?? '',
   })
 
   async function doSubmit() {
-    const data = { ...form, warehouse_type_id: form.warehouse_type_id || null, cost_per_sqm: form.cost_per_sqm, total_area_sqm: form.total_area_sqm, max_stock_capacity: form.max_stock_capacity }
+    // Compose address JSON from individual fields. Only include fields with
+    // values so we don't write empty strings into the JSONB blob.
+    const address: Record<string, any> = {}
+    if (form.addr_line1) address.line1 = form.addr_line1
+    if (form.addr_city) address.city = form.addr_city
+    if (form.addr_state) address.state = form.addr_state
+    if (form.addr_zip) address.zip = form.addr_zip
+    if (form.addr_country) address.country = form.addr_country
+    if (form.addr_lat !== '' && form.addr_lat != null) address.latitude = Number(form.addr_lat)
+    if (form.addr_lon !== '' && form.addr_lon != null) address.longitude = Number(form.addr_lon)
+
+    const data: any = {
+      name: form.name,
+      code: form.code,
+      type: form.type,
+      warehouse_type_id: form.warehouse_type_id || null,
+      is_default: form.is_default,
+      is_active: form.is_active,
+      cost_per_sqm: form.cost_per_sqm,
+      total_area_sqm: form.total_area_sqm,
+      max_stock_capacity: form.max_stock_capacity,
+      address: Object.keys(address).length > 0 ? address : null,
+    }
     if (warehouse) {
       await update.mutateAsync({ id: warehouse.id, data })
     } else {
@@ -120,6 +154,97 @@ function WarehouseModal({
               value={form.max_stock_capacity ?? ''}
               onChange={e => setForm(f => ({ ...f, max_stock_capacity: e.target.value ? Number(e.target.value) : null }))} />
             <p className="mt-1 text-xs text-muted-foreground">Capacidad maxima de productos. Se usa para calcular % de ocupacion en el dashboard.</p>
+          </div>
+
+          {/* ── Dirección (opcional) ──────────────────────────────────── */}
+          <div className="pt-2 border-t border-border">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+              Dirección (opcional)
+            </h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Útil para documentos de remisión, ruteo logístico e ICA municipal{isComplianceActive ? ', y trazabilidad EUDR' : ''}.
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Dirección</label>
+                <input
+                  value={form.addr_line1}
+                  onChange={(e) => setForm((f) => ({ ...f, addr_line1: e.target.value }))}
+                  placeholder="Ej: Cra 7 # 12-34, Bodega B"
+                  className={inputCls}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-foreground">Ciudad / Municipio</label>
+                  <input
+                    value={form.addr_city}
+                    onChange={(e) => setForm((f) => ({ ...f, addr_city: e.target.value }))}
+                    placeholder="Ej: Bogotá"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-foreground">Departamento / Estado</label>
+                  <input
+                    value={form.addr_state}
+                    onChange={(e) => setForm((f) => ({ ...f, addr_state: e.target.value }))}
+                    placeholder="Ej: Cundinamarca"
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-foreground">Código postal</label>
+                  <input
+                    value={form.addr_zip}
+                    onChange={(e) => setForm((f) => ({ ...f, addr_zip: e.target.value }))}
+                    placeholder="Ej: 110111"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-foreground">País (ISO 2)</label>
+                  <input
+                    value={form.addr_country}
+                    onChange={(e) => setForm((f) => ({ ...f, addr_country: e.target.value.toUpperCase().slice(0, 2) }))}
+                    placeholder="CO"
+                    maxLength={2}
+                    className={cn(inputCls, 'font-mono uppercase')}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-foreground">Latitud (GPS)</label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    value={form.addr_lat}
+                    onChange={(e) => setForm((f) => ({ ...f, addr_lat: e.target.value }))}
+                    placeholder="Ej: 4.710989"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-foreground">Longitud (GPS)</label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    value={form.addr_lon}
+                    onChange={(e) => setForm((f) => ({ ...f, addr_lon: e.target.value }))}
+                    placeholder="Ej: -74.072092"
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {isComplianceActive
+                  ? 'Las coordenadas GPS son opcionales pero recomendadas si necesitás cumplir EUDR (regulación europea de deforestación) o trazabilidad geográfica de cadena de frío.'
+                  : 'Las coordenadas GPS son opcionales y se usan para mapas y geolocalización en reportes.'}
+              </p>
+            </div>
           </div>
           <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
             <input type="checkbox" checked={form.is_default} onChange={e => setForm(f => ({ ...f, is_default: e.target.checked }))}

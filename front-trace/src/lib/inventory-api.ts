@@ -13,6 +13,9 @@ import type {
   CustomerType,
   TaxRate,
   TaxRateSummary,
+  TaxCategory,
+  TaxBehavior,
+  TaxBaseKind,
   CustomField,
   CustomMovementField,
   CustomSupplierField,
@@ -77,6 +80,11 @@ import type {
   WarehouseLocation,
   UnitOfMeasure,
   UoMConversion,
+  UoMCatalogCategory,
+  UoMSetupRequest,
+  UoMSetupResponse,
+  UoMChangeBaseRequest,
+  UoMChangeBaseResponse,
   ProductCostHistory,
   ProductPricing,
   PnLReport,
@@ -95,7 +103,7 @@ interface ApiErrorBody {
   limit?: number
 }
 
-class ApiError extends Error {
+export class ApiError extends Error {
   status: number
   body: ApiErrorBody | null
   constructor(status: number, message: string, body?: ApiErrorBody | null) {
@@ -229,7 +237,7 @@ export const inventoryProductsApi = {
 // ─── Warehouses ───────────────────────────────────────────────────────────────
 
 export const inventoryWarehousesApi = {
-  list: () => request<{ items: Warehouse[] }>('/api/v1/warehouses').then(r => r.items),
+  list: () => request<{ items: Warehouse[] }>('/api/v1/warehouses?is_active=true').then(r => r.items),
   get: (id: string) => request<Warehouse>(`/api/v1/warehouses/${id}`),
   create: (data: Partial<Warehouse>) =>
     request<Warehouse>('/api/v1/warehouses', { method: 'POST', body: JSON.stringify(data) }),
@@ -1038,21 +1046,69 @@ export const inventoryCustomerPricesApi = {
 
 // ─── Tax Rates ──────────────────────────────────────────────────────────────
 export const inventoryTaxApi = {
-  list: (params?: { tax_type?: string; is_active?: boolean }) => {
+  list: (params?: { tax_type?: string; category_id?: string; is_active?: boolean }) => {
     const qs = new URLSearchParams()
     if (params?.tax_type) qs.set('tax_type', params.tax_type)
+    if (params?.category_id) qs.set('category_id', params.category_id)
     if (params?.is_active !== undefined) qs.set('is_active', String(params.is_active))
     return request<TaxRate[]>(`/api/v1/tax-rates?${qs}`)
   },
   summary: () => request<TaxRateSummary>('/api/v1/tax-rates/summary'),
-  create: (data: Partial<TaxRate>) =>
+  create: (data: {
+    name: string
+    rate: number | string
+    category_id?: string
+    category_slug?: string
+    is_default?: boolean
+    description?: string | null
+    dian_code?: string | null
+  }) =>
     request<TaxRate>('/api/v1/tax-rates', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: string, data: Partial<TaxRate>) =>
+  update: (id: string, data: Partial<TaxRate> & { category_id?: string }) =>
     request<TaxRate>(`/api/v1/tax-rates/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deactivate: (id: string) =>
     request<TaxRate>(`/api/v1/tax-rates/${id}`, { method: 'DELETE' }),
   initialize: () =>
     request<TaxRate[]>('/api/v1/tax-rates/initialize', { method: 'POST' }),
+}
+
+// ─── Tax Categories ─────────────────────────────────────────────────────────
+export const inventoryTaxCategoryApi = {
+  list: (includeInactive = false) => {
+    const qs = includeInactive ? '?include_inactive=true' : ''
+    return request<TaxCategory[]>(`/api/v1/tax-categories${qs}`)
+  },
+  create: (data: {
+    slug: string
+    name: string
+    behavior: TaxBehavior
+    base_kind?: TaxBaseKind
+    description?: string | null
+    color?: string | null
+    sort_order?: number
+  }) =>
+    request<TaxCategory>('/api/v1/tax-categories', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (
+    id: string,
+    data: Partial<{
+      name: string
+      behavior: TaxBehavior
+      base_kind: TaxBaseKind
+      description: string | null
+      color: string | null
+      sort_order: number
+      is_active: boolean
+    }>,
+  ) =>
+    request<TaxCategory>(`/api/v1/tax-categories/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    requestVoid(`/api/v1/tax-categories/${id}`, { method: 'DELETE' }),
 }
 
 // ── UoM API ──────────────────────────────────────────────────────────────────
@@ -1062,11 +1118,23 @@ export const inventoryUoMApi = {
   initialize: () => request<UnitOfMeasure[]>('/api/v1/uom/initialize', { method: 'POST' }),
   create: (data: { name: string; symbol: string; category: string; is_base?: boolean }) =>
     request<UnitOfMeasure>('/api/v1/uom', { method: 'POST', body: JSON.stringify(data) }),
+  delete: (id: string) => requestVoid(`/api/v1/uom/${id}`, { method: 'DELETE' }),
   listConversions: () => request<UoMConversion[]>('/api/v1/uom/conversions'),
   createConversion: (data: { from_uom_id: string; to_uom_id: string; factor: number }) =>
     request<UoMConversion>('/api/v1/uom/conversions', { method: 'POST', body: JSON.stringify(data) }),
+  deleteConversion: (id: string) => requestVoid(`/api/v1/uom/conversions/${id}`, { method: 'DELETE' }),
   convert: (data: { quantity: number; from_uom: string; to_uom: string }) =>
     request<ConvertResponse>('/api/v1/uom/convert', { method: 'POST', body: JSON.stringify(data) }),
+  getCatalog: () => request<UoMCatalogCategory[]>('/api/v1/uom/catalog'),
+  setup: (data: UoMSetupRequest) =>
+    request<UoMSetupResponse>('/api/v1/uom/setup', { method: 'POST', body: JSON.stringify(data) }),
+  changeBase: (category: string, data: UoMChangeBaseRequest) =>
+    request<UoMChangeBaseResponse>(`/api/v1/uom/categories/${category}/change-base`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  deleteCategory: (category: string) =>
+    requestVoid(`/api/v1/uom/categories/${category}`, { method: 'DELETE' }),
 }
 
 // ── Pricing API ──────────────────────────────────────────────────────────────

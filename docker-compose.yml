@@ -12,6 +12,8 @@ services:
     environment:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       MEDIA_SERVICE_URL: http://media-api:8007
+      # Must match user-service so JWTs issued by user-api validate here.
+      JWT_SECRET: ${JWT_SECRET:-super-secret-dev-key-change-in-prod}
     ports:
       - "8000:8000"
     volumes:
@@ -58,7 +60,8 @@ services:
     restart: unless-stopped
     command: python -m worker.worker_main
     healthcheck:
-      test: ["CMD", "pgrep", "-f", "worker_main"]
+      # Image ships without procps; use /proc walk to find worker_main.
+      test: ["CMD-SHELL", "grep -q worker_main /proc/*/cmdline 2>/dev/null"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -528,6 +531,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://media_svc:mediapass@media-postgres:5432/mediadb
       REDIS_URL: redis://redis:6379/8
+      JWT_SECRET: ${JWT_SECRET:-super-secret-dev-key-change-in-prod}
       S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN:-s2s-change-me-in-production}
       STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
@@ -564,6 +568,9 @@ services:
     build: ./gateway
     image: trace-gateway:latest
     container_name: trace-gateway
+    # Override the Cloud Run entrypoint: in compose we use the static
+    # nginx.conf baked into the image (upstreams point to compose hostnames).
+    command: ["nginx", "-g", "daemon off;"]
     ports:
       - "9000:9000"
     depends_on:

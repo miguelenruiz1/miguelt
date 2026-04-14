@@ -490,12 +490,14 @@ export function EventsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState('')
   const [severityFilter, setSeverityFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
   const location = useLocation()
   useEffect(() => { setShowCreate(false) }, [location.key])
 
   const { data, isLoading } = useEvents({
     event_type_id: typeFilter || undefined,
     severity_id: severityFilter || undefined,
+    status_id: statusFilter || undefined,
   })
   const { data: eventTypes = [] } = useEventTypes()
   const { data: severities = [] } = useEventSeverities()
@@ -517,7 +519,7 @@ export function EventsPage() {
         </button>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
           className="rounded-2xl border border-border bg-card px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Todos los tipos</option>
@@ -528,6 +530,19 @@ export function EventsPage() {
           <option value="">Todas las severidades</option>
           {severities.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+          className="rounded-2xl border border-border bg-card px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+          <option value="">Todos los estados</option>
+          {statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+        {(typeFilter || severityFilter || statusFilter) && (
+          <button
+            onClick={() => { setTypeFilter(''); setSeverityFilter(''); setStatusFilter('') }}
+            className="text-xs text-muted-foreground hover:text-foreground self-center"
+          >
+            Limpiar filtros
+          </button>
+        )}
       </div>
 
       <div className="bg-card rounded-2xl border border-border  overflow-hidden">

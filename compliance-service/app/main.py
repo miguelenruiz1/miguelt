@@ -116,6 +116,10 @@ def create_app() -> FastAPI:
     from app.api.v1.risk_assessments import router as risk_assessments_router
     from app.api.v1.supply_chain import router as supply_chain_router
     from app.api.v1.integrations import router as integrations_router
+    from app.api.v1.legal_catalog import router as legal_catalog_router
+    from app.api.v1.certifications import router as certifications_router
+    from app.api.v1.country_risk import router as country_risk_router
+    from app.api.v1.national_platforms import router as national_platforms_router
 
     app.include_router(health_router)
     app.include_router(frameworks_router)
@@ -127,6 +131,10 @@ def create_app() -> FastAPI:
     app.include_router(risk_assessments_router)
     app.include_router(supply_chain_router)
     app.include_router(integrations_router)
+    app.include_router(legal_catalog_router)
+    app.include_router(certifications_router)
+    app.include_router(country_risk_router)
+    app.include_router(national_platforms_router)
 
     # ─── Prometheus metrics (optional) ────────────────────────────────────────
     try:

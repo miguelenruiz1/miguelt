@@ -34,6 +34,8 @@ class ProductCreate(BaseModel):
     margin_minimum: Decimal | None = None
     margin_cost_method: str = "last_purchase"
     preferred_currency: str = "COP"
+    weight_per_unit: Decimal | None = None
+    volume_per_unit: Decimal | None = None
 
 
 class ProductUpdate(BaseModel):
@@ -60,6 +62,8 @@ class ProductUpdate(BaseModel):
     margin_minimum: Decimal | None = None
     margin_cost_method: str | None = None
     preferred_currency: str | None = None
+    weight_per_unit: Decimal | None = None
+    volume_per_unit: Decimal | None = None
 
 
 class ProductOut(OrmBase):
@@ -89,6 +93,8 @@ class ProductOut(OrmBase):
     suggested_sale_price: Decimal | None = None
     minimum_sale_price: Decimal | None = None
     preferred_currency: str = "COP"
+    weight_per_unit: Decimal | None = None
+    volume_per_unit: Decimal | None = None
     tax_rate_id: str | None = None
     is_tax_exempt: bool = False
     retention_rate: Decimal | None = None

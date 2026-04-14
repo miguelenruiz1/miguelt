@@ -6,9 +6,10 @@ import uuid
 from fastapi import APIRouter, Depends, File, Header, Query, Request, UploadFile, status
 from fastapi.responses import ORJSONResponse
 from starlette.responses import Response
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import ConflictError
+from app.core.errors import ConflictError, ForbiddenError, NotFoundError
 from app.core.logging import get_logger
 from app.db.session import get_db_session
 from app.domain.schemas import (
@@ -26,7 +27,7 @@ from app.domain.schemas import (
     ReleaseRequest,
     BurnRequest,
 )
-from app.api.deps import get_tenant_id
+from app.api.deps import get_tenant_id, CurrentUser
 from app.services.anchor_service import enqueue_anchor
 from app.services.custody_service import CustodyService
 
@@ -158,6 +159,60 @@ async def _idempotent_post(
 
 # ─── Assets ───────────────────────────────────────────────────────────────────
 
+@router.get(
+    "/metadata/{asset_id}.json",
+    summary="Public cNFT metadata (Metaplex standard) — no auth required",
+)
+async def asset_metadata_json(
+    asset_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db_session),
+) -> ORJSONResponse:
+    """Serves Metaplex-compatible metadata JSON for on-chain cNFTs.
+
+    Solana explorers (XRAY, Solana Explorer, etc.) fetch this URI to display
+    the cNFT name, image, and attributes. Must be publicly accessible.
+    """
+    from app.db.models import Asset
+    result = await db.execute(select(Asset).where(Asset.id == asset_id))
+    asset = result.scalar_one_or_none()
+    if not asset:
+        raise NotFoundError(f"Asset {asset_id} not found")
+
+    meta = asset.metadata_ or {}
+    name = meta.get("name", asset.product_type)
+    image = meta.get("image_url") or (
+        f"https://api.dicebear.com/9.x/shapes/svg"
+        f"?seed={asset_id}&backgroundColor=6366f1,3b82f6,22c55e,f59e0b,ef4444"
+    )
+
+    # Build Metaplex-standard attributes
+    attrs = []
+    field_labels = {
+        "product_type": "Tipo de Producto", "weight": "Peso",
+        "weight_unit": "Unidad", "quality_grade": "Calidad",
+        "origin": "Origen", "batch_number": "Lote",
+    }
+    for key, val in meta.items():
+        if key in ("name", "image_url", "description") or val is None:
+            continue
+        label = field_labels.get(key, key)
+        attrs.append({"trait_type": label, "value": str(val)})
+    attrs.append({"trait_type": "Tipo de Producto", "value": asset.product_type})
+
+    return ORJSONResponse(content={
+        "name": name,
+        "symbol": "TRC",
+        "description": meta.get("description", f"Carga de {asset.product_type} — Trace Platform"),
+        "image": image,
+        "external_url": f"https://trace.app/assets/{asset_id}",
+        "attributes": attrs,
+        "properties": {
+            "category": "logistics",
+            "creators": [{"address": asset.current_custodian_wallet, "share": 100}],
+        },
+    })
+
+
 @router.post(
     "",
     status_code=status.HTTP_201_CREATED,
@@ -252,6 +307,56 @@ async def mint_asset(
                     await fail_session.commit()
             except Exception as inner_exc:
                 log.error("mint_failed_status_update_error", asset_id=str(asset.id), exc=str(inner_exc))
+
+        # Auto-create EUDR compliance record if compliance module is active
+        try:
+            from app.core.settings import get_settings
+            settings = get_settings()
+            compliance_url = getattr(settings, 'COMPLIANCE_SERVICE_URL', '')
+            if compliance_url:
+                # Pull quantity from any of the common metadata keys clients
+                # use. Older code only checked "weight", which silently
+                # zero'd out 500 kg lots tagged with "quantity_kg".
+                meta = body.metadata or {}
+                quantity = (
+                    meta.get("quantity_kg")
+                    or meta.get("quantityKg")
+                    or meta.get("weight_kg")
+                    or meta.get("weight")
+                    or meta.get("quantity")
+                    or 0
+                )
+                try:
+                    quantity = float(quantity)
+                except (TypeError, ValueError):
+                    quantity = 0
+                import httpx as _httpx
+                async with _httpx.AsyncClient(timeout=10.0) as hc:
+                    resp = await hc.post(
+                        f"{compliance_url}/api/v1/compliance/records/",
+                        json={
+                            "framework_slug": "eudr",
+                            "asset_id": str(asset.id),
+                            "commodity_type": meta.get("commodity_type")
+                                or meta.get("commodity")
+                                or body.product_type
+                                or "cafe",
+                            "product_description": meta.get("description", body.product_type),
+                            "country_of_production": meta.get("country") or meta.get("country_of_production") or "CO",
+                            "quantity_kg": quantity,
+                            "activity_type": "export",
+                        },
+                        headers={
+                            "X-Tenant-Id": request.headers.get("X-Tenant-Id", "default"),
+                            "X-Service-Token": settings.S2S_SERVICE_TOKEN,
+                        },
+                    )
+                    if resp.status_code == 201:
+                        log.info("auto_compliance_record_created", asset_id=str(asset.id))
+                    else:
+                        log.info("auto_compliance_record_skipped", asset_id=str(asset.id), status=resp.status_code)
+        except Exception as exc:
+            log.warning("auto_compliance_record_failed", asset_id=str(asset.id), exc=str(exc))
 
         # Re-read asset from a fresh session to get updated blockchain fields
         async with get_db() as read_session:
@@ -442,6 +547,7 @@ async def release(
     request: Request,
     asset_id: uuid.UUID,
     body: ReleaseRequest,
+    current_user: CurrentUser,
     x_user_id: str = Header(..., alias="X-User-Id", description="User ID"),
     x_admin_key: str | None = Header(None, alias="X-Admin-Key", description="Admin secret key"),
     db: AsyncSession = Depends(get_db_session),
@@ -450,11 +556,14 @@ async def release(
     import secrets as _secrets
     from app.core.errors import ForbiddenError
     from app.core.settings import get_settings
-    if not _secrets.compare_digest(x_admin_key or "", get_settings().TRACE_ADMIN_KEY):
-        raise ForbiddenError("Invalid admin key")
+    has_valid_key = bool(x_admin_key) and _secrets.compare_digest(x_admin_key, get_settings().TRACE_ADMIN_KEY)
+    user_perms = current_user.get('permissions') or []
+    is_admin_user = current_user.get('is_superuser') or 'logistics.manage' in user_perms or 'logistics.admin' in user_perms
+    if not (has_valid_key or is_admin_user):
+        raise ForbiddenError("Requires admin privileges or valid admin key")
 
     idempotency_key = getattr(request.state, "idempotency_key", None)
-    svc = CustodyService(db, tenant_id=tenant_id)
+    svc = CustodyService(db, tenant_id=tenant_id, current_user=current_user)
 
     async def _handler():
         from app.core.settings import get_settings
@@ -606,13 +715,14 @@ async def record_event(
     request: Request,
     asset_id: uuid.UUID,
     body: GenericEventRequest,
+    current_user: CurrentUser,
     x_user_id: str = Header(..., alias="X-User-Id", description="User ID"),
     x_admin_key: str | None = Header(None, alias="X-Admin-Key", description="Admin key for sensitive events"),
     db: AsyncSession = Depends(get_db_session),
     tenant_id: uuid.UUID = Depends(get_tenant_id),
 ) -> ORJSONResponse:
     idempotency_key = getattr(request.state, "idempotency_key", None)
-    svc = CustodyService(db, tenant_id=tenant_id)
+    svc = CustodyService(db, tenant_id=tenant_id, current_user=current_user)
 
     location = body.location.model_dump() if body.location else None
 
@@ -627,6 +737,8 @@ async def record_event(
             result=body.result,
             reason=body.reason,
             admin_key=x_admin_key,
+            parent_event_id=body.parent_event_id,
+            custody_mode=body.custody_mode,
         )
         await db.commit()
         await enqueue_anchor(event.id)
@@ -870,6 +982,61 @@ async def list_event_documents(
         "documents": [_link_resp(link, link.media_file) for link in links],
         "completeness": completeness,
     })
+
+
+@router.delete(
+    "/{asset_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    summary="Delete an asset (only if in terminal state)",
+)
+async def delete_asset(
+    asset_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db_session),
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    admin_key: str | None = Header(None, alias="X-Admin-Key"),
+):
+    """Delete an asset and its events. Only allowed for terminal states (released, burned, delivered)."""
+    from app.core.settings import get_settings
+    import secrets as _secrets
+
+    settings = get_settings()
+    has_valid_key = bool(admin_key) and _secrets.compare_digest(admin_key, settings.TRACE_ADMIN_KEY)
+    user_perms = current_user.get('permissions') or []
+    is_admin_user = current_user.get('is_superuser') or 'logistics.manage' in user_perms or 'logistics.admin' in user_perms
+    if not (has_valid_key or is_admin_user):
+        raise ForbiddenError("Requires admin privileges or valid admin key")
+
+    from app.db.models import Asset, CustodyEvent, WorkflowState
+
+    result = await db.execute(
+        select(Asset).where(Asset.id == asset_id, Asset.tenant_id == tenant_id)
+    )
+    asset = result.scalar_one_or_none()
+    if not asset:
+        raise NotFoundError(f"Asset {asset_id} not found")
+
+    # Check terminal state via workflow engine
+    if asset.workflow_state_id:
+        ws_result = await db.execute(
+            select(WorkflowState).where(WorkflowState.id == asset.workflow_state_id)
+        )
+        ws = ws_result.scalar_one_or_none()
+        if ws and not ws.is_terminal:
+            raise ForbiddenError(f"Asset must be in a terminal state to delete (current: {ws.label})")
+    elif asset.state not in ("released", "burned", "delivered"):
+        raise ForbiddenError(f"Asset must be in a terminal state to delete (current: {asset.state})")
+
+    # Delete events first, then asset
+    await db.execute(
+        CustodyEvent.__table__.delete().where(CustodyEvent.asset_id == asset_id)
+    )
+    await db.delete(asset)
+    await db.commit()
+
+    log.info("asset_deleted", asset_id=str(asset_id), tenant_id=str(tenant_id))
+    return Response(status_code=204)
 
 
 @router.delete(

@@ -24,16 +24,16 @@ async def list_tax_rates(
     _: Viewer,
     db: AsyncSession = Depends(get_db_session),
     tax_type: str | None = None,
+    category_id: str | None = None,
     is_active: bool | None = True,
 ) -> ORJSONResponse:
     svc = TaxService(db)
-    tenant_id = current_user["tenant_id"]
-    rates = await svc.list_rates(tenant_id, tax_type=tax_type, is_active=is_active)
-    # Auto-seed Colombia taxes for new tenants
-    if not rates:
-        await svc.initialize_tenant_rates(tenant_id)
-        await db.commit()
-        rates = await svc.list_rates(tenant_id, tax_type=tax_type, is_active=is_active)
+    rates = await svc.list_rates(
+        current_user["tenant_id"],
+        tax_type=tax_type,
+        category_id=category_id,
+        is_active=is_active,
+    )
     return ORJSONResponse([TaxRateOut.model_validate(r).model_dump(mode="json") for r in rates])
 
 

@@ -32,6 +32,10 @@ class SOLineCreate(BaseModel):
     unit_price: float | None = None
     discount_pct: float = 0.0
     tax_rate: float = 0.0
+    # Multi-stack: list of tax_rate_ids to apply to this line. Each rate's
+    # category determines whether it's an addition or withholding. If empty,
+    # the legacy single tax_rate / retention_pct columns are used.
+    tax_rate_ids: list[str] | None = None
     notes: str | None = Field(default=None, max_length=2000)
 
 

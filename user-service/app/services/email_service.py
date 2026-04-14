@@ -145,7 +145,15 @@ class EmailService:
         to: str,
         context: dict,
     ) -> bool:
-        """Fetch template by slug, render, and send."""
+        """Fetch template by slug, render, and send.
+
+        Lookup order:
+          1. Tenant-specific template (so admins can customize per tenant).
+          2. Fallback to the 'default' tenant template seeded by migration 004.
+        Without this fallback, every freshly-registered tenant has zero
+        templates and all transactional emails (password reset, invitation,
+        deactivation) silently fail.
+        """
         result = await db.execute(
             select(EmailTemplate).where(
                 EmailTemplate.tenant_id == tenant_id,
@@ -154,6 +162,15 @@ class EmailService:
             )
         )
         template = result.scalar_one_or_none()
+        if not template and tenant_id != "default":
+            result = await db.execute(
+                select(EmailTemplate).where(
+                    EmailTemplate.tenant_id == "default",
+                    EmailTemplate.slug == slug,
+                    EmailTemplate.is_active.is_(True),
+                )
+            )
+            template = result.scalar_one_or_none()
         if not template:
             logger.warning("email_template_not_found", extra={"slug": slug, "tenant_id": tenant_id})
             return False

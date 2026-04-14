@@ -12,14 +12,21 @@ RUN npm run build
 
 FROM nginx:1.27-alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
-RUN printf 'server {\n\
+RUN printf 'gzip on;\n\
+gzip_types text/plain text/css application/json application/javascript text/xml application/xml text/javascript image/svg+xml;\n\
+gzip_min_length 256;\n\
+gzip_vary on;\n\
+\n\
+server {\n\
   listen 8080;\n\
   root /usr/share/nginx/html;\n\
   index index.html;\n\
   location / {\n\
     try_files $uri $uri/ /index.html;\n\
+    add_header Cache-Control "no-cache, no-store, must-revalidate";\n\
   }\n\
   location /assets/ {\n\
+    try_files $uri /index.html;\n\
     expires 1y;\n\
     add_header Cache-Control "public, immutable";\n\
   }\n\

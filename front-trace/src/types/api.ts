@@ -161,6 +161,11 @@ export interface CustodyEvent {
   anchored: boolean
   anchor_attempts: number
   anchor_last_error: string | null
+  notes?: string | null
+  evidence_url?: string | null
+  evidence_hash?: string | null
+  evidence_type?: string | null
+  parent_event_id?: string | null
   created_at: string
 }
 

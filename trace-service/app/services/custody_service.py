@@ -46,9 +46,10 @@ _DEFAULT_TENANT_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
 
 class CustodyService:
-    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID | None = None) -> None:
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID | None = None, current_user: dict | None = None) -> None:
         self._db = session
         self._tenant_id = tenant_id or _DEFAULT_TENANT_ID
+        self._current_user = current_user
         self._asset_repo = AssetRepository(session)
         self._event_repo = CustodyEventRepository(session)
         self._registry_repo = RegistryRepository(session)
@@ -142,8 +143,20 @@ class CustodyService:
         new_state: str,
         new_custodian: str | None = None,
         timestamp: datetime | None = None,
+        parent_event_id: uuid.UUID | None = None,
+        custody_mode: str | None = None,
     ) -> CustodyEvent:
         ts = timestamp or datetime.now(tz=timezone.utc)
+
+        # Resolve custody_mode: explicit > last event's mode > "segregated"
+        # This is shared across typed endpoints (handoff/arrived/loaded/qc/
+        # release/burn) and the generic record_event path, so all events
+        # for the same asset keep a consistent custody mode unless the
+        # caller explicitly changes it.
+        resolved_mode = custody_mode
+        if resolved_mode is None:
+            prior = await self._event_repo.get_last_event_mode(asset.id)
+            resolved_mode = prior or "segregated"
 
         event_hash = compute_event_hash(
             asset_id=asset.id,
@@ -167,6 +180,8 @@ class CustodyService:
             prev_event_hash=asset.last_event_hash,
             event_hash=event_hash,
             tenant_id=self._tenant_id,
+            parent_event_id=parent_event_id,
+            custody_mode=resolved_mode,
         )
 
         # Resolve workflow_state_id from the new state slug
@@ -488,6 +503,8 @@ class CustodyService:
         result: str | None = None,
         reason: str | None = None,
         admin_key: str | None = None,
+        parent_event_id: uuid.UUID | None = None,
+        custody_mode: str | None = None,
     ) -> tuple[Asset, CustodyEvent]:
         """
         Generic event recorder — workflow engine is the primary source of truth.
@@ -501,10 +518,22 @@ class CustodyService:
         """
         event_data = dict(data or {})
 
+        # Normalize the slug to uppercase. Both `EventType` enum values and
+        # `WorkflowEventType.slug` are constrained to `^[A-Z0-9_]+$` by the
+        # schema, so a client sending "note" used to silently become a
+        # state-changing event because the INFORMATIONAL_EVENTS check is
+        # case-sensitive. Normalizing here fixes every downstream check.
+        if isinstance(event_type_slug, str):
+            event_type_slug = event_type_slug.upper()
+
         # ── 1. Load event type metadata from workflow engine ──────────────────
         wf_event = await self._workflow_svc.get_event_type_by_slug(event_type_slug)
 
-        is_informational = wf_event.is_informational if wf_event else False
+        # Fallback: check INFORMATIONAL_EVENTS set when no DB record exists
+        # (e.g. COMPLIANCE_VERIFIED added to enum but not yet seeded in workflow DB)
+        from app.domain.types import INFORMATIONAL_EVENTS, EventType as _ET
+        _is_info_enum = event_type_slug in {e.value for e in INFORMATIONAL_EVENTS}
+        is_informational = wf_event.is_informational if wf_event else _is_info_enum
         needs_wallet = wf_event.requires_wallet if wf_event else False
         needs_lock = (wf_event.requires_admin or wf_event.requires_reason) if wf_event else False
 
@@ -517,12 +546,18 @@ class CustodyService:
             raise AssetStateError(f"Event type '{event_type_slug}' is disabled")
 
         # ── 1b. Admin key check for events flagged requires_admin ─────────────
+        #   Accepts EITHER a valid X-Admin-Key OR the request coming from a
+        #   tenant admin / superuser (checked via current_user dict).
         if wf_event and wf_event.requires_admin:
             import secrets as _secrets
             settings = get_settings()
-            if not _secrets.compare_digest(admin_key or "", settings.TRACE_ADMIN_KEY):
+            has_valid_key = bool(admin_key) and _secrets.compare_digest(admin_key, settings.TRACE_ADMIN_KEY)
+            caller = getattr(self, '_current_user', None) or {}
+            user_perms = caller.get('permissions') or []
+            is_admin_user = caller.get('is_superuser') or 'logistics.manage' in user_perms or 'logistics.admin' in user_perms
+            if not (has_valid_key or is_admin_user):
                 raise ForbiddenError(
-                    f"Event '{event_type_slug}' requires a valid X-Admin-Key header"
+                    f"Event '{event_type_slug}' requires admin privileges or a valid X-Admin-Key header"
                 )
 
         # ── 1c. Reason required when flagged ──────────────────────────────────
@@ -557,9 +592,27 @@ class CustodyService:
         if is_informational:
             new_state = asset.state
         else:
-            new_state = await self._assert_valid_transition(
-                asset, event_type_slug, qc_result=result
+            # Try to find a matching transition; if none exists, record the
+            # event without changing state (free/fortuitous event).
+            effective_slug = await self._get_effective_state_slug(asset)
+            result_transition = await self._workflow_svc.find_transition_for_event(
+                effective_slug, event_type_slug, qc_result=result
             )
+            if result_transition:
+                _transition, target_state = result_transition
+                new_state = target_state.slug
+            else:
+                # Check for free move (MOVE_TO_<state_slug>)
+                if event_type_slug.upper().startswith("MOVE_TO_"):
+                    target_slug = event_type_slug[8:].lower()  # strip "MOVE_TO_"
+                    target_ws = await self._workflow_svc.resolve_state_slug(target_slug)
+                    if target_ws and target_ws.tenant_id == self._tenant_id:
+                        new_state = target_ws.slug
+                    else:
+                        raise AssetStateError(f"State '{target_slug}' not found in workflow")
+                else:
+                    # No transition found — record event without state change
+                    new_state = asset.state
 
         # ── 5. Enrich event data ──────────────────────────────────────────────
         if notes:
@@ -569,7 +622,22 @@ class CustodyService:
         if result:
             event_data["result"] = result
 
-        # ── 6. Create event ───────────────────────────────────────────────────
+        # ── 6. Resolve parent_event_id (hierarchical timeline) ────────────────
+        # Informational events (NOTE, INSPECTION, COMPLIANCE_VERIFIED, etc.)
+        # auto-link as children of the most recent ROOT event for this asset.
+        # Caller can override by passing parent_event_id explicitly. State
+        # transitions are always roots and ignore the field.
+        resolved_parent_id = None
+        if is_informational:
+            if parent_event_id is not None:
+                resolved_parent_id = parent_event_id
+            else:
+                last_root = await self._event_repo.get_last_root_event(asset_id)
+                if last_root is not None:
+                    resolved_parent_id = last_root.id
+
+        # ── 7. Create event ───────────────────────────────────────────────────
+        # custody_mode is resolved inside _create_event (explicit > prior > 'segregated')
         from_wallet = asset.current_custodian_wallet
         new_custodian = to_wallet if to_wallet else None
 
@@ -582,6 +650,8 @@ class CustodyService:
             data=event_data,
             new_state=new_state,
             new_custodian=new_custodian,
+            parent_event_id=resolved_parent_id,
+            custody_mode=custody_mode,
         )
 
         updated_asset = await self._asset_repo.get_by_id(asset_id)
