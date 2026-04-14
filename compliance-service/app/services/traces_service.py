@@ -38,6 +38,21 @@ COMMODITY_HS_MAP = {
     "wood": "4403", "madera": "4403",
 }
 
+# HS heading prefixes for which TRACES NT requires scientificName populated
+# (EUDR Art. 9(1)(a)). Lista basada en Anexo I del Reglamento (UE) 2023/1115.
+EUDR_CORE_HS_HEADINGS = {
+    "0102",  # cattle / ganado
+    "0901",  # coffee / cafe
+    "1201",  # soy / soja
+    "1511",  # palm oil
+    "1801", "1802", "1803", "1804", "1805", "1806",  # cocoa
+    "4001", "4011", "4012", "4013",  # rubber
+    "4401", "4402", "4403", "4406", "4407", "4408", "4409",  # wood
+    "4410", "4411", "4412", "4413", "4414", "4415", "4416",
+    "4418", "4421",
+    "4701", "4702", "4703", "4704", "4705",  # pulp
+}
+
 
 def _xe(value: Any) -> str:
     """Escape any value for safe inclusion in XML text content."""
@@ -477,8 +492,14 @@ def build_dds_payload(
         "referenceDocumentation": reference_documents,
         "additionalInformation": additional_information,
 
+        # EUDR Art. 3 distingue dos atributos no equivalentes:
+        #   deforestationFree (Art. 3.a) — sin deforestacion post 2020-12-31
+        #   degradationFree   (Art. 2.7) — sin degradacion forestal post 2020-12-31
+        # TRACES NT acepta ambos en declarations; el segundo es OBLIGATORIO
+        # para productos de madera/celulosa y altamente recomendado para todo.
         "declarations": {
             "deforestationFree": record.get("deforestation_free_declaration", False),
+            "degradationFree": record.get("degradation_free_declaration", False),
             "legalCompliance": record.get("legal_compliance_declaration", False),
         },
 
@@ -502,6 +523,39 @@ def build_dds_payload(
     return dds
 
 
+def _validate_dds_for_submission(dds: dict) -> None:
+    """Pre-flight checks before SOAP build.
+
+    Raises HTTPException 422 if mandatory EUDR fields are missing. Centralizing
+    this here means each TRACES caller (sync, async, retry worker) gets the
+    same validation without duplicating logic.
+    """
+    from fastapi import HTTPException
+
+    declarations = dds.get("declarations") or {}
+    for flag in ("deforestationFree", "degradationFree"):
+        val = declarations.get(flag)
+        if not isinstance(val, bool):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"declarations.{flag} es obligatorio (bool) antes de "
+                    "enviar a TRACES NT (EUDR Art. 3.a / 2.7)."
+                ),
+            )
+
+    for commodity in dds.get("commodities") or []:
+        hs_heading = (commodity.get("hsHeading") or "").strip()
+        if hs_heading in EUDR_CORE_HS_HEADINGS and not commodity.get("scientificName"):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"commodities[].scientificName es obligatorio para HS "
+                    f"heading {hs_heading} (EUDR Art. 9(1)(a))."
+                ),
+            )
+
+
 def build_soap_envelope(
     dds: dict,
     username: str,
@@ -509,6 +563,7 @@ def build_soap_envelope(
     client_id: str = "eudr-test",
 ) -> str:
     """Build SOAP XML envelope for TRACES NT submission with WS-Security."""
+    _validate_dds_for_submission(dds)
     import secrets
     from datetime import timedelta
 
