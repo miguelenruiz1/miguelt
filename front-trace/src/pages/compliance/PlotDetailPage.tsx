@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, MapPin, Check, X, Loader2, Calendar, Sprout, Shield, AlertTriangle, FolderOpen, ShieldCheck, ExternalLink } from 'lucide-react'
+import { ArrowLeft, MapPin, Check, X, Loader2, Calendar, Sprout, Shield, AlertTriangle, FolderOpen, ShieldCheck, ExternalLink, FileText } from 'lucide-react'
 import { usePlot, useUpdatePlot, useScreenDeforestationFull, usePlotDocuments, useAttachPlotDocument, useDetachPlotDocument, usePlotLegalStatus, useUpdatePlotLegalRequirement, useCountryRisk, useRiskDecision } from '@/hooks/useCompliance'
 import type { RiskDecisionResponse } from '@/types/compliance'
 import { SinglePlotMap } from '@/components/compliance/PlotMap'
@@ -583,6 +583,7 @@ export function PlotDetailPage() {
   const [showGeojsonPicker, setShowGeojsonPicker] = useState(false)
   const [linkingGeojson, setLinkingGeojson] = useState(false)
   const [uploadingGeojson, setUploadingGeojson] = useState(false)
+  const [activeTab, setActiveTab] = useState<'info' | 'tenencia' | 'riesgo' | 'docs'>('info')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Sync geojson_data from plot API response
@@ -718,8 +719,9 @@ export function PlotDetailPage() {
           />
 
           {/* Compliance flags */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <ComplianceFlag label="Libre de deforestacion" value={plot.deforestation_free} />
+            <ComplianceFlag label="Sin degradacion" value={plot.degradation_free} />
             <ComplianceFlag label="Cumple fecha de corte" value={plot.cutoff_date_compliant} />
             <ComplianceFlag label="Uso legal del suelo" value={plot.legal_land_use} />
           </div>
@@ -1013,204 +1015,277 @@ export function PlotDetailPage() {
           )}
         </div>
 
-        {/* Right: Details */}
-        <div className="space-y-4">
-          {/* Info card */}
-          <div className="bg-card rounded-xl border border-border  p-5 space-y-4">
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Informacion de la Parcela</h3>
-            <dl className="space-y-3">
-              <InfoField label="Codigo" value={plot.plot_code} />
-              <InfoField label="Area" value={plot.plot_area_ha ? `${Number(plot.plot_area_ha).toFixed(2)} ha` : null} />
-              <InfoField label="Tipo geolocalizacion" value={plot.geolocation_type === 'point' ? 'Punto' : 'Poligono'} />
-              <InfoField label="Latitud" value={plot.lat ? `${Number(plot.lat).toFixed(6)}` : null} />
-              <InfoField label="Longitud" value={plot.lng ? `${Number(plot.lng).toFixed(6)}` : null} />
-              <InfoField label="Pais" value={plot.country_code} />
-              <InfoField label="Region" value={plot.region} />
-              <InfoField label="Municipio" value={plot.municipality} />
-            </dl>
+        {/* Right: Details — organized in tabs */}
+        <div>
+          {/* Tab buttons */}
+          <div className="flex gap-1 mb-4 bg-muted rounded-lg p-1">
+            {([
+              { key: 'info', label: 'Informacion' },
+              { key: 'tenencia', label: 'Tenencia y Legal' },
+              { key: 'riesgo', label: 'Riesgo' },
+              { key: 'docs', label: 'Documentos' },
+            ] as const).map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                  activeTab === tab.key
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          {/* Risk */}
-          <div className="bg-card rounded-xl border border-border  p-5 space-y-3">
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Nivel de Riesgo</h3>
-            {fullScreening ? (
-              <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold ${eudrRiskColor[fullScreening.eudr_risk as EudrRiskLevel] || eudrRiskColor.medium}`}>
-                {eudrRiskLabel[fullScreening.eudr_risk as EudrRiskLevel] || fullScreening.eudr_risk}
-              </span>
-            ) : (
-              <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-slate-100 text-slate-600">
-                Sin verificar
-              </span>
-            )}
-          </div>
+          {/* Tab: Informacion */}
+          {activeTab === 'info' && (
+            <div className="space-y-4">
+              <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+                <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Informacion de la Parcela</h3>
+                <dl className="space-y-3">
+                  <InfoField label="Codigo" value={plot.plot_code} />
+                  <InfoField label="Area" value={plot.plot_area_ha ? `${Number(plot.plot_area_ha).toFixed(2)} ha` : null} />
+                  <InfoField label="Tipo geolocalizacion" value={plot.geolocation_type === 'point' ? 'Punto' : 'Poligono'} />
+                  <InfoField label="Latitud" value={plot.lat ? `${Number(plot.lat).toFixed(6)}` : null} />
+                  <InfoField label="Longitud" value={plot.lng ? `${Number(plot.lng).toFixed(6)}` : null} />
+                  <InfoField label="Pais" value={plot.country_code} />
+                  <InfoField label={plot.country_code === 'CO' ? 'Departamento' : 'Region'} value={plot.region} />
+                  <InfoField label="Municipio" value={plot.municipality} />
+                  {plot.vereda && <InfoField label="Vereda" value={plot.vereda} />}
+                  {plot.frontera_agricola_status && (
+                    <InfoField label="Frontera agricola" value={
+                      plot.frontera_agricola_status === 'dentro_no_condicionada' ? 'Dentro — sin condicionamiento' :
+                      plot.frontera_agricola_status === 'dentro_condicionada' ? 'Dentro — condicionada' :
+                      plot.frontera_agricola_status === 'restriccion_deforestacion' ? 'Restriccion — cero deforestacion' :
+                      plot.frontera_agricola_status === 'restriccion_legal' ? 'Restriccion — legal' :
+                      plot.frontera_agricola_status === 'restriccion_tecnica' ? 'Restriccion — tecnica' :
+                      plot.frontera_agricola_status === 'fuera' ? 'Fuera de frontera agricola' :
+                      plot.frontera_agricola_status
+                    } />
+                  )}
+                </dl>
+              </div>
 
-          {/* Crop info */}
-          <div className="bg-card rounded-xl border border-border  p-5 space-y-3">
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Cultivo</h3>
-            <dl className="space-y-3">
-              <InfoField label="Tipo de cultivo" value={(plot as any).crop_type} />
-              <InfoField label="Fecha de establecimiento" value={(plot as any).establishment_date} />
-              <InfoField label="Fecha de renovacion" value={(plot as any).renovation_date} />
-              <InfoField label="Tipo de renovacion" value={(plot as any).renovation_type} />
-            </dl>
-          </div>
+              <div className="bg-card rounded-xl border border-border p-5 space-y-3">
+                <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Cultivo y Produccion</h3>
+                <dl className="space-y-3">
+                  <InfoField label="Tipo de cultivo" value={plot.crop_type} />
+                  <InfoField label="Nombre cientifico" value={plot.scientific_name} />
+                  <InfoField label="Fecha de establecimiento" value={plot.establishment_date} />
+                  <InfoField label="Fecha de renovacion" value={plot.renovation_date} />
+                  <InfoField label="Tipo de renovacion" value={plot.renovation_type} />
+                  <InfoField label="Ultima cosecha" value={plot.last_harvest_date} />
+                </dl>
+              </div>
 
-          {/* Tenencia y Propiedad — EUDR Art. 8.2.f */}
-          <TenureSection plot={plot} onSave={async (updates) => {
-            try {
-              await updatePlot.mutateAsync(updates as any)
-              toast.success('Datos de tenencia guardados')
-            } catch (e: any) {
-              toast.error(e.message || 'Error al guardar tenencia')
-            }
-          }} saving={updatePlot.isPending} />
+              <CaptureMetadataSection plot={plot} />
 
-          {/* Captura del poligono — MITECO EFI Tomas */}
-          <CaptureMetadataSection plot={plot} />
+              <div className="bg-card rounded-xl border border-border p-5 space-y-3">
+                <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Poligono GeoJSON</h3>
+                {((plot as any).geojson_data || geojsonData) ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                      <Check className="h-3 w-3" /> Poligono cargado
+                    </p>
+                    {plot.geojson_hash && (
+                      <p className="text-xs text-muted-foreground font-mono">SHA: {plot.geojson_hash.slice(0, 16)}...</p>
+                    )}
+                    <button onClick={() => setShowGeojsonPicker(true)} className="text-xs text-muted-foreground hover:text-primary hover:underline">
+                      Reemplazar desde Media
+                    </button>
+                  </div>
+                ) : plot.geojson_arweave_url ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-emerald-600 font-medium">Poligono cargado (Media)</p>
+                    <button onClick={() => setShowGeojsonPicker(true)} className="text-xs text-muted-foreground hover:text-primary hover:underline">
+                      Cambiar archivo
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {Number(plot.plot_area_ha) > 4 && (
+                      <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700 flex items-start gap-1.5">
+                        <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                        EUDR Art. 2(28): parcelas mayores a 4 ha requieren poligono completo.
+                      </div>
+                    )}
+                    <button onClick={() => setShowGeojsonPicker(true)} disabled={linkingGeojson}
+                      className="w-full flex items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-muted px-4 py-3 text-sm text-muted-foreground hover:border-primary hover:bg-primary/5 transition-colors">
+                      <FolderOpen className="h-4 w-4" />
+                      {linkingGeojson ? 'Vinculando...' : 'Seleccionar desde Media'}
+                    </button>
+                  </div>
+                )}
+              </div>
 
-          {/* Checklist legal EUDR — MITECO EFI Alice */}
-          <LegalComplianceSection plotId={plot.id} />
+              {/* Audit trail basico — Art. 9(4) */}
+              <div className="bg-card rounded-xl border border-border p-5 space-y-3">
+                <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Registro de cambios</h3>
+                <dl className="space-y-3">
+                  <InfoField label="Creada" value={plot.created_at ? new Date(plot.created_at).toLocaleString('es-CO') : null} />
+                  <InfoField label="Ultima modificacion" value={plot.updated_at ? new Date(plot.updated_at).toLocaleString('es-CO') : null} />
+                </dl>
+                <p className="text-[10px] text-muted-foreground">
+                  Art. 9(4) EUDR — el operador debe revisar y actualizar la DDS.
+                  Retencion obligatoria: 5 anos desde la fecha de la declaracion.
+                </p>
+              </div>
+            </div>
+          )}
 
-          {/* Riesgo pais */}
-          <CountryRiskSection countryCode={plot.country_code} />
+          {/* Tab: Tenencia y Legal */}
+          {activeTab === 'tenencia' && (
+            <div className="space-y-4">
+              <TenureSection plot={plot} onSave={async (updates) => {
+                try {
+                  await updatePlot.mutateAsync(updates as any)
+                  toast.success('Datos de tenencia guardados')
+                } catch (e: any) {
+                  toast.error(e.message || 'Error al guardar tenencia')
+                }
+              }} saving={updatePlot.isPending} />
 
-          {/* Decision tree compuesta — Fase B */}
-          <RiskDecisionSection plotId={plot.id} />
+              <LegalComplianceSection plotId={plot.id} />
 
-          {/* Satellite */}
-          {plot.satellite_report_url && (
-            <div className="bg-card rounded-xl border border-border  p-5 space-y-3">
-              <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Reporte Satelital</h3>
-              <a href={plot.satellite_report_url} target="_blank" rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline">
-                Ver reporte
-              </a>
-              {plot.satellite_verified_at && (
-                <p className="text-xs text-muted-foreground">Verificado: {new Date(plot.satellite_verified_at).toLocaleString('es-CO')}</p>
+              {plot.satellite_report_url && (
+                <div className="bg-card rounded-xl border border-border p-5 space-y-3">
+                  <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Reporte Satelital</h3>
+                  <a href={plot.satellite_report_url} target="_blank" rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline">Ver reporte</a>
+                  {plot.satellite_verified_at && (
+                    <p className="text-xs text-muted-foreground">Verificado: {new Date(plot.satellite_verified_at).toLocaleString('es-CO')}</p>
+                  )}
+                </div>
               )}
             </div>
           )}
 
-          {/* GeoJSON — local geojson_data tiene precedencia, fallback a media library */}
-          <div className="bg-card rounded-xl border border-border  p-5 space-y-3">
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Poligono GeoJSON</h3>
-            {((plot as any).geojson_data || geojsonData) ? (
-              <div className="space-y-2">
-                <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                  <Check className="h-3 w-3" />
-                  Poligono cargado (inline)
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Editalo desde el mapa arriba (boton "Editar polígono"). Tambien
-                  podes reemplazarlo por un archivo subido a la biblioteca de medios.
-                </p>
-                {plot.geojson_hash && (
-                  <p className="text-xs text-muted-foreground font-mono">SHA: {plot.geojson_hash.slice(0, 16)}...</p>
+          {/* Tab: Riesgo */}
+          {activeTab === 'riesgo' && (
+            <div className="space-y-4">
+              <div className="bg-card rounded-xl border border-border p-5 space-y-3">
+                <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Nivel de Riesgo EUDR</h3>
+                {fullScreening ? (
+                  <>
+                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold ${eudrRiskColor[fullScreening.eudr_risk as EudrRiskLevel] || eudrRiskColor.medium}`}>
+                      {eudrRiskLabel[fullScreening.eudr_risk as EudrRiskLevel] || fullScreening.eudr_risk}
+                    </span>
+                    {/* Alerta screening obsoleto (>6 meses) */}
+                    {(() => {
+                      const checkedAt = new Date(fullScreening.checked_at)
+                      const monthsAgo = (Date.now() - checkedAt.getTime()) / (1000 * 60 * 60 * 24 * 30)
+                      if (monthsAgo >= 6) return (
+                        <div className="rounded-lg border border-red-200 bg-red-50 p-3 flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-xs font-semibold text-red-800">Screening vencido — {Math.floor(monthsAgo)} meses</p>
+                            <p className="text-[11px] text-red-700 mt-0.5">
+                              Art. 10 EUDR exige que la verificacion sea vigente al momento de cada DDS.
+                              Re-ejecuta "Verificar EUDR (3 fuentes)" antes del proximo envio.
+                            </p>
+                          </div>
+                        </div>
+                      )
+                      if (monthsAgo >= 3) return (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-xs font-semibold text-amber-800">Screening proximo a vencer — {Math.floor(monthsAgo)} meses</p>
+                            <p className="text-[11px] text-amber-700 mt-0.5">
+                              Se recomienda re-verificar antes de los 6 meses para mantener vigencia.
+                            </p>
+                          </div>
+                        </div>
+                      )
+                      return (
+                        <p className="text-[11px] text-muted-foreground">
+                          Verificado: {checkedAt.toLocaleString('es-CO')} ({Math.floor(monthsAgo)} {Math.floor(monthsAgo) === 1 ? 'mes' : 'meses'})
+                        </p>
+                      )
+                    })()}
+                  </>
+                ) : (
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-slate-100 text-slate-600">
+                    Sin verificar
+                  </span>
                 )}
-                <button
-                  onClick={() => setShowGeojsonPicker(true)}
-                  className="text-xs text-muted-foreground hover:text-primary hover:underline"
-                >
-                  Reemplazar desde Media
-                </button>
               </div>
-            ) : plot.geojson_arweave_url ? (
-              <div className="space-y-2">
-                <p className="text-xs text-emerald-600 font-medium">Poligono cargado (Media)</p>
-                <a
-                  href={mediaFileUrl(plot.geojson_arweave_url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline font-mono truncate block"
-                >
-                  {plot.geojson_arweave_url}
-                </a>
-                {plot.geojson_hash && (
-                  <p className="text-xs text-muted-foreground">SHA: {plot.geojson_hash.slice(0, 16)}...</p>
-                )}
-                <button
-                  onClick={() => setShowGeojsonPicker(true)}
-                  className="text-xs text-muted-foreground hover:text-primary hover:underline"
-                >
-                  Cambiar archivo
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {Number(plot.plot_area_ha) > 4 && (
-                  <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700 flex items-start gap-1.5">
-                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                    {"EUDR Art. 2(28): parcelas mayores a 4 ha requieren poligono completo. Dibuja en el mapa o sube un archivo GeoJSON."}
+              {/* Art. 13/29 — DDS simplificado para paises low-risk */}
+              {fullScreening && (fullScreening.eudr_risk === 'none' || fullScreening.eudr_risk === 'low') && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 flex items-start gap-2">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-emerald-800">Due diligence simplificado aplicable</p>
+                    <p className="text-[11px] text-emerald-700 mt-0.5">
+                      Art. 13 / Art. 29 EUDR — para commodities de paises clasificados como riesgo bajo,
+                      el operador puede aplicar due diligence simplificado: solo recopilacion de informacion
+                      (Art. 9) sin evaluacion de riesgo completa (Art. 10) ni mitigacion (Art. 11).
+                    </p>
                   </div>
-                )}
-                <button
-                  onClick={() => setShowGeojsonPicker(true)}
-                  disabled={linkingGeojson}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-muted px-4 py-3 text-sm text-muted-foreground hover:border-primary hover:bg-primary/5 transition-colors"
-                >
-                  <FolderOpen className="h-4 w-4" />
-                  {linkingGeojson ? 'Vinculando...' : 'Seleccionar desde Media'}
-                </button>
-              </div>
-            )}
-          </div>
+                </div>
+              )}
 
-          {/* GeoJSON MediaPicker */}
+              {/* Art. 2(7) — Degradacion forestal (no implementado aun) */}
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold text-blue-800">Degradacion forestal — pendiente</p>
+                  <p className="text-[11px] text-blue-700 mt-0.5">
+                    Art. 2(7) EUDR distingue deforestacion de degradacion (cambios estructurales al bosque
+                    sin eliminacion total). La verificacion actual cubre deforestacion pero no degradacion.
+                    Fuente pendiente: JRC Tropical Moist Forest (TMF).
+                  </p>
+                </div>
+              </div>
+
+              <CountryRiskSection countryCode={plot.country_code} />
+              <RiskDecisionSection plotId={plot.id} />
+            </div>
+          )}
+
+          {/* Tab: Documentos */}
+          {activeTab === 'docs' && (
+            <div className="space-y-4">
+              <EudrDocChecklist
+                riskLevel={fullScreening?.eudr_risk as EudrRiskLevel | undefined}
+                indigenousFlag={plot.indigenous_territory_flag}
+                countryCode={plot.country_code}
+                documents={plotDocs}
+                onAttach={async (data) => { await attachDoc.mutateAsync(data) }}
+                onDetach={async (docId) => { await detachDoc.mutateAsync(docId) }}
+                isPending={detachDoc.isPending}
+              />
+            </div>
+          )}
+
+          {/* GeoJSON MediaPicker (modal) */}
           <MediaPickerModal
             open={showGeojsonPicker}
             onClose={() => setShowGeojsonPicker(false)}
             onSelect={async (mediaFileId, _docType, _desc) => {
               setLinkingGeojson(true)
               try {
-                // Fetch the media file to get its URL and compute hash
                 const mediaFile = await mediaApi.get(mediaFileId)
-
-                // Fetch the actual file content to parse GeoJSON and compute hash
                 const fullUrl = mediaFileUrl(mediaFile.url)
                 const resp = await fetch(fullUrl)
                 const text = await resp.text()
-
-                // Try to parse as GeoJSON for map preview
-                try {
-                  const parsed = JSON.parse(text)
-                  setGeojsonData(parsed)
-                } catch { /* not valid JSON — still link it */ }
-
-                // Compute SHA256
+                try { setGeojsonData(JSON.parse(text)) } catch { /* not valid JSON */ }
                 const encoder = new TextEncoder()
                 const data = encoder.encode(text)
                 const hashBuffer = await crypto.subtle.digest('SHA-256', data)
                 const hashArray = Array.from(new Uint8Array(hashBuffer))
                 const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
-
-                // Update plot with reference to media file
-                await updatePlot.mutateAsync({
-                  geojson_arweave_url: mediaFile.url,
-                  geojson_hash: hash,
-                  geolocation_type: 'polygon',
-                })
-
+                await updatePlot.mutateAsync({ geojson_arweave_url: mediaFile.url, geojson_hash: hash, geolocation_type: 'polygon' })
                 toast.success('Poligono GeoJSON vinculado desde media')
                 setShowGeojsonPicker(false)
               } catch (err: any) {
                 toast.error(err.message ?? 'Error al vincular GeoJSON')
-              } finally {
-                setLinkingGeojson(false)
-              }
+              } finally { setLinkingGeojson(false) }
             }}
           />
         </div>
-      </div>
-
-      {/* Evidence Documents */}
-      <div className="bg-card rounded-xl border border-border  p-5">
-        <DocumentUploader
-          documents={plotDocs}
-          isLoading={docsLoading}
-          onAttach={async (data) => { await attachDoc.mutateAsync(data) }}
-          onDetach={async (docId) => { await detachDoc.mutateAsync(docId) }}
-          isPending={detachDoc.isPending}
-        />
       </div>
     </div>
   )
@@ -1663,6 +1738,164 @@ function LegalComplianceSection({ plotId }: { plotId: string }) {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+// ─── EUDR Document Checklist — Art. 9, 10, 12 ────────────────────────────────
+
+type DocReq = {
+  type: string
+  label: string
+  article: string
+  minRisk: 'any' | 'standard' | 'high'
+  indigenous?: boolean
+  countries?: string[] // si se especifica, solo aplica para estos country_code
+}
+
+// Solo documentos FIJOS a la parcela (se adjuntan una vez).
+// Docs por envío (DDS, declaracion proveedor, screening satelital,
+// transporte) van en el ComplianceRecord, no aquí.
+const EUDR_REQUIRED_DOCS: DocReq[] = [
+  // ── Siempre requeridos — tenencia y georreferenciacion ──
+  { type: 'land_title',            label: 'Titulo de propiedad / certificado de tradicion', article: 'Art. 9(1)(d), 10(h)', minRisk: 'any' },
+  { type: 'cadastral_certificate', label: 'Certificado catastral (IGAC/SNR)',               article: 'Art. 2(28)',           minRisk: 'any' },
+  { type: 'geojson_boundary',      label: 'Poligono GeoJSON del predio',                    article: 'Art. 2(28)',           minRisk: 'any' },
+  { type: 'zoning_certificate',    label: 'Certificado de uso de suelo / zonificacion',      article: 'Anexo II — Uso suelo', minRisk: 'any' },
+
+  // ── Riesgo standard — permisos y laboral ──
+  { type: 'environmental_license', label: 'Licencia ambiental / plan de manejo',             article: 'Art. 10(2)(b), Anexo II', minRisk: 'standard' },
+  { type: 'labor_contract',        label: 'Contrato laboral / declaracion empleo',           article: 'Art. 10(2)(i), Anexo II', minRisk: 'standard' },
+  { type: 'child_labor_affidavit', label: 'Declaracion ausencia trabajo infantil',           article: 'Anexo II — Laboral',      minRisk: 'standard' },
+  { type: 'protected_area_check',  label: 'Cross-check areas protegidas (WDPA)',             article: 'Art. 10(2)(b)',           minRisk: 'standard' },
+
+  // ── Riesgo alto — due diligence reforzado ──
+  { type: 'eia_report',              label: 'Estudio de impacto ambiental (EIA)',            article: 'Art. 11(b)',              minRisk: 'high' },
+  { type: 'forced_labor_affidavit',  label: 'Declaracion ausencia trabajo forzoso',          article: 'Art. 11, Anexo II',       minRisk: 'high' },
+
+  // ── Solo si territorio indigena/colectivo ──
+  { type: 'fpic_record',           label: 'Consulta previa libre e informada (FPIC)',        article: 'Art. 10(2)(i), UNDRIP',   minRisk: 'any', indigenous: true },
+  { type: 'community_agreement',   label: 'Acuerdo con comunidad indigena/afro',             article: 'Art. 10(2)(i)',           minRisk: 'any', indigenous: true },
+
+  // ── Colombia ──
+  { type: 'rut',                   label: 'RUT (Registro Unico Tributario — DIAN)',          article: 'Anexo II — Fiscal',       minRisk: 'standard', countries: ['CO'] },
+  { type: 'pila_statement',        label: 'PILA (Planilla Integrada Seguridad Social)',      article: 'Anexo II — Laboral',      minRisk: 'standard', countries: ['CO'] },
+  { type: 'ica_invoice',           label: 'Factura ICA (registro agroquimicos)',             article: 'Anexo II — Ambiental',    minRisk: 'standard', countries: ['CO'] },
+]
+
+const RISK_ORDER: Record<string, number> = { any: 0, standard: 1, high: 2 }
+const EUDR_RISK_TO_MIN: Record<string, number> = { none: 0, low: 0, medium: 1, high: 2 }
+
+function EudrDocChecklist({ riskLevel, indigenousFlag, countryCode, documents, onAttach, onDetach, isPending }: {
+  riskLevel?: EudrRiskLevel
+  indigenousFlag: boolean
+  countryCode: string
+  documents: import('@/types/compliance').DocumentLink[]
+  onAttach: (data: import('@/types/compliance').DocumentLinkInput) => Promise<void>
+  onDetach: (docId: string) => Promise<void>
+  isPending?: boolean
+}) {
+  const [pickerFor, setPickerFor] = useState<string | null>(null)
+  const riskNum = riskLevel ? (EUDR_RISK_TO_MIN[riskLevel] ?? 0) : 0
+  const applicable = EUDR_REQUIRED_DOCS.filter(d => {
+    if (d.indigenous && !indigenousFlag) return false
+    if (d.countries && !d.countries.includes(countryCode)) return false
+    return RISK_ORDER[d.minRisk] <= riskNum
+  })
+
+  const attachedTypes = documents.map(d => d.document_type)
+  const attached = applicable.filter(d => attachedTypes.includes(d.type))
+  const pct = applicable.length > 0 ? Math.round((attached.length / applicable.length) * 100) : 0
+
+  return (
+    <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+      <div>
+        <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Documentos fijos del predio</h3>
+        <p className="text-xs text-muted-foreground mt-1">
+          Documentos que se adjuntan una vez a la parcela. Los documentos por envio (DDS, screening, transporte) van en cada declaracion de cumplimiento.
+        </p>
+      </div>
+
+      {/* Progress bar */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-muted-foreground">{attached.length} de {applicable.length} adjuntos</span>
+          <span className="font-semibold text-foreground">{pct}%</span>
+        </div>
+        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+          <div
+            className={`h-full transition-all ${pct === 100 ? 'bg-emerald-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500'}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Each doc as independent input */}
+      <div className="space-y-3">
+        {applicable.map(doc => {
+          const linkedDoc = documents.find(d => d.document_type === doc.type)
+          const isAttached = Boolean(linkedDoc)
+          return (
+            <div key={doc.type} className={`rounded-lg border p-3 ${isAttached ? 'border-emerald-200 bg-emerald-50/50' : 'border-border'}`}>
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <div className="flex items-start gap-2 min-w-0">
+                  <div className={`flex h-5 w-5 items-center justify-center rounded-full shrink-0 mt-0.5 ${
+                    isAttached ? 'bg-emerald-100 text-emerald-600' : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {isAttached ? <Check className="h-3 w-3" /> : <span className="text-[10px] font-bold">?</span>}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground">{doc.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{doc.article}</p>
+                  </div>
+                </div>
+              </div>
+
+              {isAttached && linkedDoc ? (
+                <div className="flex items-center gap-2 mt-2 ml-7">
+                  <FileText className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span className="text-xs text-foreground truncate flex-1">{linkedDoc.filename ?? 'Archivo adjunto'}</span>
+                  {linkedDoc.url && (
+                    <a href={mediaFileUrl(linkedDoc.url)} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline shrink-0">
+                      Ver
+                    </a>
+                  )}
+                  <button onClick={() => onDetach(linkedDoc.id)} disabled={isPending}
+                    className="text-xs text-red-500 hover:underline shrink-0 disabled:opacity-50">
+                    Quitar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setPickerFor(doc.type)}
+                  className="mt-2 ml-7 inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                >
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  Adjuntar documento
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {applicable.length === 0 && (
+        <p className="text-xs text-muted-foreground text-center py-4">
+          Ejecuta la verificacion EUDR para determinar los documentos requeridos segun el nivel de riesgo.
+        </p>
+      )}
+
+      {/* Media picker — one for each doc type */}
+      <MediaPickerModal
+        open={pickerFor !== null}
+        onClose={() => setPickerFor(null)}
+        onSelect={async (mediaFileId, _docType, description) => {
+          if (!pickerFor) return
+          await onAttach({ media_file_id: mediaFileId, document_type: pickerFor as any, description: description ?? null })
+          setPickerFor(null)
+        }}
+      />
     </div>
   )
 }

@@ -10,79 +10,100 @@ import { useToast } from '@/store/toast'
 import { Button } from '@/components/ui/button'
 import { PlotPolygonEditor } from '@/components/compliance/PlotPolygonEditor'
 
-// ─── Schema ──────────────────────────────────────────────────────────────────
+// ─── Colombia-specific constants ────────────────────────────────────────────
+
+const COMMODITIES = [
+  { value: 'cafe', label: 'Cafe', scientific: 'Coffea arabica' },
+  { value: 'cacao', label: 'Cacao', scientific: 'Theobroma cacao' },
+  { value: 'palma', label: 'Palma de aceite', scientific: 'Elaeis guineensis' },
+] as const
 
 const TENURE_TYPES = [
-  'owned', 'leased', 'sharecropped', 'concession',
-  'indigenous_collective', 'afro_collective', 'baldio_adjudicado',
-  'occupation', 'other',
+  { value: 'owned', label: 'Propietario (titulo registrado)' },
+  { value: 'leased', label: 'Arrendatario' },
+  { value: 'sharecropped', label: 'Aparcero / mediania' },
+  { value: 'baldio_adjudicado', label: 'Baldio adjudicado (ANT)' },
+  { value: 'indigenous_collective', label: 'Resguardo indigena' },
+  { value: 'afro_collective', label: 'Territorio colectivo afro (Ley 70)' },
+  { value: 'concession', label: 'Concesion' },
+  { value: 'occupation', label: 'Ocupacion sin titulo (posesion)' },
+  { value: 'other', label: 'Otro' },
 ] as const
 
 const CAPTURE_METHODS = [
-  'handheld_gps', 'rtk_gps', 'drone', 'manual_map', 'cadastral', 'survey', 'unknown',
+  { value: 'handheld_gps', label: 'GPS de mano / celular' },
+  { value: 'rtk_gps', label: 'GPS RTK (centimetrico)' },
+  { value: 'drone', label: 'Dron / fotogrametria' },
+  { value: 'manual_map', label: 'Trazado manual sobre imagen satelital' },
+  { value: 'cadastral', label: 'Importado de catastro IGAC' },
+  { value: 'survey', label: 'Levantamiento topografico' },
 ] as const
 
-const CAPTURE_METHOD_LABELS: Record<(typeof CAPTURE_METHODS)[number], string> = {
-  handheld_gps: 'GPS de mano / smartphone',
-  rtk_gps: 'GPS RTK (precision centimetrica)',
-  drone: 'Dron / fotogrametria',
-  manual_map: 'Trazado manual sobre imagen satelital',
-  cadastral: 'Importado de catastro oficial',
-  survey: 'Levantamiento topografico profesional',
-  unknown: 'Desconocido',
-}
+const PRODUCER_SCALES = [
+  { value: 'smallholder', label: 'Pequeno productor (<4 ha)', note: 'EUDR acepta solo punto GPS' },
+  { value: 'medium', label: 'Mediano (4–50 ha)', note: 'Requiere poligono si >4 ha' },
+  { value: 'industrial', label: 'Industrial (>50 ha)', note: 'Requiere poligono + docs adicionales' },
+] as const
 
-const PRODUCER_SCALES = ['smallholder', 'medium', 'industrial'] as const
+const FRONTERA_OPTIONS = [
+  { value: 'dentro_no_condicionada', label: 'Dentro — sin condicionamiento', color: 'text-emerald-700' },
+  { value: 'dentro_condicionada', label: 'Dentro — condicionada (etnica, ambiental o riesgo)', color: 'text-amber-700' },
+  { value: 'restriccion_deforestacion', label: 'Restriccion — acuerdo cero deforestacion', color: 'text-red-700' },
+  { value: 'restriccion_legal', label: 'Restriccion — legal (POF, reserva forestal)', color: 'text-red-700' },
+  { value: 'restriccion_tecnica', label: 'Restriccion — tecnica (area no agropecuaria)', color: 'text-red-700' },
+  { value: 'fuera', label: 'Fuera de frontera agricola', color: 'text-red-700' },
+] as const
 
-const PRODUCER_SCALE_LABELS: Record<(typeof PRODUCER_SCALES)[number], string> = {
-  smallholder: 'Pequeno productor (<4 ha)',
-  medium: 'Mediano (4-50 ha)',
-  industrial: 'Industrial (>50 ha)',
-}
+const ID_TYPES = ['CC', 'CE', 'NIT', 'TI', 'NUIP', 'PASAPORTE'] as const
+
+// ─── Schema ─────────────────────────────────────────────────────────────────
 
 const plotSchema = z.object({
-  plot_code: z.string().min(1, 'Codigo requerido'),
+  // Identificacion
+  plot_code: z.string().min(1, 'Nombre o codigo de la finca requerido'),
   organization_id: z.string().optional().nullable(),
-  plot_area_ha: z.coerce.number().positive('Debe ser positivo').optional().nullable(),
+  // Ubicacion
+  region: z.string().min(1, 'Departamento requerido'),
+  municipality: z.string().min(1, 'Municipio requerido'),
+  vereda: z.string().optional().nullable(),
+  frontera_agricola_status: z.string().optional().nullable(),
+  // Geolocalizacion
+  plot_area_ha: z.coerce.number().positive('Debe ser mayor a 0').optional().nullable(),
   geolocation_type: z.enum(['point', 'polygon']).default('point'),
-  lat: z.coerce.number().min(-90).max(90).optional().nullable(),
-  lng: z.coerce.number().min(-180).max(180).optional().nullable(),
-  country_code: z.string().default('CO'),
-  region: z.string().optional().nullable(),
-  municipality: z.string().optional().nullable(),
-  deforestation_free: z.boolean().default(true),
-  cutoff_date_compliant: z.boolean().default(true),
-  legal_land_use: z.boolean().default(true),
-  risk_level: z.enum(['low', 'standard', 'high']).default('low'),
+  lat: z.coerce.number().min(-4.23, 'Fuera de Colombia').max(13.39, 'Fuera de Colombia').optional().nullable(),
+  lng: z.coerce.number().min(-81.73, 'Fuera de Colombia').max(-66.85, 'Fuera de Colombia').optional().nullable(),
+  capture_method: z.string().optional().nullable(),
+  capture_device: z.string().optional().nullable(),
+  capture_date: z.string().optional().nullable(),
+  gps_accuracy_m: z.coerce.number().nonnegative().optional().nullable(),
+  // Cultivo
+  crop_type: z.string().min(1, 'Seleccione el cultivo'),
+  scientific_name: z.string().optional().nullable(),
   establishment_date: z.string().optional().nullable(),
-  crop_type: z.string().optional().nullable(),
+  last_harvest_date: z.string().optional().nullable(),
   renovation_date: z.string().optional().nullable(),
   renovation_type: z.string().optional().nullable(),
-  // EUDR Art. 8.2.f — Tenencia y propiedad
+  producer_scale: z.string().min(1, 'Seleccione la escala'),
+  // Productor
+  producer_name: z.string().min(1, 'Nombre del productor requerido'),
+  producer_id_type: z.string().min(1, 'Tipo de documento requerido'),
+  producer_id_number: z.string().min(1, 'Numero de documento requerido'),
+  // Titular (opcional si es el mismo)
   owner_name: z.string().optional().nullable(),
   owner_id_type: z.string().optional().nullable(),
   owner_id_number: z.string().optional().nullable(),
-  producer_name: z.string().optional().nullable(),
-  producer_id_type: z.string().optional().nullable(),
-  producer_id_number: z.string().optional().nullable(),
+  // Tenencia
+  tenure_type: z.string().optional().nullable(),
   cadastral_id: z.string().optional().nullable(),
-  tenure_type: z.enum(TENURE_TYPES).optional().nullable(),
+  land_title_number: z.string().optional().nullable(),
   tenure_start_date: z.string().optional().nullable(),
   tenure_end_date: z.string().optional().nullable(),
   indigenous_territory_flag: z.boolean().default(false),
-  land_title_number: z.string().optional().nullable(),
-  // Capture metadata (MITECO EFI Tomas)
-  gps_accuracy_m: z.coerce.number().nonnegative().optional().nullable(),
-  capture_method: z.enum(CAPTURE_METHODS).optional().nullable(),
-  capture_device: z.string().optional().nullable(),
-  capture_date: z.string().optional().nullable(),
-  // Producer scale (MITECO EFI Alice — legalidad diferencial)
-  producer_scale: z.enum(PRODUCER_SCALES).optional().nullable(),
 })
 
-type PlotFormValues = z.infer<typeof plotSchema>
+type PlotForm = z.infer<typeof plotSchema>
 
-// ─── Page ────────────────────────────────────────────────────────────────────
+// ─── Page ───────────────────────────────────────────────────────────────────
 
 export default function CreatePlotPage() {
   const navigate = useNavigate()
@@ -93,274 +114,251 @@ export default function CreatePlotPage() {
   const [polygonData, setPolygonData] = useState<any>(null)
 
   const {
-    register,
-    handleSubmit,
-    control,
-    watch,
-    setValue,
+    register, handleSubmit, control, watch, setValue,
     formState: { errors, isSubmitting },
-  } = useForm<PlotFormValues>({
+  } = useForm<PlotForm>({
     resolver: zodResolver(plotSchema),
     defaultValues: {
-      plot_code: '',
-      organization_id: null,
-      plot_area_ha: null,
-      geolocation_type: 'point',
-      lat: null,
-      lng: null,
-      country_code: 'CO',
-      region: null,
-      municipality: null,
-      deforestation_free: true,
-      cutoff_date_compliant: true,
-      legal_land_use: true,
-      risk_level: 'low',
-      establishment_date: null,
-      crop_type: null,
-      renovation_date: null,
-      renovation_type: null,
-      owner_name: null,
-      owner_id_type: null,
-      owner_id_number: null,
-      producer_name: null,
-      producer_id_type: null,
-      producer_id_number: null,
-      cadastral_id: null,
-      tenure_type: null,
-      tenure_start_date: null,
-      tenure_end_date: null,
-      indigenous_territory_flag: false,
-      land_title_number: null,
-      gps_accuracy_m: null,
-      capture_method: null,
-      capture_device: null,
-      capture_date: null,
-      producer_scale: null,
+      plot_code: '', organization_id: null,
+      region: '', municipality: '', vereda: null, frontera_agricola_status: null,
+      plot_area_ha: null, geolocation_type: 'point', lat: null, lng: null,
+      capture_method: null, capture_device: null, capture_date: null, gps_accuracy_m: null,
+      crop_type: '', scientific_name: null, establishment_date: null, last_harvest_date: null,
+      renovation_date: null, renovation_type: null, producer_scale: '',
+      producer_name: '', producer_id_type: '', producer_id_number: '',
+      owner_name: null, owner_id_type: null, owner_id_number: null,
+      tenure_type: null, cadastral_id: null, land_title_number: null,
+      tenure_start_date: null, tenure_end_date: null, indigenous_territory_flag: false,
     },
   })
 
-  async function onSubmit(values: PlotFormValues) {
+  async function onSubmit(values: PlotForm) {
     if (values.geolocation_type === 'polygon' && !polygonData) {
       toast.error('Dibuja el poligono en el mapa antes de guardar')
       return
     }
     try {
-      // Centroide ponderado por area (Shoelace) para que el punto caiga dentro del poligono
       let lat = values.lat
       let lng = values.lng
       if (values.geolocation_type === 'polygon' && polygonData?.coordinates?.[0]?.length) {
         const ring: number[][] = polygonData.coordinates[0]
         const pts = ring.length > 1 && ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1]
-          ? ring.slice(0, -1)
-          : ring
+          ? ring.slice(0, -1) : ring
         if (pts.length >= 3) {
-          let area = 0
-          let cx = 0
-          let cy = 0
+          let area = 0, cx = 0, cy = 0
           for (let i = 0; i < pts.length; i++) {
-            const [x0, y0] = pts[i]
-            const [x1, y1] = pts[(i + 1) % pts.length]
-            const cross = x0 * y1 - x1 * y0
-            area += cross
-            cx += (x0 + x1) * cross
-            cy += (y0 + y1) * cross
+            const [x0, y0] = pts[i], [x1, y1] = pts[(i + 1) % pts.length]
+            const cross = x0 * y1 - x1 * y0; area += cross; cx += (x0 + x1) * cross; cy += (y0 + y1) * cross
           }
           area /= 2
-          if (Math.abs(area) > 1e-9) {
-            cx /= 6 * area
-            cy /= 6 * area
-            lng = cx
-            lat = cy
-          } else {
-            lng = pts.reduce((s, p) => s + p[0], 0) / pts.length
-            lat = pts.reduce((s, p) => s + p[1], 0) / pts.length
-          }
+          if (Math.abs(area) > 1e-9) { cx /= 6 * area; cy /= 6 * area; lng = cx; lat = cy }
+          else { lng = pts.reduce((s, p) => s + p[0], 0) / pts.length; lat = pts.reduce((s, p) => s + p[1], 0) / pts.length }
         }
       }
       await create.mutateAsync({
         plot_code: values.plot_code,
         organization_id: values.organization_id || null,
+        country_code: 'CO',
+        region: values.region, municipality: values.municipality,
+        vereda: values.vereda || null, frontera_agricola_status: values.frontera_agricola_status || null,
         plot_area_ha: values.plot_area_ha ?? null,
-        geolocation_type: values.geolocation_type,
-        lat: lat ?? null,
-        lng: lng ?? null,
+        geolocation_type: values.geolocation_type, lat: lat ?? null, lng: lng ?? null,
         geojson_data: polygonData,
-        country_code: values.country_code,
-        region: values.region || null,
-        municipality: values.municipality || null,
-        deforestation_free: values.deforestation_free,
-        cutoff_date_compliant: values.cutoff_date_compliant,
-        legal_land_use: values.legal_land_use,
-        risk_level: values.risk_level,
-        establishment_date: values.establishment_date || null,
-        crop_type: values.crop_type || null,
-        renovation_date: values.renovation_date || null,
-        renovation_type: values.renovation_type || null,
-        owner_name: values.owner_name || null,
-        owner_id_type: values.owner_id_type || null,
-        owner_id_number: values.owner_id_number || null,
-        producer_name: values.producer_name || null,
-        producer_id_type: values.producer_id_type || null,
-        producer_id_number: values.producer_id_number || null,
-        cadastral_id: values.cadastral_id || null,
-        tenure_type: values.tenure_type || null,
-        tenure_start_date: values.tenure_start_date || null,
-        tenure_end_date: values.tenure_end_date || null,
-        indigenous_territory_flag: values.indigenous_territory_flag,
-        land_title_number: values.land_title_number || null,
-        gps_accuracy_m: values.gps_accuracy_m ?? null,
-        capture_method: values.capture_method || null,
-        capture_device: values.capture_device || null,
-        capture_date: values.capture_date || null,
+        capture_method: values.capture_method || null, capture_device: values.capture_device || null,
+        capture_date: values.capture_date || null, gps_accuracy_m: values.gps_accuracy_m ?? null,
+        crop_type: values.crop_type, scientific_name: values.scientific_name || null,
+        establishment_date: values.establishment_date || null, last_harvest_date: values.last_harvest_date || null,
+        renovation_date: values.renovation_date || null, renovation_type: values.renovation_type || null,
         producer_scale: values.producer_scale || null,
+        producer_name: values.producer_name, producer_id_type: values.producer_id_type,
+        producer_id_number: values.producer_id_number,
+        owner_name: values.owner_name || null, owner_id_type: values.owner_id_type || null,
+        owner_id_number: values.owner_id_number || null,
+        tenure_type: values.tenure_type || null, cadastral_id: values.cadastral_id || null,
+        land_title_number: values.land_title_number || null,
+        tenure_start_date: values.tenure_start_date || null, tenure_end_date: values.tenure_end_date || null,
+        indigenous_territory_flag: values.indigenous_territory_flag,
+        deforestation_free: true, cutoff_date_compliant: true, legal_land_use: true,
+        risk_level: 'standard',
       })
       toast.success('Parcela creada')
       navigate('/cumplimiento/parcelas')
-    } catch (e: any) {
-      toast.error(e.message ?? 'Error al crear parcela')
-    }
+    } catch (e: any) { toast.error(e.message ?? 'Error al crear parcela') }
   }
 
-  const inputCls =
-    'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-ring outline-none'
-  const labelCls = 'block text-sm font-medium text-foreground mb-1'
-  const errCls = 'mt-0.5 text-xs text-red-500'
-  const sectionCls = 'bg-card rounded-xl border border-border p-5 space-y-4'
+  const cls = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-ring outline-none'
+  const lbl = 'block text-sm font-medium text-foreground mb-1'
+  const err = 'mt-0.5 text-xs text-red-500'
+  const section = 'bg-card rounded-xl border border-border p-5 space-y-4'
+  const hint = 'mt-0.5 text-[10px] text-muted-foreground'
 
   return (
     <div className="space-y-6 pb-24">
       {/* Header */}
       <div>
-        <Link
-          to="/cumplimiento/parcelas"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary mb-3"
-        >
+        <Link to="/cumplimiento/parcelas" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary mb-3">
           <ArrowLeft className="h-3.5 w-3.5" /> Volver a Parcelas
         </Link>
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50">
-            <MapPin className="h-5 w-5 text-amber-600" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
+            <MapPin className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">Nueva Parcela</h1>
+            <h1 className="text-xl font-bold text-foreground">Registrar Parcela</h1>
             <p className="text-sm text-muted-foreground">
-              Registra un predio de produccion para trazabilidad EUDR
+              Registro de predio para cumplimiento EUDR — Colombia
             </p>
           </div>
         </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        {/* Datos básicos */}
-        <div className={sectionCls}>
-          <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">
-            Datos basicos
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
+
+        {/* ── 1. Productor ── */}
+        <div className={section}>
+          <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Productor</h2>
+          <p className="text-xs text-muted-foreground -mt-2">Datos del productor o cultivador que trabaja la parcela.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>Codigo de parcela *</label>
-              <input {...register('plot_code')} className={inputCls} placeholder="FINCA-001" />
-              {errors.plot_code && <p className={errCls}>{errors.plot_code.message}</p>}
+              <label className={lbl}>Nombre completo del productor *</label>
+              <input {...register('producer_name')} className={cls} placeholder="ej. Juan Carlos Perez Lopez" />
+              {errors.producer_name && <p className={err}>{errors.producer_name.message}</p>}
             </div>
-            <div>
-              <label className={labelCls}>Organizacion</label>
-              <select {...register('organization_id')} className={inputCls}>
-                <option value="">Sin asignar</option>
-                {orgs.map((o) => (
-                  <option key={o.id} value={o.id}>{o.name}</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className={lbl}>Tipo doc *</label>
+                <select {...register('producer_id_type')} className={cls}>
+                  <option value="">—</option>
+                  {ID_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                {errors.producer_id_type && <p className={err}>Requerido</p>}
+              </div>
+              <div className="col-span-2">
+                <label className={lbl}>Numero *</label>
+                <input {...register('producer_id_number')} className={cls} placeholder="1.234.567.890" />
+                {errors.producer_id_number && <p className={err}>{errors.producer_id_number.message}</p>}
+              </div>
             </div>
           </div>
+          <div>
+            <label className={lbl}>Cooperativa / asociacion / organizacion</label>
+            <select {...register('organization_id')} className={cls}>
+              <option value="">Productor independiente</option>
+              {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </select>
+            <p className={hint}>Si el productor pertenece a una cooperativa, seleccionela. Si no, deje "Productor independiente".</p>
+          </div>
+          <div>
+            <label className={lbl}>Escala del productor *</label>
+            <select {...register('producer_scale')} className={cls}>
+              <option value="">— Seleccionar —</option>
+              {PRODUCER_SCALES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+            {errors.producer_scale && <p className={err}>Requerido</p>}
+            {watch('producer_scale') && (
+              <p className={hint}>{PRODUCER_SCALES.find(s => s.value === watch('producer_scale'))?.note}</p>
+            )}
+          </div>
+        </div>
 
-          <div className="grid grid-cols-3 gap-4">
+        {/* ── 2. Finca ── */}
+        <div className={section}>
+          <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Finca / Parcela</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>Area (ha)</label>
-              <input
-                {...register('plot_area_ha')}
-                type="number"
-                step="0.01"
-                className={inputCls}
-                placeholder="12.5"
-              />
+              <label className={lbl}>Nombre de la finca *</label>
+              <input {...register('plot_code')} className={cls} placeholder="ej. Finca La Esperanza" />
+              {errors.plot_code && <p className={err}>{errors.plot_code.message}</p>}
             </div>
             <div>
-              <label className={labelCls}>Tipo geolocalizacion</label>
-              <Controller
-                name="geolocation_type"
-                control={control}
-                render={({ field }) => (
-                  <div className="flex gap-3 pt-2">
-                    <label className="flex items-center gap-1.5 text-sm text-foreground">
-                      <input
-                        type="radio"
-                        value="point"
-                        checked={field.value === 'point'}
-                        onChange={() => field.onChange('point')}
-                        className="accent-primary"
-                      />
-                      Punto
-                    </label>
-                    <label className="flex items-center gap-1.5 text-sm text-foreground">
-                      <input
-                        type="radio"
-                        value="polygon"
-                        checked={field.value === 'polygon'}
-                        onChange={() => field.onChange('polygon')}
-                        className="accent-primary"
-                      />
-                      Poligono
-                    </label>
-                  </div>
-                )}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>Nivel de riesgo</label>
-              <select {...register('risk_level')} className={inputCls}>
-                <option value="low">Bajo</option>
-                <option value="standard">Estandar</option>
-                <option value="high">Alto</option>
-              </select>
+              <label className={lbl}>Area total del lote (hectareas)</label>
+              <input {...register('plot_area_ha')} type="number" step="0.01" className={cls} placeholder="ej. 3.5" />
+              <p className={hint}>El 85% de los predios de cafe y cacao en Colombia son menores a 4 ha.</p>
             </div>
           </div>
         </div>
 
-        {/* Geolocalización */}
-        <div className={sectionCls}>
-          <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">
-            Geolocalizacion
-          </h2>
+        {/* ── 3. Ubicacion ── */}
+        <div className={section}>
+          <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Ubicacion</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className={lbl}>Departamento *</label>
+              <input {...register('region')} className={cls} placeholder="ej. Huila" />
+              {errors.region && <p className={err}>{errors.region.message}</p>}
+            </div>
+            <div>
+              <label className={lbl}>Municipio *</label>
+              <input {...register('municipality')} className={cls} placeholder="ej. Planadas" />
+              {errors.municipality && <p className={err}>{errors.municipality.message}</p>}
+            </div>
+            <div>
+              <label className={lbl}>Vereda</label>
+              <input {...register('vereda')} className={cls} placeholder="ej. La España" />
+            </div>
+          </div>
+          <div>
+            <label className={lbl}>Frontera agricola (UPRA / CIPRA)</label>
+            <select {...register('frontera_agricola_status')} className={cls}>
+              <option value="">— Sin verificar —</option>
+              {FRONTERA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <p className={hint}>Consulte en cipra.upra.gov.co. Es la respuesta oficial de Colombia a derechos de uso del suelo (EUDR Art. 9).</p>
+          </div>
+          {watch('frontera_agricola_status') === 'fuera' && (
+            <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-800">
+              Predio fuera de frontera agricola. La produccion agropecuaria puede no cumplir con derechos de uso del suelo. Consulte con la CAR de su region.
+            </div>
+          )}
+          {watch('frontera_agricola_status')?.startsWith('restriccion') && (
+            <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+              Predio con restriccion. Puede requerir autorizacion de la autoridad ambiental o revision del POT/EOT municipal. Adjunte certificado de uso del suelo en documentos.
+            </div>
+          )}
+        </div>
+
+        {/* ── 4. Geolocalizacion ── */}
+        <div className={section}>
+          <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Geolocalizacion</h2>
+          <p className="text-xs text-muted-foreground -mt-2">
+            EUDR Art. 2(28): predios menores a 4 ha solo necesitan un punto (latitud/longitud). Predios mayores a 4 ha requieren poligono.
+          </p>
+          <div>
+            <label className={lbl}>Tipo de geolocalizacion</label>
+            <Controller name="geolocation_type" control={control} render={({ field }) => (
+              <div className="flex gap-4 pt-1">
+                <label className="flex items-center gap-1.5 text-sm text-foreground cursor-pointer">
+                  <input type="radio" value="point" checked={field.value === 'point'} onChange={() => field.onChange('point')} className="accent-primary" />
+                  Punto GPS
+                </label>
+                <label className="flex items-center gap-1.5 text-sm text-foreground cursor-pointer">
+                  <input type="radio" value="polygon" checked={field.value === 'polygon'} onChange={() => field.onChange('polygon')} className="accent-primary" />
+                  Poligono
+                </label>
+              </div>
+            )} />
+          </div>
 
           {watch('geolocation_type') === 'point' && (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Latitud</label>
-                <input
-                  {...register('lat')}
-                  type="number"
-                  step="0.000001"
-                  className={inputCls}
-                  placeholder="4.710989"
-                />
+                <label className={lbl}>Latitud</label>
+                <input {...register('lat')} type="number" step="0.000001" className={cls} placeholder="ej. 2.927" />
               </div>
               <div>
-                <label className={labelCls}>Longitud</label>
-                <input
-                  {...register('lng')}
-                  type="number"
-                  step="0.000001"
-                  className={inputCls}
-                  placeholder="-74.072092"
-                />
+                <label className={lbl}>Longitud</label>
+                <input {...register('lng')} type="number" step="0.000001" className={cls} placeholder="ej. -75.989" />
               </div>
+              <p className="col-span-2 text-[10px] text-muted-foreground">
+                Puede tomar las coordenadas con el GPS de su celular. Encienda la ubicacion, tome una foto y copie latitud/longitud.
+              </p>
             </div>
           )}
 
           {watch('geolocation_type') === 'polygon' && (
             <div>
               <p className="text-xs text-muted-foreground mb-2">
-                Click en "Dibujar poligono" → haz clic en el mapa para agregar vertices (minimo 3) → "Guardar poligono"
+                Dibuje el poligono en el mapa: click para agregar vertices (minimo 3), luego "Guardar poligono".
               </p>
               <PlotPolygonEditor
                 initialGeojson={polygonData}
@@ -368,18 +366,13 @@ export default function CreatePlotPage() {
                 height="450px"
                 onSave={(geojson, calculatedAreaHa) => {
                   setPolygonData(geojson)
-                  // Auto-fill area si esta vacia o si difiere mucho del declarado
                   if (calculatedAreaHa) {
                     const declared = watch('plot_area_ha')
                     if (!declared || Math.abs(Number(declared) - calculatedAreaHa) / calculatedAreaHa > 0.5) {
                       setValue('plot_area_ha', Math.round(calculatedAreaHa * 100) / 100)
-                      toast.success(`Poligono listo. Area auto-completada: ${calculatedAreaHa.toFixed(2)} ha`)
-                    } else {
-                      toast.success(`Poligono listo (${calculatedAreaHa.toFixed(2)} ha)`)
-                    }
-                  } else {
-                    toast.success('Poligono listo')
-                  }
+                      toast.success(`Poligono listo. Area: ${calculatedAreaHa.toFixed(2)} ha`)
+                    } else { toast.success(`Poligono listo (${calculatedAreaHa.toFixed(2)} ha)`) }
+                  } else { toast.success('Poligono listo') }
                 }}
               />
               {polygonData && (
@@ -389,294 +382,132 @@ export default function CreatePlotPage() {
               )}
             </div>
           )}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-border">
+            <div>
+              <label className={lbl}>Metodo de captura</label>
+              <select {...register('capture_method')} className={cls}>
+                <option value="">— Seleccionar —</option>
+                {CAPTURE_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={lbl}>Dispositivo</label>
+              <input {...register('capture_device')} className={cls} placeholder="ej. Samsung A14 / Garmin eTrex" />
+            </div>
+            <div>
+              <label className={lbl}>Fecha de captura</label>
+              <input type="date" {...register('capture_date')} className={cls} />
+            </div>
+          </div>
+          <div className="w-1/3">
+            <label className={lbl}>Exactitud GPS (metros)</label>
+            <input {...register('gps_accuracy_m')} type="number" step="0.1" min="0" className={cls} placeholder="ej. 5" />
+            <p className={hint}>Celular tipico: 3–10 m. GPS profesional: 0.01–0.05 m.</p>
+          </div>
         </div>
 
-        {/* Captura y escala — MITECO EFI Tomas + Alice */}
-        <div className={sectionCls}>
-          <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">
-            Metodo de captura y escala del productor
-          </h2>
+        {/* ── 5. Cultivo ── */}
+        <div className={section}>
+          <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Cultivo</h2>
           <p className="text-xs text-muted-foreground -mt-2">
-            Datos obligatorios para defender la parcela ante una inspeccion EUDR.
-            Un poligono sin metadata de captura es indefendible.
+            Colombia exporta a la UE principalmente cafe, cacao y palma de aceite. Solo estos 3 commodities requieren cumplimiento EUDR.
           </p>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>Metodo de captura</label>
-              <select {...register('capture_method')} className={inputCls}>
-                <option value="">Seleccionar...</option>
-                {CAPTURE_METHODS.map((m) => (
-                  <option key={m} value={m}>{CAPTURE_METHOD_LABELS[m]}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Escala del productor *</label>
-              <select {...register('producer_scale')} className={inputCls}>
-                <option value="">Seleccionar...</option>
-                {PRODUCER_SCALES.map((s) => (
-                  <option key={s} value={s}>{PRODUCER_SCALE_LABELS[s]}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className={labelCls}>Exactitud GPS (m)</label>
-              <input
-                {...register('gps_accuracy_m')}
-                type="number"
-                step="0.1"
-                min="0"
-                className={inputCls}
-                placeholder="5.0"
-              />
-              <p className="mt-0.5 text-[10px] text-muted-foreground">
-                Tipico GPS mano: 3-10 m. RTK: 0.01-0.05 m. Drone: 0.1-0.5 m.
-              </p>
-            </div>
-            <div>
-              <label className={labelCls}>Dispositivo usado</label>
-              <input
-                {...register('capture_device')}
-                className={inputCls}
-                placeholder="Garmin eTrex / iPhone 13 / DJI Mavic"
-              />
-            </div>
-            <div>
-              <label className={labelCls}>Fecha de captura</label>
-              <input type="date" {...register('capture_date')} className={inputCls} />
-            </div>
-          </div>
-          {watch('producer_scale') === 'smallholder' && watch('geolocation_type') === 'polygon' && (
-            <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900">
-              Para parcelas &lt;4 ha EUDR acepta geolocalizacion de punto. Dibujar
-              un poligono es opcional; un punto + area declarada + metodo de captura
-              es suficiente para smallholders.
-            </div>
-          )}
-          {watch('producer_scale') === 'industrial' && (
-            <div className="rounded-md bg-indigo-50 border border-indigo-200 px-3 py-2 text-xs text-indigo-900">
-              Produccion industrial: se aplicaran requisitos legales adicionales
-              (licencia ambiental, contratos laborales, EIA, aportes seguridad
-              social). Revisa el tablero de legalidad tras crear la parcela.
-            </div>
-          )}
-        </div>
-
-        {/* Ubicación */}
-        <div className={sectionCls}>
-          <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">
-            Ubicacion administrativa
-          </h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className={labelCls}>Pais</label>
-              <input {...register('country_code')} className={inputCls} placeholder="CO" maxLength={2} />
-            </div>
-            <div>
-              <label className={labelCls}>Region / Depto</label>
-              <input {...register('region')} className={inputCls} placeholder="Antioquia" />
-            </div>
-            <div>
-              <label className={labelCls}>Municipio</label>
-              <input {...register('municipality')} className={inputCls} placeholder="Jardin" />
-            </div>
-          </div>
-        </div>
-
-        {/* Cultivo */}
-        <div className={sectionCls}>
-          <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">
-            Cultivo
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Tipo de cultivo</label>
-              <select {...register('crop_type')} className={inputCls}>
+              <label className={lbl}>Cultivo principal *</label>
+              <select {...register('crop_type', {
+                onChange: (e) => {
+                  const c = COMMODITIES.find(c => c.value === e.target.value)
+                  if (c) setValue('scientific_name', c.scientific)
+                },
+              })} className={cls}>
                 <option value="">— Seleccionar —</option>
-                <option value="cafe">Cafe</option>
-                <option value="cacao">Cacao</option>
-                <option value="palma">Palma de aceite</option>
-                <option value="caucho">Caucho</option>
-                <option value="soya">Soya</option>
-                <option value="madera">Madera</option>
-                <option value="ganado">Ganado bovino</option>
+                {COMMODITIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
+              {errors.crop_type && <p className={err}>{errors.crop_type.message}</p>}
             </div>
             <div>
-              <label className={labelCls}>Fecha de establecimiento</label>
-              <input type="date" {...register('establishment_date')} className={inputCls} />
+              <label className={lbl}>Nombre cientifico</label>
+              <input {...register('scientific_name')} className={`${cls} bg-muted/30`} readOnly />
+              <p className={hint}>Se completa automaticamente. EUDR Art. 9(1)(a).</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className={lbl}>Fecha de siembra</label>
+              <input type="date" {...register('establishment_date')} className={cls} />
             </div>
             <div>
-              <label className={labelCls}>Fecha de renovacion / soca</label>
-              <input type="date" {...register('renovation_date')} className={inputCls} />
+              <label className={lbl}>Ultima cosecha</label>
+              <input type="date" {...register('last_harvest_date')} className={cls} />
+              <p className={hint}>EUDR Art. 9(1)(d) — periodo de produccion.</p>
             </div>
             <div>
-              <label className={labelCls}>Tipo de renovacion</label>
-              <select {...register('renovation_type')} className={inputCls}>
-                <option value="">— Sin renovacion —</option>
-                <option value="renovacion">Renovacion</option>
-                <option value="soca">Soca (corte para rebrote)</option>
-                <option value="resiembra">Resiembra</option>
-              </select>
+              <label className={lbl}>Renovacion / soca</label>
+              <input type="date" {...register('renovation_date')} className={cls} />
             </div>
           </div>
         </div>
 
-        {/* Tenencia y Propiedad — EUDR Art. 8.2.f */}
-        <div className={sectionCls}>
+        {/* ── 6. Tenencia ── */}
+        <div className={section}>
+          <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Tenencia del predio</h2>
+          <p className="text-xs text-muted-foreground -mt-2">
+            EUDR Art. 10(h) — derecho legal de uso del suelo. Adjunte el certificado de tradicion y libertad en la seccion de documentos.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={lbl}>Tipo de tenencia</label>
+              <select {...register('tenure_type')} className={cls}>
+                <option value="">— Seleccionar —</option>
+                {TENURE_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={lbl}>Cedula catastral (IGAC)</label>
+              <input {...register('cadastral_id')} className={cls} placeholder="ej. 000-00000-00-000" />
+              <p className={hint}>Numero de identificacion predial del IGAC.</p>
+            </div>
+          </div>
           <div>
-            <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">
-              Tenencia y Propiedad
-            </h2>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              EUDR Art. 8.2.f exige evidencia del derecho legal de uso de la zona.
-            </p>
+            <label className={lbl}>Folio de matricula inmobiliaria (SNR)</label>
+            <input {...register('land_title_number')} className={cls} placeholder="ej. 350-12345" />
+            <p className={hint}>Certificado de tradicion y libertad de la Superintendencia de Notariado y Registro.</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Tipo de tenencia</label>
-              <select {...register('tenure_type')} className={inputCls}>
-                <option value="">— Seleccionar —</option>
-                <option value="owned">Propietario</option>
-                <option value="leased">Arrendatario</option>
-                <option value="sharecropped">Aparcero</option>
-                <option value="concession">Concesion</option>
-                <option value="indigenous_collective">Territorio indigena colectivo</option>
-                <option value="afro_collective">Territorio afrocolectivo</option>
-                <option value="baldio_adjudicado">Baldio adjudicado (ANT)</option>
-                <option value="occupation">Ocupacion sin titulo</option>
-                <option value="other">Otro</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Identificador catastral</label>
-              <input
-                {...register('cadastral_id')}
-                className={inputCls}
-                placeholder="Folio matricula SNR / catastro IGAC"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Vigencia desde</label>
-              <input type="date" {...register('tenure_start_date')} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Vigencia hasta</label>
-              <input type="date" {...register('tenure_end_date')} className={inputCls} />
-            </div>
-          </div>
-
+          {/* Titular legal (si difiere) */}
           <div className="border-t border-border pt-4 space-y-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Productor (quien cultiva)
+              Titular legal del predio (si es diferente al productor)
             </p>
-            <input
-              {...register('producer_name')}
-              className={inputCls}
-              placeholder="Nombre del productor"
-            />
+            <input {...register('owner_name')} className={cls} placeholder="Nombre del propietario registrado" />
             <div className="grid grid-cols-3 gap-2">
-              <select {...register('producer_id_type')} className={inputCls}>
-                <option value="">— Tipo —</option>
-                <option value="CC">CC</option>
-                <option value="CE">CE</option>
-                <option value="NIT">NIT</option>
-                <option value="RUT">RUT</option>
-                <option value="PASAPORTE">Pasaporte</option>
-                <option value="OTRO">Otro</option>
+              <select {...register('owner_id_type')} className={cls}>
+                <option value="">—</option>
+                {ID_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              <input
-                {...register('producer_id_number')}
-                className={`${inputCls} col-span-2`}
-                placeholder="Numero de documento"
-              />
+              <input {...register('owner_id_number')} className={`${cls} col-span-2`} placeholder="Numero de documento" />
             </div>
-          </div>
-
-          <div className="border-t border-border pt-4 space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Titular legal (si difiere del productor)
-            </p>
-            <input
-              {...register('owner_name')}
-              className={inputCls}
-              placeholder="Nombre del titular"
-            />
-            <div className="grid grid-cols-3 gap-2">
-              <select {...register('owner_id_type')} className={inputCls}>
-                <option value="">— Tipo —</option>
-                <option value="CC">CC</option>
-                <option value="CE">CE</option>
-                <option value="NIT">NIT</option>
-                <option value="RUT">RUT</option>
-                <option value="PASAPORTE">Pasaporte</option>
-                <option value="OTRO">Otro</option>
-              </select>
-              <input
-                {...register('owner_id_number')}
-                className={`${inputCls} col-span-2`}
-                placeholder="Numero de documento"
-              />
-            </div>
-            <input
-              {...register('land_title_number')}
-              className={inputCls}
-              placeholder="Numero de titulo / folio matricula"
-            />
           </div>
 
           <label className="flex items-start gap-2 text-sm cursor-pointer pt-3 border-t border-border">
-            <input
-              type="checkbox"
-              {...register('indigenous_territory_flag')}
-              className="accent-amber-600 h-4 w-4 mt-0.5"
-            />
+            <input type="checkbox" {...register('indigenous_territory_flag')} className="accent-amber-600 h-4 w-4 mt-0.5" />
             <span className="text-foreground">
-              Territorio indigena o colectivo afro
+              Resguardo indigena o territorio colectivo afro
               <span className="block text-[11px] text-muted-foreground mt-0.5">
-                Activa due diligence reforzado bajo Art. 10 EUDR.
+                Requiere consulta previa (FPIC). La Constitucion reconoce autonomia territorial de resguardos y consejos comunitarios (Ley 70/93).
               </span>
             </span>
           </label>
         </div>
-
-        {/* Declaraciones de cumplimiento */}
-        <div className={sectionCls}>
-          <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">
-            Declaraciones de cumplimiento
-          </h2>
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input type="checkbox" {...register('deforestation_free')} className="accent-emerald-600 h-4 w-4" />
-            Libre de deforestacion
-          </label>
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input type="checkbox" {...register('cutoff_date_compliant')} className="accent-emerald-600 h-4 w-4" />
-            Cumple fecha de corte
-          </label>
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input type="checkbox" {...register('legal_land_use')} className="accent-emerald-600 h-4 w-4" />
-            Uso legal del suelo
-          </label>
-        </div>
       </form>
 
-      {/* Sticky footer con acciones */}
+      {/* Sticky footer */}
       <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="container max-w-6xl mx-auto px-6 py-3 flex items-center justify-end gap-3">
-          <Button variant="secondary" onClick={() => navigate('/cumplimiento/parcelas')}>
-            Cancelar
-          </Button>
-          <Button
-            variant="primary"
-            loading={create.isPending || isSubmitting}
-            onClick={handleSubmit(onSubmit)}
-          >
+          <Button variant="secondary" onClick={() => navigate('/cumplimiento/parcelas')}>Cancelar</Button>
+          <Button variant="primary" loading={create.isPending || isSubmitting} onClick={handleSubmit(onSubmit)}>
             Crear parcela
           </Button>
         </div>

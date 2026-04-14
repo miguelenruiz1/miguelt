@@ -87,8 +87,11 @@ class CompliancePlot(Base):
     geojson_arweave_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     geojson_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     country_code: Mapped[str] = mapped_column(Text, nullable=False, default="CO")
-    region: Mapped[str | None] = mapped_column(Text, nullable=True)
+    region: Mapped[str | None] = mapped_column(Text, nullable=True)  # Departamento en CO
     municipality: Mapped[str | None] = mapped_column(Text, nullable=True)
+    vereda: Mapped[str | None] = mapped_column(Text, nullable=True)  # CO: division sub-municipal rural
+    # Frontera agricola UPRA — respuesta oficial CO a derechos de uso del suelo
+    frontera_agricola_status: Mapped[str | None] = mapped_column(Text, nullable=True)
     land_title_number: Mapped[str | None] = mapped_column(Text, nullable=True)
     land_title_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Tenencia y propiedad (EUDR Art. 8.2.f — derecho legal de uso de la zona)
@@ -111,14 +114,17 @@ class CompliancePlot(Base):
     # Producer scale — differentiates legal requirements (MITECO EFI Alice)
     producer_scale: Mapped[str | None] = mapped_column(Text, nullable=True)
     deforestation_free: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    degradation_free: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)  # Art. 2(7) — distinct from deforestation
     cutoff_date_compliant: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     legal_land_use: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     risk_level: Mapped[str] = mapped_column(Text, nullable=False, default="standard")
-    # Crop establishment & renovation (EUDR Colombia gap)
-    establishment_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # Crop & production (EUDR Art. 9(1)(a)(d))
     crop_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    scientific_name: Mapped[str | None] = mapped_column(Text, nullable=True)  # Art. 9(1)(a) — e.g. Coffea arabica
+    establishment_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     renovation_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     renovation_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_harvest_date: Mapped[date | None] = mapped_column(Date, nullable=True)  # Art. 9(1)(d) — fecha/rango produccion
     satellite_report_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     satellite_report_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     satellite_verified_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)

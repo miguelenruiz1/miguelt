@@ -531,6 +531,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://media_svc:mediapass@media-postgres:5432/mediadb
       REDIS_URL: redis://redis:6379/8
+      JWT_SECRET: ${JWT_SECRET:-super-secret-dev-key-change-in-prod}
       S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN:-s2s-change-me-in-production}
       STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}

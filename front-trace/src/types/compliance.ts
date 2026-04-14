@@ -102,6 +102,8 @@ export interface CompliancePlot {
   country_code: string
   region: string | null
   municipality: string | null
+  vereda: string | null
+  frontera_agricola_status: string | null
   land_title_number: string | null
   land_title_hash: string | null
   // Tenencia y propiedad (EUDR Art. 8.2.f)
@@ -122,8 +124,15 @@ export interface CompliancePlot {
   capture_device: string | null
   capture_date: string | null
   // Producer scale
+  crop_type: string | null
+  scientific_name: string | null
+  establishment_date: string | null
+  renovation_date: string | null
+  renovation_type: string | null
+  last_harvest_date: string | null
   producer_scale: ProducerScale | null
   deforestation_free: boolean
+  degradation_free: boolean
   cutoff_date_compliant: boolean
   legal_land_use: boolean
   risk_level: RiskLevel

@@ -120,16 +120,21 @@ class PlotCreate(_PlotTenureFields):
     country_code: str = "CO"
     region: str | None = None
     municipality: str | None = None
+    vereda: str | None = None
+    frontera_agricola_status: str | None = None
     land_title_number: str | None = None
     land_title_hash: str | None = None
     deforestation_free: bool = False
+    degradation_free: bool = False
     cutoff_date_compliant: bool = False
     legal_land_use: bool = False
     risk_level: str = "standard"
-    establishment_date: date | None = None
     crop_type: str | None = None
+    scientific_name: str | None = None
+    establishment_date: date | None = None
     renovation_date: date | None = None
     renovation_type: str | None = None
+    last_harvest_date: date | None = None
     satellite_report_url: str | None = None
     satellite_report_hash: str | None = None
     metadata: dict | None = None
@@ -151,13 +156,16 @@ class PlotUpdate(_PlotTenureFields):
     land_title_number: str | None = None
     land_title_hash: str | None = None
     deforestation_free: bool | None = None
+    degradation_free: bool | None = None
     cutoff_date_compliant: bool | None = None
     legal_land_use: bool | None = None
     risk_level: str | None = None
-    establishment_date: date | None = None
     crop_type: str | None = None
+    scientific_name: str | None = None
+    establishment_date: date | None = None
     renovation_date: date | None = None
     renovation_type: str | None = None
+    last_harvest_date: date | None = None
     satellite_report_url: str | None = None
     satellite_report_hash: str | None = None
     metadata: dict | None = None
@@ -178,6 +186,8 @@ class PlotResponse(OrmBase):
     country_code: str
     region: str | None = None
     municipality: str | None = None
+    vereda: str | None = None
+    frontera_agricola_status: str | None = None
     land_title_number: str | None = None
     land_title_hash: str | None = None
     # Tenencia / propiedad (EUDR Art. 8.2.f)
@@ -201,10 +211,12 @@ class PlotResponse(OrmBase):
     cutoff_date_compliant: bool
     legal_land_use: bool
     risk_level: str
-    establishment_date: date | None = None
     crop_type: str | None = None
+    scientific_name: str | None = None
+    establishment_date: date | None = None
     renovation_date: date | None = None
     renovation_type: str | None = None
+    last_harvest_date: date | None = None
     satellite_report_url: str | None = None
     satellite_report_hash: str | None = None
     satellite_verified_at: datetime | None = None
