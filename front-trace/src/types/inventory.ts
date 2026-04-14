@@ -1096,6 +1096,7 @@ export interface Customer {
   code: string
   customer_type_id: string | null
   tax_id: string | null
+  tax_id_type: string | null
   contact_name: string | null
   email: string | null
   phone: string | null
@@ -1203,6 +1204,9 @@ export interface SalesOrder {
   total_with_tax: number
   total_payable: number
   currency: string
+  incoterm: string | null
+  origin_country: string | null
+  destination_country: string | null
   notes: string | null
   shipping_info: ShippingInfo | null
   cufe: string | null

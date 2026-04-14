@@ -96,7 +96,7 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
   // Only show active products with available stock
   const products = allProducts.filter(p => p.is_active && productsWithStock.has(p.id))
 
-  const [form, setForm] = useState({ customer_id: '', warehouse_id: '', expected_date: '', notes: '', discount_pct: '0', discount_reason: '', payment_form: '1', payment_method: '10' })
+  const [form, setForm] = useState({ customer_id: '', warehouse_id: '', expected_date: '', notes: '', discount_pct: '0', discount_reason: '', payment_form: '1', payment_method: '10', currency: 'COP', incoterm: '', destination_country: '' })
   const [lines, setLines] = useState<SOLine[]>([{ product_id: '', variant_id: '', warehouse_id: '', qty_ordered: '1', unit_price: '0', discount_pct: '0', tax_rate: '0', tax_rate_ids: [] }])
   const [linePriceSources, setLinePriceSources] = useState<Record<number, PriceLookupResponse>>({})
 
@@ -189,6 +189,9 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
       discount_reason: form.discount_reason || null,
       payment_form: Number(form.payment_form),
       payment_method: Number(form.payment_method),
+      currency: form.currency || 'COP',
+      incoterm: form.incoterm || null,
+      destination_country: form.destination_country || null,
       lines: lines.map(l => ({
         product_id: l.product_id,
         variant_id: l.variant_id || null,
@@ -247,6 +250,44 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
                 <option value="48">Tarjeta crédito</option>
                 <option value="49">Tarjeta débito</option>
                 <option value="1">Instrumento no definido</option>
+              </select>
+            </div>
+          </div>
+          {/* Export readiness — currency / incoterm / destination */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase">Moneda</label>
+              <select value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="COP">COP — Peso colombiano</option>
+                <option value="USD">USD — Dolar</option>
+                <option value="EUR">EUR — Euro</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase">Incoterm</label>
+              <select value={form.incoterm} onChange={e => setForm(f => ({ ...f, incoterm: e.target.value }))} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="">— (no aplica)</option>
+                <option value="EXW">EXW — Ex Works</option>
+                <option value="FCA">FCA — Free Carrier</option>
+                <option value="FOB">FOB — Free On Board</option>
+                <option value="CFR">CFR — Cost &amp; Freight</option>
+                <option value="CIF">CIF — Cost, Insurance &amp; Freight</option>
+                <option value="DAP">DAP — Delivered At Place</option>
+                <option value="DDP">DDP — Delivered Duty Paid</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase">Pais destino</label>
+              <select value={form.destination_country} onChange={e => setForm(f => ({ ...f, destination_country: e.target.value }))} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="">— (Colombia / nacional)</option>
+                <option value="DE">DE — Alemania</option>
+                <option value="ES">ES — Espana</option>
+                <option value="FR">FR — Francia</option>
+                <option value="IT">IT — Italia</option>
+                <option value="NL">NL — Paises Bajos</option>
+                <option value="US">US — Estados Unidos</option>
+                <option value="GB">GB — Reino Unido</option>
+                <option value="CO">CO — Colombia</option>
               </select>
             </div>
           </div>
