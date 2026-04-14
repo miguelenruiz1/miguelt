@@ -97,6 +97,9 @@ class SOCreate(BaseModel):
     shipping_address: dict | None = None
     expected_date: datetime | None = None
     currency: str = Field(default="USD", max_length=3)
+    incoterm: str | None = Field(default=None, max_length=10, description="EXW|FOB|CIF|CFR|DAP|DDP|FCA")
+    origin_country: str | None = Field(default=None, max_length=3, description="ISO 3166-1 alpha-2/3")
+    destination_country: str | None = Field(default=None, max_length=3, description="ISO 3166-1 alpha-2/3")
     discount_pct: float = 0.0
     discount_reason: str | None = Field(default=None, max_length=255)
     notes: str | None = Field(default=None, max_length=2000)
@@ -107,6 +110,10 @@ class SOUpdate(BaseModel):
     warehouse_id: str | None = None
     shipping_address: dict | None = None
     expected_date: datetime | None = None
+    currency: str | None = Field(default=None, max_length=3)
+    incoterm: str | None = Field(default=None, max_length=10)
+    origin_country: str | None = Field(default=None, max_length=3)
+    destination_country: str | None = Field(default=None, max_length=3)
     discount_pct: float | None = None
     discount_reason: str | None = Field(default=None, max_length=255)
     notes: str | None = Field(default=None, max_length=2000)
@@ -165,6 +172,9 @@ class SOOut(OrmBase):
     total_with_tax: float = 0.0
     total_payable: float = 0.0
     currency: str
+    incoterm: str | None = None
+    origin_country: str | None = None
+    destination_country: str | None = None
     notes: str | None = None
     shipping_info: dict | None = None
     cufe: str | None = None

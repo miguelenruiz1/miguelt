@@ -35,6 +35,9 @@ class Supplier(Base):
     is_active:          Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="true")
     notes:              Mapped[str | None] = mapped_column(Text, nullable=True)
     custom_attributes:  Mapped[dict]       = mapped_column(JSONB, nullable=False, server_default="{}")
+    # EUDR origin (caficultor proveedor con parcela registrada).
+    origin_plot_id:     Mapped[str | None] = mapped_column(String(36), nullable=True)
+    origin_plot_code:   Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_by:         Mapped[str | None] = mapped_column(String(255), nullable=True)
     updated_by:         Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at:         Mapped[DateTime]   = mapped_column(DateTime(timezone=True), server_default=func.now())

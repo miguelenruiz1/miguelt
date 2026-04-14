@@ -49,6 +49,8 @@ class Customer(Base):
         String(36), ForeignKey("customer_types.id", ondelete="SET NULL"), nullable=True
     )
     tax_id:             Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # NIT (CO), EORI (EU), VAT (EU), NIF (ES), RUC (PE/EC), CNPJ (BR), etc.
+    tax_id_type:        Mapped[str | None] = mapped_column(String(10), nullable=True)
     contact_name:       Mapped[str | None] = mapped_column(String(255), nullable=True)
     email:              Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone:              Mapped[str | None] = mapped_column(String(50), nullable=True)

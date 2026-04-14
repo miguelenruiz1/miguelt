@@ -5,7 +5,7 @@ import uuid
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Boolean, CheckConstraint, Date, Index, Integer, Numeric, Text, UniqueConstraint, text
+from sqlalchemy import Boolean, CheckConstraint, Date, Index, Integer, Numeric, String, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -90,6 +90,10 @@ class CompliancePlot(Base):
     region: Mapped[str | None] = mapped_column(Text, nullable=True)  # Departamento en CO
     municipality: Mapped[str | None] = mapped_column(Text, nullable=True)
     vereda: Mapped[str | None] = mapped_column(Text, nullable=True)  # CO: division sub-municipal rural
+    # NUTS code para parcelas EU (Art. 9(1)(d) — codigo administrativo)
+    nuts_code: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    # Datum del sistema de referencia geodesico (WGS84, MAGNA-SIRGAS, etc.)
+    coordinate_system_datum: Mapped[str] = mapped_column(String(20), nullable=False, default="WGS84", server_default="WGS84")
     # Frontera agricola UPRA — respuesta oficial CO a derechos de uso del suelo
     frontera_agricola_status: Mapped[str | None] = mapped_column(Text, nullable=True)
     land_title_number: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -128,6 +132,10 @@ class CompliancePlot(Base):
     satellite_report_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     satellite_report_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     satellite_verified_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    # Hash SHA256 del bundle canonico de evidencias de screening (GFW, Hansen,
+    # JRC, WDPA) — anclado en Solana para auditabilidad regulatoria.
+    screening_evidence_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    screening_evidence_anchored_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow)

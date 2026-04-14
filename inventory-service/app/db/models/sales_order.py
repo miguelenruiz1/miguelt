@@ -53,6 +53,12 @@ class SalesOrder(Base):
     total_with_tax:   Mapped[Decimal]           = mapped_column(Numeric(18, 2), nullable=False, server_default="0")
     total_payable:    Mapped[Decimal]           = mapped_column(Numeric(18, 2), nullable=False, server_default="0")
     currency:         Mapped[str]              = mapped_column(String(3), nullable=False, server_default="COP")
+    # Export / international (added in migration 065 as raw columns; mapped now for API exposure).
+    exchange_rate:       Mapped[Decimal | None] = mapped_column(Numeric(14, 6), nullable=True)
+    incoterm:            Mapped[str | None]    = mapped_column(String(10), nullable=True)
+    origin_country:      Mapped[str | None]    = mapped_column(String(3), nullable=True)
+    destination_country: Mapped[str | None]    = mapped_column(String(3), nullable=True)
+    is_international:    Mapped[bool]          = mapped_column(Boolean, nullable=False, server_default="false")
     payment_form:     Mapped[int]              = mapped_column(Integer, nullable=False, server_default="1")  # 1=Contado, 2=Crédito
     payment_method:   Mapped[int]              = mapped_column(Integer, nullable=False, server_default="10")  # 10=Efectivo
     notes:            Mapped[str | None]       = mapped_column(Text, nullable=True)
