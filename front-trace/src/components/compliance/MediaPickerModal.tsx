@@ -103,7 +103,7 @@ export default function MediaPickerModal({ open, onClose, onSelect, excludeIds =
     try {
       const mediaFile = await uploadMut.mutateAsync({
         file,
-        category: 'compliance',
+        category: 'evidence',
         title: file.name,
       })
       toast.success(`"${file.name}" subido a media`)

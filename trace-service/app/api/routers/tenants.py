@@ -79,8 +79,25 @@ async def provision_tree(
     tenant_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
 ) -> ORJSONResponse:
+    from fastapi import HTTPException
+    from app.clients.helius_provider import HeliusError
+
     svc = TenantService(db)
-    tree = await svc.provision_merkle_tree(tenant_id)
+    try:
+        tree = await svc.provision_merkle_tree(tenant_id)
+    except HeliusError as exc:
+        # Helius / Solana RPC is upstream — return 503 with a user-visible
+        # message instead of a raw 500 leaking the RPC error object. Covers
+        # transient faucet rate-limits, simulation failures, RPC downtime.
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "No se pudo aprovisionar el arbol Merkle porque la red "
+                f"Solana (Helius) rechazo la transaccion: {str(exc)[:400]}. "
+                "Reintenta en unos minutos o verifica que la wallet de "
+                "aprovisionamiento tenga SOL."
+            ),
+        )
     await db.commit()
     return ORJSONResponse(status_code=status.HTTP_201_CREATED, content=_tree_dict(tree))
 

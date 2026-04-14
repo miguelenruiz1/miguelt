@@ -34,6 +34,7 @@ import {
   inventoryReorderApi,
   inventoryCustomerPricesApi,
   inventoryTaxApi,
+  inventoryTaxCategoryApi,
   inventoryUoMApi,
   inventoryPricingApi,
   inventoryPnLApi,
@@ -2057,10 +2058,47 @@ export function useCustomerPriceMetrics() {
 
 // ─── Tax Rates ──────────────────────────────────────────────────────────────
 
-export function useTaxRates(params?: { tax_type?: string; is_active?: boolean }) {
+export function useTaxRates(params?: { tax_type?: string; category_id?: string; is_active?: boolean }) {
   return useQuery({
     queryKey: ['inventory', 'tax-rates', params],
     queryFn: () => inventoryTaxApi.list(params),
+  })
+}
+
+// ─── Tax Categories ────────────────────────────────────────────────────────
+export function useTaxCategories(includeInactive = false) {
+  return useQuery({
+    queryKey: ['inventory', 'tax-categories', { includeInactive }],
+    queryFn: () => inventoryTaxCategoryApi.list(includeInactive),
+    staleTime: 60_000,
+  })
+}
+
+export function useCreateTaxCategory() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: inventoryTaxCategoryApi.create,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'tax-categories'] }),
+  })
+}
+
+export function useUpdateTaxCategory() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      inventoryTaxCategoryApi.update(id, data as any),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'tax-categories'] }),
+  })
+}
+
+export function useDeleteTaxCategory() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => inventoryTaxCategoryApi.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['inventory', 'tax-categories'] })
+      qc.invalidateQueries({ queryKey: ['inventory', 'tax-rates'] })
+    },
   })
 }
 

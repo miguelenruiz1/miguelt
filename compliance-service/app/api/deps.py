@@ -189,7 +189,9 @@ async def require_compliance_module(
     current_user: dict = Depends(get_current_user),
 ) -> dict:
     settings = get_settings()
-    tenant_id = current_user.get("tenant_id", "default")
+    # Use the original tenant slug from the header for module checks,
+    # since subscription-service stores activations by slug, not UUID.
+    tenant_id = request.headers.get("X-Tenant-Id", "") or current_user.get("tenant_id", "default")
     module_slug = settings.MODULE_SLUG
     cache_key = f"module:{tenant_id}:{module_slug}"
 

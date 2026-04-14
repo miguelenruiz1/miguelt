@@ -16,6 +16,7 @@ from app.repositories.batch_repo import BatchRepository
 from app.repositories.po_repo import PORepository
 from app.repositories.product_repo import ProductRepository
 from app.repositories.supplier_repo import SupplierRepository
+from app.repositories.warehouse_repo import WarehouseRepository
 from app.services.pricing_engine import PricingEngine
 from app.services.stock_service import StockService
 
@@ -25,6 +26,7 @@ class POService:
         self.db = db
         self.repo = PORepository(db)
         self.supplier_repo = SupplierRepository(db)
+        self.warehouse_repo = WarehouseRepository(db)
         self.stock_service = StockService(db)
 
     async def _find_supplier(self, supplier_id: str, tenant_id: str):
@@ -110,6 +112,11 @@ class POService:
                 raise ValidationError(f"Línea {i+1}: la cantidad es obligatoria y debe ser mayor a cero")
 
         po_number = await self.repo.next_po_number(tenant_id)
+        # Resolve warehouse_id: explicit → tenant default → null
+        if not data.get("warehouse_id"):
+            default_wh = await self.warehouse_repo.get_default(tenant_id)
+            if default_wh is not None:
+                data = {**data, "warehouse_id": default_wh.id}
         return await self.repo.create({
             "tenant_id": tenant_id,
             "po_number": po_number,

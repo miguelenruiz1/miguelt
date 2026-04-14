@@ -52,6 +52,15 @@ export function useMintAsset() {
   })
 }
 
+export function useDeleteAsset() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, adminKey }: { id: string; adminKey: string }) =>
+      api.assets.delete(id, adminKey),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEYS.all }),
+  })
+}
+
 // ─── Event mutations ───────────────────────────────────────────────────────────
 
 function invalidateAsset(qc: ReturnType<typeof useQueryClient>, id: string) {

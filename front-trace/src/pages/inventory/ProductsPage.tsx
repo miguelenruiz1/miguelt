@@ -18,6 +18,7 @@ import { useQuery } from '@tanstack/react-query'
 import { inventoryUoMApi } from '@/lib/inventory-api'
 import { useToast } from '@/store/toast'
 import { useFormValidation } from '@/hooks/useFormValidation'
+import { useIsModuleActive } from '@/hooks/useModules'
 import { cn } from '@/lib/utils'
 import { SafeSelect } from '@/components/ui/safeselect'
 import { CopyableId } from '@/components/inventory/CopyableId'
@@ -265,7 +266,18 @@ function CreateProductForm({
 
   const [form, setForm] = useState({
     sku: '', name: '', description: '',
-    unit_of_measure: 'un', reorder_point: '0',
+    barcode: '',
+    unit_of_measure: 'un',
+    track_batches: false,
+    min_stock_level: '0',
+    reorder_point: '0',
+    reorder_quantity: '1',
+    preferred_supplier_id: '',
+    auto_reorder: false,
+    margin_target: '',
+    margin_minimum: '',
+    weight_per_unit: '',
+    volume_per_unit: '',
     tax_rate_id: '',
     is_tax_exempt: false,
     retention_rate: '',
@@ -287,6 +299,8 @@ function CreateProductForm({
   const { data: taxRates = [] } = useTaxRates({ is_active: true })
   const ivaRates = taxRates.filter(r => r.tax_type === 'iva')
   const retentionRates = taxRates.filter(r => r.tax_type === 'retention')
+  const { data: createSuppliers = [] } = useSuppliers()
+  const isComplianceActive = useIsModuleActive('compliance')
 
   const { formRef: createFormRef, handleSubmit: validateAndCreate } = useFormValidation(doCreate)
 
@@ -296,10 +310,20 @@ function CreateProductForm({
         sku: form.sku,
         name: form.name,
         description: form.description || null,
+        barcode: form.barcode || null,
         product_type_id: productType.id,
         category_id: form.category_id || null,
         unit_of_measure: form.unit_of_measure,
+        track_batches: form.track_batches,
+        min_stock_level: Number(form.min_stock_level),
         reorder_point: Number(form.reorder_point),
+        reorder_quantity: Number(form.reorder_quantity),
+        preferred_supplier_id: form.preferred_supplier_id || null,
+        auto_reorder: form.auto_reorder,
+        margin_target: form.margin_target ? Number(form.margin_target) : null,
+        margin_minimum: form.margin_minimum ? Number(form.margin_minimum) : null,
+        weight_per_unit: form.weight_per_unit ? Number(form.weight_per_unit) : null,
+        volume_per_unit: form.volume_per_unit ? Number(form.volume_per_unit) : null,
         valuation_method: productType.dispatch_rule === 'fifo' ? 'fifo' : 'weighted_average',
         attributes: { ...attributes },
         tax_rate_id: form.tax_rate_id || null,
@@ -435,6 +459,16 @@ function CreateProductForm({
               </div>
 
               <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Código de barras</label>
+                <input
+                  value={form.barcode}
+                  onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))}
+                  placeholder="EAN/UPC opcional (para lector)"
+                  className={cls}
+                />
+              </div>
+
+              <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Unidad de medida</label>
                 <select autoComplete="off" value={form.unit_of_measure} onChange={e => setForm(f => ({ ...f, unit_of_measure: e.target.value }))} className={cls}>
                   <option value="">Seleccionar unidad...</option>
@@ -443,12 +477,163 @@ function CreateProductForm({
                 </select>
               </div>
 
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block" title="Stock mínimo absoluto / safety stock">
+                    Stock mínimo
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.min_stock_level}
+                    onChange={e => setForm(f => ({ ...f, min_stock_level: e.target.value }))}
+                    className={cls}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block" title="Cuando el stock baja a este nivel se dispara una alerta o reorden">
+                    Pto. reorden
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.reorder_point}
+                    onChange={e => setForm(f => ({ ...f, reorder_point: e.target.value }))}
+                    className={cls}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block" title="Cantidad a pedir cuando se dispara la reorden">
+                    Cant. a reordenar
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={form.reorder_quantity}
+                    onChange={e => setForm(f => ({ ...f, reorder_quantity: e.target.value }))}
+                    className={cls}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">Los precios se calculan automáticamente al recibir órdenes de compra.</p>
+            </div>
+
+            {/* Aprovisionamiento */}
+            <div className="pt-3 space-y-3 border-t border-border">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Aprovisionamiento
+              </p>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Proveedor preferido</label>
+                <select
+                  value={form.preferred_supplier_id}
+                  onChange={e => setForm(f => ({ ...f, preferred_supplier_id: e.target.value }))}
+                  className={cls}
+                >
+                  <option value="">Sin proveedor preferido</option>
+                  {createSuppliers.map((s: any) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.auto_reorder}
+                  onChange={e => setForm(f => ({ ...f, auto_reorder: e.target.checked }))}
+                  className="rounded"
+                />
+                Reorden automática (genera PO al alcanzar el punto de reorden)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.track_batches}
+                  onChange={e => setForm(f => ({ ...f, track_batches: e.target.checked }))}
+                  className="rounded"
+                />
+                <span>
+                  Rastrear lotes
+                  <span className="block text-[10px] text-amber-700 mt-0.5">
+                    ⚠️ No se puede cambiar después. Necesario para FIFO por fecha de cosecha y fechas de vencimiento{isComplianceActive ? ', y para trazabilidad EUDR' : ''}.
+                  </span>
+                </span>
+              </label>
+            </div>
+
+            {/* Pricing dinámico */}
+            <div className="pt-3 space-y-3 border-t border-border">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Margen objetivo (opcional)
+              </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Pto. reorden</label>
-                  <input type="number" value={form.reorder_point} onChange={e => setForm(f => ({ ...f, reorder_point: e.target.value }))} className={cls} />
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block" title="Margen que el sistema usa para sugerir el precio de venta">
+                    Margen objetivo (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="Ej: 30"
+                    value={form.margin_target}
+                    onChange={e => setForm(f => ({ ...f, margin_target: e.target.value }))}
+                    className={cls}
+                  />
                 </div>
-                <p className="text-xs text-muted-foreground self-end pb-3">Los precios se calculan automáticamente al recibir órdenes de compra.</p>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block" title="Margen mínimo aceptable. El sistema alerta si una venta cotiza por debajo">
+                    Margen mínimo (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="Ej: 15"
+                    value={form.margin_minimum}
+                    onChange={e => setForm(f => ({ ...f, margin_minimum: e.target.value }))}
+                    className={cls}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Logística (peso/volumen) */}
+            <div className="pt-3 space-y-3 border-t border-border">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Logística (opcional)
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block" title="Peso por unidad para cálculo de envíos y capacidad de bodega">
+                    Peso por unidad (kg)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    min="0"
+                    placeholder="Ej: 0.5"
+                    value={form.weight_per_unit}
+                    onChange={e => setForm(f => ({ ...f, weight_per_unit: e.target.value }))}
+                    className={cls}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block" title="Volumen por unidad (m³) para cálculo de cubicaje en cámaras frigoríficas">
+                    Volumen por unidad (m³)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    min="0"
+                    placeholder="Ej: 0.012"
+                    value={form.volume_per_unit}
+                    onChange={e => setForm(f => ({ ...f, volume_per_unit: e.target.value }))}
+                    className={cls}
+                  />
+                </div>
               </div>
             </div>
 
@@ -2546,13 +2731,13 @@ export function ProductsPage() {
                             </td>
                             <td className="px-5 py-4 font-mono text-xs text-muted-foreground">{p.sku}</td>
                             <td className="px-5 py-4 font-medium text-foreground">{p.name}</td>
-                            <td className="px-5 py-4 text-sm text-muted-foreground">
+                            <td className="px-5 py-4 text-sm text-muted-foreground whitespace-nowrap">
                               {categoryMap.get(p.category_id ?? '') ?? '—'}
                             </td>
-                            <td className="px-5 py-4">
+                            <td className="px-5 py-4 whitespace-nowrap">
                               {pType ? (
                                 <span
-                                  className="rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
+                                  className="inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
                                   style={{ backgroundColor: pType.color ?? '#6366f1' }}
                                 >
                                   {pType.name}

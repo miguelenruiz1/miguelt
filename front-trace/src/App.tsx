@@ -88,6 +88,7 @@ const CustomerDetailPage = named(() => import('@/pages/inventory/CustomerDetailP
 const CustomerPortalPage = named(() => import('@/pages/inventory/CustomerPortalPage'), 'CustomerPortalPage')
 const CategoriesPage = named(() => import('@/pages/inventory/CategoriesPage'), 'CategoriesPage')
 const TaxRatesPage = named(() => import('@/pages/inventory/TaxRatesPage'), 'TaxRatesPage')
+const TaxCategoriesPage = named(() => import('@/pages/inventory/TaxCategoriesPage'), 'TaxCategoriesPage')
 const ReorderConfigPage = named(() => import('@/pages/inventory/ReorderConfigPage'), 'ReorderConfigPage')
 const CustomerPricesPage = named(() => import('@/pages/inventory/CustomerPricesPage'), 'CustomerPricesPage')
 const PnLPage = named(() => import('@/pages/inventory/PnLPage'), 'PnLPage')
@@ -116,12 +117,15 @@ import { FeatureGuard } from '@/components/inventory/FeatureGuard'
 const FrameworksPage = lazy(() => import('@/pages/compliance/FrameworksPage'))
 const ActivationsPage = lazy(() => import('@/pages/compliance/ActivationsPage'))
 const PlotsPage = lazy(() => import('@/pages/compliance/PlotsPage'))
+const CreatePlotPage = lazy(() => import('@/pages/compliance/CreatePlotPage'))
 const PlotDetailPage = named(() => import('@/pages/compliance/PlotDetailPage'), 'PlotDetailPage')
 const RecordsPage = lazy(() => import('@/pages/compliance/RecordsPage'))
 const RecordDetailPage = lazy(() => import('@/pages/compliance/RecordDetailPage'))
 const CertificatesPage = lazy(() => import('@/pages/compliance/CertificatesPage'))
 const VerifyCertificatePage = lazy(() => import('@/pages/compliance/VerifyCertificatePage'))
 const ComplianceIntegrationsPage = named(() => import('@/pages/compliance/IntegrationsPage'), 'ComplianceIntegrationsPage')
+const CertificationsPage = lazy(() => import('@/pages/compliance/CertificationsPage'))
+const LegalResourcesPage = lazy(() => import('@/pages/compliance/LegalResourcesPage'))
 
 // ── Platform pages (lazy) ──────────────────────────────────────────────────
 const PlatformDashboardPage = named(() => import('@/pages/platform/PlatformDashboardPage'), 'PlatformDashboardPage')
@@ -589,6 +593,22 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'inventario/impuestos',
+        element: (
+          <ProtectedRoute permission="inventory.manage">
+            <ModuleGuard><TaxRatesPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inventario/configuracion/categorias-impuesto',
+        element: (
+          <ProtectedRoute permission="inventory.manage">
+            <ModuleGuard><TaxCategoriesPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'inventario/configuracion/:section',
         element: (
           <ProtectedRoute permission="inventory.config">
@@ -879,6 +899,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'cumplimiento/parcelas/nueva',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><CreatePlotPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+      {
         path: 'cumplimiento/parcelas/:plotId',
         element: (
           <React.Suspense fallback={null}>
@@ -907,6 +935,22 @@ const router = createBrowserRouter([
         element: (
           <React.Suspense fallback={null}>
             <ComplianceGuard><CertificatesPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+      {
+        path: 'cumplimiento/certificaciones',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><CertificationsPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+      {
+        path: 'cumplimiento/biblioteca-legal',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><LegalResourcesPage /></ComplianceGuard>
           </React.Suspense>
         ),
       },

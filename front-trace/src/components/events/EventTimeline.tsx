@@ -83,10 +83,6 @@ function buildDescription(
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export function EventTimeline({ events, assetId, blockchainAssetId }: EventTimelineProps) {
-  const sorted = [...events].sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  )
-
   // Fetch all wallets to resolve names
   const { data: walletsData } = useWalletList({ limit: 200 })
   const walletMap = new Map<string, string>()
@@ -128,18 +124,58 @@ export function EventTimeline({ events, assetId, blockchainAssetId }: EventTimel
     return m
   }, [wfEventTypes])
 
+  // ─── Build hierarchy: roots (parent_event_id IS NULL) + children grouped ──
+  // Each root event (state transition) gets its informational children
+  // listed below it with depth=1, like a folder tree.
+  // Roots ordered by timestamp DESC (most recent first), children by ASC
+  // within each parent (chronological order of details).
+  const tree = useMemo(() => {
+    type Row = { event: CustodyEvent; depth: number; childCount: number }
+    const eventById = new Map(events.map(e => [e.id, e]))
+    const childrenByParent = new Map<string, CustodyEvent[]>()
+    const orphans: CustodyEvent[] = []
+
+    for (const e of events) {
+      const pid = e.parent_event_id
+      if (!pid) continue
+      // Skip if parent is missing from this list (treat orphan as root)
+      if (!eventById.has(pid)) continue
+      if (!childrenByParent.has(pid)) childrenByParent.set(pid, [])
+      childrenByParent.get(pid)!.push(e)
+    }
+
+    const roots = events.filter(e =>
+      !e.parent_event_id || !eventById.has(e.parent_event_id)
+    )
+    roots.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+
+    const rows: Row[] = []
+    for (const root of roots) {
+      const kids = (childrenByParent.get(root.id) || [])
+        .slice()
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      rows.push({ event: root, depth: 0, childCount: kids.length })
+      for (const child of kids) {
+        rows.push({ event: child, depth: 1, childCount: 0 })
+      }
+    }
+    return rows
+  }, [events])
+
   return (
     <div className="relative">
       {/* Vertical line */}
       <div className="absolute left-5 top-6 bottom-6 w-0.5 bg-gradient-to-b from-slate-200 via-slate-200 to-transparent" />
       <div className="space-y-1">
-        {sorted.map((event, i) => (
+        {tree.map((row, i) => (
           <EventRow
-            key={event.id}
-            event={event}
+            key={row.event.id}
+            event={row.event}
             assetId={assetId}
             isFirst={i === 0}
-            isLast={i === sorted.length - 1}
+            isLast={i === tree.length - 1}
+            depth={row.depth}
+            childCount={row.childCount}
             eventIconMap={eventIconMap}
             eventColorMap={eventColorMap}
             eventNameMap={eventNameMap}
@@ -155,12 +191,14 @@ export function EventTimeline({ events, assetId, blockchainAssetId }: EventTimel
 // ─── Single event row ────────────────────────────────────────────────────────
 
 function EventRow({
-  event, assetId, isFirst, isLast, walletMap, eventIconMap, eventColorMap, eventNameMap, blockchainAssetId,
+  event, assetId, isFirst, isLast, depth, childCount, walletMap, eventIconMap, eventColorMap, eventNameMap, blockchainAssetId,
 }: {
   event: CustodyEvent
   assetId: string
   isFirst: boolean
   isLast: boolean
+  depth: number
+  childCount: number
   walletMap: Map<string, string>
   eventIconMap: Map<string, typeof Package>
   eventColorMap: Map<string, string>
@@ -191,26 +229,54 @@ function EventRow({
   const hasExtra = event.data && Object.keys(event.data).length > 0
   const hasTechnicalData = event.event_hash || event.solana_tx_sig || hasExtra
 
+  // Tree indent: 36px per depth (matches CategoriesPage pattern)
+  const isChild = depth > 0
+  const indentPx = depth * 36
+
   return (
-    <div className={`relative flex gap-4 px-2 py-3 rounded-xl transition-colors ${isFirst ? 'bg-primary/[0.03]' : 'hover:bg-muted/50'}`}>
-      {/* Icon dot */}
+    <div
+      className={`relative flex gap-4 px-2 py-3 rounded-xl transition-colors ${
+        isFirst && !isChild ? 'bg-primary/[0.03]' : 'hover:bg-muted/50'
+      } ${isChild ? 'py-2' : ''}`}
+      style={{ marginLeft: indentPx }}
+    >
+      {/* Tree connector for child rows */}
+      {isChild && (
+        <div className="absolute -left-4 top-0 bottom-0 flex items-center pointer-events-none">
+          <span className="text-slate-300 text-sm select-none">└</span>
+        </div>
+      )}
+
+      {/* Icon dot — smaller for children */}
       <div className="relative z-10 shrink-0 mt-0.5">
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-xl"
-          style={isFirst
+          className={`flex items-center justify-center rounded-xl ${
+            isChild ? 'h-7 w-7' : 'h-10 w-10'
+          }`}
+          style={isFirst && !isChild
             ? { backgroundColor: hexColor, color: '#fff' }
-            : { backgroundColor: '#fff', border: '2px solid #e2e8f0' }
+            : isChild
+              ? { backgroundColor: '#f8fafc', border: '1.5px solid #e2e8f0' }
+              : { backgroundColor: '#fff', border: '2px solid #e2e8f0' }
           }
         >
-          <Icon className="h-4.5 w-4.5" style={{ color: isFirst ? '#fff' : '#94a3b8' }} />
+          <Icon
+            className={isChild ? 'h-3.5 w-3.5' : 'h-4.5 w-4.5'}
+            style={{ color: isFirst && !isChild ? '#fff' : isChild ? hexColor : '#94a3b8' }}
+          />
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0 pt-0.5">
-        {/* Header: type badge + timestamp */}
+        {/* Header: type badge + timestamp + child count */}
         <div className="flex flex-wrap items-center gap-2">
           <EventTypeBadge type={event.event_type} />
+          {!isChild && childCount > 0 && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+              {childCount} {childCount === 1 ? 'detalle' : 'detalles'}
+            </span>
+          )}
           {event.anchored && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
               <ShieldCheck className="h-3 w-3" /> Verificado

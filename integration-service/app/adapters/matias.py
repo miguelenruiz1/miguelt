@@ -21,31 +21,69 @@ COL_TZ_OFFSET = timezone(timedelta(hours=-5))
 
 
 def _aggregate_tax_totals(invoice_lines: list[dict]) -> list[dict]:
-    """Group line-level taxes by percent so DIAN gets one tax_total per rate.
+    """Group line-level taxes by (tax_id, percent) so DIAN gets one tax_total
+    bucket per rate. The header tax_totals must equal the sum of line tax_totals
+    or DIAN rejects the invoice.
 
-    Previously the header reported a single hardcoded 19% line. Mixed-rate
-    invoices (5% panela + 19% café) were rejected because the header didn't
-    match the line totals.
+    Supports multi-stack: each line can have multiple `tax_totals` entries
+    (IVA + INC + ICA, or Brazil ICMS+IPI+PIS+COFINS+ISS, etc). Each entry has
+    a `tax_id` mapped from the inventory tax category.
     """
     from collections import defaultdict
-    buckets: dict[str, dict[str, float]] = defaultdict(lambda: {"tax_amount": 0.0, "taxable_amount": 0.0})
+    buckets: dict[tuple[int, str], dict[str, float]] = defaultdict(
+        lambda: {"tax_amount": 0.0, "taxable_amount": 0.0}
+    )
     for line in invoice_lines:
         for tax in line.get("tax_totals", []) or []:
             try:
+                tax_id = int(tax.get("tax_id", 1) or 1)
                 pct = float(tax.get("percent", "0") or 0)
                 tax_amount = float(tax.get("tax_amount", "0") or 0)
                 taxable = float(tax.get("taxable_amount", line.get("line_extension_amount", "0")) or 0)
             except (TypeError, ValueError):
                 continue
-            key = f"{pct:.2f}"
+            key = (tax_id, f"{pct:.2f}")
             buckets[key]["tax_amount"] += tax_amount
             buckets[key]["taxable_amount"] += taxable
     result: list[dict] = []
-    for percent_str, b in sorted(buckets.items(), key=lambda kv: float(kv[0])):
+    for (tax_id, percent_str), b in sorted(buckets.items(), key=lambda kv: (kv[0][0], float(kv[0][1]))):
         if b["tax_amount"] <= 0 and b["taxable_amount"] <= 0:
             continue
         result.append({
-            "tax_id": 1,  # IVA
+            "tax_id": tax_id,
+            "percent": percent_str,
+            "tax_amount": f"{b['tax_amount']:.2f}",
+            "taxable_amount": f"{b['taxable_amount']:.2f}",
+        })
+    return result
+
+
+def _aggregate_withholding_totals(invoice_lines: list[dict]) -> list[dict]:
+    """Aggregate withholding totals (Retefuente, ReteIVA, ReteICA, IRPF) by
+    (tax_id, percent). MATIAS expects these in `with_holding_tax_total` at
+    header level, separate from `tax_totals`."""
+    from collections import defaultdict
+    buckets: dict[tuple[int, str], dict[str, float]] = defaultdict(
+        lambda: {"tax_amount": 0.0, "taxable_amount": 0.0}
+    )
+    for line in invoice_lines:
+        for w in line.get("withholding_totals", []) or []:
+            try:
+                tax_id = int(w.get("tax_id", 6) or 6)
+                pct = float(w.get("percent", "0") or 0)
+                tax_amount = float(w.get("tax_amount", "0") or 0)
+                taxable = float(w.get("taxable_amount", line.get("line_extension_amount", "0")) or 0)
+            except (TypeError, ValueError):
+                continue
+            key = (tax_id, f"{pct:.2f}")
+            buckets[key]["tax_amount"] += tax_amount
+            buckets[key]["taxable_amount"] += taxable
+    result: list[dict] = []
+    for (tax_id, percent_str), b in sorted(buckets.items(), key=lambda kv: (kv[0][0], float(kv[0][1]))):
+        if b["tax_amount"] <= 0:
+            continue
+        result.append({
+            "tax_id": tax_id,
             "percent": percent_str,
             "tax_amount": f"{b['tax_amount']:.2f}",
             "taxable_amount": f"{b['taxable_amount']:.2f}",
@@ -257,12 +295,29 @@ class MatiasAdapter(BaseAdapter):
         # Build line items in Matias UBL 2.1 format
         invoice_lines = []
         for i, line in enumerate(data.get("items", data.get("lines", [])), 1):
-            tax_rate = float(line.get("tax_rate", 0))
             unit_price = float(line.get("unit_price", 0))
             quantity = float(line.get("quantity", line.get("qty_shipped", 1)))
             discount_rate = float(line.get("discount_rate", line.get("discount_pct", 0) / 100 if line.get("discount_pct") else 0))
             line_subtotal = round(unit_price * quantity * (1 - discount_rate), 2)
-            tax_amount = round(line_subtotal * tax_rate / 100, 2)
+
+            # Multi-stack: prefer pre-built tax_totals from the payload (built
+            # by inventory-service from line.line_taxes). Each entry already has
+            # tax_id, percent, tax_amount, taxable_amount mapped from the
+            # tenant's tax_categories.
+            line_tax_totals = line.get("tax_totals") or []
+            line_withholdings = line.get("withholding_totals") or []
+
+            if not line_tax_totals:
+                # Legacy single-tax fallback (old SOs that don't have line_taxes)
+                tax_rate = float(line.get("tax_rate", 0))
+                if tax_rate > 0:
+                    tax_amount = round(line_subtotal * tax_rate / 100, 2)
+                    line_tax_totals = [{
+                        "tax_id": 1,  # IVA
+                        "percent": f"{tax_rate:.2f}",
+                        "tax_amount": f"{tax_amount:.2f}",
+                        "taxable_amount": f"{line_subtotal:.2f}",
+                    }]
 
             invoice_lines.append({
                 "quantity_units_id": 70,  # UN (unidad)
@@ -274,12 +329,9 @@ class MatiasAdapter(BaseAdapter):
                 "type_item_identifications_id": 4,  # Estándar de adopción del contribuyente
                 "price_amount": f"{unit_price:.2f}",
                 "base_quantity": str(quantity),
-                "tax_totals": [{
-                    "tax_id": 1,  # IVA
-                    "percent": f"{tax_rate:.2f}",
-                    "tax_amount": f"{tax_amount:.2f}",
-                    "taxable_amount": f"{line_subtotal:.2f}",
-                }] if tax_rate > 0 else [],
+                "tax_totals": line_tax_totals,
+                # Pass through withholdings so the header aggregator can sum them
+                "withholding_totals": line_withholdings,
             })
 
         # Calculate totals
@@ -305,15 +357,26 @@ class MatiasAdapter(BaseAdapter):
                 "tax_inclusive_amount": f"{total:.2f}",
                 "payable_amount": f"{total_payable:.2f}",
             },
-            # Aggregate tax_totals by rate (DIAN rejects mixed-rate invoices
-            # if you report 19% for items that were taxed at 5% or 0%).
+            # Aggregate tax_totals by (tax_id, rate) — DIAN rejects mixed-rate
+            # invoices if header doesn't match the line totals. Multi-stack
+            # supported: each line can have N tax_totals with different tax_id.
             "tax_totals": _aggregate_tax_totals(invoice_lines),
-            "withholding_tax_totals": [{
-                "tax_id": 6,  # Retención en la fuente
-                "percent": f"{(total_retention / subtotal * 100):.2f}" if subtotal > 0 and total_retention > 0 else "0.00",
-                "tax_amount": f"{total_retention:.2f}",
-                "taxable_amount": f"{subtotal:.2f}",
-            }] if total_retention > 0 else [],
+            # Aggregate withholdings (Retefuente, ReteIVA, ReteICA, IRPF). Each
+            # bucket gets its own tax_id from the line withholding_totals. If
+            # no line-level withholdings exist (legacy SOs), fall back to a
+            # single Retefuente bucket from total_retention.
+            "withholding_tax_totals": (
+                _aggregate_withholding_totals(invoice_lines)
+                if any(line.get("withholding_totals") for line in invoice_lines)
+                else (
+                    [{
+                        "tax_id": 6,  # Retención en la fuente (legacy fallback)
+                        "percent": f"{(total_retention / subtotal * 100):.2f}" if subtotal > 0 and total_retention > 0 else "0.00",
+                        "tax_amount": f"{total_retention:.2f}",
+                        "taxable_amount": f"{subtotal:.2f}",
+                    }] if total_retention > 0 else []
+                )
+            ),
             "payments": [{
                 "payment_form_id": data.get("payment_form", 1),
                 "payment_method_id": 1,

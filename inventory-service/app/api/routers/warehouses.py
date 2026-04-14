@@ -46,8 +46,20 @@ async def create_warehouse(
     tenant_id = current_user["tenant_id"]
     repo = WarehouseRepository(db)
     audit = InventoryAuditService(db)
-    if await repo.get_by_code(body.code, tenant_id):
-        raise ConflictError(f"Warehouse code {body.code!r} already exists")
+    existing = await repo.get_by_code(body.code, tenant_id)
+    if existing is not None:
+        if existing.is_active:
+            raise ConflictError(f"Warehouse code {body.code!r} already exists")
+        # Soft-deleted: reactivate and overwrite with the new payload
+        update_data = body.model_dump()
+        update_data["is_active"] = True
+        wh = await repo.update(existing, update_data)
+        await audit.log(
+            tenant_id=tenant_id, user=current_user,
+            action="inventory.warehouse.reactivate", resource_type="warehouse",
+            resource_id=wh.id, new_data=body.model_dump(), ip_address=_ip(request),
+        )
+        return ORJSONResponse(WarehouseOut.model_validate(wh).model_dump(mode="json"), status_code=201)
     data = {"tenant_id": tenant_id, **body.model_dump(), "created_by": current_user.get("id")}
     wh = await repo.create(data)
     await audit.log(

@@ -27,6 +27,8 @@ export interface Product {
   suggested_sale_price: number | null
   minimum_sale_price: number | null
   preferred_currency: string
+  weight_per_unit: number | null
+  volume_per_unit: number | null
   tax_rate_id: string | null
   is_tax_exempt: boolean
   retention_rate: number | null
@@ -432,11 +434,33 @@ export interface CustomMovementField {
 
 // ─── Categories ─────────────────────────────────────────────────────────────
 
+export type TaxBehavior = 'addition' | 'withholding'
+export type TaxBaseKind = 'subtotal' | 'subtotal_with_other_additions'
+
+export interface TaxCategory {
+  id: string
+  tenant_id: string
+  slug: string
+  name: string
+  behavior: TaxBehavior
+  base_kind: TaxBaseKind
+  description: string | null
+  color: string | null
+  sort_order: number
+  is_system: boolean
+  is_active: boolean
+  rate_count: number
+  created_at: string | null
+}
+
 export interface TaxRate {
   id: string
   tenant_id: string
   name: string
-  tax_type: 'iva' | 'retention' | 'ica'
+  // Legacy slug, kept for backwards compat. Prefer category info.
+  tax_type: string
+  category_id: string | null
+  category: TaxCategory | null
   rate: string
   is_default: boolean
   is_active: boolean
@@ -449,6 +473,18 @@ export interface TaxRateSummary {
   default_iva: TaxRate | null
   available_iva: TaxRate[]
   available_retention: TaxRate[]
+}
+
+export interface LineTax {
+  id: string
+  tax_rate_id: string
+  rate_pct: string
+  base_amount: string
+  tax_amount: string
+  behavior: TaxBehavior
+  rate_name?: string | null
+  category_name?: string | null
+  category_slug?: string | null
 }
 
 export interface Category {
@@ -1553,7 +1589,9 @@ export interface UnitOfMeasure {
   tenant_id: string
   name: string
   symbol: string
-  category: 'weight' | 'volume' | 'length' | 'unit' | 'custom'
+  // Open string so any system or custom category is valid.
+  // Common slugs: weight, volume, length, area, unit, time, energy, custom.
+  category: string
   is_base: boolean
   is_active: boolean
   created_at: string
@@ -1566,6 +1604,39 @@ export interface UoMConversion {
   to_uom_id: string
   factor: number
   is_active: boolean
+}
+
+export interface UoMCatalogOption {
+  symbol: string
+  name: string
+  suggested_default: boolean
+}
+
+export interface UoMCatalogCategory {
+  category: string
+  label: string
+  options: UoMCatalogOption[]
+}
+
+export interface UoMSetupRequest {
+  bases: { category: string; base_symbol: string }[]
+}
+
+export interface UoMSetupResponse {
+  created: number
+  categories_set_up: string[]
+  skipped?: string[]
+}
+
+export interface UoMChangeBaseRequest {
+  new_base_id: string
+}
+
+export interface UoMChangeBaseResponse {
+  old_base: string
+  new_base: string
+  pivot: string
+  affected: Record<string, number>
 }
 
 export interface ProductPricing {

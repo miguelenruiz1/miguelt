@@ -72,7 +72,7 @@ class CustodianTypeResponse(OrmBase):
     name: str
     slug: str
     color: str
-    icon: str
+    icon: str | None = None
     description: str | None
     sort_order: int
     created_at: datetime
@@ -237,6 +237,9 @@ class BurnRequest(BaseModel):
     data: dict[str, Any] = Field(default_factory=dict)
 
 
+CustodyMode = Literal["identity_preserved", "segregated", "mass_balance"]
+
+
 class GenericEventRequest(BaseModel):
     """Flexible event request for all event types (system + custom).
 
@@ -251,6 +254,22 @@ class GenericEventRequest(BaseModel):
     notes: str | None = None
     result: Literal["pass", "fail"] | None = Field(None, description="For QC/INSPECTION events")
     reason: str | None = Field(None, description="For RELEASED/BURN/DAMAGED events")
+    parent_event_id: uuid.UUID | None = Field(
+        None,
+        description=(
+            "Optional parent event for hierarchical timeline. "
+            "If omitted, informational events auto-link to the most recent "
+            "transition for the same asset."
+        ),
+    )
+    custody_mode: CustodyMode | None = Field(
+        None,
+        description=(
+            "Custody mode per MITECO/EFI: identity_preserved, segregated, "
+            "or mass_balance. Defaults to the previous event's mode on the "
+            "same asset, or 'segregated' for the first event."
+        ),
+    )
 
 
 class CustodyEventResponse(OrmBase):
@@ -272,6 +291,8 @@ class CustodyEventResponse(OrmBase):
     evidence_url: str | None = None
     evidence_hash: str | None = None
     evidence_type: str | None = None
+    parent_event_id: uuid.UUID | None = None
+    custody_mode: str = "segregated"
     created_at: datetime
 
 
@@ -320,7 +341,7 @@ class EventTypeConfigResponse(OrmBase):
     slug: str
     name: str
     description: str | None
-    icon: str
+    icon: str | None = None
     color: str
     from_states: list[str]
     to_state: str | None
@@ -437,7 +458,7 @@ class WorkflowEventTypeResponse(OrmBase):
     slug: str
     name: str
     description: str | None
-    icon: str
+    icon: str | None = None
     color: str
     is_informational: bool
     requires_wallet: bool
@@ -467,7 +488,7 @@ class ActionEventTypeInfo(BaseModel):
     slug: str
     name: str
     description: str | None = None
-    icon: str
+    icon: str | None = None
     color: str
     is_informational: bool = False
     requires_wallet: bool = False
