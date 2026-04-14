@@ -73,6 +73,10 @@ class CompliancePlot(Base):
             "cadastral_id",
             postgresql_where=text("cadastral_id IS NOT NULL"),
         ),
+        CheckConstraint(
+            "commodity_type IS NULL OR commodity_type IN ('coffee','cacao','palm','other')",
+            name="ck_compliance_plots_commodity_type",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -123,6 +127,8 @@ class CompliancePlot(Base):
     legal_land_use: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     risk_level: Mapped[str] = mapped_column(Text, nullable=False, default="standard")
     # Crop & production (EUDR Art. 9(1)(a)(d))
+    # Discriminador de commodity para filtros UI + branching de validacion.
+    commodity_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
     crop_type: Mapped[str | None] = mapped_column(Text, nullable=True)
     scientific_name: Mapped[str | None] = mapped_column(Text, nullable=True)  # Art. 9(1)(a) — e.g. Coffea arabica
     establishment_date: Mapped[date | None] = mapped_column(Date, nullable=True)

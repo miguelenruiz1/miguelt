@@ -29,6 +29,7 @@ class CertificateResponse(OrmBase):
     generated_at: datetime | None
     generated_by: uuid.UUID | None
     generation_error: str | None
+    rspo_trace_model: str | None = None
     solana_cnft_address: str | None
     solana_tx_sig: str | None
     metadata: dict = Field(

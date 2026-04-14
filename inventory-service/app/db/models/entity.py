@@ -70,6 +70,8 @@ class Product(Base):
     # EUDR origin: cross-DB pointer to compliance_plots (validated app-side).
     origin_plot_id:   Mapped[str | None] = mapped_column(String(36), nullable=True)
     origin_plot_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Commodity discriminator — coffee|cacao|palm|other.
+    commodity_type:   Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at:       Mapped[DateTime]   = mapped_column(DateTime(timezone=True), server_default=func.now())
     created_by:       Mapped[str | None] = mapped_column(String(255), nullable=True)
     updated_by:       Mapped[str | None] = mapped_column(String(255), nullable=True)

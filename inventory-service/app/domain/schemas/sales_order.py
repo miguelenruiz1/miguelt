@@ -36,6 +36,9 @@ class SOLineCreate(BaseModel):
     # category determines whether it's an addition or withholding. If empty,
     # the legacy single tax_rate / retention_pct columns are used.
     tax_rate_ids: list[str] | None = None
+    # Optional per-line overrides for export documents (HS code + Incoterm).
+    hs_code: str | None = Field(default=None, max_length=15)
+    incoterm: str | None = Field(default=None, max_length=10)
     notes: str | None = Field(default=None, max_length=2000)
 
 
@@ -67,6 +70,8 @@ class SOLineOut(OrmBase):
     line_total_with_tax: float = 0.0
     line_total: float
     notes: str | None = None
+    hs_code: str | None = None
+    incoterm: str | None = None
     backorder_line_id: str | None = None
     price_source: str | None = None
     customer_price_id: str | None = None
@@ -100,6 +105,7 @@ class SOCreate(BaseModel):
     incoterm: str | None = Field(default=None, max_length=10, description="EXW|FOB|CIF|CFR|DAP|DDP|FCA")
     origin_country: str | None = Field(default=None, max_length=3, description="ISO 3166-1 alpha-2/3")
     destination_country: str | None = Field(default=None, max_length=3, description="ISO 3166-1 alpha-2/3")
+    commodity_type: str | None = Field(default=None, max_length=20)
     discount_pct: float = 0.0
     discount_reason: str | None = Field(default=None, max_length=255)
     notes: str | None = Field(default=None, max_length=2000)
@@ -114,6 +120,7 @@ class SOUpdate(BaseModel):
     incoterm: str | None = Field(default=None, max_length=10)
     origin_country: str | None = Field(default=None, max_length=3)
     destination_country: str | None = Field(default=None, max_length=3)
+    commodity_type: str | None = Field(default=None, max_length=20)
     discount_pct: float | None = None
     discount_reason: str | None = Field(default=None, max_length=255)
     notes: str | None = Field(default=None, max_length=2000)
@@ -175,6 +182,7 @@ class SOOut(OrmBase):
     incoterm: str | None = None
     origin_country: str | None = None
     destination_country: str | None = None
+    commodity_type: str | None = None
     notes: str | None = None
     shipping_info: dict | None = None
     cufe: str | None = None

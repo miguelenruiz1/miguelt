@@ -34,6 +34,8 @@ CaptureMethod = Literal[
 
 ProducerScale = Literal["smallholder", "medium", "industrial"]
 
+CommodityType = Literal["coffee", "cacao", "palm", "other"]
+
 # Tipos de identificacion legal de personas/empresas. Cubre Colombia (CC, CE,
 # NIT, RUT, PASAPORTE) + cross-LATAM mas comunes (RUC Peru/Ecuador, CURP/RFC
 # Mexico, CPF/CNPJ Brasil, CI Bolivia/Paraguay/Uruguay).
@@ -131,6 +133,7 @@ class PlotCreate(_PlotTenureFields):
     cutoff_date_compliant: bool = False
     legal_land_use: bool = False
     risk_level: str = "standard"
+    commodity_type: CommodityType | None = None
     crop_type: str | None = None
     scientific_name: str | None = None
     establishment_date: date | None = None
@@ -166,6 +169,7 @@ class PlotUpdate(_PlotTenureFields):
     cutoff_date_compliant: bool | None = None
     legal_land_use: bool | None = None
     risk_level: str | None = None
+    commodity_type: CommodityType | None = None
     crop_type: str | None = None
     scientific_name: str | None = None
     establishment_date: date | None = None
@@ -220,6 +224,7 @@ class PlotResponse(OrmBase):
     cutoff_date_compliant: bool
     legal_land_use: bool
     risk_level: str
+    commodity_type: str | None = None
     crop_type: str | None = None
     scientific_name: str | None = None
     establishment_date: date | None = None
