@@ -120,21 +120,64 @@ for EVT in COSECHA_RFF MOLIENDA CLARIFICACION ALMACENAMIENTO HANDOFF LOADED ARRI
   echo "  ${EVT} HTTP ${RESP}"
 done
 
-say "4/10  Multi-output recipe RFF -> CPO (0.20 main) + PKO (0.05 byproduct)"
-# Products ids are placeholders — replace with real entity ids in a live seed.
-RECIPE_BODY=$(cat <<'JSON'
+say "4a/10 Ensure base products exist (RFF, CPO, PKO)"
+# Resolve or create 3 products for the multi-output recipe. Idempotent:
+# GET by sku first; only POST if not found. Category/UoM are required —
+# pick any existing category (first one), and "kg" as unit.
+CATEGORY_ID=$(curl -sS "${GATEWAY}/api/v1/categories?limit=1" \
+  -H "$H_TENANT" -H "$H_USER" -H "$H_S2S" \
+  | python -c 'import json,sys;d=json.load(sys.stdin);items=d.get("items",d) if isinstance(d,dict) else d;print(items[0]["id"] if items else "")' 2>/dev/null || true)
+if [ -z "$CATEGORY_ID" ]; then
+  CAT_RESP=$(POST "/api/v1/categories" '{"name":"Palma (auto-seed)","description":"Generado por seed_palma_cesar.sh"}')
+  CATEGORY_ID=$(echo "$CAT_RESP" | python -c 'import json,sys;print(json.load(sys.stdin).get("id",""))' 2>/dev/null || true)
+fi
+[ -n "$CATEGORY_ID" ] || fail "Cannot resolve category_id for products"
+echo "  category_id=$CATEGORY_ID"
+
+resolve_or_create_product() {
+  local sku="$1" name="$2"
+  local found
+  found=$(curl -sS "${GATEWAY}/api/v1/products?sku=${sku}&limit=1" \
+    -H "$H_TENANT" -H "$H_USER" -H "$H_S2S" \
+    | python -c 'import json,sys
+try:
+  d=json.load(sys.stdin)
+  items=d.get("items",[]) if isinstance(d,dict) else []
+  print(items[0]["id"] if items else "")
+except Exception:
+  print("")' 2>/dev/null || true)
+  if [ -n "$found" ]; then
+    echo "$found"
+    return
+  fi
+  local body
+  body=$(python -c "import json;print(json.dumps({'sku':'${sku}','name':'${name}','category_id':'${CATEGORY_ID}','unit_of_measure':'kg','is_active':True,'track_batches':True}))")
+  local resp
+  resp=$(POST "/api/v1/products" "$body")
+  echo "$resp" | python -c 'import json,sys;print(json.load(sys.stdin).get("id",""))' 2>/dev/null || true
+}
+
+RFF_ID=$(resolve_or_create_product "RFF-PALMA" "Racimo Fresco Fruto (RFF) palma")
+CPO_ID=$(resolve_or_create_product "CPO-PALMA" "Aceite crudo de palma (CPO)")
+PKO_ID=$(resolve_or_create_product "PKO-PALMA" "Aceite de palmiste (PKO)")
+[ -n "$RFF_ID" ] && [ -n "$CPO_ID" ] && [ -n "$PKO_ID" ] \
+  || fail "Could not resolve/create palm products (RFF=$RFF_ID CPO=$CPO_ID PKO=$PKO_ID)"
+echo "  RFF=$RFF_ID  CPO=$CPO_ID  PKO=$PKO_ID"
+
+say "4b/10 Multi-output recipe RFF -> CPO (0.20 main) + PKO (0.05 byproduct)"
+RECIPE_BODY=$(cat <<JSON
 {
   "name": "Extraccion RFF Indupalma San Alberto",
-  "output_entity_id": "product-cpo-placeholder",
+  "output_entity_id": "${CPO_ID}",
   "output_quantity": 0.20,
   "description": "Molienda RFF palma aceitera: CPO principal 20%, PKO subproducto 5%.",
   "is_active": true,
   "components": [
-    {"component_entity_id": "product-rff-placeholder", "quantity_required": 1.0}
+    {"component_entity_id": "${RFF_ID}", "quantity_required": 1.0}
   ],
   "output_components": [
-    {"output_entity_id": "product-cpo-placeholder", "output_quantity": 0.20, "conversion_factor": 0.20, "is_main": true},
-    {"output_entity_id": "product-pko-placeholder", "output_quantity": 0.05, "conversion_factor": 0.05, "is_main": false}
+    {"output_entity_id": "${CPO_ID}", "output_quantity": 0.20, "conversion_factor": 0.20, "is_main": true},
+    {"output_entity_id": "${PKO_ID}", "output_quantity": 0.05, "conversion_factor": 0.05, "is_main": false}
   ]
 }
 JSON
@@ -210,7 +253,9 @@ if [ -n "$CUST_ID" ]; then
   "destination_country": "DE",
   "commodity_type": "palm",
   "notes": "Lote CPO-CES-2026-088 — 5000 kg CPO — San Alberto a Mannheim",
-  "lines": []
+  "lines": [
+    {"product_id": "${CPO_ID}", "quantity": 5000, "unit_price": 0.85, "currency": "USD"}
+  ]
 }
 JSON
 )
