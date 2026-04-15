@@ -65,7 +65,10 @@ def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
 
-    app = FastAPI(redirect_slashes=False, 
+    # redirect_slashes=True so /api/v1/compliance/plots auto-307s to /plots/
+    # instead of returning 404. The bare-prefix call is what the seed scripts
+    # + some older front pages still hit.
+    app = FastAPI(
         title="Trace — Compliance Service",
         description="Regulatory compliance: EUDR, frameworks, plots, records and validation.",
         version=settings.APP_VERSION,
