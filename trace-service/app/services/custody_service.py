@@ -212,6 +212,7 @@ class CustodyService:
         product_type: str,
         metadata: dict[str, Any],
         initial_custodian_wallet: str,
+        plot_id: uuid.UUID | None = None,
     ) -> tuple[Asset, CustodyEvent]:
         # Validate allowlist
         await self._assert_active_wallet(initial_custodian_wallet)
@@ -238,6 +239,7 @@ class CustodyService:
             last_event_hash=None,
             tenant_id=self._tenant_id,
             workflow_state_id=workflow_state_id,
+            plot_id=plot_id,
         )
 
         event = await self._create_event(
@@ -266,6 +268,7 @@ class CustodyService:
         product_type: str,
         metadata: dict[str, Any],
         initial_custodian_wallet: str,
+        plot_id: uuid.UUID | None = None,
     ) -> tuple[Asset, CustodyEvent]:
         import asyncio
 
@@ -296,6 +299,7 @@ class CustodyService:
             tenant_id=self._tenant_id,
             blockchain_status="PENDING",
             workflow_state_id=workflow_state_id,
+            plot_id=plot_id,
         )
         event = await self._create_event(
             asset=asset,

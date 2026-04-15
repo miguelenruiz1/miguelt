@@ -235,6 +235,7 @@ async def create_asset(
             product_type=body.product_type,
             metadata=body.metadata,
             initial_custodian_wallet=body.initial_custodian_wallet,
+            plot_id=body.plot_id,
         )
         await db.commit()
         await enqueue_anchor(event.id)
@@ -272,6 +273,7 @@ async def mint_asset(
             product_type=body.product_type,
             metadata=body.metadata,
             initial_custodian_wallet=body.initial_custodian_wallet,
+            plot_id=body.plot_id,
         )
         await db.commit()
         await enqueue_anchor(event.id)
