@@ -113,6 +113,28 @@ export class ApiError extends Error {
   }
 }
 
+function formatInventoryError(err: any, status: number, statusText: string): string {
+  const d = err?.detail
+  if (typeof d === 'string' && d.trim()) return d
+  if (Array.isArray(d)) {
+    const parts = d
+      .map((item: any) => {
+        if (typeof item === 'string') return item
+        if (item && typeof item === 'object') {
+          const loc = Array.isArray(item.loc) ? item.loc.filter((x: any) => x !== 'body').join('.') : ''
+          const msg = item.msg ?? item.message ?? ''
+          return loc ? `${loc}: ${msg}` : msg
+        }
+        return ''
+      })
+      .filter(Boolean)
+    if (parts.length) return parts.join(' · ')
+  }
+  if (d && typeof d === 'object' && typeof (d as any).message === 'string') return (d as any).message
+  if (err?.error?.message) return err.error.message
+  return statusText || `HTTP ${status}`
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await authFetch(`${BASE}${path}`, options)
   if (!res.ok) {
@@ -126,7 +148,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         message: err?.error?.message ?? err?.detail ?? 'Has alcanzado el limite de tu plan actual.',
       })
     }
-    const msg = err?.error?.message ?? err?.detail?.message ?? err?.detail ?? res.statusText
+    const msg = formatInventoryError(err, res.status, res.statusText)
     throw new ApiError(res.status, msg, err)
   }
   return res.json()
@@ -145,7 +167,7 @@ async function requestVoid(path: string, options: RequestInit = {}): Promise<voi
         message: err?.error?.message ?? err?.detail ?? 'Has alcanzado el limite de tu plan actual.',
       })
     }
-    const msg = err?.error?.message ?? err?.detail?.message ?? err?.detail ?? res.statusText
+    const msg = formatInventoryError(err, res.status, res.statusText)
     throw new ApiError(res.status, msg, err)
   }
 }
