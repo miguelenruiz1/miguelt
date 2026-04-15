@@ -107,10 +107,16 @@ class AuthService:
         )
 
         # First active user gets admin role
-        if await self.user_repo.count_active(tenant_id) == 1:
+        first_user = await self.user_repo.count_active(tenant_id) == 1
+        if first_user:
             admin_role = await self.role_repo.get_by_slug("administrador", tenant_id)
             if admin_role:
                 await self.role_repo.assign_role_to_user(user.id, admin_role.id)
+            # Provision the tenant in trace-service + activate default modules
+            # so the brand-new admin lands on a functional app instead of
+            # 403/404 everywhere. Best-effort: failures are logged but don't
+            # block registration (admin can re-run manually from Marketplace).
+            await self._bootstrap_new_tenant(tenant_id, user.email)
 
         await self.audit_repo.create(
             action="user.register",
@@ -121,6 +127,49 @@ class AuthService:
             resource_id=user.id,
         )
         return user
+
+    async def _bootstrap_new_tenant(self, tenant_id: str, email: str) -> None:
+        """Best-effort post-register hook: register the tenant in trace-service
+        (so compliance/trace can resolve slug→UUID) and activate the MVP modules
+        in subscription-service. Every failure is swallowed and logged."""
+        import httpx
+        import logging
+        from app.core.settings import get_settings
+
+        log = logging.getLogger(__name__)
+        settings = get_settings()
+        headers = {"X-Service-Token": settings.S2S_SERVICE_TOKEN}
+
+        # 1) Register tenant in trace-service (idempotent — 409 means already there).
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as c:
+                resp = await c.post(
+                    f"{settings.TRACE_SERVICE_URL}/api/v1/tenants",
+                    headers=headers,
+                    json={"name": tenant_id, "slug": tenant_id},
+                )
+                if resp.status_code not in (200, 201, 409):
+                    log.warning(
+                        "tenant_bootstrap_trace_failed tenant=%s status=%s body=%s",
+                        tenant_id, resp.status_code, resp.text[:200],
+                    )
+        except Exception as exc:  # pragma: no cover — best-effort
+            log.warning("tenant_bootstrap_trace_exc tenant=%s err=%s", tenant_id, exc)
+
+        # 2) Activate default modules (logistics + inventory + compliance).
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as c:
+                resp = await c.post(
+                    f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/modules/{tenant_id}/bootstrap",
+                    headers=headers,
+                )
+                if resp.status_code not in (200, 201):
+                    log.warning(
+                        "tenant_bootstrap_modules_failed tenant=%s status=%s body=%s",
+                        tenant_id, resp.status_code, resp.text[:200],
+                    )
+        except Exception as exc:  # pragma: no cover — best-effort
+            log.warning("tenant_bootstrap_modules_exc tenant=%s err=%s", tenant_id, exc)
 
     async def authenticate(self, email: str, password: str, tenant_id: str | None = None) -> User | None:
         """Verify email/password. If tenant_id is given, scope the lookup so

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_permission
@@ -60,6 +60,40 @@ async def activate_module(
     performed_by = current_user.get("id") or current_user.get("email")
     record = await svc.activate(tenant_id, slug, performed_by=performed_by)
     return {"tenant_id": tenant_id, "slug": slug, "is_active": record.is_active}
+
+
+# Modules automatically activated for every brand-new tenant. Keeps in sync
+# with the "MVP set" the UI assumes is available out of the box.
+_DEFAULT_BOOTSTRAP_MODULES: tuple[str, ...] = ("logistics", "inventory", "compliance")
+
+
+async def _verify_service_token(
+    x_service_token: str = Header(..., alias="X-Service-Token"),
+) -> str:
+    import secrets as _secrets
+    from app.core.settings import get_settings as _gs
+    if not _secrets.compare_digest(x_service_token, _gs().S2S_SERVICE_TOKEN):
+        raise HTTPException(status_code=401, detail="Invalid service token")
+    return x_service_token
+
+
+@router.post(
+    "/{tenant_id}/bootstrap",
+    summary="Activate default modules for a new tenant (S2S)",
+    dependencies=[Depends(_verify_service_token)],
+)
+async def bootstrap_tenant_modules(
+    tenant_id: str,
+    svc: ModuleService = Depends(_svc),
+):
+    """Called by user-service right after a tenant is provisioned so the
+    first user lands on a functional app instead of 403s across every module.
+    Idempotent — re-activating an already-active module is a no-op."""
+    activated = []
+    for slug in _DEFAULT_BOOTSTRAP_MODULES:
+        record = await svc.activate(tenant_id, slug, performed_by="system:bootstrap")
+        activated.append({"slug": slug, "is_active": record.is_active})
+    return {"tenant_id": tenant_id, "modules": activated}
 
 
 @router.post("/{tenant_id}/{slug}/deactivate", summary="Deactivate module")
