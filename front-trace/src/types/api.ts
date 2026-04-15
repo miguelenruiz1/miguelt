@@ -202,12 +202,14 @@ export interface AssetCreate {
   product_type: string
   metadata: Record<string, unknown>
   initial_custodian_wallet: string
+  plot_id?: string
 }
 
 export interface AssetMintRequest {
   product_type: string
   metadata: Record<string, unknown>
   initial_custodian_wallet: string
+  plot_id?: string
 }
 
 // ─── Response wrappers ────────────────────────────────────────────────────────
