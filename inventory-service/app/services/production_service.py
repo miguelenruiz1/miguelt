@@ -441,7 +441,7 @@ class ProductionService:
 
         from sqlalchemy import select as _select
 
-        from app.db.models.production import ProductionEmissionLine
+        from app.db.models.production import ProductionEmission, ProductionEmissionLine
         from app.db.models.tracking import BatchPlotOrigin
 
         try:
@@ -454,6 +454,7 @@ class ProductionService:
                             ProductionEmissionLine.emission,
                         )
                         .where(
+                            ProductionEmission.production_run_id == run_id,
                             ProductionEmissionLine.batch_id.is_not(None),
                         )
                     )
