@@ -24,38 +24,12 @@ class POLineCreate(BaseModel):
         return self.qty_ordered * self.unit_cost
 
 
-class POSupplierContribution(BaseModel):
-    supplier_id: str
-    contribution_qty: Decimal = Field(default=Decimal("0"), ge=0)
-    contribution_amount: Decimal = Field(default=Decimal("0"), ge=0)
-    advance_to_supplier: Decimal = Field(default=Decimal("0"), ge=0)
-    plot_id: str | None = None
-    notes: str | None = None
-
-
-class POSupplierContributionOut(OrmBase):
-    id: str
-    supplier_id: str
-    contribution_qty: Decimal
-    contribution_amount: Decimal
-    advance_to_supplier: Decimal
-    plot_id: str | None = None
-    notes: str | None = None
-
-
 class POCreate(BaseModel):
-    supplier_id: str | None = None
+    supplier_id: str
     warehouse_id: str | None = None
     expected_date: date | None = None
     notes: str | None = Field(default=None, max_length=2000)
     lines: list[POLineCreate] = []
-    # Multi-supplier (consolidated) POs: if suppliers is provided, the
-    # header supplier_id may be null. Service validates that sum of
-    # contribution_amount equals the PO total (within rounding).
-    suppliers: list[POSupplierContribution] | None = None
-    # PO-level advance payment (common in palma aceitera)
-    advance_amount: Decimal = Field(default=Decimal("0"), ge=0)
-    advance_reference: str | None = None
 
 
 class POUpdate(BaseModel):
@@ -84,7 +58,7 @@ class POOut(OrmBase):
     id: str
     tenant_id: str
     po_number: str
-    supplier_id: str | None = None
+    supplier_id: str
     status: POStatus
     warehouse_id: str | None
     expected_date: date | None
@@ -119,11 +93,6 @@ class POOut(OrmBase):
     created_at: datetime
     updated_at: datetime
     lines: list[POLineOut] = []
-    # Multi-supplier + advances
-    advance_amount: Decimal = Decimal("0")
-    advance_paid_at: datetime | None = None
-    advance_reference: str | None = None
-    suppliers: list[POSupplierContributionOut] = []
 
 
 class PaginatedPOs(BaseModel):

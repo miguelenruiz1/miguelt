@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import joinedload
 
 from app.db.models import POStatus, PurchaseOrder, PurchaseOrderLine
 
@@ -46,7 +46,6 @@ class PORepository:
                 joinedload(PurchaseOrder.supplier),
                 joinedload(PurchaseOrder.lines).joinedload(PurchaseOrderLine.product),
                 joinedload(PurchaseOrder.lines).joinedload(PurchaseOrderLine.variant),
-                selectinload(PurchaseOrder.suppliers),
             )
             .order_by(PurchaseOrder.created_at.desc())
             .offset(offset)
@@ -62,7 +61,6 @@ class PORepository:
                 joinedload(PurchaseOrder.supplier),
                 joinedload(PurchaseOrder.lines).joinedload(PurchaseOrderLine.product),
                 joinedload(PurchaseOrder.lines).joinedload(PurchaseOrderLine.variant),
-                selectinload(PurchaseOrder.suppliers),
             )
             .where(
                 PurchaseOrder.id == po_id,

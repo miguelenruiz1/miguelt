@@ -29,8 +29,8 @@ class PurchaseOrder(Base):
     id:            Mapped[str]      = mapped_column(String(36), primary_key=True)
     tenant_id:     Mapped[str]      = mapped_column(String(255), nullable=False)
     po_number:     Mapped[str]      = mapped_column(String(50), nullable=False)
-    supplier_id:   Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("suppliers.id", ondelete="RESTRICT"), nullable=True
+    supplier_id:   Mapped[str]      = mapped_column(
+        String(36), ForeignKey("suppliers.id", ondelete="RESTRICT"), nullable=False
     )
     status:        Mapped[POStatus] = mapped_column(
         Enum(POStatus, native_enum=False), nullable=False, server_default="draft"
@@ -81,15 +81,6 @@ class PurchaseOrder(Base):
         String(36), ForeignKey("purchase_orders.id", ondelete="SET NULL"), nullable=True
     )
 
-    # Advance payment (common in palma aceitera / commodity flows)
-    advance_amount:     Mapped[Decimal]        = mapped_column(
-        Numeric(18, 2), nullable=False, server_default="0"
-    )
-    advance_paid_at:    Mapped[DateTime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    advance_reference:  Mapped[str | None]     = mapped_column(String(100), nullable=True)
-
     created_by:    Mapped[str | None]  = mapped_column(String(255), nullable=True)
     updated_by:    Mapped[str | None]  = mapped_column(String(255), nullable=True)
     created_at:    Mapped[DateTime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -97,10 +88,7 @@ class PurchaseOrder(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    supplier:   Mapped["Supplier | None"]       = relationship("Supplier", back_populates="purchase_orders")
-    suppliers:  Mapped[list["PurchaseOrderSupplier"]] = relationship(
-        "PurchaseOrderSupplier", back_populates="po", cascade="all, delete-orphan"
-    )
+    supplier:   Mapped[Supplier]               = relationship("Supplier", back_populates="purchase_orders")
     order_type: Mapped[OrderType | None]       = relationship("OrderType", back_populates="purchase_orders")
     lines:      Mapped[list[PurchaseOrderLine]] = relationship(
         "PurchaseOrderLine", back_populates="po", cascade="all, delete-orphan"
@@ -146,48 +134,6 @@ class PurchaseOrderLine(Base):
     po:      Mapped[PurchaseOrder] = relationship("PurchaseOrder", back_populates="lines")
     product: Mapped[Product]       = relationship("Product")
     variant: Mapped[ProductVariant | None] = relationship("ProductVariant")
-
-
-class PurchaseOrderSupplier(Base):
-    """Per-supplier contribution on a consolidated PO.
-
-    When a single PO aggregates volume from multiple producers (typical in
-    palma aceitera: one extractora receives fruit from N small farms), this
-    table records each supplier's contribution (qty + amount) plus an
-    optional plot origin and supplier-level advance.
-    """
-    __tablename__ = "purchase_order_suppliers"
-
-    id:                  Mapped[str]     = mapped_column(String(36), primary_key=True)
-    tenant_id:           Mapped[str]     = mapped_column(String(255), nullable=False)
-    purchase_order_id:   Mapped[str]     = mapped_column(
-        String(36), ForeignKey("purchase_orders.id", ondelete="CASCADE"), nullable=False
-    )
-    supplier_id:         Mapped[str]     = mapped_column(
-        String(36), ForeignKey("suppliers.id", ondelete="RESTRICT"), nullable=False
-    )
-    contribution_qty:    Mapped[Decimal] = mapped_column(
-        Numeric(18, 4), nullable=False, server_default="0"
-    )
-    contribution_amount: Mapped[Decimal] = mapped_column(
-        Numeric(18, 2), nullable=False, server_default="0"
-    )
-    advance_to_supplier: Mapped[Decimal] = mapped_column(
-        Numeric(18, 2), nullable=False, server_default="0"
-    )
-    plot_id:             Mapped[str | None] = mapped_column(String(36), nullable=True)
-    notes:               Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at:          Mapped[DateTime]   = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-
-    po:       Mapped[PurchaseOrder] = relationship("PurchaseOrder", back_populates="suppliers")
-    supplier: Mapped["Supplier"]    = relationship("Supplier")
-
-    __table_args__ = (
-        Index("ix_po_suppliers_po", "purchase_order_id"),
-        Index("ix_po_suppliers_tenant_supplier", "tenant_id", "supplier_id"),
-    )
 
 
 class POApprovalLog(Base):
