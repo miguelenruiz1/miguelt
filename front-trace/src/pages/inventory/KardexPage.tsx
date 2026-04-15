@@ -49,7 +49,7 @@ export function KardexPage() {
               <div key={e.movement_id + i} className="rounded-xl border border-border bg-card p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-foreground">{e.type}</span>
-                  <span className="text-xs text-muted-foreground">{e.date ? new Date(e.date).toLocaleDateString() : '—'}</span>
+                  <span className="text-xs text-muted-foreground">{e.date ? new Date(e.date).toLocaleDateString('es-CO') : '—'}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">{e.reference ?? '—'}</span>
@@ -92,7 +92,7 @@ export function KardexPage() {
             <tbody className="divide-y divide-slate-100">
               {entries.map((e, i) => (
                 <tr key={e.movement_id + i} className="hover:bg-muted/60">
-                  <td className="px-6 py-3 text-xs text-muted-foreground">{e.date ? new Date(e.date).toLocaleDateString() : '—'}</td>
+                  <td className="px-6 py-3 text-xs text-muted-foreground">{e.date ? new Date(e.date).toLocaleDateString('es-CO') : '—'}</td>
                   <td className="px-6 py-3 text-xs">{e.type}</td>
                   <td className="px-6 py-3 text-xs text-muted-foreground">{e.reference ?? '—'}</td>
                   <td className="px-6 py-3 text-right font-mono">{e.quantity > 0 ? '+' : ''}{e.quantity}</td>

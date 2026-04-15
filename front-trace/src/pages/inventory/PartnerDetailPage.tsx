@@ -103,7 +103,7 @@ export function PartnerDetailPage() {
           <>
             <div className="bg-card rounded-xl border border-border/60 p-4">
               <p className="text-xs text-muted-foreground mb-1">Limite de Credito</p>
-              <p className="text-xl font-bold text-emerald-600">${partner.credit_limit.toLocaleString()}</p>
+              <p className="text-xl font-bold text-emerald-600">${partner.credit_limit.toLocaleString('es-CO')}</p>
             </div>
             <div className="bg-card rounded-xl border border-border/60 p-4">
               <p className="text-xs text-muted-foreground mb-1">Descuento</p>
@@ -179,8 +179,8 @@ export function PartnerDetailPage() {
                       o.status === 'canceled' ? 'bg-red-50 text-red-600' :
                       'bg-secondary text-muted-foreground'
                     )}>{o.status}</span></td>
-                    <td className="px-6 py-3 text-right font-mono">${Number(o.total ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-3 text-xs text-muted-foreground">{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</td>
+                    <td className="px-6 py-3 text-right font-mono">${Number(o.total ?? 0).toLocaleString('es-CO')}</td>
+                    <td className="px-6 py-3 text-xs text-muted-foreground">{o.created_at ? new Date(o.created_at).toLocaleDateString('es-CO') : ''}</td>
                   </tr>
                 ))}
                 {pos.length === 0 && <tr><td colSpan={4} className="px-6 py-12 text-center text-muted-foreground">Sin ordenes de compra</td></tr>}
@@ -212,8 +212,8 @@ export function PartnerDetailPage() {
                       o.status === 'shipped' ? 'bg-primary/10 text-primary' :
                       'bg-secondary text-muted-foreground'
                     )}>{o.status}</span></td>
-                    <td className="px-6 py-3 text-right font-mono">${Number(o.total ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-3 text-xs text-muted-foreground">{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</td>
+                    <td className="px-6 py-3 text-right font-mono">${Number(o.total ?? 0).toLocaleString('es-CO')}</td>
+                    <td className="px-6 py-3 text-xs text-muted-foreground">{o.created_at ? new Date(o.created_at).toLocaleDateString('es-CO') : ''}</td>
                   </tr>
                 ))}
                 {sos.length === 0 && <tr><td colSpan={4} className="px-6 py-12 text-center text-muted-foreground">Sin ordenes de venta</td></tr>}

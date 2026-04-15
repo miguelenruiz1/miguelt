@@ -31,6 +31,42 @@ def compute_compliance_hash(screening_result: dict[str, Any]) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
+def compute_screening_evidence_hash(
+    plot: Any,
+    screening_result: dict[str, Any],
+) -> str:
+    """SHA-256 of the canonical evidence bundle for a plot screening.
+
+    Bundles: plot geojson (normalized), and the raw API responses from each
+    screening source (GFW deforestation alerts, Hansen tree cover loss, JRC
+    forest cover, WDPA protected areas), plus the timestamp at which the
+    screening was checked.
+
+    A regulator can re-run the screening using the geojson + timestamp and
+    confirm the hash matches — proving the evidence was not tampered with
+    after the DDS was submitted.
+    """
+    geojson = None
+    if plot is not None:
+        geojson = (
+            getattr(plot, "geojson_data", None)
+            if not isinstance(plot, dict)
+            else plot.get("geojson_data")
+        )
+
+    sources = screening_result.get("sources") or {}
+    bundle = {
+        "geojson_normalized": geojson,
+        "gfw_raw": sources.get("gfw"),
+        "hansen_raw": sources.get("hansen"),
+        "jrc_raw": sources.get("jrc"),
+        "wdpa_raw": sources.get("wdpa"),
+        "checked_at_iso": screening_result.get("checked_at"),
+    }
+    raw = canonical_json_bytes(bundle)
+    return hashlib.sha256(raw).hexdigest()
+
+
 async def anchor_screening_result(
     *,
     http: httpx.AsyncClient,
@@ -40,16 +76,19 @@ async def anchor_screening_result(
     plot_code: str,
     screening_result: dict[str, Any],
     user_id: str = "system",
+    plot: Any = None,
 ) -> dict[str, Any]:
     """Anchor a screening result to Solana and create a custody event.
 
-    Returns a dict with ``compliance_hash``, ``anchor_request_id`` (may be
-    None on failure), and ``event_id`` (may be None on failure).
+    Returns a dict with ``compliance_hash``, ``evidence_hash``,
+    ``anchor_request_id`` (may be None on failure), and ``event_id`` (may
+    be None on failure).
     """
     settings = get_settings()
     base = settings.TRACE_SERVICE_URL.rstrip("/")
     s2s_token = settings.S2S_SERVICE_TOKEN
     compliance_hash = compute_compliance_hash(screening_result)
+    evidence_hash = compute_screening_evidence_hash(plot, screening_result)
 
     headers = {
         "X-Tenant-Id": str(tenant_id),
@@ -83,6 +122,9 @@ async def anchor_screening_result(
                     "screening_type": "eudr_full",
                     "eudr_risk": screening_result.get("eudr_risk"),
                     "eudr_compliant": screening_result.get("eudr_compliant"),
+                    # Evidence hash anchored alongside the screening result hash
+                    # so regulators can independently verify the source data.
+                    "evidence_hash": evidence_hash,
                 },
             },
             timeout=10.0,
@@ -148,6 +190,7 @@ async def anchor_screening_result(
 
     return {
         "compliance_hash": compliance_hash,
+        "evidence_hash": evidence_hash,
         "anchor_request_id": anchor_request_id,
         "event_id": event_id,
         "anchor_status": "pending" if anchor_request_id else "failed",

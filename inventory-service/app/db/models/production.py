@@ -57,6 +57,11 @@ class EntityRecipe(Base):
     resources:     Mapped[list[RecipeResource]] = relationship(
         "RecipeResource", back_populates="recipe", cascade="all, delete-orphan"
     )
+    # Multi-output (e.g. RFF -> CPO + PKO). Legacy single-output via
+    # output_entity_id still works; this table augments it.
+    output_components: Mapped[list[ProductionOutputComponent]] = relationship(
+        "ProductionOutputComponent", back_populates="recipe", cascade="all, delete-orphan"
+    )
     production_runs: Mapped[list[ProductionRun]] = relationship("ProductionRun", back_populates="recipe")
 
     __table_args__ = (
@@ -388,4 +393,29 @@ class StockLayer(Base):
         Index("ix_stock_layers_tenant_id", "tenant_id"),
         Index("ix_stock_layers_entity_wh", "entity_id", "warehouse_id"),
         Index("ix_stock_layers_remaining", "entity_id", "warehouse_id", "quantity_remaining"),
+    )
+
+
+class ProductionOutputComponent(Base):
+    """Multi-output row for a recipe (e.g. palm: RFF -> CPO main + PKO byproduct)."""
+    __tablename__ = "production_output_components"
+
+    id:               Mapped[str]      = mapped_column(String(36), primary_key=True)
+    tenant_id:        Mapped[str]      = mapped_column(String(255), nullable=False)
+    recipe_id:        Mapped[str]      = mapped_column(
+        String(36), ForeignKey("entity_recipes.id", ondelete="CASCADE"), nullable=False
+    )
+    output_entity_id: Mapped[str]      = mapped_column(String(36), nullable=False)
+    output_quantity:  Mapped[Decimal]  = mapped_column(Numeric(18, 4), nullable=False)
+    output_uom_id:    Mapped[str | None] = mapped_column(String(36), nullable=True)
+    conversion_factor: Mapped[Decimal | None] = mapped_column(Numeric(8, 6), nullable=True)
+    is_main:          Mapped[bool]     = mapped_column(Boolean, nullable=False, server_default="false")
+    created_at:       Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    recipe: Mapped[EntityRecipe] = relationship("EntityRecipe", back_populates="output_components")
+
+    __table_args__ = (
+        Index("ix_prod_output_components_tenant_recipe", "tenant_id", "recipe_id"),
     )

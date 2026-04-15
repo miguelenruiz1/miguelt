@@ -38,6 +38,42 @@ COMMODITY_HS_MAP = {
     "wood": "4403", "madera": "4403",
 }
 
+# Commodity-specific HS heading sets (Anexo I EU 2023/1115).
+COFFEE_HS_HEADINGS = {"0901"}
+CACAO_HS_HEADINGS = {"1801", "1802", "1803", "1804", "1805", "1806"}
+# Palma: aceite crudo + refinado + derivados (RBD, PKO, biofuels, oleoquimica).
+PALM_HS_HEADINGS = {"1207", "1511", "1513", "1517", "2306", "3823", "3826"}
+
+# HS heading prefixes for which TRACES NT requires scientificName populated
+# (EUDR Art. 9(1)(a)). Lista basada en Anexo I del Reglamento (UE) 2023/1115.
+EUDR_CORE_HS_HEADINGS = (
+    COFFEE_HS_HEADINGS | CACAO_HS_HEADINGS | PALM_HS_HEADINGS | {
+        "0102",  # cattle / ganado
+        "1201",  # soy / soja
+        "4001", "4011", "4012", "4013",  # rubber
+        "4401", "4402", "4403", "4406", "4407", "4408", "4409",  # wood
+        "4410", "4411", "4412", "4413", "4414", "4415", "4416",
+        "4418", "4421",
+        "4701", "4702", "4703", "4704", "4705",  # pulp
+    }
+)
+
+# Nombres cientificos aceptados por commodity (Annex I EUDR + practica
+# exportadora LATAM). Rechazamos sinonimos sueltos para evitar que el DDS
+# quede con strings no parseables por TRACES NT.
+ACCEPTED_SCIENTIFIC_NAMES = {
+    "coffee": {
+        "Coffea arabica L.",
+        "Coffea canephora Pierre ex A.Froehner",
+    },
+    "cacao": {
+        "Theobroma cacao L.",
+    },
+    "palm": {
+        "Elaeis guineensis Jacq.",
+    },
+}
+
 
 def _xe(value: Any) -> str:
     """Escape any value for safe inclusion in XML text content."""
@@ -150,6 +186,24 @@ def _build_additional_information(record: dict, plots: list[dict]) -> str | None
         meta_bits.append(f"AssetID={record.get('asset_id')}")
     if meta_bits:
         parts.append("[Trazabilidad] " + ", ".join(meta_bits))
+
+    # Cadmio (cacao): obligatorio lab test en exportaciones a UE (Reg 2023/915).
+    if record.get("cadmium_mg_per_kg") is not None:
+        cd_bits = [f"valor={record.get('cadmium_mg_per_kg')} mg/kg"]
+        if record.get("cadmium_test_date"):
+            cd_bits.append(f"fecha={record.get('cadmium_test_date')}")
+        if record.get("cadmium_test_lab"):
+            cd_bits.append(f"lab={record.get('cadmium_test_lab')}")
+        if record.get("cadmium_eu_compliant") is not None:
+            cd_bits.append(
+                "EU-compliant" if record.get("cadmium_eu_compliant") else "NO-compliant"
+            )
+        parts.append("[Cadmio] " + ", ".join(cd_bits))
+
+    # RSPO trace model (palma). TRACES NT no modela RSPO en el schema oficial;
+    # el importador UE lo espera en additionalInformation para mass balance.
+    if record.get("rspo_trace_model"):
+        parts.append(f"[RSPO trace model] {record.get('rspo_trace_model')}")
 
     # Resumen agregado: tipos de tenencia distintos, cantidad indigenous, etc.
     tenure_types = sorted({
@@ -477,8 +531,14 @@ def build_dds_payload(
         "referenceDocumentation": reference_documents,
         "additionalInformation": additional_information,
 
+        # EUDR Art. 3 distingue dos atributos no equivalentes:
+        #   deforestationFree (Art. 3.a) — sin deforestacion post 2020-12-31
+        #   degradationFree   (Art. 2.7) — sin degradacion forestal post 2020-12-31
+        # TRACES NT acepta ambos en declarations; el segundo es OBLIGATORIO
+        # para productos de madera/celulosa y altamente recomendado para todo.
         "declarations": {
             "deforestationFree": record.get("deforestation_free_declaration", False),
+            "degradationFree": record.get("degradation_free_declaration", False),
             "legalCompliance": record.get("legal_compliance_declaration", False),
         },
 
@@ -496,10 +556,88 @@ def build_dds_payload(
             "generated_at": datetime.now(tz=timezone.utc).isoformat(),
             "plot_count": len(plots),
             "document_count": len(reference_documents),
+            # Campos propietarios — no se serializan a TRACES NT pero
+            # alimentan _validate_dds_for_submission (cadmio / RSPO / commodity).
+            "commodity_type": record.get("commodity_type"),
+            "cadmium_eu_compliant": record.get("cadmium_eu_compliant"),
+            "rspo_trace_model": record.get("rspo_trace_model"),
         },
     }
 
     return dds
+
+
+def _validate_dds_for_submission(dds: dict) -> None:
+    """Pre-flight checks before SOAP build.
+
+    Raises HTTPException 422 if mandatory EUDR fields are missing. Centralizing
+    this here means each TRACES caller (sync, async, retry worker) gets the
+    same validation without duplicating logic.
+    """
+    from fastapi import HTTPException
+
+    declarations = dds.get("declarations") or {}
+    for flag in ("deforestationFree", "degradationFree"):
+        val = declarations.get(flag)
+        if not isinstance(val, bool):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"declarations.{flag} es obligatorio (bool) antes de "
+                    "enviar a TRACES NT (EUDR Art. 3.a / 2.7)."
+                ),
+            )
+
+    meta = dds.get("tracelog_metadata") or {}
+    commodity_type = (meta.get("commodity_type") or "").lower() or None
+
+    for commodity in dds.get("commodities") or []:
+        hs_heading = (commodity.get("hsHeading") or "").strip()
+        if hs_heading in EUDR_CORE_HS_HEADINGS and not commodity.get("scientificName"):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"commodities[].scientificName es obligatorio para HS "
+                    f"heading {hs_heading} (EUDR Art. 9(1)(a))."
+                ),
+            )
+
+        # Cacao: cadmio lab test obligatorio y debe estar en compliance-range.
+        is_cacao = commodity_type == "cacao" or hs_heading.startswith("18")
+        if is_cacao:
+            if meta.get("cadmium_eu_compliant") is not True:
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        "Cadmio no validado o supera 0.6 mg/kg (EU 2023/915). "
+                        "Registrar lab test en /records/{id}/cadmium-test antes "
+                        "de someter el DDS."
+                    ),
+                )
+
+        # Palma: RSPO chain-of-custody model requerido.
+        is_palm = commodity_type == "palm" or hs_heading[:2] in {"15", "38"}
+        if is_palm and not meta.get("rspo_trace_model"):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "RSPO trace_model requerido para palma "
+                    "(mass_balance|segregated|identity_preserved)."
+                ),
+            )
+
+        # Scientific name debe coincidir con la lista aceptada por commodity.
+        sci = (commodity.get("scientificName") or "").strip()
+        if sci and commodity_type in ACCEPTED_SCIENTIFIC_NAMES:
+            if sci not in ACCEPTED_SCIENTIFIC_NAMES[commodity_type]:
+                accepted = ", ".join(sorted(ACCEPTED_SCIENTIFIC_NAMES[commodity_type]))
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        f"scientificName '{sci}' no aceptado para commodity "
+                        f"'{commodity_type}'. Valores permitidos: {accepted}."
+                    ),
+                )
 
 
 def build_soap_envelope(
@@ -509,6 +647,7 @@ def build_soap_envelope(
     client_id: str = "eudr-test",
 ) -> str:
     """Build SOAP XML envelope for TRACES NT submission with WS-Security."""
+    _validate_dds_for_submission(dds)
     import secrets
     from datetime import timedelta
 

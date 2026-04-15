@@ -5,7 +5,12 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
+
+CommodityType = Literal["coffee", "cacao", "palm", "other"]
+RspoTraceModel = Literal["mass_balance", "segregated", "identity_preserved"]
 
 
 class OrmBase(BaseModel):
@@ -16,7 +21,7 @@ class RecordCreate(BaseModel):
     asset_id: uuid.UUID | None = None
     framework_slug: str
     hs_code: str | None = None
-    commodity_type: str | None = None
+    commodity_type: CommodityType | None = None
     product_description: str | None = None
     scientific_name: str | None = None
     quantity_kg: Decimal | None = None
@@ -38,12 +43,13 @@ class RecordCreate(BaseModel):
     signatory_role: str | None = None
     signatory_date: date | None = None
     prior_dds_references: list[str] | None = None
+    rspo_trace_model: RspoTraceModel | None = None
     metadata: dict | None = None
 
 
 class RecordUpdate(BaseModel):
     hs_code: str | None = None
-    commodity_type: str | None = None
+    commodity_type: CommodityType | None = None
     product_description: str | None = None
     scientific_name: str | None = None
     quantity_kg: Decimal | None = None
@@ -65,6 +71,7 @@ class RecordUpdate(BaseModel):
     signatory_role: str | None = None
     signatory_date: date | None = None
     prior_dds_references: list[str] | None = None
+    rspo_trace_model: RspoTraceModel | None = None
     metadata: dict | None = None
 
 
@@ -108,6 +115,12 @@ class RecordResponse(OrmBase):
     validation_result: dict | None
     missing_fields: list | None
     documents_retention_until: date | None
+    cadmium_mg_per_kg: Decimal | None = None
+    cadmium_test_date: date | None = None
+    cadmium_test_lab: str | None = None
+    cadmium_test_doc_hash: str | None = None
+    cadmium_eu_compliant: bool | None = None
+    rspo_trace_model: str | None = None
     # NOT NULL in DB; default for safety on legacy rows persisted before server_default was added.
     metadata_: dict = {}
     created_at: datetime

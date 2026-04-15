@@ -22,7 +22,9 @@ from app.core.errors import (
 )
 from app.core.logging import get_logger
 from app.core.settings import get_settings
-from app.db.models import Asset, CustodyEvent
+from decimal import Decimal
+
+from app.db.models import Asset, CustodyEvent, CustodyEventQuantity
 from app.domain.types import EventType
 from app.domain.schemas import (
     ArrivedRequest,
@@ -210,6 +212,7 @@ class CustodyService:
         product_type: str,
         metadata: dict[str, Any],
         initial_custodian_wallet: str,
+        plot_id: uuid.UUID | None = None,
     ) -> tuple[Asset, CustodyEvent]:
         # Validate allowlist
         await self._assert_active_wallet(initial_custodian_wallet)
@@ -236,6 +239,7 @@ class CustodyService:
             last_event_hash=None,
             tenant_id=self._tenant_id,
             workflow_state_id=workflow_state_id,
+            plot_id=plot_id,
         )
 
         event = await self._create_event(
@@ -264,6 +268,7 @@ class CustodyService:
         product_type: str,
         metadata: dict[str, Any],
         initial_custodian_wallet: str,
+        plot_id: uuid.UUID | None = None,
     ) -> tuple[Asset, CustodyEvent]:
         import asyncio
 
@@ -294,6 +299,7 @@ class CustodyService:
             tenant_id=self._tenant_id,
             blockchain_status="PENDING",
             workflow_state_id=workflow_state_id,
+            plot_id=plot_id,
         )
         event = await self._create_event(
             asset=asset,
@@ -698,6 +704,68 @@ class CustodyService:
         if event is None or event.asset_id != asset_id:
             raise NotFoundError(f"Event '{event_id}' not found for asset '{asset_id}'")
         return event
+
+    # Coffee processing yield ratios (cereza -> pergamino -> verde).
+    # Source: FNC Colombia agronomic averages. Conservative central values.
+    _UOM_YIELD: dict[tuple[str, str], Decimal] = {
+        ("cereza", "pergamino"): Decimal("0.40"),
+        ("pergamino", "verde"): Decimal("0.80"),
+        # Direct cereza->verde for combined wet+dry processing in one event.
+        ("cereza", "verde"): Decimal("0.20"),
+    }
+
+    async def record_quantity_change(
+        self,
+        event_id: uuid.UUID,
+        quantity: Decimal,
+        uom: str,
+        previous_quantity: Decimal | None = None,
+        previous_uom: str | None = None,
+    ) -> CustodyEventQuantity:
+        """Record a per-event quantity change, with merma calculation.
+
+        If previous_uom == uom, merma_pct = (prev - curr) / prev * 100.
+        If different and the (prev_uom, uom) pair is in _UOM_YIELD, the
+        expected yield is computed from previous_quantity * yield, and
+        merma is the deviation from that expected mass.
+        Otherwise merma_pct stays NULL.
+        """
+        # Defensive: confirm event exists & belongs to this tenant.
+        event = await self._event_repo.get_by_id(event_id)
+        if event is None or event.tenant_id != self._tenant_id:
+            raise NotFoundError(f"Event '{event_id}' not found")
+
+        merma: Decimal | None = None
+        if previous_quantity is not None and previous_quantity > 0:
+            prev_q = Decimal(previous_quantity)
+            curr_q = Decimal(quantity)
+            if previous_uom and previous_uom == uom:
+                merma = ((prev_q - curr_q) / prev_q) * Decimal(100)
+            elif previous_uom and (previous_uom.lower(), uom.lower()) in self._UOM_YIELD:
+                yld = self._UOM_YIELD[(previous_uom.lower(), uom.lower())]
+                expected = prev_q * yld
+                if expected > 0:
+                    merma = ((expected - curr_q) / expected) * Decimal(100)
+
+        row = CustodyEventQuantity(
+            event_id=event_id,
+            quantity=Decimal(quantity),
+            uom=uom,
+            previous_quantity=Decimal(previous_quantity) if previous_quantity is not None else None,
+            previous_uom=previous_uom,
+            merma_pct=merma.quantize(Decimal("0.01")) if merma is not None else None,
+        )
+        self._db.add(row)
+        await self._db.flush()
+        await self._db.refresh(row)
+        log.info(
+            "quantity_change_recorded",
+            event_id=str(event_id),
+            quantity=str(quantity),
+            uom=uom,
+            merma_pct=str(row.merma_pct) if row.merma_pct is not None else None,
+        )
+        return row
 
     async def trigger_anchor(self, asset_id: uuid.UUID, event_id: uuid.UUID) -> CustodyEvent:
         event = await self.get_event(asset_id, event_id)

@@ -365,7 +365,15 @@ export function WarehousesPage() {
       ) : warehouses.length === 0 ? (
         <div className="py-16 text-center">
           <WarehouseIcon className="h-12 w-12 text-gray-200 mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Sin bodegas. Crea la primera.</p>
+          <p className="text-sm font-medium text-foreground">No hay bodegas registradas</p>
+          <p className="text-xs text-muted-foreground mt-1">Registra tu primera bodega para gestionar el inventario físico.</p>
+          <button
+            type="button"
+            onClick={() => setModal('new')}
+            className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-3.5 w-3.5" /> Nueva bodega
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">

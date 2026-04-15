@@ -188,16 +188,16 @@ export function CustomerPricesPage() {
                           <span>{sp.variant_name ?? sp.variant_sku ?? sp.variant_id.slice(0, 8)}</span>
                         ) : '—'}
                       </td>
-                      <td className="px-6 py-3 text-right font-mono font-bold text-blue-700">${sp.price.toLocaleString()}</td>
-                      <td className="px-6 py-3 text-right font-mono text-muted-foreground">${basePrice.toLocaleString()}</td>
+                      <td className="px-6 py-3 text-right font-mono font-bold text-blue-700">${sp.price.toLocaleString('es-CO')}</td>
+                      <td className="px-6 py-3 text-right font-mono text-muted-foreground">${basePrice.toLocaleString('es-CO')}</td>
                       <td className="px-6 py-3 text-right">
                         {savingsPct > 0 ? (
                           <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">{savingsPct.toFixed(1)}%</span>
                         ) : <span className="text-slate-300">--</span>}
                       </td>
                       <td className="px-6 py-3 text-xs text-muted-foreground">
-                        {new Date(sp.valid_from).toLocaleDateString()}
-                        {sp.valid_to ? ` — ${new Date(sp.valid_to).toLocaleDateString()}` : ' — Sin limite'}
+                        {new Date(sp.valid_from).toLocaleDateString('es-CO')}
+                        {sp.valid_to ? ` — ${new Date(sp.valid_to).toLocaleDateString('es-CO')}` : ' — Sin limite'}
                       </td>
                       <td className="px-6 py-3"><span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold', status.color)}>{status.label}</span></td>
                       <td className="px-6 py-3 text-right">
@@ -277,8 +277,8 @@ export function CustomerPricesPage() {
                 <div key={sp.id} className="flex items-center justify-between text-sm">
                   <span>
                     <strong>{sp.customer_name ?? sp.customer_id.slice(0, 8)}</strong> —{' '}
-                    {sp.product_name ?? prod?.name ?? sp.product_id.slice(0, 8)}: ${sp.price.toLocaleString()}
-                    <span className="text-xs text-yellow-600 ml-2">vence {new Date(sp.valid_to!).toLocaleDateString()}</span>
+                    {sp.product_name ?? prod?.name ?? sp.product_id.slice(0, 8)}: ${sp.price.toLocaleString('es-CO')}
+                    <span className="text-xs text-yellow-600 ml-2">vence {new Date(sp.valid_to!).toLocaleDateString('es-CO')}</span>
                   </span>
                   <button
                     onClick={() => { setRenewFrom(sp); setShowCreate(true) }}
@@ -354,7 +354,7 @@ function CreatePriceModal({
               className={cls}
             >
               <option value="">Seleccionar producto</option>
-              {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name} (${Number(p.suggested_sale_price ?? 0).toLocaleString()})</option>)}
+              {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name} (${Number(p.suggested_sale_price ?? 0).toLocaleString('es-CO')})</option>)}
             </select>
           </div>
           {Array.isArray(variants) && variants.length > 0 && (
@@ -432,7 +432,7 @@ function PriceDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Precio especial</p>
-                <p className="text-sm font-bold text-blue-700">${detail.price?.toLocaleString()}</p>
+                <p className="text-sm font-bold text-blue-700">${detail.price?.toLocaleString('es-CO')}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Cantidad minima</p>
@@ -440,11 +440,11 @@ function PriceDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Vigente desde</p>
-                <p className="text-sm text-foreground">{detail.valid_from ? new Date(detail.valid_from).toLocaleDateString() : '--'}</p>
+                <p className="text-sm text-foreground">{detail.valid_from ? new Date(detail.valid_from).toLocaleDateString('es-CO') : '--'}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Vigente hasta</p>
-                <p className="text-sm text-foreground">{detail.valid_to ? new Date(detail.valid_to).toLocaleDateString() : 'Sin limite'}</p>
+                <p className="text-sm text-foreground">{detail.valid_to ? new Date(detail.valid_to).toLocaleDateString('es-CO') : 'Sin limite'}</p>
               </div>
             </div>
 
@@ -465,13 +465,13 @@ function PriceDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
                   {detail.history.map((h: any, idx: number) => (
                     <div key={idx} className="flex items-center gap-3 text-sm border-l-2 border-primary/30 pl-3 py-1">
                       <div className="flex-1">
-                        <span className="font-mono text-muted-foreground">${h.old_price?.toLocaleString()}</span>
+                        <span className="font-mono text-muted-foreground">${h.old_price?.toLocaleString('es-CO')}</span>
                         <span className="mx-1.5 text-slate-300">&rarr;</span>
-                        <span className="font-mono font-semibold text-primary">${h.new_price?.toLocaleString()}</span>
+                        <span className="font-mono font-semibold text-primary">${h.new_price?.toLocaleString('es-CO')}</span>
                         {h.reason && <span className="ml-2 text-xs text-muted-foreground">({h.reason})</span>}
                       </div>
                       <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {h.changed_at ? new Date(h.changed_at).toLocaleDateString() : ''}
+                        {h.changed_at ? new Date(h.changed_at).toLocaleDateString('es-CO') : ''}
                       </span>
                     </div>
                   ))}

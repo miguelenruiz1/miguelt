@@ -143,10 +143,10 @@ export default function VerifyCertificatePage() {
               <div className="bg-card rounded-2xl border border-border  divide-y divide-slate-100">
                 <InfoRow label={t.framework} value={data.framework} />
                 <InfoRow label={t.commodity} value={data.commodity_type} />
-                <InfoRow label={t.quantity} value={data.quantity_kg != null ? `${Number(data.quantity_kg).toLocaleString()} kg` : null} />
+                <InfoRow label={t.quantity} value={data.quantity_kg != null ? `${Number(data.quantity_kg).toLocaleString('es-CO')} kg` : null} />
                 <InfoRow label={t.country} value={data.country_of_production} />
-                <InfoRow label={t.valid_from} value={data.valid_from ? new Date(data.valid_from).toLocaleDateString() : null} />
-                <InfoRow label={t.valid_until} value={data.valid_until ? new Date(data.valid_until).toLocaleDateString() : null} />
+                <InfoRow label={t.valid_from} value={data.valid_from ? new Date(data.valid_from).toLocaleDateString('es-CO') : null} />
+                <InfoRow label={t.valid_until} value={data.valid_until ? new Date(data.valid_until).toLocaleDateString('es-CO') : null} />
                 <InfoRow label={t.deforestation_free}
                   value={data.deforestation_free != null ? (data.deforestation_free ? t.yes : t.no) : null}
                   valueColor={data.deforestation_free ? 'text-green-700' : 'text-red-600'} />
@@ -155,7 +155,7 @@ export default function VerifyCertificatePage() {
                   valueColor={data.legal_compliance ? 'text-green-700' : 'text-red-600'} />
                 <InfoRow label={t.plots} value={data.plots_count != null ? String(data.plots_count) : null} />
                 {data.generated_at && (
-                  <InfoRow label={t.generated_at} value={new Date(data.generated_at).toLocaleString()} />
+                  <InfoRow label={t.generated_at} value={new Date(data.generated_at).toLocaleString('es-CO')} />
                 )}
               </div>
 

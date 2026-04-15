@@ -19,6 +19,8 @@ from app.domain.schemas import (
     AssetListResponse,
     AssetResponse,
     CustodyEventListResponse,
+    CustodyEventQuantityCreate,
+    CustodyEventQuantityResponse,
     CustodyEventResponse,
     GenericEventRequest,
     HandoffRequest,
@@ -233,6 +235,7 @@ async def create_asset(
             product_type=body.product_type,
             metadata=body.metadata,
             initial_custodian_wallet=body.initial_custodian_wallet,
+            plot_id=body.plot_id,
         )
         await db.commit()
         await enqueue_anchor(event.id)
@@ -270,6 +273,7 @@ async def mint_asset(
             product_type=body.product_type,
             metadata=body.metadata,
             initial_custodian_wallet=body.initial_custodian_wallet,
+            plot_id=body.plot_id,
         )
         await db.commit()
         await enqueue_anchor(event.id)
@@ -757,6 +761,36 @@ async def record_event(
         )
     code = status.HTTP_200_OK if was_cached else status.HTTP_201_CREATED
     return ORJSONResponse(status_code=code, content=result)
+
+
+@router.post(
+    "/{asset_id}/events/{event_id}/quantity",
+    status_code=status.HTTP_201_CREATED,
+    summary="Record a quantity change on a custody event (cereza/pergamino/verde + merma)",
+)
+async def record_event_quantity(
+    asset_id: uuid.UUID,
+    event_id: uuid.UUID,
+    payload: CustodyEventQuantityCreate,
+    db: AsyncSession = Depends(get_db_session),
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+) -> ORJSONResponse:
+    from decimal import Decimal as _D
+    svc = CustodyService(db, tenant_id=tenant_id)
+    # Confirm asset+event linkage (404 otherwise) before recording.
+    await svc.get_event(asset_id, event_id)
+    row = await svc.record_quantity_change(
+        event_id=event_id,
+        quantity=_D(str(payload.quantity)),
+        uom=payload.uom,
+        previous_quantity=_D(str(payload.previous_quantity)) if payload.previous_quantity is not None else None,
+        previous_uom=payload.previous_uom,
+    )
+    await db.commit()
+    return ORJSONResponse(
+        content=CustodyEventQuantityResponse.model_validate(row).model_dump(mode="json"),
+        status_code=201,
+    )
 
 
 @router.post(

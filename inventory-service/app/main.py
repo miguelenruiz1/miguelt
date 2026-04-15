@@ -183,6 +183,8 @@ def create_app() -> FastAPI:
     from app.api.routers.uom import router as uom_router
     from app.api.routers.partners import router as partners_router
     from app.api.routers.internal import router as internal_router
+    from app.api.routers.quality_tests import router as quality_tests_router
+    from app.api.routers.batch_origins import router as batch_origins_router
 
     # ─── Static files (uploads) ──────────────────────────────────────────────
     from pathlib import Path
@@ -224,6 +226,8 @@ def create_app() -> FastAPI:
     app.include_router(uom_router)
     app.include_router(partners_router)
     app.include_router(internal_router)
+    app.include_router(quality_tests_router)
+    app.include_router(batch_origins_router)
 
     # ─── Prometheus metrics (optional) ────────────────────────────────────────
     try:

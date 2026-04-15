@@ -207,11 +207,26 @@ class RiskDecisionTree:
                 "screening cada 6 meses."
             )
 
+        # EUDR Art. 10 — la convergencia (numero de fuentes que respondieron)
+        # es informacion sobre el screening, NO un downgrade del riesgo
+        # normativo. Si la regla normativa marca high, NO permitimos que la
+        # baja convergencia lo baje a medium. Marcamos la advertencia como
+        # informacion separada.
+        convergence_warning = convergence_level == "low"
+        if eudr_risk in ("high", "critical") and final_risk in ("low", "medium"):
+            final_risk = "high"
+            recommended_action = (
+                "Riesgo satelital alto detectado: due diligence reforzado "
+                "obligatorio. La baja convergencia de evidencia es informativa "
+                "y no permite degradar el riesgo normativo."
+            )
+
         return {
             "final_risk": final_risk,
             "drivers": drivers,
             "warnings": warnings,
             "positives": positives,
+            "convergence_warning": convergence_warning,
             "recommended_action": recommended_action,
             "inputs": {
                 "eudr_risk": eudr_risk,

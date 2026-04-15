@@ -42,6 +42,7 @@ class CustomerCreate(BaseModel):
     code: str = Field(..., max_length=50)
     customer_type_id: str | None = None
     tax_id: str | None = Field(default=None, max_length=50)
+    tax_id_type: str | None = Field(default=None, max_length=10, description="NIT|EORI|VAT|NIF|RUC|CNPJ|...")
     contact_name: str | None = Field(default=None, max_length=255)
     email: str | None = Field(default=None, max_length=255)
     phone: str | None = Field(default=None, max_length=50)
@@ -60,6 +61,7 @@ class CustomerUpdate(BaseModel):
     code: str | None = Field(default=None, max_length=50)
     customer_type_id: str | None = None
     tax_id: str | None = Field(default=None, max_length=50)
+    tax_id_type: str | None = Field(default=None, max_length=10)
     contact_name: str | None = Field(default=None, max_length=255)
     email: str | None = Field(default=None, max_length=255)
     phone: str | None = Field(default=None, max_length=50)
@@ -80,6 +82,7 @@ class CustomerOut(OrmBase):
     code: str
     customer_type_id: str | None = None
     tax_id: str | None = None
+    tax_id_type: str | None = None
     contact_name: str | None = None
     email: str | None = None
     phone: str | None = None

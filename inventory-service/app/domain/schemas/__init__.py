@@ -50,6 +50,7 @@ from app.domain.schemas.tracking import (
 from app.domain.schemas.production import (
     RecipeComponentCreate, RecipeCreate, RecipeUpdate,
     RecipeComponentOut, RecipeOut,
+    RecipeOutputComponentCreate, RecipeOutputComponentOut,
     ProductionRunCreate, ProductionRunUpdate, ProductionRunOut, ProductionRunReject, PaginatedProductionRuns,
     EmissionLineCreate, EmissionCreate, EmissionLineOut, EmissionOut,
     ReceiptLineCreate, ReceiptCreate, ReceiptLineOut, ReceiptOut,
@@ -74,6 +75,10 @@ from app.domain.schemas.pricing import (
     GlobalMarginOut, GlobalMarginUpdateIn,
 )
 from app.domain.schemas.audit import AuditLogOut, PaginatedAuditLogs
+from app.domain.schemas.quality_test import (
+    QualityTestCreate, QualityTestOut,
+    BatchPlotOriginCreate, BatchPlotOriginOut,
+)
 from app.domain.schemas.partner import PartnerCreate, PartnerUpdate, PartnerOut, PaginatedPartners
 from app.domain.schemas.pagination import (
     PaginatedRecipes, PaginatedWarehouses,
@@ -136,6 +141,7 @@ __all__ = [
     # Production
     "RecipeComponentCreate", "RecipeCreate", "RecipeUpdate",
     "RecipeComponentOut", "RecipeOut",
+    "RecipeOutputComponentCreate", "RecipeOutputComponentOut",
     "ProductionRunCreate", "ProductionRunUpdate", "ProductionRunOut", "ProductionRunReject", "PaginatedProductionRuns",
     "EmissionLineCreate", "EmissionCreate", "EmissionLineOut", "EmissionOut",
     "ReceiptLineCreate", "ReceiptCreate", "ReceiptLineOut", "ReceiptOut",
@@ -165,4 +171,7 @@ __all__ = [
     "GlobalMarginOut", "GlobalMarginUpdateIn",
     # Partner
     "PartnerCreate", "PartnerUpdate", "PartnerOut", "PaginatedPartners",
+    # Quality tests / batch origins
+    "QualityTestCreate", "QualityTestOut",
+    "BatchPlotOriginCreate", "BatchPlotOriginOut",
 ]

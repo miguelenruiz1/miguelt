@@ -175,7 +175,7 @@ export function EInvoicingSandboxPage() {
                       </td>
                       <td className="px-5 py-3 font-mono text-xs text-amber-700">{order.invoice_number ?? '—'}</td>
                       <td className="px-5 py-3 text-foreground">{order.customer_name ?? '—'}</td>
-                      <td className="px-5 py-3 text-right font-mono text-foreground">${order.total.toLocaleString()} {order.currency}</td>
+                      <td className="px-5 py-3 text-right font-mono text-foreground">${order.total.toLocaleString('es-CO')} {order.currency}</td>
                       <td className="px-5 py-3">
                         {order.cufe ? (
                           <div className="flex items-center gap-1.5">
@@ -193,7 +193,7 @@ export function EInvoicingSandboxPage() {
                         ) : '—'}
                       </td>
                       <td className="px-5 py-3 text-muted-foreground text-xs">
-                        {order.confirmed_at ? new Date(order.confirmed_at).toLocaleDateString() : '—'}
+                        {order.confirmed_at ? new Date(order.confirmed_at).toLocaleDateString('es-CO') : '—'}
                       </td>
                       <td className="px-5 py-3">
                         <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
@@ -277,7 +277,7 @@ export function EInvoicingSandboxPage() {
                       >
                         <span className="font-medium">{o.order_number}</span>
                         <span className="text-muted-foreground ml-2">— {o.customer_name ?? 'Sin nombre'}</span>
-                        <span className="float-right font-mono">${o.total.toLocaleString()}</span>
+                        <span className="float-right font-mono">${o.total.toLocaleString('es-CO')}</span>
                       </button>
                     ))}
                   </div>

@@ -214,7 +214,7 @@ export function SubscriptionDetailPage() {
           </div>
           <p className="text-2xl font-bold text-foreground">{days} dias</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Vence {new Date(sub.current_period_end).toLocaleDateString()}
+            Vence {new Date(sub.current_period_end).toLocaleDateString('es-CO')}
           </p>
         </div>
 
@@ -224,10 +224,10 @@ export function SubscriptionDetailPage() {
             <span className="text-xs font-semibold uppercase tracking-wide">Periodo actual</span>
           </div>
           <p className="text-sm font-semibold text-foreground">
-            {new Date(sub.current_period_start).toLocaleDateString()}
+            {new Date(sub.current_period_start).toLocaleDateString('es-CO')}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            hasta {new Date(sub.current_period_end).toLocaleDateString()}
+            hasta {new Date(sub.current_period_end).toLocaleDateString('es-CO')}
           </p>
         </div>
 
@@ -237,11 +237,11 @@ export function SubscriptionDetailPage() {
             <span className="text-xs font-semibold uppercase tracking-wide">Creada</span>
           </div>
           <p className="text-sm font-semibold text-foreground">
-            {new Date(sub.created_at).toLocaleDateString()}
+            {new Date(sub.created_at).toLocaleDateString('es-CO')}
           </p>
           {sub.trial_ends_at && (
             <p className="text-xs text-amber-600 mt-1">
-              Prueba hasta {new Date(sub.trial_ends_at).toLocaleDateString()}
+              Prueba hasta {new Date(sub.trial_ends_at).toLocaleDateString('es-CO')}
             </p>
           )}
         </div>
@@ -360,7 +360,7 @@ export function SubscriptionDetailPage() {
                     </td>
                     <td className="px-4 py-3 font-semibold">{formatCurrency(Number(inv.amount), inv.currency)}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {new Date(inv.period_start).toLocaleDateString()} – {new Date(inv.period_end).toLocaleDateString()}
+                      {new Date(inv.period_start).toLocaleDateString('es-CO')} – {new Date(inv.period_end).toLocaleDateString('es-CO')}
                     </td>
                     <td className="px-4 py-3">
                       {inv.status === 'open' && (
@@ -397,7 +397,7 @@ export function SubscriptionDetailPage() {
                     <span className="text-xs text-muted-foreground">por {ev.performed_by}</span>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">{new Date(ev.created_at).toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{new Date(ev.created_at).toLocaleString('es-CO')}</p>
                 {ev.data && Object.keys(ev.data).length > 0 && (
                   <pre className="mt-2 text-xs text-muted-foreground bg-muted rounded-lg p-2 overflow-x-auto">
                     {JSON.stringify(ev.data, null, 2)}

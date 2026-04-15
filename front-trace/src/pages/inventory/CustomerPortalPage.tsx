@@ -110,15 +110,15 @@ function OrderDetailRow({ order, customerId }: { order: PortalOrder; customerId:
                 </span>
               </td>
               <td className="py-1.5 text-right">
-                <span className="text-muted-foreground">${line.unit_price.toLocaleString()}</span>
+                <span className="text-muted-foreground">${line.unit_price.toLocaleString('es-CO')}</span>
                 {line.price_source === 'customer_special' && line.original_unit_price != null && line.original_unit_price > line.unit_price && (
                   <div className="text-[9px]">
-                    <span className="text-muted-foreground line-through">${line.original_unit_price.toLocaleString()}</span>
+                    <span className="text-muted-foreground line-through">${line.original_unit_price.toLocaleString('es-CO')}</span>
                     <span className="ml-1 text-blue-600 font-semibold">{Math.round((1 - line.unit_price / line.original_unit_price) * 100)}% dto.</span>
                   </div>
                 )}
               </td>
-              <td className="py-1.5 text-right font-semibold text-foreground">${line.line_total.toLocaleString()}</td>
+              <td className="py-1.5 text-right font-semibold text-foreground">${line.line_total.toLocaleString('es-CO')}</td>
             </tr>
           ))}
         </tbody>
@@ -134,42 +134,42 @@ function OrderDetailRow({ order, customerId }: { order: PortalOrder; customerId:
               <tr className="border-t border-blue-100 bg-blue-50/40">
                 <td colSpan={4} />
                 <td className="py-1.5 text-right text-[10px] text-blue-600 font-medium">Ahorro precios especiales</td>
-                <td className="py-1.5 text-right text-xs font-bold text-blue-700">-${savings.toLocaleString()}</td>
+                <td className="py-1.5 text-right text-xs font-bold text-blue-700">-${savings.toLocaleString('es-CO')}</td>
               </tr>
             ) : null
           })()}
           <tr className="border-t border-border">
             <td colSpan={4} />
             <td className="py-2 text-right text-xs text-muted-foreground">Subtotal</td>
-            <td className="py-2 text-right text-sm font-semibold">${detail.subtotal.toLocaleString()}</td>
+            <td className="py-2 text-right text-sm font-semibold">${detail.subtotal.toLocaleString('es-CO')}</td>
           </tr>
           {detail.tax_amount > 0 && (
             <tr>
               <td colSpan={4} />
               <td className="py-1 text-right text-xs text-muted-foreground">Impuestos</td>
-              <td className="py-1 text-right text-sm">${detail.tax_amount.toLocaleString()}</td>
+              <td className="py-1 text-right text-sm">${detail.tax_amount.toLocaleString('es-CO')}</td>
             </tr>
           )}
           {detail.discount_amount > 0 && (
             <tr>
               <td colSpan={4} />
               <td className="py-1 text-right text-xs text-muted-foreground">Descuento</td>
-              <td className="py-1 text-right text-sm text-emerald-600">-${detail.discount_amount.toLocaleString()}</td>
+              <td className="py-1 text-right text-sm text-emerald-600">-${detail.discount_amount.toLocaleString('es-CO')}</td>
             </tr>
           )}
           <tr>
             <td colSpan={4} />
             <td className="py-1 text-right text-xs font-semibold text-muted-foreground">Total</td>
-            <td className="py-1 text-right text-sm font-bold text-foreground">${detail.total.toLocaleString()}</td>
+            <td className="py-1 text-right text-sm font-bold text-foreground">${detail.total.toLocaleString('es-CO')}</td>
           </tr>
         </tfoot>
       </table>
 
       {/* Dates */}
       <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
-        {detail.expected_date && <span>Esperada: {new Date(detail.expected_date).toLocaleDateString()}</span>}
-        {detail.shipped_date && <span>Enviada: {new Date(detail.shipped_date).toLocaleDateString()}</span>}
-        {detail.delivered_date && <span>Entregada: {new Date(detail.delivered_date).toLocaleDateString()}</span>}
+        {detail.expected_date && <span>Esperada: {new Date(detail.expected_date).toLocaleDateString('es-CO')}</span>}
+        {detail.shipped_date && <span>Enviada: {new Date(detail.shipped_date).toLocaleDateString('es-CO')}</span>}
+        {detail.delivered_date && <span>Entregada: {new Date(detail.delivered_date).toLocaleDateString('es-CO')}</span>}
       </div>
       {detail.notes && <p className="mt-2 text-xs text-muted-foreground italic">{detail.notes}</p>}
     </div>
@@ -248,7 +248,7 @@ export function CustomerPortalPage() {
           {customer.credit_limit > 0 && (
             <div className="text-right">
               <p className="text-xs text-muted-foreground">Credito</p>
-              <p className="text-lg font-bold text-foreground">${customer.credit_limit.toLocaleString()}</p>
+              <p className="text-lg font-bold text-foreground">${customer.credit_limit.toLocaleString('es-CO')}</p>
             </div>
           )}
         </div>
@@ -293,8 +293,8 @@ export function CustomerPortalPage() {
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <KpiCard icon={Package} label="Productos" value={totalSkus} color="bg-primary/15 text-primary" />
-            <KpiCard icon={CheckCircle2} label="Disponible" value={totalQty.toLocaleString()} color="bg-emerald-100 text-emerald-600" />
-            <KpiCard icon={Clock} label="Reservado" value={totalReserved.toLocaleString()} color="bg-amber-100 text-amber-600" />
+            <KpiCard icon={CheckCircle2} label="Disponible" value={totalQty.toLocaleString('es-CO')} color="bg-emerald-100 text-emerald-600" />
+            <KpiCard icon={Clock} label="Reservado" value={totalReserved.toLocaleString('es-CO')} color="bg-amber-100 text-amber-600" />
             <KpiCard icon={Warehouse} label="Bodegas" value={warehouseCount} color="bg-blue-100 text-blue-600" />
           </div>
 
@@ -339,10 +339,10 @@ export function CustomerPortalPage() {
                         <td className="px-5 py-3 text-sm text-muted-foreground">{sl.warehouse_name ?? '\u2014'}</td>
                         <td className="px-5 py-3">
                           <span className={cn('font-bold', qty <= 0 ? 'text-red-500' : 'text-foreground')}>
-                            {qty.toLocaleString()}
+                            {qty.toLocaleString('es-CO')}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-muted-foreground">{sl.qty_reserved.toLocaleString()}</td>
+                        <td className="px-5 py-3 text-muted-foreground">{sl.qty_reserved.toLocaleString('es-CO')}</td>
                         <td className="px-5 py-3">
                           {sl.qc_status && (
                             <span className={cn(
@@ -374,7 +374,7 @@ export function CustomerPortalPage() {
             <KpiCard icon={ShoppingBag} label="Total Pedidos" value={totalOrders} color="bg-primary/15 text-primary" />
             <KpiCard icon={Clock} label="En Proceso" value={activeOrders} color="bg-amber-100 text-amber-600" />
             <KpiCard icon={Truck} label="Entregados" value={deliveredCount} color="bg-emerald-100 text-emerald-600" />
-            <KpiCard icon={DollarSign} label="Valor Total" value={`$${totalValue.toLocaleString()}`} color="bg-blue-100 text-blue-600" />
+            <KpiCard icon={DollarSign} label="Valor Total" value={`$${totalValue.toLocaleString('es-CO')}`} color="bg-blue-100 text-blue-600" />
           </div>
 
           {/* Status filter */}
@@ -425,7 +425,7 @@ export function CustomerPortalPage() {
                         <div className="flex-1 min-w-0">
                           <span className="font-mono text-xs text-foreground font-semibold">{order.order_number}</span>
                           <span className="text-xs text-muted-foreground ml-3">
-                            {order.created_at ? new Date(order.created_at).toLocaleDateString() : ''}
+                            {order.created_at ? new Date(order.created_at).toLocaleDateString('es-CO') : ''}
                           </span>
                           <span className="text-xs text-slate-300 ml-2">
                             {order.line_count} {order.line_count === 1 ? 'linea' : 'lineas'}
@@ -435,7 +435,7 @@ export function CustomerPortalPage() {
                           {STATUS_CONFIG[order.status]?.label}
                         </span>
                         <span className="font-mono text-sm font-bold text-foreground min-w-[80px] text-right">
-                          ${order.total.toLocaleString()}
+                          ${order.total.toLocaleString('es-CO')}
                         </span>
                       </button>
 

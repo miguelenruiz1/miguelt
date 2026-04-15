@@ -564,6 +564,67 @@ async def update_declaration(
 
 # ─── Dry-run validation ─────────────────────────────────────────────────────
 
+class CadmiumTestIn(_BaseModel):
+    """Cadmium lab result payload.
+
+    EU Reg 2023/915 caps Cd in cocoa-derived final products at 0.60 mg/kg.
+    We compare the declared value against that threshold and persist the
+    result on the compliance record for later DDS validation.
+    """
+    value_mg_per_kg: float
+    test_date: date
+    lab: str
+    doc_hash: str | None = None
+    notes: str | None = None
+
+
+CADMIUM_EU_THRESHOLD_MG_PER_KG = 0.60
+
+
+@router.post("/{record_id}/cadmium-test", response_model=RecordResponse)
+async def register_cadmium_test(
+    record_id: uuid.UUID,
+    body: CadmiumTestIn,
+    user: ModuleUser,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Persist a cadmium lab result on the record (cacao-only)."""
+    tid = _tenant_id(user)
+    record = (
+        await db.execute(
+            select(ComplianceRecord).where(
+                ComplianceRecord.id == record_id,
+                ComplianceRecord.tenant_id == tid,
+            )
+        )
+    ).scalar_one_or_none()
+    if record is None:
+        raise NotFoundError(f"Record '{record_id}' not found")
+
+    record.cadmium_mg_per_kg = body.value_mg_per_kg
+    record.cadmium_test_date = body.test_date
+    record.cadmium_test_lab = body.lab
+    record.cadmium_test_doc_hash = body.doc_hash
+    record.cadmium_eu_compliant = body.value_mg_per_kg <= CADMIUM_EU_THRESHOLD_MG_PER_KG
+    if body.notes:
+        md = dict(record.metadata_ or {})
+        md.setdefault("cadmium_notes", []).append({
+            "date": body.test_date.isoformat(),
+            "notes": body.notes[:500],
+        })
+        record.metadata_ = md
+
+    await db.flush()
+    await db.refresh(record)
+    log.info(
+        "cadmium_test_registered",
+        record_id=str(record.id),
+        value=body.value_mg_per_kg,
+        eu_compliant=record.cadmium_eu_compliant,
+    )
+    return record
+
+
 @router.get("/{record_id}/validate", response_model=ValidationResult)
 async def validate_record(
     record_id: uuid.UUID,

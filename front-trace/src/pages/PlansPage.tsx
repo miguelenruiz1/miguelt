@@ -238,7 +238,7 @@ function PlanCard({ plan, onEdit }: { plan: Plan; onEdit: () => void }) {
 
       <div className="mt-4">
         <p className="text-3xl font-bold text-foreground">
-          {Number(plan.price_monthly) === -1 ? 'Custom' : `$${Number(plan.price_monthly).toLocaleString()}`}
+          {Number(plan.price_monthly) === -1 ? 'Custom' : `$${Number(plan.price_monthly).toLocaleString('es-CO')}`}
           <span className="text-sm font-normal text-muted-foreground">/mes</span>
         </p>
       </div>
@@ -249,7 +249,7 @@ function PlanCard({ plan, onEdit }: { plan: Plan; onEdit: () => void }) {
           <p>usuarios</p>
         </div>
         <div className="rounded-lg bg-muted p-2 text-center">
-          <p className="font-bold text-foreground">{plan.max_assets === -1 ? '∞' : plan.max_assets.toLocaleString()}</p>
+          <p className="font-bold text-foreground">{plan.max_assets === -1 ? '∞' : plan.max_assets.toLocaleString('es-CO')}</p>
           <p>activos</p>
         </div>
         <div className="rounded-lg bg-muted p-2 text-center">

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PlotMap } from '@/components/compliance/PlotMap'
 import type { CompliancePlot } from '@/types/compliance'
+import { COMMODITY_LABEL, COMMODITY_COLOR, type CommodityType } from '@/types/commodity'
 
 // ─── Risk badge ──────────────────────────────────────────────────────────────
 
@@ -101,6 +102,11 @@ export default function PlotsPage() {
   const toast = useToast()
   const navigate = useNavigate()
   const [selectedPlotId, setSelectedPlotId] = useState<string | undefined>()
+  const [commodityFilter, setCommodityFilter] = useState<CommodityType | 'all'>('all')
+
+  const filteredPlots = commodityFilter === 'all'
+    ? plots
+    : plots.filter((p) => (p.commodity_type ?? null) === commodityFilter)
 
   const orgMap = Object.fromEntries(orgs.map((o) => [o.id, o.name]))
 
@@ -148,6 +154,19 @@ export default function PlotsPage() {
           {row.plot_area_ha != null ? Number(row.plot_area_ha).toFixed(2) : '—'}
         </span>
       ),
+    },
+    {
+      key: 'commodity_type',
+      header: 'Commodity',
+      render: (row) => {
+        const c = (row.commodity_type ?? null) as CommodityType | null
+        if (!c) return <span className="text-xs text-muted-foreground">—</span>
+        return (
+          <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium border ${COMMODITY_COLOR[c]}`}>
+            {COMMODITY_LABEL[c]}
+          </span>
+        )
+      },
     },
     {
       key: 'location',
@@ -252,10 +271,26 @@ export default function PlotsPage() {
         </Button>
       </div>
 
+      {/* Commodity filter */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground">Commodity:</span>
+        <select
+          value={commodityFilter}
+          onChange={(e) => setCommodityFilter(e.target.value as CommodityType | 'all')}
+          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+        >
+          <option value="all">Todos</option>
+          <option value="coffee">Cafe</option>
+          <option value="cacao">Cacao</option>
+          <option value="palm">Palma</option>
+          <option value="other">Otro</option>
+        </select>
+      </div>
+
       {/* Map */}
-      {plots.length > 0 && (
+      {filteredPlots.length > 0 && (
         <PlotMap
-          plots={plots}
+          plots={filteredPlots}
           height="350px"
           selectedPlotId={selectedPlotId}
           onPlotClick={(plot) => {
@@ -268,7 +303,7 @@ export default function PlotsPage() {
       {/* Table */}
       <DataTable
         columns={columns}
-        data={plots}
+        data={filteredPlots}
         rowKey={(row) => row.id}
         isLoading={isLoading}
         emptyMessage="No hay parcelas registradas. Crea una para comenzar."

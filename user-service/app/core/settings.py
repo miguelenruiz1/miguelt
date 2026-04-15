@@ -53,6 +53,7 @@ class Settings(BaseSettings):
 
     # ─── Inter-service ─────────────────────────────────────────────────────────
     SUBSCRIPTION_SERVICE_URL: str = "http://subscription-api:8002"
+    TRACE_SERVICE_URL: str = "http://api:8000"
 
     # ─── Frontend ─────────────────────────────────────────────────────────────
     FRONTEND_URL: str = "http://localhost:5173"

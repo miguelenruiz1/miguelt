@@ -98,8 +98,8 @@ export function CycleCountsPage() {
                 </div>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between"><span className="text-muted-foreground">Bodega</span><span className="text-muted-foreground">{cc.warehouse_name ?? '-'}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Fecha</span><span className="text-muted-foreground">{cc.scheduled_date ? new Date(cc.scheduled_date).toLocaleDateString() : '-'}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Creado</span><span className="text-muted-foreground">{new Date(cc.created_at).toLocaleDateString()}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Fecha</span><span className="text-muted-foreground">{cc.scheduled_date ? new Date(cc.scheduled_date).toLocaleDateString('es-CO') : '-'}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Creado</span><span className="text-muted-foreground">{new Date(cc.created_at).toLocaleDateString('es-CO')}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Creado por</span><span className="text-muted-foreground text-xs">{resolve(cc.created_by)}</span></div>
                 </div>
               </Link>
@@ -135,10 +135,10 @@ export function CycleCountsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {cc.scheduled_date ? new Date(cc.scheduled_date).toLocaleDateString() : '-'}
+                    {cc.scheduled_date ? new Date(cc.scheduled_date).toLocaleDateString('es-CO') : '-'}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {new Date(cc.created_at).toLocaleDateString()}
+                    {new Date(cc.created_at).toLocaleDateString('es-CO')}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground text-xs">{resolve(cc.created_by)}</td>
                   <td className="px-4 py-3">
