@@ -21,6 +21,7 @@ from app.db.models.warehouse import Warehouse, WarehouseLocation
 from app.db.models.stock import StockLevel, StockMovement, StockReservation
 from app.db.models.supplier import Supplier
 from app.db.models.purchase_order import PurchaseOrder, PurchaseOrderLine, POApprovalLog
+from app.db.models.goods_receipt import GoodsReceipt, GoodsReceiptLine
 from app.db.models.customer import CustomerType, Customer
 from app.db.models.customer_price import CustomerPrice, CustomerPriceHistory
 from app.db.models.partner import BusinessPartner
@@ -77,6 +78,7 @@ __all__ = [
     "Supplier",
     # Purchase Order
     "PurchaseOrder", "PurchaseOrderLine", "POApprovalLog",
+    "GoodsReceipt", "GoodsReceiptLine",
     # Customer & Pricing
     "CustomerType", "Customer",
     "CustomerPrice", "CustomerPriceHistory",

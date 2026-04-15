@@ -80,6 +80,7 @@ from app.domain.schemas.quality_test import (
     BatchPlotOriginCreate, BatchPlotOriginOut,
 )
 from app.domain.schemas.partner import PartnerCreate, PartnerUpdate, PartnerOut, PaginatedPartners
+from app.domain.schemas.goods_receipt import GRNLineCreate, GRNCreate, GRNLineOut, GRNOut
 from app.domain.schemas.pagination import (
     PaginatedRecipes, PaginatedWarehouses,
     PaginatedCustomerTypes, PaginatedLocations,
@@ -171,6 +172,8 @@ __all__ = [
     "GlobalMarginOut", "GlobalMarginUpdateIn",
     # Partner
     "PartnerCreate", "PartnerUpdate", "PartnerOut", "PaginatedPartners",
+    # Goods Receipt Note
+    "GRNLineCreate", "GRNCreate", "GRNLineOut", "GRNOut",
     # Quality tests / batch origins
     "QualityTestCreate", "QualityTestOut",
     "BatchPlotOriginCreate", "BatchPlotOriginOut",
