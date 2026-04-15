@@ -104,7 +104,7 @@ export function EInvoicingPage() {
             <Hash className="h-4 w-4 text-primary" />
             <span className="text-muted-foreground">Resolución: <span className="font-semibold text-foreground">{matiasRes.prefix}{matiasRes.current_number + 1}</span> (próxima)</span>
             <span className="text-muted-foreground">|</span>
-            <span className="text-muted-foreground">{matiasRes.remaining.toLocaleString()} restantes</span>
+            <span className="text-muted-foreground">{matiasRes.remaining.toLocaleString('es-CO')} restantes</span>
           </div>
           <Link to="/facturacion-electronica/resolucion" className="text-xs font-medium text-primary hover:text-primary">
             Configurar resolución DIAN
@@ -269,7 +269,7 @@ export function EInvoicingPage() {
                         </Link>
                       </td>
                       <td className="px-5 py-3 text-foreground">{order.customer_name ?? '—'}</td>
-                      <td className="px-5 py-3 text-right font-mono text-foreground">${order.total.toLocaleString()} {order.currency}</td>
+                      <td className="px-5 py-3 text-right font-mono text-foreground">${order.total.toLocaleString('es-CO')} {order.currency}</td>
                       <td className="px-5 py-3">
                         {order.cufe ? (
                           <span className="font-mono text-xs text-muted-foreground" title={order.cufe}>

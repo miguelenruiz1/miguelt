@@ -32,6 +32,39 @@ export function fmtDateShort(iso: string | null | undefined): string {
   })
 }
 
+/** Format a number for display in es-CO locale (1.000.000 instead of 1,000,000). */
+export function fmtNumber(
+  value: number | string | null | undefined,
+  opts: Intl.NumberFormatOptions = {},
+): string {
+  if (value === null || value === undefined || value === '') return '—'
+  const num = typeof value === 'string' ? Number(value) : value
+  if (!Number.isFinite(num)) return '—'
+  return num.toLocaleString('es-CO', opts)
+}
+
+/** Format a money amount. Default currency COP → "$1.000.000". */
+export function fmtMoney(
+  value: number | string | null | undefined,
+  currency: string = 'COP',
+): string {
+  if (value === null || value === undefined || value === '') return '—'
+  const num = typeof value === 'string' ? Number(value) : value
+  if (!Number.isFinite(num)) return '—'
+  // For COP we drop decimals by default (whole pesos); for others, keep 2.
+  const fractionDigits = currency === 'COP' ? 0 : 2
+  try {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    }).format(num)
+  } catch {
+    return `$${num.toLocaleString('es-CO')} ${currency}`
+  }
+}
+
 export function newUUID(): string {
   return crypto.randomUUID()
 }

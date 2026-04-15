@@ -1032,8 +1032,15 @@ export default function RecordDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto p-6 lg:p-8">
-        <div className="text-sm text-muted-foreground py-12 text-center">Cargando...</div>
+      <div className="max-w-5xl mx-auto p-6 lg:p-8 space-y-4">
+        <div className="h-8 w-64 rounded bg-muted animate-pulse" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="h-24 rounded-xl bg-muted animate-pulse" />
+          <div className="h-24 rounded-xl bg-muted animate-pulse" />
+          <div className="h-24 rounded-xl bg-muted animate-pulse" />
+        </div>
+        <div className="h-48 rounded-xl bg-muted animate-pulse" />
+        <div className="h-48 rounded-xl bg-muted animate-pulse" />
       </div>
     )
   }

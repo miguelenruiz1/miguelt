@@ -91,7 +91,15 @@ export function AssetDetailPage() {
   if (isLoading) return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <Topbar title="Carga" />
-      <div className="flex justify-center py-20"><Spinner /></div>
+      <div className="p-6 space-y-4">
+        <div className="h-8 w-72 rounded bg-muted animate-pulse" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="h-28 rounded-xl bg-muted animate-pulse" />
+          <div className="h-28 rounded-xl bg-muted animate-pulse" />
+          <div className="h-28 rounded-xl bg-muted animate-pulse" />
+        </div>
+        <div className="h-64 rounded-xl bg-muted animate-pulse" />
+      </div>
     </div>
   )
 

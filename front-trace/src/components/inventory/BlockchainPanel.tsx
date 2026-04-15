@@ -94,7 +94,7 @@ export default function BlockchainPanel({ entityType, entityId }: Props) {
 
       {status.anchored_at && (
         <div className="mt-2">
-          <p className="text-xs text-muted-foreground">Anclado: {new Date(status.anchored_at).toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">Anclado: {new Date(status.anchored_at).toLocaleString('es-CO')}</p>
         </div>
       )}
     </div>

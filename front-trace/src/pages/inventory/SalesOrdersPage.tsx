@@ -379,7 +379,7 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
                       <div className="absolute -top-2 -right-1 inline-flex items-center gap-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-[9px] font-bold text-blue-700 whitespace-nowrap">
                         Esp.
                         {priceSource.original_price != null && priceSource.original_price !== priceSource.price && (
-                          <span className="text-muted-foreground line-through font-normal">${priceSource.original_price.toLocaleString()}</span>
+                          <span className="text-muted-foreground line-through font-normal">${priceSource.original_price.toLocaleString('es-CO')}</span>
                         )}
                       </div>
                     )}
@@ -603,8 +603,8 @@ export function SalesOrdersPage() {
                     </div>
                   </td>
                   <td className="px-6 py-3"><span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold', STATUS_CONFIG[o.status]?.color)}>{STATUS_CONFIG[o.status]?.label}</span></td>
-                  <td className="px-6 py-3 text-right font-mono">${o.total.toLocaleString()}</td>
-                  <td className="px-6 py-3 text-muted-foreground text-xs">{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</td>
+                  <td className="px-6 py-3 text-right font-mono">${o.total.toLocaleString('es-CO')}</td>
+                  <td className="px-6 py-3 text-muted-foreground text-xs">{o.created_at ? new Date(o.created_at).toLocaleDateString('es-CO') : ''}</td>
                   <td className="px-6 py-3" onClick={e => e.stopPropagation()}>{actionBtn(o)}</td>
                 </tr>
               ))}

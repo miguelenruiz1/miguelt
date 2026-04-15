@@ -87,7 +87,7 @@ function ResolutionSection({ slug, label, defaultPrefix, icon: Icon, colorClass 
                 <>
                   <span className="text-[10px] text-muted-foreground font-mono">{res.prefix}{res.current_number + 1}</span>
                   <span className="text-[10px] text-muted-foreground">·</span>
-                  <span className="text-[10px] text-muted-foreground">{res.remaining.toLocaleString()} restantes</span>
+                  <span className="text-[10px] text-muted-foreground">{res.remaining.toLocaleString('es-CO')} restantes</span>
                   {res.is_expired ? (
                     <span className="inline-flex items-center gap-0.5 rounded-full bg-red-50 px-1.5 py-0.5 text-[9px] font-semibold text-red-600"><XCircle className="h-2.5 w-2.5" /> Vencida</span>
                   ) : (
@@ -119,7 +119,7 @@ function ResolutionSection({ slug, label, defaultPrefix, icon: Icon, colorClass 
                 </div>
                 <div>
                   <p className="text-[10px] font-medium text-muted-foreground uppercase">Rango</p>
-                  <p className="text-sm font-bold text-foreground">{res.range_from.toLocaleString()} — {res.range_to.toLocaleString()}</p>
+                  <p className="text-sm font-bold text-foreground">{res.range_from.toLocaleString('es-CO')} — {res.range_to.toLocaleString('es-CO')}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-medium text-muted-foreground uppercase">Vigente hasta</p>
@@ -131,12 +131,12 @@ function ResolutionSection({ slug, label, defaultPrefix, icon: Icon, colorClass 
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-lg border border-border bg-muted p-3">
                   <p className="text-[10px] font-medium text-muted-foreground uppercase">Emitidos</p>
-                  <p className="text-lg font-bold text-foreground">{res.current_number.toLocaleString()}</p>
+                  <p className="text-lg font-bold text-foreground">{res.current_number.toLocaleString('es-CO')}</p>
                 </div>
                 <div className="rounded-lg border border-border bg-muted p-3">
                   <p className="text-[10px] font-medium text-muted-foreground uppercase">Restantes</p>
                   <p className={cn('text-lg font-bold', res.remaining < 100 ? 'text-red-600' : 'text-foreground')}>
-                    {res.remaining.toLocaleString()}
+                    {res.remaining.toLocaleString('es-CO')}
                   </p>
                 </div>
                 <div className="rounded-lg border border-border bg-muted p-3">
@@ -254,8 +254,8 @@ function SandboxSection() {
             <>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div><p className="text-[10px] font-medium text-muted-foreground uppercase">Prefijo</p><p className="text-sm font-bold">{sandboxRes.prefix}</p></div>
-                <div><p className="text-[10px] font-medium text-muted-foreground uppercase">Rango</p><p className="text-sm font-bold">{sandboxRes.range_from.toLocaleString()} — {sandboxRes.range_to.toLocaleString()}</p></div>
-                <div><p className="text-[10px] font-medium text-muted-foreground uppercase">Actual</p><p className="text-sm font-bold">{sandboxRes.current_number.toLocaleString()}</p></div>
+                <div><p className="text-[10px] font-medium text-muted-foreground uppercase">Rango</p><p className="text-sm font-bold">{sandboxRes.range_from.toLocaleString('es-CO')} — {sandboxRes.range_to.toLocaleString('es-CO')}</p></div>
+                <div><p className="text-[10px] font-medium text-muted-foreground uppercase">Actual</p><p className="text-sm font-bold">{sandboxRes.current_number.toLocaleString('es-CO')}</p></div>
                 <div><p className="text-[10px] font-medium text-muted-foreground uppercase">Próxima</p><p className="text-sm font-bold text-amber-600 font-mono">{sandboxRes.next_invoice_number}</p></div>
               </div>
               <button onClick={handleResetSandbox} disabled={deactivateMut.isPending || createMut.isPending}
