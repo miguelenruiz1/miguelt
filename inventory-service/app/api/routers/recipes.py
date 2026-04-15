@@ -49,8 +49,9 @@ async def create_recipe(
     audit = InventoryAuditService(db)
     data = body.model_dump()
     components = [c for c in data.pop("components", [])]
+    output_components = [c for c in data.pop("output_components", []) or []]
     data["created_by"] = current_user.get("id")
-    recipe = await svc.create_recipe(tenant_id, data, components)
+    recipe = await svc.create_recipe(tenant_id, data, components, output_components)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.recipe.create", resource_type="recipe",
@@ -84,8 +85,9 @@ async def update_recipe(
     audit = InventoryAuditService(db)
     data = body.model_dump()
     components = data.pop("components", None)
+    output_components = data.pop("output_components", None)
     data["updated_by"] = current_user.get("id")
-    recipe = await svc.update_recipe(tenant_id, recipe_id, data, components)
+    recipe = await svc.update_recipe(tenant_id, recipe_id, data, components, output_components)
     await audit.log(
         tenant_id=tenant_id, user=current_user,
         action="inventory.recipe.update", resource_type="recipe",

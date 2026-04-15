@@ -220,7 +220,7 @@ export function PaymentsPage() {
           </div>
           {wompi.updated_at && (
             <p className="text-[10px] text-muted-foreground">
-              Última actualización: {new Date(wompi.updated_at).toLocaleString()}
+              Última actualización: {new Date(wompi.updated_at).toLocaleString('es-CO')}
             </p>
           )}
         </div>

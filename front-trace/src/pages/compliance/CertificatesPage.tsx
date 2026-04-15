@@ -120,7 +120,7 @@ export default function CertificatesPage() {
       render: (row) => {
         const qty = (row.metadata as any)?.quantity_kg
         return qty != null
-          ? <span className="text-sm text-muted-foreground tabular-nums">{Number(qty).toLocaleString()} kg</span>
+          ? <span className="text-sm text-muted-foreground tabular-nums">{Number(qty).toLocaleString('es-CO')} kg</span>
           : <span className="text-xs text-muted-foreground">--</span>
       },
     },

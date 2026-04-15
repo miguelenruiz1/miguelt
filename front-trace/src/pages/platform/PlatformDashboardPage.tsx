@@ -118,14 +118,14 @@ export function PlatformDashboardPage() {
         />
         <KpiCard
           label="MRR"
-          value={`$${data.mrr.toLocaleString()}`}
+          value={`$${data.mrr.toLocaleString('es-CO')}`}
           icon={DollarSign}
           color="bg-emerald-500"
-          subtext={`ARR: $${data.arr.toLocaleString()}`}
+          subtext={`ARR: $${data.arr.toLocaleString('es-CO')}`}
         />
         <KpiCard
           label="Ingreso del Mes"
-          value={`$${data.revenue_this_month.toLocaleString()}`}
+          value={`$${data.revenue_this_month.toLocaleString('es-CO')}`}
           icon={CreditCard}
           color="bg-blue-500"
           subtext={revDelta ? `${Number(revDelta) >= 0 ? '+' : ''}${revDelta}% vs mes anterior` : undefined}

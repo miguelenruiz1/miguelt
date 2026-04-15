@@ -34,6 +34,8 @@ CaptureMethod = Literal[
 
 ProducerScale = Literal["smallholder", "medium", "industrial"]
 
+CommodityType = Literal["coffee", "cacao", "palm", "other"]
+
 # Tipos de identificacion legal de personas/empresas. Cubre Colombia (CC, CE,
 # NIT, RUT, PASAPORTE) + cross-LATAM mas comunes (RUC Peru/Ecuador, CURP/RFC
 # Mexico, CPF/CNPJ Brasil, CI Bolivia/Paraguay/Uruguay).
@@ -121,6 +123,8 @@ class PlotCreate(_PlotTenureFields):
     region: str | None = None
     municipality: str | None = None
     vereda: str | None = None
+    nuts_code: str | None = Field(default=None, max_length=10)
+    coordinate_system_datum: str = Field(default="WGS84", max_length=20)
     frontera_agricola_status: str | None = None
     land_title_number: str | None = None
     land_title_hash: str | None = None
@@ -129,6 +133,7 @@ class PlotCreate(_PlotTenureFields):
     cutoff_date_compliant: bool = False
     legal_land_use: bool = False
     risk_level: str = "standard"
+    commodity_type: CommodityType | None = None
     crop_type: str | None = None
     scientific_name: str | None = None
     establishment_date: date | None = None
@@ -153,6 +158,10 @@ class PlotUpdate(_PlotTenureFields):
     country_code: str | None = None
     region: str | None = None
     municipality: str | None = None
+    vereda: str | None = None
+    nuts_code: str | None = Field(default=None, max_length=10)
+    coordinate_system_datum: str | None = Field(default=None, max_length=20)
+    frontera_agricola_status: str | None = None
     land_title_number: str | None = None
     land_title_hash: str | None = None
     deforestation_free: bool | None = None
@@ -160,6 +169,7 @@ class PlotUpdate(_PlotTenureFields):
     cutoff_date_compliant: bool | None = None
     legal_land_use: bool | None = None
     risk_level: str | None = None
+    commodity_type: CommodityType | None = None
     crop_type: str | None = None
     scientific_name: str | None = None
     establishment_date: date | None = None
@@ -187,6 +197,8 @@ class PlotResponse(OrmBase):
     region: str | None = None
     municipality: str | None = None
     vereda: str | None = None
+    nuts_code: str | None = None
+    coordinate_system_datum: str = "WGS84"
     frontera_agricola_status: str | None = None
     land_title_number: str | None = None
     land_title_hash: str | None = None
@@ -208,9 +220,11 @@ class PlotResponse(OrmBase):
     capture_date: date | None = None
     producer_scale: str | None = None
     deforestation_free: bool
+    degradation_free: bool = False
     cutoff_date_compliant: bool
     legal_land_use: bool
     risk_level: str
+    commodity_type: str | None = None
     crop_type: str | None = None
     scientific_name: str | None = None
     establishment_date: date | None = None
@@ -220,6 +234,8 @@ class PlotResponse(OrmBase):
     satellite_report_url: str | None = None
     satellite_report_hash: str | None = None
     satellite_verified_at: datetime | None = None
+    screening_evidence_hash: str | None = None
+    screening_evidence_anchored_at: datetime | None = None
     is_active: bool
     metadata_: dict | None = None
     created_at: datetime

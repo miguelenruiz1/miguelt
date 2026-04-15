@@ -751,21 +751,33 @@ async def screen_deforestation_full(
                         plot_code=plot.plot_code,
                         screening_result=result,
                         user_id=str(user.get("user_id", "system")),
+                        plot=plot,
                     )
                     anchor_results.append(ar)
 
         # Persist anchor info in metadata
         if anchor_results:
+            from datetime import datetime as _dt, timezone as _tz
             meta = dict(plot.metadata_ or {})
             first = anchor_results[0]
             meta["eudr_full_screening"]["anchor"] = {
                 "compliance_hash": first["compliance_hash"],
+                "evidence_hash": first.get("evidence_hash"),
                 "anchor_request_id": first["anchor_request_id"],
                 "anchor_status": first["anchor_status"],
                 "event_id": first["event_id"],
                 "anchored_assets": len(anchor_results),
             }
             plot.metadata_ = meta
+            # Persist evidence hash on dedicated columns for fast lookup &
+            # regulator audit. Anchor timestamp is set when the anchor request
+            # was actually submitted (anchor_status == "pending" means the hash
+            # is in flight to Solana).
+            evidence_hash = first.get("evidence_hash")
+            if evidence_hash:
+                plot.screening_evidence_hash = evidence_hash
+                if first.get("anchor_request_id"):
+                    plot.screening_evidence_anchored_at = _dt.now(tz=_tz.utc)
             await db.flush()
             await db.refresh(plot)
 

@@ -65,7 +65,7 @@ export function PlatformSalesPage() {
         />
         <KpiCard
           label="Facturado Pendiente"
-          value={`$${data.total_open_amount.toLocaleString()}`}
+          value={`$${data.total_open_amount.toLocaleString('es-CO')}`}
           icon={Receipt}
           color="bg-amber-500"
           subtext={`${data.open_invoices.length} facturas abiertas`}
@@ -168,7 +168,7 @@ export function PlatformSalesPage() {
         <div className="px-6 py-4 border-b border-border flex items-center gap-2">
           <CreditCard className="h-4 w-4 text-amber-500" />
           <h3 className="text-sm font-semibold text-foreground">Facturas Pendientes</h3>
-          <span className="ml-auto text-xs text-muted-foreground">${data.total_open_amount.toLocaleString()} total</span>
+          <span className="ml-auto text-xs text-muted-foreground">${data.total_open_amount.toLocaleString('es-CO')} total</span>
         </div>
         {data.open_invoices.length === 0 ? (
           <p className="px-6 py-8 text-sm text-muted-foreground text-center">Sin facturas pendientes</p>
@@ -194,7 +194,7 @@ export function PlatformSalesPage() {
                       {inv.tenant_id}
                     </Link>
                   </td>
-                  <td className="px-5 py-2.5 text-right font-semibold">${inv.amount.toLocaleString()} {inv.currency}</td>
+                  <td className="px-5 py-2.5 text-right font-semibold">${inv.amount.toLocaleString('es-CO')} {inv.currency}</td>
                   <td className="px-5 py-2.5 text-muted-foreground">
                     {inv.created_at ? new Date(inv.created_at).toLocaleDateString('es') : '-'}
                   </td>

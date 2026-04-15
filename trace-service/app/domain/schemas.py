@@ -160,11 +160,17 @@ class AssetCreate(BaseModel):
     product_type: str = Field(..., min_length=1, max_length=100)
     metadata: dict[str, Any] = Field(default_factory=dict)
     initial_custodian_wallet: str = Field(..., description="Must be allowlisted active wallet")
+    plot_id: uuid.UUID | None = Field(
+        None, description="Origin compliance plot id (cross-DB, validated app-side)"
+    )
 
 class AssetMintRequest(BaseModel):
     product_type: str = Field(..., min_length=1, max_length=100)
     metadata: dict[str, Any] = Field(default_factory=dict)
     initial_custodian_wallet: str = Field(..., description="Must be allowlisted active wallet")
+    plot_id: uuid.UUID | None = Field(
+        None, description="Origin compliance plot id (cross-DB, validated app-side)"
+    )
 
 
 class AssetResponse(OrmBase):
@@ -186,6 +192,7 @@ class AssetResponse(OrmBase):
     blockchain_tx_signature: str | None = None
     blockchain_status: str = "SKIPPED"
     is_compressed: bool = False
+    plot_id: uuid.UUID | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -198,8 +205,17 @@ class AssetListResponse(BaseModel):
 # ─── Custody Events ───────────────────────────────────────────────────────────
 
 class LocationData(BaseModel):
+    """Typed shape for custody_events.location JSONB column.
+
+    EUDR Art. 9 requires city/country at custody handoffs for traceability.
+    accuracy_m is optional GPS error band (relevant for plot validation, less
+    so for warehouse/port handoffs).
+    """
     lat: float | None = Field(None, ge=-90, le=90)
     lng: float | None = Field(None, ge=-180, le=180)
+    city: str | None = Field(None, max_length=120)
+    country: str | None = Field(None, max_length=2, description="ISO 3166-1 alpha-2")
+    accuracy_m: int | None = Field(None, ge=0)
     label: str | None = None
     extra: dict[str, Any] = Field(default_factory=dict)
 
@@ -299,6 +315,26 @@ class CustodyEventResponse(OrmBase):
 class CustodyEventListResponse(BaseModel):
     items: list[CustodyEventResponse]
     total: int
+
+
+# ─── Custody Event Quantities ────────────────────────────────────────────────
+
+class CustodyEventQuantityCreate(BaseModel):
+    quantity: float = Field(..., gt=0)
+    uom: str = Field(..., min_length=1, max_length=20)
+    previous_quantity: float | None = Field(None, gt=0)
+    previous_uom: str | None = Field(None, max_length=20)
+
+
+class CustodyEventQuantityResponse(OrmBase):
+    id: uuid.UUID
+    event_id: uuid.UUID
+    quantity: float
+    uom: str
+    previous_quantity: float | None = None
+    previous_uom: str | None = None
+    merma_pct: float | None = None
+    created_at: datetime
 
 
 # ─── Event Type Config (admin-managed) ────────────────────────────────────────

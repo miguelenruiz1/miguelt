@@ -2457,6 +2457,7 @@ export function ProductsPage() {
 
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
+  const [filterCommodity, setFilterCommodity] = useState<string>('')
   const [showCreate, setShowCreate] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [selected, setSelected] = useState<Product | null>(null)
@@ -2487,8 +2488,9 @@ export function ProductsPage() {
   const filtered = useMemo(() => {
     let items = allItems
     if (filterType) items = items.filter(p => p.product_type_id === filterType)
+    if (filterCommodity) items = items.filter(p => (p.commodity_type ?? '') === filterCommodity)
     return items
-  }, [allItems, filterType])
+  }, [allItems, filterType, filterCommodity])
 
   // Sort
   const sorted = useMemo(() => {
@@ -2518,7 +2520,7 @@ export function ProductsPage() {
   const pageItems = sorted.slice(startIdx, endIdx)
 
   // Reset page on filter/search/perPage change
-  useEffect(() => { setCurrentPage(1) }, [search, filterType, perPage])
+  useEffect(() => { setCurrentPage(1) }, [search, filterType, filterCommodity, perPage])
 
   function handleSort(key: SortKey) {
     if (sortBy === key) {
@@ -2631,6 +2633,17 @@ export function ProductsPage() {
                     {productTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 )}
+                <select
+                  value={filterCommodity}
+                  onChange={e => setFilterCommodity(e.target.value)}
+                  className="h-9 rounded-lg border border-gray-300 bg-transparent px-3 py-1 text-sm text-foreground focus:border-primary/50 focus:outline-none focus:ring-3 focus:ring-ring/20"
+                >
+                  <option value="">Todos los commodities</option>
+                  <option value="coffee">Cafe</option>
+                  <option value="cacao">Cacao</option>
+                  <option value="palm">Palma</option>
+                  <option value="other">Otro</option>
+                </select>
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -2649,7 +2662,15 @@ export function ProductsPage() {
             ) : totalEntries === 0 ? (
               <div className="p-12 text-center">
                 <Package className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">Sin productos encontrados.</p>
+                <p className="text-sm font-medium text-foreground">No hay productos registrados</p>
+                <p className="text-xs text-muted-foreground mt-1">Crea tu primer producto para comenzar a gestionar el inventario.</p>
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(true)}
+                  className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Nuevo producto
+                </button>
               </div>
             ) : (
               <>

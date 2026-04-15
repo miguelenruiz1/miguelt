@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from sqlalchemy import (
     ARRAY,
@@ -12,6 +13,7 @@ from sqlalchemy import (
     Index,
     Integer,
     Numeric,
+    String,
     Text,
     UniqueConstraint,
     func,
@@ -436,6 +438,12 @@ class Asset(Base):
     blockchain_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_compressed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
+    # Cross-DB pointer to compliance_plots.id. No FK because compliance lives
+    # in a separate Postgres DB; integrity validated at app layer.
+    plot_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=_utcnow
     )
@@ -511,6 +519,47 @@ class CustodyEvent(Base):
     asset: Mapped["Asset"] = relationship("Asset", back_populates="events", lazy="noload")
     document_links: Mapped[list["EventDocumentLink"]] = relationship(
         "EventDocumentLink", back_populates="event", lazy="noload"
+    )
+    quantity_changes: Mapped[list["CustodyEventQuantity"]] = relationship(
+        "CustodyEventQuantity", back_populates="event", lazy="noload",
+        cascade="all, delete-orphan",
+    )
+
+
+class CustodyEventQuantity(Base):
+    """Per-event physical quantity change with merma calculation.
+
+    Coffee processing transforms (cereza→pergamino→verde) reduce the physical
+    mass of an asset; tracking this is required for EUDR DDS reconciliation
+    (volume in == volume out + losses).
+    """
+    __tablename__ = "custody_event_quantities"
+    __table_args__ = (
+        Index("ix_ceq_event_id", "event_id"),
+        CheckConstraint("quantity > 0", name="ck_ceq_quantity_positive"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    event_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("custody_events.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    quantity: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False)
+    uom: Mapped[str] = mapped_column(String(20), nullable=False)
+    previous_quantity: Mapped[Decimal | None] = mapped_column(
+        Numeric(18, 4), nullable=True
+    )
+    previous_uom: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    merma_pct: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, default=_utcnow
+    )
+
+    event: Mapped["CustodyEvent"] = relationship(
+        "CustodyEvent", back_populates="quantity_changes", lazy="noload"
     )
 
 

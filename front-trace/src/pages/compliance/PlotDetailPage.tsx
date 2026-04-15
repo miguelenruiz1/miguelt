@@ -92,14 +92,14 @@ function SourceCard({ src }: { src: SourceResult }) {
                 <div className="bg-muted/50 rounded-lg p-2.5">
                   <span className="text-muted-foreground block text-[10px] uppercase tracking-wide font-medium">Alertas post-corte EUDR</span>
                   <p className={`font-bold text-xl mt-0.5 ${(src.alerts_count ?? 0) > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                    {(src.alerts_count ?? 0).toLocaleString()}
+                    {(src.alerts_count ?? 0).toLocaleString('es-CO')}
                   </p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">Posteriores al 31 dic 2020</p>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-2.5">
                   <span className="text-muted-foreground block text-[10px] uppercase tracking-wide font-medium">Alta confianza</span>
                   <p className={`font-bold text-xl mt-0.5 ${(src.high_confidence_alerts ?? 0) > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                    {(src.high_confidence_alerts ?? 0).toLocaleString()}
+                    {(src.high_confidence_alerts ?? 0).toLocaleString('es-CO')}
                   </p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">Confidence: high + highest</p>
                 </div>
@@ -132,7 +132,7 @@ function SourceCard({ src }: { src: SourceResult }) {
                 <div className="bg-muted/50 rounded-lg p-2.5">
                   <span className="text-muted-foreground block text-[10px] uppercase tracking-wide font-medium">Pixeles perdidos</span>
                   <p className={`font-bold text-xl mt-0.5 ${(src.loss_pixels ?? 0) > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                    {(src.loss_pixels ?? 0).toLocaleString()}
+                    {(src.loss_pixels ?? 0).toLocaleString('es-CO')}
                   </p>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-2.5">
@@ -157,7 +157,7 @@ function SourceCard({ src }: { src: SourceResult }) {
                       return (
                         <div key={yr} className="bg-background rounded-lg px-2.5 py-1.5 text-center border border-red-200">
                           <span className="text-[10px] text-muted-foreground block font-medium">{yr}</span>
-                          <span className="text-xs font-bold text-red-600 block">{Number(px).toLocaleString()} px</span>
+                          <span className="text-xs font-bold text-red-600 block">{Number(px).toLocaleString('es-CO')} px</span>
                           <span className="text-[10px] text-red-500">{ha} ha</span>
                         </div>
                       )
@@ -178,7 +178,7 @@ function SourceCard({ src }: { src: SourceResult }) {
               <div className={`text-[11px] rounded-lg px-3 py-2 leading-relaxed ${isDetected ? 'text-red-800 bg-red-50 border border-red-200' : 'text-emerald-800 bg-emerald-50 border border-emerald-200'}`}>
                 <p className="font-semibold mb-0.5">{isDetected ? 'Resultado: PERDIDA DE COBERTURA DETECTADA' : 'Resultado: COBERTURA INTACTA'}</p>
                 {isDetected ? (
-                  <p>Se cuantifico perdida de {(src.loss_pixels ?? 0).toLocaleString()} pixeles ({lossHa.toFixed(2)} hectareas) de cobertura arborea despues de {src.cutoff_year ?? 2021}. Cada pixel Landsat (30x30m) indica remocion total del dosel forestal. Esta evidencia historica, combinada con las alertas GFW, constituye indicador de riesgo bajo Art. 10 del Reglamento EUDR.</p>
+                  <p>Se cuantifico perdida de {(src.loss_pixels ?? 0).toLocaleString('es-CO')} pixeles ({lossHa.toFixed(2)} hectareas) de cobertura arborea despues de {src.cutoff_year ?? 2021}. Cada pixel Landsat (30x30m) indica remocion total del dosel forestal. Esta evidencia historica, combinada con las alertas GFW, constituye indicador de riesgo bajo Art. 10 del Reglamento EUDR.</p>
                 ) : (
                   <p>El analisis historico de imagenes Landsat no registra eliminacion de dosel forestal en la parcela despues de {src.cutoff_year ?? 2021}. La cobertura arborea se ha mantenido estable segun el dataset Hansen v1.11.</p>
                 )}
@@ -194,7 +194,7 @@ function SourceCard({ src }: { src: SourceResult }) {
                 <div className="bg-muted/50 rounded-lg p-2.5">
                   <span className="text-muted-foreground block text-[10px] uppercase tracking-wide font-medium">Pixeles de bosque</span>
                   <p className="font-bold text-xl mt-0.5 text-foreground">
-                    {(src.forest_pixel_count ?? 0).toLocaleString()}
+                    {(src.forest_pixel_count ?? 0).toLocaleString('es-CO')}
                   </p>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-2.5">
@@ -224,7 +224,7 @@ function SourceCard({ src }: { src: SourceResult }) {
               <div className={`text-[11px] rounded-lg px-3 py-2 leading-relaxed border ${src.was_forest_2020 ? 'text-blue-800 bg-blue-50 border-blue-200' : 'text-emerald-800 bg-emerald-50 border-emerald-200'}`}>
                 <p className="font-semibold mb-0.5">{src.was_forest_2020 ? 'Clasificacion: ZONA FORESTAL — EUDR aplica' : 'Clasificacion: ZONA NO FORESTAL — EUDR no aplica'}</p>
                 {src.was_forest_2020 ? (
-                  <p>El JRC clasifico {(src.forest_pixel_count ?? 0).toLocaleString()} pixeles Sentinel-2 ({forestHa.toFixed(2)} ha) como cobertura forestal en 2020. Segun Art. 2(6) del Reglamento EUDR, esta parcela esta sujeta a las restricciones de deforestacion: se debe demostrar que no hubo conversion forestal despues del 31/12/2020 para comercializar productos derivados en la UE.</p>
+                  <p>El JRC clasifico {(src.forest_pixel_count ?? 0).toLocaleString('es-CO')} pixeles Sentinel-2 ({forestHa.toFixed(2)} ha) como cobertura forestal en 2020. Segun Art. 2(6) del Reglamento EUDR, esta parcela esta sujeta a las restricciones de deforestacion: se debe demostrar que no hubo conversion forestal despues del 31/12/2020 para comercializar productos derivados en la UE.</p>
                 ) : (
                   <p>El mapa JRC 2020 no clasifico esta area como bosque. Segun la definicion FAO adoptada por el EUDR (terreno {'>'} 0.5 ha, dosel {'>'} 10%, arboles {'>'} 5m), la parcela no era forestal en la fecha de referencia. Las restricciones de deforestacion del Art. 3(1) no aplican.</p>
                 )}
@@ -615,7 +615,24 @@ export function PlotDetailPage() {
     }
   }
 
-  if (isLoading) return <div className="flex justify-center py-20 text-muted-foreground">Cargando...</div>
+  if (isLoading) return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+        <div className="h-6 w-48 rounded bg-muted animate-pulse" />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          <div className="h-64 rounded-xl bg-muted animate-pulse" />
+          <div className="h-32 rounded-xl bg-muted animate-pulse" />
+        </div>
+        <div className="space-y-4">
+          <div className="h-40 rounded-xl bg-muted animate-pulse" />
+          <div className="h-40 rounded-xl bg-muted animate-pulse" />
+        </div>
+      </div>
+    </div>
+  )
   if (!plot) return <div className="flex justify-center py-20 text-muted-foreground">Parcela no encontrada</div>
 
   const fullScreening = (plot as any).metadata_?.eudr_full_screening
@@ -801,7 +818,7 @@ export function PlotDetailPage() {
                     const lines: { icon: 'check' | 'x' | 'info' | 'warn'; label: string; detail: string }[] = []
                     if (jrc) {
                       lines.push(jrc.was_forest_2020
-                        ? { icon: 'info', label: 'JRC 2020', detail: `Zona forestal confirmada — ${(jrc.forest_pixel_count ?? 0).toLocaleString()} pixeles (${((jrc.forest_pixel_count ?? 0) * 100 / 10000).toFixed(2)} ha) clasificados como bosque` }
+                        ? { icon: 'info', label: 'JRC 2020', detail: `Zona forestal confirmada — ${(jrc.forest_pixel_count ?? 0).toLocaleString('es-CO')} pixeles (${((jrc.forest_pixel_count ?? 0) * 100 / 10000).toFixed(2)} ha) clasificados como bosque` }
                         : { icon: 'check', label: 'JRC 2020', detail: 'No forestal — EUDR no aplica restricciones de deforestacion a esta parcela' }
                       )
                     }
@@ -814,7 +831,7 @@ export function PlotDetailPage() {
                     if (hansen) {
                       const ha = ((hansen.loss_pixels ?? 0) * 900 / 10000).toFixed(2)
                       lines.push(hansen.has_loss
-                        ? { icon: 'x', label: 'Hansen/UMD', detail: `${(hansen.loss_pixels ?? 0).toLocaleString()} pixeles de perdida (${ha} ha) — Landsat 30m` }
+                        ? { icon: 'x', label: 'Hansen/UMD', detail: `${(hansen.loss_pixels ?? 0).toLocaleString('es-CO')} pixeles de perdida (${ha} ha) — Landsat 30m` }
                         : { icon: 'check', label: 'Hansen/UMD', detail: 'Sin perdida de cobertura arborea post-2021' }
                       )
                     }

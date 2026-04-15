@@ -47,16 +47,29 @@ class ProductionService:
             raise NotFoundError("Receta no encontrada")
         return r
 
-    async def create_recipe(self, tenant_id: str, data: dict, components: list[dict]):
-        recipe = await self.recipe_repo.create(tenant_id, data, components)
+    async def create_recipe(
+        self,
+        tenant_id: str,
+        data: dict,
+        components: list[dict],
+        output_components: list[dict] | None = None,
+    ):
+        recipe = await self.recipe_repo.create(tenant_id, data, components, output_components)
         await self._recalculate_standard_cost(recipe)
         return await self.recipe_repo.get(tenant_id, recipe.id)
 
-    async def update_recipe(self, tenant_id: str, recipe_id: str, data: dict, components: list[dict] | None = None):
+    async def update_recipe(
+        self,
+        tenant_id: str,
+        recipe_id: str,
+        data: dict,
+        components: list[dict] | None = None,
+        output_components: list[dict] | None = None,
+    ):
         r = await self.recipe_repo.get(tenant_id, recipe_id)
         if not r:
             raise NotFoundError("Receta no encontrada")
-        updated = await self.recipe_repo.update(r, data, components)
+        updated = await self.recipe_repo.update(r, data, components, output_components)
         await self._recalculate_standard_cost(updated)
         return await self.recipe_repo.get(tenant_id, recipe_id)
 
@@ -411,6 +424,66 @@ class ProductionService:
 
     # ── Receipt (in_progress → completed) ────────────────────────────────────
 
+    async def _propagate_plot_origins(
+        self,
+        tenant_id: str,
+        run_id: str,
+        output_batch_id: str,
+        output_quantity: Decimal,
+    ) -> None:
+        """Copy plot origins from emission-consumed batches to the output batch.
+
+        Best-effort: if no input had origins, nothing happens. We do this in a
+        SAVEPOINT so a failure (e.g. empty batches table) doesn't poison the
+        outer transaction.
+        """
+        import uuid as _uuid
+
+        from sqlalchemy import select as _select
+
+        from app.db.models.production import ProductionEmission, ProductionEmissionLine
+        from app.db.models.tracking import BatchPlotOrigin
+
+        try:
+            async with self.db.begin_nested():
+                # Gather batch_ids consumed by emissions for this run.
+                input_batch_ids = (
+                    await self.db.execute(
+                        _select(ProductionEmissionLine.batch_id)
+                        .join(
+                            ProductionEmissionLine.emission,
+                        )
+                        .where(
+                            ProductionEmission.production_run_id == run_id,
+                            ProductionEmissionLine.batch_id.is_not(None),
+                        )
+                    )
+                ).scalars().all()
+                input_batch_ids = [b for b in input_batch_ids if b]
+                if not input_batch_ids:
+                    return
+
+                origins = (
+                    await self.db.execute(
+                        _select(BatchPlotOrigin).where(
+                            BatchPlotOrigin.tenant_id == tenant_id,
+                            BatchPlotOrigin.batch_id.in_(input_batch_ids),
+                        )
+                    )
+                ).scalars().all()
+                for orig in origins:
+                    self.db.add(BatchPlotOrigin(
+                        id=str(_uuid.uuid4()),
+                        tenant_id=tenant_id,
+                        batch_id=output_batch_id,
+                        plot_id=orig.plot_id,
+                        plot_code=orig.plot_code,
+                        origin_quantity_kg=output_quantity,
+                    ))
+        except Exception:
+            # Lineage is a nice-to-have, not critical path for the receipt.
+            return
+
     async def create_receipt(self, tenant_id: str, run_id: str, data: dict, performed_by: str | None = None):
         """Receive finished goods (or components for disassembly) from WIP → inventory."""
         run = await self._get_run_or_404(tenant_id, run_id)
@@ -430,6 +503,25 @@ class ProductionService:
 
         if remaining_output <= 0:
             raise ValidationError("Ya se recibio la totalidad de la produccion planificada")
+
+        # Multi-output validation: if the recipe declares explicit output_components
+        # (finished product + byproducts), the client must list a line for every
+        # declared output entity. We refuse partial receipts so traceability/cost
+        # allocation stays explicit — no silent zero-cost byproducts.
+        recipe_outputs = [
+            oc for oc in (getattr(recipe, "output_components", None) or [])
+            if oc.output_entity_id
+        ]
+        input_lines_pre = data.get("lines") or []
+        if len(recipe_outputs) > 1 and input_lines_pre:
+            expected_ids = {str(oc.output_entity_id) for oc in recipe_outputs}
+            provided_ids = {str(ln.get("entity_id")) for ln in input_lines_pre if ln.get("entity_id")}
+            missing = expected_ids - provided_ids
+            if missing:
+                raise ValidationError(
+                    "La receta declara multiples salidas (output_components); "
+                    f"faltan batches para las entidades: {sorted(missing)}"
+                )
 
         now = datetime.now(timezone.utc)
         receipt_date = data.get("receipt_date") or now
@@ -511,6 +603,45 @@ class ProductionService:
             "unit_production_cost": final_unit_cost,
         })
 
+        # ── Multi-output: receive secondary outputs (is_main=false). ───────────
+        # Legacy single-output (recipe.output_entity_id) already handled above;
+        # this block adds the byproducts declared in production_output_components.
+        secondary_outputs = [
+            oc for oc in (getattr(recipe, "output_components", None) or [])
+            if not oc.is_main and oc.output_entity_id != recipe.output_entity_id
+        ]
+        for oc in secondary_outputs:
+            sec_qty = oc.output_quantity * multiplier
+            if sec_qty <= 0:
+                continue
+            # Cost byproducts at zero unless explicitly priced (avoids double-
+            # counting the component cost that's already attributed to main).
+            await self.stock_repo.upsert_level(tenant_id, oc.output_entity_id, output_wh, sec_qty)
+            sec_mov = await self.movement_repo.create({
+                "tenant_id": tenant_id,
+                "movement_type": MovementType.production_in,
+                "product_id": oc.output_entity_id,
+                "to_warehouse_id": output_wh,
+                "quantity": sec_qty,
+                "unit_cost": Decimal("0"),
+                "notes": f"Recibo {run.run_number} — subproducto",
+                "performed_by": performed_by,
+            })
+            await self.layer_repo.create_layer(
+                tenant_id=tenant_id,
+                entity_id=oc.output_entity_id,
+                warehouse_id=output_wh,
+                quantity=sec_qty,
+                unit_cost=Decimal("0"),
+                movement_id=sec_mov.id,
+            )
+
+        # ── Lineage propagation: inherit plot origins from consumed input batches.
+        # If any emission consumed a batch that had plot origins registered,
+        # copy those origins (pro-rata by received_qty) to the output batch.
+        if batch_id:
+            await self._propagate_plot_origins(tenant_id, run_id, batch_id, received_qty)
+
         # Transition to completed if all received
         if is_complete or actual_output >= planned_output:
             await self.run_repo.update(run, {
@@ -524,6 +655,53 @@ class ProductionService:
                 "run_id": run.id, "run_number": run.run_number,
                 "actual_output": float(actual_output), "total_cost": float(total_production),
             })
+
+        # ── Trace-service custody bridge (fire-and-forget) ─────────────────
+        # Best-effort: notify trace-service that a production batch was
+        # produced, so the custody chain extends from input plots/batches
+        # to this output batch. Wrapped in SAVEPOINT + try/except so a
+        # failure here cannot poison the transaction (regla #2).
+        try:
+            async with self.db.begin_nested():
+                # Gather consumed input batch ids and plot origins
+                from app.db.models.production import ProductionEmission, ProductionEmissionLine
+                from app.db.models.tracking import BatchPlotOrigin
+                from sqlalchemy import select
+
+                q = await self.db.execute(
+                    select(ProductionEmissionLine.batch_id)
+                    .join(ProductionEmission, ProductionEmissionLine.emission_id == ProductionEmission.id)
+                    .where(ProductionEmission.production_run_id == run_id)
+                )
+                input_batch_ids = [str(b) for b in q.scalars().all() if b]
+
+                plot_ids: list[str] = []
+                if input_batch_ids:
+                    pq = await self.db.execute(
+                        select(BatchPlotOrigin.plot_id)
+                        .where(BatchPlotOrigin.batch_id.in_(input_batch_ids))
+                        .distinct()
+                    )
+                    plot_ids = [str(p) for p in pq.scalars().all() if p]
+        except Exception:
+            input_batch_ids = []
+            plot_ids = []
+
+        try:
+            from app.clients import trace_client
+            await trace_client.notify_production_completed_background(
+                tenant_id=tenant_id,
+                production_run_id=run_id,
+                run_number=run.run_number,
+                output_entity_id=recipe.output_entity_id,
+                output_batch_id=batch_id,
+                output_warehouse_id=output_wh,
+                quantity=float(received_qty),
+                input_batch_ids=input_batch_ids,
+                plot_ids=plot_ids,
+            )
+        except Exception:
+            pass
 
         return await self.receipt_repo.get(tenant_id, receipt.id)
 

@@ -16,17 +16,51 @@ import { usePlanLimitStore } from '@/store/planLimit'
 
 // ─── API Error class ──────────────────────────────────────────────────────────
 
+// Normalizes FastAPI / Pydantic / generic error payloads into a readable string.
+// Handles:
+//   - string detail ("Plot not found")
+//   - Pydantic v2 array: [{loc:["body","field"], msg:"...", type:"..."}]
+//   - {error:{message:"..."}}
+//   - fallback to HTTP {status}
+function formatErrorDetail(
+  body: ApiErrorBody & { detail?: unknown },
+  status: number,
+): string {
+  const d = (body as any).detail
+  if (typeof d === 'string' && d.trim()) return d
+  if (Array.isArray(d)) {
+    const parts = d
+      .map((item: any) => {
+        if (typeof item === 'string') return item
+        if (item && typeof item === 'object') {
+          const loc = Array.isArray(item.loc) ? item.loc.filter((x: any) => x !== 'body').join('.') : ''
+          const msg = item.msg ?? item.message ?? ''
+          return loc ? `${loc}: ${msg}` : msg
+        }
+        return ''
+      })
+      .filter(Boolean)
+    if (parts.length) return parts.join(' · ')
+  }
+  if (d && typeof d === 'object') {
+    const anyD = d as any
+    if (typeof anyD.message === 'string') return anyD.message
+  }
+  if (body.error?.message) return body.error.message
+  return `HTTP ${status}`
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
-    public readonly body: ApiErrorBody & { detail?: string },
+    public readonly body: ApiErrorBody & { detail?: unknown },
   ) {
-    super(body.error?.message ?? body.detail ?? `HTTP ${status}`)
+    super(formatErrorDetail(body, status))
     this.name = 'ApiError'
   }
 
   get code() { return this.body.error?.code ?? 'UNKNOWN' }
-  get detail() { return this.body.detail ?? this.body.error?.message ?? this.message }
+  get detail() { return this.message }
 }
 
 // ─── Base fetch helper ────────────────────────────────────────────────────────
@@ -82,7 +116,10 @@ async function request<T>(
         resource: errBody.resource ?? 'recurso',
         current: errBody.current ?? 0,
         limit: errBody.limit ?? 0,
-        message: errBody.error?.message ?? errBody.detail ?? 'Has alcanzado el limite de tu plan actual.',
+        message:
+          errBody.error?.message ??
+          (typeof errBody.detail === 'string' ? errBody.detail : undefined) ??
+          'Has alcanzado el limite de tu plan actual.',
       })
     }
 

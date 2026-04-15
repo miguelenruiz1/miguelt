@@ -115,7 +115,7 @@ export function AlertsPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                  {a.created_at && <span>{new Date(a.created_at).toLocaleString()}</span>}
+                  {a.created_at && <span>{new Date(a.created_at).toLocaleString('es-CO')}</span>}
                 </div>
               </div>
               <div className="flex gap-1 shrink-0">

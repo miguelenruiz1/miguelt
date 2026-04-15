@@ -139,6 +139,7 @@ export interface CompliancePlot {
   satellite_report_url: string | null
   satellite_report_hash: string | null
   satellite_verified_at: string | null
+  commodity_type: string | null
   is_active: boolean
   metadata_: Record<string, unknown>
   created_at: string
@@ -180,6 +181,12 @@ export interface ComplianceRecord {
   validation_result: Record<string, unknown> | null
   missing_fields: string[] | null
   documents_retention_until: string | null
+  cadmium_mg_per_kg: number | null
+  cadmium_test_date: string | null
+  cadmium_test_lab: string | null
+  cadmium_test_doc_hash: string | null
+  cadmium_eu_compliant: boolean | null
+  rspo_trace_model: string | null
   metadata_: Record<string, unknown>
   created_at: string
   updated_at: string
@@ -222,6 +229,7 @@ export interface ComplianceCertificate {
   generated_at: string | null
   generated_by: string | null
   generation_error: string | null
+  rspo_trace_model: string | null
   solana_cnft_address: string | null
   solana_tx_sig: string | null
   metadata: Record<string, unknown>
@@ -509,6 +517,7 @@ export interface CreatePlotInput {
   cutoff_date_compliant?: boolean
   legal_land_use?: boolean
   risk_level?: string
+  commodity_type?: string | null
   satellite_report_url?: string | null
   satellite_report_hash?: string | null
   metadata?: Record<string, unknown> | null
@@ -550,6 +559,7 @@ export interface UpdatePlotInput {
   cutoff_date_compliant?: boolean | null
   legal_land_use?: boolean | null
   risk_level?: string | null
+  commodity_type?: string | null
   satellite_report_url?: string | null
   satellite_report_hash?: string | null
   metadata?: Record<string, unknown> | null
@@ -576,6 +586,7 @@ export interface CreateRecordInput {
   operator_eori?: string | null
   deforestation_free_declaration?: boolean
   legal_compliance_declaration?: boolean
+  rspo_trace_model?: string | null
   metadata?: Record<string, unknown> | null
 }
 
@@ -598,6 +609,7 @@ export interface UpdateRecordInput {
   operator_eori?: string | null
   deforestation_free_declaration?: boolean | null
   legal_compliance_declaration?: boolean | null
+  rspo_trace_model?: string | null
   metadata?: Record<string, unknown> | null
 }
 

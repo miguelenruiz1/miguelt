@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db.models import EntityRecipe, RecipeComponent, RecipeResource
+from app.db.models.production import ProductionOutputComponent
 
 
 class RecipeRepository:
@@ -32,6 +33,7 @@ class RecipeRepository:
                 .selectinload(RecipeComponent.component_entity),
                 selectinload(EntityRecipe.resources)
                 .selectinload(RecipeResource.resource),
+                selectinload(EntityRecipe.output_components),
             )
             .order_by(EntityRecipe.name)
             .offset(offset)
@@ -48,21 +50,41 @@ class RecipeRepository:
                 .selectinload(RecipeComponent.component_entity),
                 selectinload(EntityRecipe.resources)
                 .selectinload(RecipeResource.resource),
+                selectinload(EntityRecipe.output_components),
             )
             .where(EntityRecipe.tenant_id == tenant_id, EntityRecipe.id == recipe_id)
         )
         return result.scalar_one_or_none()
 
-    async def create(self, tenant_id: str, data: dict, components: list[dict]) -> EntityRecipe:
+    async def create(
+        self,
+        tenant_id: str,
+        data: dict,
+        components: list[dict],
+        output_components: list[dict] | None = None,
+    ) -> EntityRecipe:
         recipe_id = str(uuid.uuid4())
         recipe = EntityRecipe(id=recipe_id, tenant_id=tenant_id, **data)
         self.db.add(recipe)
         for comp in components:
             self.db.add(RecipeComponent(id=str(uuid.uuid4()), tenant_id=tenant_id, recipe_id=recipe_id, **comp))
+        for oc in output_components or []:
+            self.db.add(ProductionOutputComponent(
+                id=str(uuid.uuid4()),
+                tenant_id=tenant_id,
+                recipe_id=recipe_id,
+                **oc,
+            ))
         await self.db.flush()
         return await self.get(tenant_id, recipe_id)  # re-fetch with eager loading
 
-    async def update(self, recipe: EntityRecipe, data: dict, components: list[dict] | None = None) -> EntityRecipe:
+    async def update(
+        self,
+        recipe: EntityRecipe,
+        data: dict,
+        components: list[dict] | None = None,
+        output_components: list[dict] | None = None,
+    ) -> EntityRecipe:
         for k, v in data.items():
             if v is not None:
                 setattr(recipe, k, v)
@@ -73,8 +95,19 @@ class RecipeRepository:
             await self.db.flush()
             for comp in components:
                 self.db.add(RecipeComponent(id=str(uuid.uuid4()), tenant_id=recipe.tenant_id, recipe_id=recipe.id, **comp))
+        if output_components is not None:
+            for oc in list(recipe.output_components):
+                await self.db.delete(oc)
+            await self.db.flush()
+            for oc in output_components:
+                self.db.add(ProductionOutputComponent(
+                    id=str(uuid.uuid4()),
+                    tenant_id=recipe.tenant_id,
+                    recipe_id=recipe.id,
+                    **oc,
+                ))
         await self.db.flush()
-        await self.db.refresh(recipe, attribute_names=["components"])
+        await self.db.refresh(recipe, attribute_names=["components", "output_components"])
         return recipe
 
     async def soft_delete(self, recipe: EntityRecipe) -> None:

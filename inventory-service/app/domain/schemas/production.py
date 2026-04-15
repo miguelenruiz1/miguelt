@@ -20,6 +20,26 @@ class RecipeComponentCreate(BaseModel):
     lead_time_offset_days: int = 0
 
 
+class RecipeOutputComponentCreate(BaseModel):
+    output_entity_id: str
+    output_quantity: Decimal = Field(..., gt=0)
+    output_uom_id: str | None = None
+    conversion_factor: Decimal | None = None
+    is_main: bool = False
+
+
+class RecipeOutputComponentOut(OrmBase):
+    id: str
+    tenant_id: str
+    recipe_id: str
+    output_entity_id: str
+    output_quantity: Decimal
+    output_uom_id: str | None = None
+    conversion_factor: Decimal | None = None
+    is_main: bool = False
+    created_at: datetime
+
+
 class RecipeCreate(BaseModel):
     name: str = Field(..., max_length=255)
     output_entity_id: str
@@ -32,6 +52,7 @@ class RecipeCreate(BaseModel):
     version: str = "v1"
     is_default: bool = True
     components: list[RecipeComponentCreate] = []
+    output_components: list[RecipeOutputComponentCreate] = []
 
 
 class RecipeUpdate(BaseModel):
@@ -46,6 +67,7 @@ class RecipeUpdate(BaseModel):
     version: str | None = None
     is_default: bool | None = None
     components: list[RecipeComponentCreate] | None = None
+    output_components: list[RecipeOutputComponentCreate] | None = None
 
 
 class RecipeComponentOut(OrmBase):
@@ -77,6 +99,7 @@ class RecipeOut(OrmBase):
     created_at: datetime
     components: list[RecipeComponentOut] = []
     resources: list[RecipeResourceOut] = []
+    output_components: list[RecipeOutputComponentOut] = []
 
 
 # ─── Resources / Work Centers ────────────────────────────────────────────────

@@ -36,6 +36,9 @@ class ProductCreate(BaseModel):
     preferred_currency: str = "COP"
     weight_per_unit: Decimal | None = None
     volume_per_unit: Decimal | None = None
+    origin_plot_id: str | None = Field(default=None, max_length=36)
+    origin_plot_code: str | None = Field(default=None, max_length=64)
+    commodity_type: str | None = Field(default=None, max_length=20)
 
 
 class ProductUpdate(BaseModel):
@@ -64,6 +67,9 @@ class ProductUpdate(BaseModel):
     preferred_currency: str | None = None
     weight_per_unit: Decimal | None = None
     volume_per_unit: Decimal | None = None
+    origin_plot_id: str | None = Field(default=None, max_length=36)
+    origin_plot_code: str | None = Field(default=None, max_length=64)
+    commodity_type: str | None = Field(default=None, max_length=20)
 
 
 class ProductOut(OrmBase):
@@ -95,6 +101,9 @@ class ProductOut(OrmBase):
     preferred_currency: str = "COP"
     weight_per_unit: Decimal | None = None
     volume_per_unit: Decimal | None = None
+    origin_plot_id: str | None = None
+    origin_plot_code: str | None = None
+    commodity_type: str | None = None
     tax_rate_id: str | None = None
     is_tax_exempt: bool = False
     retention_rate: Decimal | None = None

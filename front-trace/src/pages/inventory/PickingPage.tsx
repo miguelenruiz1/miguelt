@@ -122,7 +122,7 @@ function PickQueue({ onSelect }: { onSelect: (id: string) => void }) {
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span>{order.lines.length} linea{order.lines.length !== 1 ? 's' : ''}</span>
                 <span className="font-semibold text-foreground">
-                  ${order.total.toLocaleString()} {order.currency}
+                  ${order.total.toLocaleString('es-CO')} {order.currency}
                 </span>
                 <span className="ml-auto text-xs">{fmtDate(order.created_at)}</span>
               </div>
@@ -352,7 +352,7 @@ function ActivePicking({ orderId, onBack }: { orderId: string; onBack: () => voi
         </div>
         <div className="text-right">
           <p className="text-xs text-muted-foreground">{fmtDate(order.expected_date)}</p>
-          <p className="text-lg font-bold text-primary mt-1">${order.total.toLocaleString()} {order.currency}</p>
+          <p className="text-lg font-bold text-primary mt-1">${order.total.toLocaleString('es-CO')} {order.currency}</p>
         </div>
       </div>
 
