@@ -13,7 +13,7 @@ from jwt import PyJWTError as JWTError
 from app.core.security import decode_token
 from app.core.settings import get_settings
 
-_bearer = HTTPBearer(auto_error=True)
+_bearer = HTTPBearer(auto_error=False)
 
 
 def get_client_ip(request: Request) -> str | None:
@@ -46,16 +46,44 @@ def get_http_client() -> httpx.AsyncClient:
 
 
 async def get_current_user(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(_bearer)],
+    request: Request,
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
     redis: Annotated[aioredis.Redis, Depends(get_redis)],
     http_client: Annotated[httpx.AsyncClient, Depends(get_http_client)],
 ) -> dict:
-    token = credentials.credentials
+    settings = get_settings()
+
+    # Allow S2S calls with X-Service-Token (bypass JWT). Same pattern as
+    # compliance-service/app/api/deps.py — inter-service callers identify
+    # themselves with a shared secret and act as a superuser for the
+    # tenant supplied via X-Tenant-Id.
+    service_token = request.headers.get("X-Service-Token")
+    if service_token:
+        import secrets as _secrets
+        if _secrets.compare_digest(service_token, settings.S2S_SERVICE_TOKEN):
+            tenant_id = request.headers.get("X-Tenant-Id", "default")
+            return {
+                "id": "system",
+                "tenant_id": tenant_id,
+                "is_superuser": True,
+                "permissions": [],
+                "email": "system@trace.internal",
+            }
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid service token",
+        )
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid or expired token",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if credentials is None:
+        raise credentials_exception
+
+    token = credentials.credentials
 
     try:
         payload = decode_token(token)
@@ -72,7 +100,6 @@ async def get_current_user(
     # Key by jti so logout/refresh invalidates the cached "me" immediately.
     jti = payload.get("jti") or "_"
     cache_key = f"inv_svc:me:{user_id}:{jti}"
-    settings = get_settings()
     cached = await redis.get(cache_key)
     if cached:
         return json.loads(cached)

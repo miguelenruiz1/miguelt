@@ -332,6 +332,7 @@ function CreateRecipeModal({ onClose }: { onClose: () => void }) {
     bom_type: 'production', standard_cost: '0', planned_production_size: '1',
   })
   const [components, setComponents] = useState<Array<{ component_entity_id: string; quantity_required: string; scrap_percentage: string }>>([])
+  const [outputComponents, setOutputComponents] = useState<Array<{ output_entity_id: string; output_quantity: string; conversion_factor: string }>>([])
 
   function addComponent() {
     setComponents(c => [...c, { component_entity_id: '', quantity_required: '1', scrap_percentage: '0' }])
@@ -345,11 +346,45 @@ function CreateRecipeModal({ onClose }: { onClose: () => void }) {
     setComponents(c => c.map((comp, i) => i === idx ? { ...comp, [key]: val } : comp))
   }
 
+  function addOutputComponent() {
+    setOutputComponents(oc => [...oc, { output_entity_id: '', output_quantity: '1', conversion_factor: '1' }])
+  }
+  function removeOutputComponent(idx: number) {
+    setOutputComponents(oc => oc.filter((_, i) => i !== idx))
+  }
+  function updateOutputComponent(idx: number, key: string, val: string) {
+    setOutputComponents(oc => oc.map((o, i) => i === idx ? { ...o, [key]: val } : o))
+  }
+
   const toast = useToast()
 
   async function doSubmitCreate() {
     try {
-      await create.mutateAsync({ ...form, components })
+      // Build output_components array: main output + optional secondary outputs
+      const allOutputs: Array<{ output_entity_id: string; output_quantity: string; conversion_factor?: string; is_main: boolean }> = []
+      if (form.output_entity_id) {
+        allOutputs.push({
+          output_entity_id: form.output_entity_id,
+          output_quantity: form.output_quantity,
+          is_main: true,
+        })
+      }
+      for (const oc of outputComponents) {
+        if (!oc.output_entity_id) continue
+        allOutputs.push({
+          output_entity_id: oc.output_entity_id,
+          output_quantity: oc.output_quantity,
+          conversion_factor: oc.conversion_factor,
+          is_main: false,
+        })
+      }
+      // Only send output_components if user added secondaries (avoids
+      // accidentally triggering strict multi-output validation on receipts).
+      const payload: Record<string, unknown> = { ...form, components }
+      if (outputComponents.length > 0) {
+        payload.output_components = allOutputs
+      }
+      await create.mutateAsync(payload)
       toast.success('Receta creada')
       onClose()
     } catch (err: any) {
@@ -429,6 +464,40 @@ function CreateRecipeModal({ onClose }: { onClose: () => void }) {
                 </button>
               </div>
             ))}
+          </div>
+
+          <div className="border-t border-border pt-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Salidas secundarias (subproductos)</p>
+              <button type="button" onClick={addOutputComponent} className="text-xs text-primary hover:text-primary font-semibold">
+                + Agregar
+              </button>
+            </div>
+            {outputComponents.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground mb-2">Opcional: p. ej. racimos de palma - aceite (principal) + torta + cuesco.</p>
+            ) : (
+              outputComponents.map((oc, i) => (
+                <div key={i} className="flex gap-2 mb-2">
+                  <select required value={oc.output_entity_id}
+                    onChange={e => updateOutputComponent(i, 'output_entity_id', e.target.value)}
+                    className="flex-1 rounded-lg border border-border px-2 py-1.5 text-sm">
+                    <option value="">Producto *</option>
+                    {productsData?.items?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                  <input required type="number" step="0.01" min="0.01" value={oc.output_quantity}
+                    onChange={e => updateOutputComponent(i, 'output_quantity', e.target.value)}
+                    placeholder="Cant." className="w-20 rounded-lg border border-border px-2 py-1.5 text-sm" />
+                  <input type="number" step="0.0001" min="0" value={oc.conversion_factor}
+                    onChange={e => updateOutputComponent(i, 'conversion_factor', e.target.value)}
+                    placeholder="Factor" title="Factor de conversion"
+                    className="w-20 rounded-lg border border-border px-2 py-1.5 text-sm" />
+                  <button type="button" onClick={() => removeOutputComponent(i)}
+                    className="text-muted-foreground hover:text-red-500">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))
+            )}
           </div>
 
           <div className="flex gap-3 pt-2">

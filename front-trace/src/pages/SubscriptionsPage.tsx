@@ -48,7 +48,7 @@ function KpiCard({
       <p className="mt-2 text-3xl font-bold">
         {prefix}{typeof value === 'number' && !Number.isInteger(value)
           ? value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-          : value.toLocaleString()}{suffix}
+          : value.toLocaleString('es-CO')}{suffix}
       </p>
     </div>
   )
@@ -250,7 +250,7 @@ export function SubscriptionsPage() {
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Período</span>
                     <span className="text-muted-foreground">
-                      {new Date(sub.current_period_start).toLocaleDateString()} – {new Date(sub.current_period_end).toLocaleDateString()}
+                      {new Date(sub.current_period_start).toLocaleDateString('es-CO')} – {new Date(sub.current_period_end).toLocaleDateString('es-CO')}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
@@ -291,8 +291,8 @@ export function SubscriptionsPage() {
                     <StatusBadge status={sub.status} />
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {new Date(sub.current_period_start).toLocaleDateString()} –{' '}
-                    {new Date(sub.current_period_end).toLocaleDateString()}
+                    {new Date(sub.current_period_start).toLocaleDateString('es-CO')} –{' '}
+                    {new Date(sub.current_period_end).toLocaleDateString('es-CO')}
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground capitalize">{sub.billing_cycle}</td>
                 </tr>

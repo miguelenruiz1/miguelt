@@ -20,10 +20,11 @@ import { HashChip, Spinner, Card, EmptyState } from '@/components/ui/misc'
 import { EventTimeline } from '@/components/events/EventTimeline'
 import { WorkflowEventModal } from '@/components/events/WorkflowEventModal'
 import { fmtDate, shortPubkey } from '@/lib/utils'
-import { useAssetCompliance, useRecordCertificate, useGenerateCertificate } from '@/hooks/useCompliance'
+import { useAssetCompliance, useRecordCertificate, useGenerateCertificate, usePlot } from '@/hooks/useCompliance'
 import { authFetch } from '@/lib/auth-fetch'
 import { useIsModuleActive } from '@/hooks/useModules'
 import { resolveIcon, colorStyle } from '@/lib/icon-map'
+import { useToast } from '@/store/toast'
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,7 @@ export function AssetDetailPage() {
   const [showBlockchainDetails, setShowBlockchainDetails] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const deleteAsset = useDeleteAsset()
+  const toast = useToast()
 
   const { data: asset, isLoading, refetch, isFetching } = useAsset(id)
   const { data: eventsData, isLoading: eventsLoading } = useAssetEvents(id)
@@ -89,7 +91,15 @@ export function AssetDetailPage() {
   if (isLoading) return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <Topbar title="Carga" />
-      <div className="flex justify-center py-20"><Spinner /></div>
+      <div className="p-6 space-y-4">
+        <div className="h-8 w-72 rounded bg-muted animate-pulse" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="h-28 rounded-xl bg-muted animate-pulse" />
+          <div className="h-28 rounded-xl bg-muted animate-pulse" />
+          <div className="h-28 rounded-xl bg-muted animate-pulse" />
+        </div>
+        <div className="h-64 rounded-xl bg-muted animate-pulse" />
+      </div>
     </div>
   )
 
@@ -449,6 +459,7 @@ export function AssetDetailPage() {
 
           {/* ─── Right column: Timeline + Compliance ─────────────────── */}
           <div className="lg:col-span-2 space-y-6">
+            <PlotOriginCard plotId={asset.plot_id ?? null} />
             <Card>
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -501,9 +512,10 @@ export function AssetDetailPage() {
                       const adminKey = useSettingsStore.getState().adminKey || ''
                       try {
                         await deleteAsset.mutateAsync({ id: asset.id, adminKey })
+                        toast.success('Carga eliminada')
                         navigate('/assets')
                       } catch (e: any) {
-                        alert(e.message || 'Error al eliminar')
+                        toast.error(e?.message || 'Error al eliminar')
                       }
                     }}
                   >
@@ -775,5 +787,81 @@ function ComplianceRecordCard({ record: r }: { record: { id: string; framework_s
         )}
       </div>
     </div>
+  )
+}
+
+// ─── Plot origin card (EUDR — link to source compliance plot) ────────────────
+function PlotOriginCard({ plotId }: { plotId: string | null }) {
+  const { data: plot, isLoading } = usePlot(plotId ?? '')
+  if (!plotId) {
+    return (
+      <Card>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-muted-foreground" /> Origen
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Este activo no tiene parcela origen vinculada.
+            </p>
+          </div>
+          <Link
+            to="/cumplimiento/parcelas"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
+          >
+            Vincular parcela
+          </Link>
+        </div>
+      </Card>
+    )
+  }
+  return (
+    <Card>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+            <MapPin className="h-4 w-4 text-emerald-600" /> Origen
+          </h3>
+          {isLoading ? (
+            <Spinner />
+          ) : plot ? (
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Parcela</span>
+                <span className="font-medium text-foreground">{plot.plot_code}</span>
+              </div>
+              {plot.vereda && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Vereda</span>
+                  <span className="text-foreground">{plot.vereda}</span>
+                </div>
+              )}
+              {plot.municipality && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Municipio</span>
+                  <span className="text-foreground">{plot.municipality}</span>
+                </div>
+              )}
+              {plot.lat && plot.lng && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Coordenadas</span>
+                  <span className="text-foreground tabular-nums">
+                    {Number(plot.lat).toFixed(5)}, {Number(plot.lng).toFixed(5)}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Parcela no encontrada (ID: {plotId})</p>
+          )}
+        </div>
+        <Link
+          to={`/cumplimiento/parcelas/${plotId}`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-semibold text-muted-foreground hover:bg-muted whitespace-nowrap"
+        >
+          Ver parcela <ExternalLink className="h-3 w-3" />
+        </Link>
+      </div>
+    </Card>
   )
 }

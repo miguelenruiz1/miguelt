@@ -211,7 +211,7 @@ export function WalletDetailPage() {
 
           {accountData && (
             <p className="text-xs text-muted-foreground mt-1">
-              {accountData.lamports?.toLocaleString() ?? '—'} lamports
+              {accountData.lamports?.toLocaleString('es-CO') ?? '—'} lamports
             </p>
           )}
         </div>

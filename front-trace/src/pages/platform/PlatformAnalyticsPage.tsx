@@ -99,7 +99,7 @@ export function PlatformAnalyticsPage() {
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis dataKey="month" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} tickFormatter={v => `$${v}`} />
-            <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} />
+            <Tooltip formatter={(v: number) => `$${v.toLocaleString('es-CO')}`} />
             <Bar dataKey="revenue" fill="#10b981" radius={[6, 6, 0, 0]} name="Ingresos" />
           </BarChart>
         </ResponsiveContainer>

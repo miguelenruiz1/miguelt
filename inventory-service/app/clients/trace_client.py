@@ -249,6 +249,65 @@ async def notify_po_received_background(
     asyncio.create_task(notify_po_received(**kwargs))
 
 
+async def notify_production_completed(
+    *,
+    tenant_id: str,
+    production_run_id: str,
+    run_number: str | None,
+    output_entity_id: str,
+    output_batch_id: str | None,
+    output_warehouse_id: str | None,
+    quantity: float,
+    input_batch_ids: list[str] | None = None,
+    plot_ids: list[str] | None = None,
+    parent_event_id: str | None = None,
+) -> dict[str, Any] | None:
+    """
+    Fire-and-forget: notify trace-service that a production receipt
+    was posted. Creates a child Asset (transformation output) in trace.
+    """
+    try:
+        client = _get_client()
+        resp = await client.post(
+            f"{_base_url()}/api/v1/internal/assets/from-production-receipt",
+            json={
+                "tenant_id": tenant_id,
+                "production_run_id": production_run_id,
+                "run_number": run_number,
+                "output_entity_id": output_entity_id,
+                "output_batch_id": output_batch_id,
+                "output_warehouse_id": output_warehouse_id,
+                "quantity": float(quantity),
+                "input_batch_ids": input_batch_ids or [],
+                "plot_ids": plot_ids or [],
+                "parent_event_id": parent_event_id,
+            },
+            headers=_s2s_headers(),
+        )
+        if resp.status_code in (200, 201):
+            data = resp.json()
+            log.info(
+                "trace_production_notified",
+                production_run_id=production_run_id,
+                asset_id=data.get("asset_id"),
+            )
+            return data
+        log.warning(
+            "trace_production_failed",
+            status_code=resp.status_code,
+            body=resp.text[:200],
+        )
+        return None
+    except Exception as exc:
+        log.warning("trace_production_error", exc=str(exc))
+        return None
+
+
+async def notify_production_completed_background(**kwargs: Any) -> None:
+    """Fire-and-forget wrapper — launches as background task."""
+    asyncio.create_task(notify_production_completed(**kwargs))
+
+
 async def notify_so_shipped(
     *,
     tenant_id: str,

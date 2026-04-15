@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, Link, Navigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { authFetch } from '@/lib/auth-fetch'
 import {
   ChevronRight, Package, MapPin, ShieldCheck, FileText, Award,
@@ -73,6 +74,157 @@ function ComplianceStatusBadge({ status, size = 'sm' }: { status: string; size?:
   )
 }
 
+// ─── Cadmium card (cacao-only) + RSPO selector (palm-only) ──────────────────
+
+function isCacaoRecord(record: ComplianceRecord): boolean {
+  if (record.commodity_type === 'cacao') return true
+  const hs = (record.hs_code ?? '').trim()
+  return hs.startsWith('18')
+}
+
+function isPalmRecord(record: ComplianceRecord): boolean {
+  if (record.commodity_type === 'palm') return true
+  const hs = (record.hs_code ?? '').trim()
+  return hs.startsWith('15') || hs.startsWith('38')
+}
+
+function CadmiumCard({ record }: { record: ComplianceRecord }) {
+  const qc = useQueryClient()
+  const toast = useToast()
+  const [value, setValue] = useState('')
+  const [testDate, setTestDate] = useState(new Date().toISOString().slice(0, 10))
+  const [lab, setLab] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    const num = Number(value)
+    if (!Number.isFinite(num) || num < 0) {
+      setError('Ingresa un valor numerico valido (mg/kg)')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const base = (import.meta as unknown as { env: { VITE_API_URL?: string } }).env.VITE_API_URL ?? ''
+      const res = await authFetch(`${base}/api/v1/compliance/records/${record.id}/cadmium-test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          value_mg_per_kg: num,
+          test_date: testDate,
+          lab: lab || 'Lab sin especificar',
+        }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        let msg = `HTTP ${res.status}`
+        const d = body?.detail
+        if (typeof d === 'string') msg = d
+        else if (Array.isArray(d)) msg = d.map((x: any) => x?.msg ?? '').filter(Boolean).join(' · ') || msg
+        else if (body?.error?.message) msg = body.error.message
+        throw new Error(msg)
+      }
+      toast.success('Resultado de cadmio registrado')
+      setValue('')
+      setLab('')
+      await qc.invalidateQueries({ queryKey: ['compliance', 'records', record.id] })
+      await qc.invalidateQueries({ queryKey: ['compliance', 'records'] })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al registrar'
+      setError(msg)
+      toast.error(msg)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const compliant = record.cadmium_eu_compliant
+  const hasResult = record.cadmium_mg_per_kg != null
+
+  return (
+    <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+          <span>🧪 Test de Cadmio (cacao)</span>
+          {hasResult && compliant === true && (
+            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200">
+              EU compliant ≤ 0.60 mg/kg
+            </span>
+          )}
+          {hasResult && compliant === false && (
+            <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700 border border-red-200">
+              NO compliant &gt; 0.60 mg/kg
+            </span>
+          )}
+        </h3>
+      </div>
+      {hasResult && (
+        <div className="text-xs text-muted-foreground space-y-0.5">
+          <div>Valor: <span className="font-mono font-semibold text-foreground">{record.cadmium_mg_per_kg} mg/kg</span></div>
+          {record.cadmium_test_date && <div>Fecha: {record.cadmium_test_date}</div>}
+          {record.cadmium_test_lab && <div>Laboratorio: {record.cadmium_test_lab}</div>}
+        </div>
+      )}
+      <form onSubmit={submit} className="grid grid-cols-3 gap-3">
+        <div>
+          <label className="text-[10px] font-medium uppercase text-muted-foreground">Valor mg/kg *</label>
+          <input type="number" step="0.001" value={value} onChange={e => setValue(e.target.value)} required
+            className="w-full rounded-lg border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+        </div>
+        <div>
+          <label className="text-[10px] font-medium uppercase text-muted-foreground">Fecha *</label>
+          <input type="date" value={testDate} onChange={e => setTestDate(e.target.value)} required
+            className="w-full rounded-lg border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+        </div>
+        <div>
+          <label className="text-[10px] font-medium uppercase text-muted-foreground">Laboratorio</label>
+          <input value={lab} onChange={e => setLab(e.target.value)}
+            className="w-full rounded-lg border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+        </div>
+        <button type="submit" disabled={submitting}
+          className="col-span-3 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
+          {submitting ? 'Enviando...' : 'Registrar resultado'}
+        </button>
+        {error && <span className="col-span-3 text-xs text-red-600">{error}</span>}
+      </form>
+    </div>
+  )
+}
+
+function RspoSelectorCard({ record }: { record: ComplianceRecord }) {
+  const update = useUpdateRecord(record.id)
+  const [value, setValue] = useState<string>(record.rspo_trace_model ?? '')
+
+  async function save() {
+    await update.mutateAsync({ rspo_trace_model: value || null })
+  }
+
+  return (
+    <div className="bg-card rounded-2xl border border-border p-6 space-y-3">
+      <h3 className="text-sm font-bold text-foreground">🌴 RSPO Chain of Custody (palma)</h3>
+      <p className="text-xs text-muted-foreground">
+        Requerido para DDS con HS 15xx / 38xx. Mass Balance mezcla volumenes con contabilidad separada;
+        Segregated mantiene separacion fisica; Identity Preserved conserva la identidad del molino origen.
+      </p>
+      <div className="flex gap-3 items-end">
+        <select value={value} onChange={e => setValue(e.target.value)}
+          className="flex-1 rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+          <option value="">—</option>
+          <option value="mass_balance">Mass Balance</option>
+          <option value="segregated">Segregated</option>
+          <option value="identity_preserved">Identity Preserved</option>
+        </select>
+        <button onClick={save} disabled={update.isPending}
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
+          Guardar
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Tab 1: Producto ─────────────────────────────────────────────────────────
 
 function ProductTab({ record }: { record: ComplianceRecord }) {
@@ -142,11 +294,23 @@ function ProductTab({ record }: { record: ComplianceRecord }) {
         <h3 className="text-sm font-bold text-foreground mb-3">Identificacion</h3>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Codigo HS" value={form.hs_code as string} onChange={v => set('hs_code', v)} placeholder="0901.21" />
-          <Field label="Commodity" value={form.commodity_type as string} onChange={v => set('commodity_type', v)} />
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Commodity</label>
+            <select
+              value={(form.commodity_type as string) || ''}
+              onChange={e => set('commodity_type', e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-ring outline-none"
+            >
+              <option value="">—</option>
+              <option value="coffee">Cafe</option>
+              <option value="cacao">Cacao</option>
+              <option value="palm">Palma</option>
+              <option value="other">Otro</option>
+            </select>
+          </div>
           <Field label="Descripcion del producto" value={form.product_description as string} onChange={v => set('product_description', v)} className="col-span-2" />
-          {(form.commodity_type === 'wood' || record.commodity_type === 'wood') && (
-            <Field label="Nombre cientifico" value={form.scientific_name as string} onChange={v => set('scientific_name', v)} className="col-span-2" />
-          )}
+          <Field label="Nombre cientifico" value={form.scientific_name as string} onChange={v => set('scientific_name', v)} className="col-span-2" placeholder="Coffea arabica L. / Theobroma cacao L. / Elaeis guineensis Jacq." />
+
           <Field label="Cantidad" type="number" value={String(form.quantity_kg ?? '')} onChange={v => set('quantity_kg', v ? Number(v) : null)} />
           <Field label="Unidad" value={form.quantity_unit as string} onChange={v => set('quantity_unit', v)} />
           <Field label="Pais de produccion" value={form.country_of_production as string} onChange={v => set('country_of_production', v)} placeholder="CO" />
@@ -868,8 +1032,15 @@ export default function RecordDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto p-6 lg:p-8">
-        <div className="text-sm text-muted-foreground py-12 text-center">Cargando...</div>
+      <div className="max-w-5xl mx-auto p-6 lg:p-8 space-y-4">
+        <div className="h-8 w-64 rounded bg-muted animate-pulse" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="h-24 rounded-xl bg-muted animate-pulse" />
+          <div className="h-24 rounded-xl bg-muted animate-pulse" />
+          <div className="h-24 rounded-xl bg-muted animate-pulse" />
+        </div>
+        <div className="h-48 rounded-xl bg-muted animate-pulse" />
+        <div className="h-48 rounded-xl bg-muted animate-pulse" />
       </div>
     )
   }
@@ -916,6 +1087,14 @@ export default function RecordDetailPage() {
 
       {/* Tabs */}
       <Tabs tabs={TABS_DEF} value={activeTab} onChange={setActiveTab} />
+
+      {/* Commodity-specific extras above the tab content */}
+      {activeTab === 'product' && isCacaoRecord(record) && (
+        <CadmiumCard record={record} />
+      )}
+      {activeTab === 'product' && isPalmRecord(record) && (
+        <RspoSelectorCard record={record} />
+      )}
 
       {/* Tab content */}
       <div className="bg-card rounded-2xl border border-border  p-6">

@@ -192,7 +192,7 @@ export function CheckoutPage() {
                             ) : (
                               <>
                                 <span className="text-lg font-bold text-foreground">
-                                  ${plan.price_monthly.toLocaleString()}
+                                  ${plan.price_monthly.toLocaleString('es-CO')}
                                 </span>
                                 <span className="text-xs text-muted-foreground block">{plan.currency}/mes</span>
                               </>
@@ -228,7 +228,7 @@ export function CheckoutPage() {
                         <span className="font-bold text-foreground">
                           {selectedPlan.price_monthly === 0
                             ? 'Gratis'
-                            : `$${selectedPlan.price_monthly.toLocaleString()} ${selectedPlan.currency}`}
+                            : `$${selectedPlan.price_monthly.toLocaleString('es-CO')} ${selectedPlan.currency}`}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -239,7 +239,7 @@ export function CheckoutPage() {
                         <span className="text-xl font-bold text-primary">
                           {selectedPlan.price_monthly === 0
                             ? '$0'
-                            : `$${selectedPlan.price_monthly.toLocaleString()}`}
+                            : `$${selectedPlan.price_monthly.toLocaleString('es-CO')}`}
                         </span>
                       </div>
                     </>

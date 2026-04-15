@@ -126,7 +126,7 @@ export function CustomerDetailPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-card rounded-xl border border-border/60 p-4">
           <p className="text-xs text-muted-foreground mb-1">Total Ventas</p>
-          <p className="text-xl font-bold text-emerald-600">${totalSales.toLocaleString()}</p>
+          <p className="text-xl font-bold text-emerald-600">${totalSales.toLocaleString('es-CO')}</p>
         </div>
         <div className="bg-card rounded-xl border border-border/60 p-4">
           <p className="text-xs text-muted-foreground mb-1">Ordenes Activas</p>
@@ -138,7 +138,7 @@ export function CustomerDetailPage() {
         </div>
         <div className="bg-card rounded-xl border border-border/60 p-4">
           <p className="text-xs text-muted-foreground mb-1">Limite de Credito</p>
-          <p className="text-xl font-bold">${customer.credit_limit.toLocaleString()}</p>
+          <p className="text-xl font-bold">${customer.credit_limit.toLocaleString('es-CO')}</p>
         </div>
       </div>
 
@@ -182,8 +182,8 @@ export function CustomerDetailPage() {
                 <tr key={o.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => navigate(`/inventario/ventas/${o.id}`)}>
                   <td className="px-6 py-3 font-mono text-xs">{o.order_number}</td>
                   <td className="px-6 py-3"><span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold', STATUS_CONFIG[o.status]?.color)}>{STATUS_CONFIG[o.status]?.label}</span></td>
-                  <td className="px-6 py-3 text-right font-mono">${o.total.toLocaleString()}</td>
-                  <td className="px-6 py-3 text-xs text-muted-foreground">{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</td>
+                  <td className="px-6 py-3 text-right font-mono">${o.total.toLocaleString('es-CO')}</td>
+                  <td className="px-6 py-3 text-xs text-muted-foreground">{o.created_at ? new Date(o.created_at).toLocaleDateString('es-CO') : ''}</td>
                 </tr>
               ))}
               {orders.length === 0 && <tr><td colSpan={4} className="px-6 py-12 text-center text-muted-foreground">Sin ordenes para este cliente</td></tr>}
@@ -229,8 +229,8 @@ export function CustomerDetailPage() {
                         <span className="font-semibold text-foreground">{sp.product_name ?? prod?.name ?? sp.product_id.slice(0, 8)}</span>
                         {sp.product_sku && <span className="ml-1.5 text-xs text-muted-foreground font-mono">{sp.product_sku}</span>}
                       </td>
-                      <td className="px-6 py-3 text-right font-mono font-bold text-blue-700">${sp.price.toLocaleString()}</td>
-                      <td className="px-6 py-3 text-right font-mono text-muted-foreground">${basePrice.toLocaleString()}</td>
+                      <td className="px-6 py-3 text-right font-mono font-bold text-blue-700">${sp.price.toLocaleString('es-CO')}</td>
+                      <td className="px-6 py-3 text-right font-mono text-muted-foreground">${basePrice.toLocaleString('es-CO')}</td>
                       <td className="px-6 py-3 text-right">
                         {discountPct > 0 ? (
                           <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">{discountPct.toFixed(1)}%</span>
@@ -240,7 +240,7 @@ export function CustomerDetailPage() {
                       <td className="px-6 py-3 text-sm">
                         {validTo ? (
                           <span className="flex items-center gap-1.5">
-                            {validTo.toLocaleDateString()}
+                            {validTo.toLocaleDateString('es-CO')}
                             {isExpired && <span className="inline-flex rounded-full bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-600">Vencido</span>}
                             {isExpiringSoon && <span className="inline-flex rounded-full bg-yellow-50 px-1.5 py-0.5 text-[10px] font-bold text-yellow-700">Vence pronto</span>}
                           </span>
@@ -279,13 +279,13 @@ export function CustomerDetailPage() {
               const prod = productsMap.get(h.product_id)
               return (
                 <div key={h.id} className="flex items-start gap-3 text-sm border-l-2 border-border pl-3">
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">{new Date(h.changed_at).toLocaleDateString()}</span>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">{new Date(h.changed_at).toLocaleDateString('es-CO')}</span>
                   <span className="text-foreground">
                     <strong>{prod?.name ?? h.product_id.slice(0, 8)}</strong>:
                     {h.old_price !== null ? (
-                      <> <span className="text-red-500 line-through">${h.old_price.toLocaleString()}</span> <span className="mx-1">→</span></>
+                      <> <span className="text-red-500 line-through">${h.old_price.toLocaleString('es-CO')}</span> <span className="mx-1">→</span></>
                     ) : ' Nuevo: '}
-                    <span className="text-emerald-600 font-semibold">${h.new_price.toLocaleString()}</span>
+                    <span className="text-emerald-600 font-semibold">${h.new_price.toLocaleString('es-CO')}</span>
                     {h.changed_by_name && <span className="text-muted-foreground"> por {h.changed_by_name}</span>}
                     {h.reason && <span className="italic text-muted-foreground"> — "{h.reason}"</span>}
                   </span>
@@ -309,7 +309,7 @@ export function CustomerDetailPage() {
                 <label className="block text-xs font-medium text-muted-foreground mb-1">Producto *</label>
                 <select name="product_id" required className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none">
                   <option value="">Seleccionar producto</option>
-                  {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name} (${Number(p.suggested_sale_price ?? 0).toLocaleString()})</option>)}
+                  {products.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name} (${Number(p.suggested_sale_price ?? 0).toLocaleString('es-CO')})</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -357,7 +357,8 @@ export function CustomerDetailPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-xs font-medium text-muted-foreground mb-1">Nombre *</label><input name="name" required defaultValue={customer.name} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
                 <div><label className="block text-xs font-medium text-muted-foreground mb-1">Codigo *</label><input name="code" required defaultValue={customer.code} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
-                <div><label className="block text-xs font-medium text-muted-foreground mb-1">NIT / CC</label><input name="tax_id" defaultValue={customer.tax_id ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
+                <div><label className="block text-xs font-medium text-muted-foreground mb-1">Identificacion fiscal</label><input name="tax_id" defaultValue={customer.tax_id ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
+                <div><label className="block text-xs font-medium text-muted-foreground mb-1">Tipo de identificacion</label><select name="tax_id_type" defaultValue={(customer as any).tax_id_type ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none"><option value="">—</option><option value="NIT">NIT (Colombia)</option><option value="EORI">EORI (UE)</option><option value="VAT">VAT (UE)</option><option value="NIF">NIF (Espana)</option><option value="RUC">RUC (Peru/Ecuador)</option><option value="CNPJ">CNPJ (Brasil)</option><option value="CC">CC (cedula CO)</option><option value="OTRO">Otro</option></select></div>
                 <div><label className="block text-xs font-medium text-muted-foreground mb-1">Tipo</label><select name="customer_type_id" defaultValue={customer.customer_type_id ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none"><option value="">Sin tipo</option>{(types ?? []).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
                 <div><label className="block text-xs font-medium text-muted-foreground mb-1">Contacto</label><input name="contact_name" defaultValue={customer.contact_name ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>
                 <div><label className="block text-xs font-medium text-muted-foreground mb-1">Email</label><input name="email" type="email" defaultValue={customer.email ?? ''} className="w-full px-3 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-ring/20 focus:border-ring outline-none" /></div>

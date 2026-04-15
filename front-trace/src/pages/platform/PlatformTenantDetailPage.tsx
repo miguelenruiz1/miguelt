@@ -400,7 +400,7 @@ export function PlatformTenantDetailPage() {
                         {inv.status}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-right font-semibold">${inv.amount.toLocaleString()} {inv.currency}</td>
+                    <td className="px-5 py-3 text-right font-semibold">${inv.amount.toLocaleString('es-CO')} {inv.currency}</td>
                     <td className="px-5 py-3 text-muted-foreground">
                       {inv.period_start ? new Date(inv.period_start).toLocaleDateString('es', { month: 'short', year: 'numeric' }) : '-'}
                     </td>

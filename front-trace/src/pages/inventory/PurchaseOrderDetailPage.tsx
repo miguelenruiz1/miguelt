@@ -308,7 +308,17 @@ export function PurchaseOrderDetailPage() {
   const { resolve } = useUserLookup(userIds)
   const productMap = Object.fromEntries((productsData?.items ?? []).map((p) => [p.id, p.name]))
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Cargando...</div>
+  if (isLoading) return (
+    <div className="space-y-4">
+      <div className="h-8 w-64 rounded bg-muted animate-pulse" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="h-24 rounded-xl bg-muted animate-pulse" />
+        <div className="h-24 rounded-xl bg-muted animate-pulse" />
+        <div className="h-24 rounded-xl bg-muted animate-pulse" />
+      </div>
+      <div className="h-64 rounded-xl bg-muted animate-pulse" />
+    </div>
+  )
   if (!po) return <div className="p-8 text-center text-muted-foreground">Orden no encontrada</div>
 
   const lines = po.lines ?? []

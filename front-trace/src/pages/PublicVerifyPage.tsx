@@ -156,7 +156,7 @@ export default function PublicVerifyPage() {
                       <div className="pb-6">
                         <p className="text-sm font-medium text-foreground">{entry.description}</p>
                         {entry.timestamp && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{new Date(entry.timestamp).toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{new Date(entry.timestamp).toLocaleString('es-CO')}</p>
                         )}
                         {entry.solana_explorer_url && (
                           <a href={entry.solana_explorer_url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 hover:underline mt-1 inline-flex items-center gap-1">
@@ -178,7 +178,7 @@ export default function PublicVerifyPage() {
               <CheckCircle2 className="h-6 w-6 text-emerald-600 mx-auto mb-2" />
               <p className="text-sm font-medium text-emerald-800">Verificacion completada</p>
               <p className="text-xs text-emerald-600 mt-1">
-                Consultado: {new Date(verification.verified_at).toLocaleString()}
+                Consultado: {new Date(verification.verified_at).toLocaleString('es-CO')}
               </p>
             </div>
           </div>

@@ -227,7 +227,20 @@ export function PartnersPage() {
               ))}
             </tbody>
           </table>
-          {filtered.length === 0 && <div className="text-center py-10 text-muted-foreground">No se encontraron socios comerciales</div>}
+          {filtered.length === 0 && (
+            <div className="py-16 text-center">
+              <Users className="h-10 w-10 text-gray-200 mx-auto mb-3" />
+              <p className="text-sm font-medium text-foreground">No hay socios comerciales registrados</p>
+              <p className="text-xs text-muted-foreground mt-1">Agrega proveedores y clientes para gestionar tus relaciones comerciales.</p>
+              <button
+                type="button"
+                onClick={() => { resetForm(); setShowCreate(true) }}
+                className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="h-3.5 w-3.5" /> Nuevo socio
+              </button>
+            </div>
+          )}
         </div>
       )}
 

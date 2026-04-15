@@ -125,7 +125,7 @@ export function PlatformTenantsPage() {
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Ingresos</span>
                     <div className="text-right">
-                      <span className="font-semibold text-foreground">${t.total_revenue.toLocaleString()}</span>
+                      <span className="font-semibold text-foreground">${t.total_revenue.toLocaleString('es-CO')}</span>
                       <span className="text-muted-foreground ml-1">({t.invoice_count} facturas)</span>
                     </div>
                   </div>
@@ -194,7 +194,7 @@ export function PlatformTenantsPage() {
                         </div>
                       </td>
                       <td className="px-5 py-4 text-right">
-                        <div className="font-semibold text-foreground">${t.total_revenue.toLocaleString()}</div>
+                        <div className="font-semibold text-foreground">${t.total_revenue.toLocaleString('es-CO')}</div>
                         <div className="text-xs text-muted-foreground flex items-center justify-end gap-1">
                           <CreditCard className="h-3 w-3" /> {t.invoice_count} facturas
                         </div>

@@ -36,6 +36,7 @@ class AssetRepository:
         tenant_id: uuid.UUID | None = None,
         blockchain_status: str = "SKIPPED",
         workflow_state_id: uuid.UUID | None = None,
+        plot_id: uuid.UUID | None = None,
     ) -> Asset:
         now = datetime.now(tz=timezone.utc)
         asset = Asset(
@@ -50,6 +51,7 @@ class AssetRepository:
             blockchain_status=blockchain_status,
             is_compressed=False,
             workflow_state_id=workflow_state_id,
+            plot_id=plot_id,
             created_at=now,
             updated_at=now,
         )

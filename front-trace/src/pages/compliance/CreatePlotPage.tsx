@@ -13,9 +13,9 @@ import { PlotPolygonEditor } from '@/components/compliance/PlotPolygonEditor'
 // ─── Colombia-specific constants ────────────────────────────────────────────
 
 const COMMODITIES = [
-  { value: 'cafe', label: 'Cafe', scientific: 'Coffea arabica' },
-  { value: 'cacao', label: 'Cacao', scientific: 'Theobroma cacao' },
-  { value: 'palma', label: 'Palma de aceite', scientific: 'Elaeis guineensis' },
+  { value: 'cafe',  label: 'Cafe',             scientific: 'Coffea arabica L.',        commodity: 'coffee' as const },
+  { value: 'cacao', label: 'Cacao',            scientific: 'Theobroma cacao L.',       commodity: 'cacao'  as const },
+  { value: 'palma', label: 'Palma de aceite',  scientific: 'Elaeis guineensis Jacq.',  commodity: 'palm'   as const },
 ] as const
 
 const TENURE_TYPES = [
@@ -78,6 +78,7 @@ const plotSchema = z.object({
   gps_accuracy_m: z.coerce.number().nonnegative().optional().nullable(),
   // Cultivo
   crop_type: z.string().min(1, 'Seleccione el cultivo'),
+  commodity_type: z.enum(['coffee', 'cacao', 'palm', 'other']).optional().nullable(),
   scientific_name: z.string().optional().nullable(),
   establishment_date: z.string().optional().nullable(),
   last_harvest_date: z.string().optional().nullable(),
@@ -99,6 +100,13 @@ const plotSchema = z.object({
   tenure_start_date: z.string().optional().nullable(),
   tenure_end_date: z.string().optional().nullable(),
   indigenous_territory_flag: z.boolean().default(false),
+  // EUDR declaraciones obligatorias (Art. 3.a / Art. 2.7)
+  deforestation_free: z.literal(true, {
+    errorMap: () => ({ message: 'Debe declarar que la parcela esta libre de deforestacion (EUDR Art. 3.a)' }),
+  }),
+  degradation_free: z.literal(true, {
+    errorMap: () => ({ message: 'Debe declarar que la parcela esta libre de degradacion forestal (EUDR Art. 2.7)' }),
+  }),
 })
 
 type PlotForm = z.infer<typeof plotSchema>
@@ -123,12 +131,13 @@ export default function CreatePlotPage() {
       region: '', municipality: '', vereda: null, frontera_agricola_status: null,
       plot_area_ha: null, geolocation_type: 'point', lat: null, lng: null,
       capture_method: null, capture_device: null, capture_date: null, gps_accuracy_m: null,
-      crop_type: '', scientific_name: null, establishment_date: null, last_harvest_date: null,
+      crop_type: '', commodity_type: null, scientific_name: null, establishment_date: null, last_harvest_date: null,
       renovation_date: null, renovation_type: null, producer_scale: '',
       producer_name: '', producer_id_type: '', producer_id_number: '',
       owner_name: null, owner_id_type: null, owner_id_number: null,
       tenure_type: null, cadastral_id: null, land_title_number: null,
       tenure_start_date: null, tenure_end_date: null, indigenous_territory_flag: false,
+      deforestation_free: false as any, degradation_free: false as any,
     },
   })
 
@@ -166,7 +175,9 @@ export default function CreatePlotPage() {
         geojson_data: polygonData,
         capture_method: values.capture_method || null, capture_device: values.capture_device || null,
         capture_date: values.capture_date || null, gps_accuracy_m: values.gps_accuracy_m ?? null,
-        crop_type: values.crop_type, scientific_name: values.scientific_name || null,
+        crop_type: values.crop_type,
+        commodity_type: values.commodity_type || null,
+        scientific_name: values.scientific_name || null,
         establishment_date: values.establishment_date || null, last_harvest_date: values.last_harvest_date || null,
         renovation_date: values.renovation_date || null, renovation_type: values.renovation_type || null,
         producer_scale: values.producer_scale || null,
@@ -178,7 +189,9 @@ export default function CreatePlotPage() {
         land_title_number: values.land_title_number || null,
         tenure_start_date: values.tenure_start_date || null, tenure_end_date: values.tenure_end_date || null,
         indigenous_territory_flag: values.indigenous_territory_flag,
-        deforestation_free: true, cutoff_date_compliant: true, legal_land_use: true,
+        deforestation_free: values.deforestation_free,
+        degradation_free: values.degradation_free,
+        cutoff_date_compliant: true, legal_land_use: true,
         risk_level: 'standard',
       })
       toast.success('Parcela creada')
@@ -419,7 +432,10 @@ export default function CreatePlotPage() {
               <select {...register('crop_type', {
                 onChange: (e) => {
                   const c = COMMODITIES.find(c => c.value === e.target.value)
-                  if (c) setValue('scientific_name', c.scientific)
+                  if (c) {
+                    setValue('scientific_name', c.scientific)
+                    setValue('commodity_type', c.commodity)
+                  }
                 },
               })} className={cls}>
                 <option value="">— Seleccionar —</option>
@@ -500,6 +516,50 @@ export default function CreatePlotPage() {
               </span>
             </span>
           </label>
+        </div>
+
+        {/* ── Declaraciones EUDR (obligatorias) ─────────────────────── */}
+        <div className={section}>
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Declaraciones EUDR</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Ambas declaraciones son obligatorias para enviar el DDS a TRACES NT (Reglamento UE 2023/1115).
+            </p>
+          </div>
+
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              {...register('deforestation_free')}
+              className="accent-emerald-600 h-4 w-4 mt-0.5"
+            />
+            <span className="text-foreground">
+              Libre de deforestacion (Art. 3.a)
+              <span className="block text-[11px] text-muted-foreground mt-0.5">
+                Declaro que esta parcela no fue deforestada despues del 31 de diciembre de 2020.
+              </span>
+            </span>
+          </label>
+          {errors.deforestation_free && (
+            <p className={err}>{errors.deforestation_free.message as string}</p>
+          )}
+
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              {...register('degradation_free')}
+              className="accent-emerald-600 h-4 w-4 mt-0.5"
+            />
+            <span className="text-foreground">
+              Libre de degradacion forestal (Art. 2.7)
+              <span className="block text-[11px] text-muted-foreground mt-0.5">
+                Declaro que no hubo degradacion forestal en la parcela despues del 31 de diciembre de 2020.
+              </span>
+            </span>
+          </label>
+          {errors.degradation_free && (
+            <p className={err}>{errors.degradation_free.message as string}</p>
+          )}
         </div>
       </form>
 

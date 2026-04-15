@@ -160,6 +160,7 @@ services:
       SMTP_USE_TLS: "false"
       FRONTEND_URL: http://localhost:5173
       SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
+      TRACE_SERVICE_URL: http://api:8000
     ports:
       - "9001:8001"
     depends_on:
@@ -220,6 +221,7 @@ services:
       USER_SERVICE_URL: http://user-api:8001
       INTEGRATION_SERVICE_URL: http://integration-api:8004
       JWT_SECRET: ${JWT_SECRET:-super-secret-dev-key-change-in-prod}
+      S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN:-s2s-change-me-in-production}
       LOG_LEVEL: INFO
     ports:
       - "9002:8002"

@@ -152,6 +152,43 @@ Reglas:
 - Antes de desplegar a GCP, confirmar con el usuario qué servicios se
   van a actualizar y en qué rama está el código.
 
+### 11.bis. Flujo "comitea y despliega": no preguntar lo obvio
+
+Cuando el usuario dice **"comitea y despliega"** (o equivalente directo como
+"sube esto a prod", "deploy", "mergea y despliega"), asumir lo siguiente sin
+preguntar:
+
+1. **Commit**: incluir TODOS los archivos modificados/untracked salvo:
+   - Scripts locales con secretos hardcodeados (JWTs, API keys, passwords).
+     Esos quedan fuera y se avisa al usuario en una línea.
+   - Archivos en `.gitignore` o claramente temporales.
+2. **Branch flow** (regla #11): commitear en la rama actual → push → merge
+   `current → develop → staging → main` → push de cada una. Usar las ramas
+   que **ya existen** (`git branch -a`); NUNCA crear `master`/`main` si una
+   ya existe. Si no existe alguna rama intermedia, saltarla y avisar.
+3. **Servicios a desplegar**: deducirlos de los archivos modificados en el
+   commit:
+   - Cambios en `<service>/app/**` o `<service>/alembic/**` → deployar ese
+     servicio.
+   - Cambios en `front-trace/**` → deployar `front-trace` (con
+     `--config front-trace/cloudbuild.yaml --substitutions=_TAG=<sha>`).
+   - Cambios en `gateway/**` → deployar `gateway` Y reiniciar nginx.
+   - `docker-compose.yml` solo afecta dev local, NO se deploya solo.
+4. **Tag de imagen**: usar el SHA corto del commit en `main`
+   (`git rev-parse --short=7 HEAD`).
+5. **Solo preguntar si**:
+   - Hay archivos pre-existentes que NO testée en esta sesión (regla #15):
+     avisar y preguntar si van.
+   - El deploy implica romper algo conocido (downtime, migración no
+     reversible, cambio de schema breaking).
+   - No queda claro qué servicio backend cambió (cambio puramente cross-cut).
+6. **Smoke test post-deploy** (regla #14): es obligatorio, no se pregunta;
+   se hace y se reporta el resultado.
+
+Lo que NO se pregunta nunca en este flujo: "¿push primero?", "¿qué flow de
+ramas?", "¿confirmás los servicios?". Todo eso ya está decidido por estas
+reglas.
+
 ## 12. Antes de git commit/push: listar cambios pendientes
 
 Antes de cualquier operación git (commit, push, merge), **siempre**:

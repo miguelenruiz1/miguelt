@@ -53,7 +53,19 @@ async function request<T>(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
-    const msg = err.detail ?? err.error?.message ?? err.message ?? res.statusText
+    const d = err.detail
+    let msg: string
+    if (typeof d === 'string' && d.trim()) msg = d
+    else if (Array.isArray(d)) {
+      msg = d.map((it: any) => {
+        if (typeof it === 'string') return it
+        const loc = Array.isArray(it?.loc) ? it.loc.filter((x: any) => x !== 'body').join('.') : ''
+        const m = it?.msg ?? it?.message ?? ''
+        return loc ? `${loc}: ${m}` : m
+      }).filter(Boolean).join(' · ') || res.statusText
+    }
+    else if (d && typeof d === 'object' && typeof (d as any).message === 'string') msg = (d as any).message
+    else msg = err.error?.message ?? err.message ?? res.statusText
     const code = err.error?.code ?? err.code ?? 'ERROR'
     throw new UserApiError(res.status, code, msg)
   }

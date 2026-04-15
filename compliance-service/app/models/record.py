@@ -5,7 +5,7 @@ import uuid
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Boolean, CheckConstraint, Date, ForeignKey, Index, Numeric, Text, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, Date, ForeignKey, Index, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -33,6 +33,15 @@ class ComplianceRecord(Base):
         CheckConstraint(
             "declaration_status IN ('not_required','pending','submitted','accepted','rejected')",
             name="ck_records_declaration_status",
+        ),
+        CheckConstraint(
+            "commodity_type IS NULL OR commodity_type IN ('coffee','cacao','palm','other')",
+            name="ck_compliance_records_commodity_type",
+        ),
+        CheckConstraint(
+            "rspo_trace_model IS NULL OR rspo_trace_model IN "
+            "('mass_balance','segregated','identity_preserved')",
+            name="ck_compliance_records_rspo_trace_model",
         ),
     )
 
@@ -101,6 +110,17 @@ class ComplianceRecord(Base):
 
     # Retention
     documents_retention_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    # Cadmio (cacao): EU 2023/915 cap 0.60 mg/kg en cacao final. Lab test
+    # requerido para exportacion a UE.
+    cadmium_mg_per_kg: Mapped[Decimal | None] = mapped_column(Numeric(6, 3), nullable=True)
+    cadmium_test_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    cadmium_test_lab: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    cadmium_test_doc_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    cadmium_eu_compliant: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+
+    # RSPO trace model (palma): mass_balance | segregated | identity_preserved.
+    rspo_trace_model: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict, server_default="{}")
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=_utcnow)

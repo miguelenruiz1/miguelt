@@ -103,7 +103,7 @@ export function CycleCountDetailPage() {
             </div>
             <p className="text-sm text-muted-foreground">
               Bodega: {cc.warehouse_name ?? cc.warehouse_id}
-              {cc.scheduled_date && <> &middot; Programado: {new Date(cc.scheduled_date).toLocaleDateString()}</>}
+              {cc.scheduled_date && <> &middot; Programado: {new Date(cc.scheduled_date).toLocaleDateString('es-CO')}</>}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
               Creado por: {resolve(cc.created_by)}

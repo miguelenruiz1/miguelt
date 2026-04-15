@@ -80,6 +80,7 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
 interface SOLine { product_id: string; variant_id: string; warehouse_id: string; qty_ordered: string; unit_price: string; discount_pct: string; tax_rate: string; tax_rate_ids: string[] }
 
 function CreateSOModal({ onClose }: { onClose: () => void }) {
+  const toast = useToast()
   const { data: partnersData } = usePartners({ limit: 200 })
   const { data: productsData } = useProducts()
   const { data: warehouses = [] } = useWarehouses()
@@ -96,7 +97,7 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
   // Only show active products with available stock
   const products = allProducts.filter(p => p.is_active && productsWithStock.has(p.id))
 
-  const [form, setForm] = useState({ customer_id: '', warehouse_id: '', expected_date: '', notes: '', discount_pct: '0', discount_reason: '', payment_form: '1', payment_method: '10' })
+  const [form, setForm] = useState({ customer_id: '', warehouse_id: '', expected_date: '', notes: '', discount_pct: '0', discount_reason: '', payment_form: '1', payment_method: '10', currency: 'COP', incoterm: '', destination_country: '', commodity_type: '' })
   const [lines, setLines] = useState<SOLine[]>([{ product_id: '', variant_id: '', warehouse_id: '', qty_ordered: '1', unit_price: '0', discount_pct: '0', tax_rate: '0', tax_rate_ids: [] }])
   const [linePriceSources, setLinePriceSources] = useState<Record<number, PriceLookupResponse>>({})
 
@@ -180,6 +181,15 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
   const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
 
   async function doSubmit() {
+    if (!form.customer_id) {
+      toast.error('Selecciona un cliente')
+      return
+    }
+    if (!lines.length || lines.some(l => !l.product_id || Number(l.qty_ordered) <= 0)) {
+      toast.error('Agrega al menos una linea con producto y cantidad > 0')
+      return
+    }
+    try {
     await create.mutateAsync({
       customer_id: form.customer_id,
       warehouse_id: form.warehouse_id || null,
@@ -189,6 +199,10 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
       discount_reason: form.discount_reason || null,
       payment_form: Number(form.payment_form),
       payment_method: Number(form.payment_method),
+      currency: form.currency || 'COP',
+      incoterm: form.incoterm || null,
+      destination_country: form.destination_country || null,
+      commodity_type: form.commodity_type || null,
       lines: lines.map(l => ({
         product_id: l.product_id,
         variant_id: l.variant_id || null,
@@ -200,7 +214,11 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
         tax_rate_ids: l.tax_rate_ids,
       })),
     })
+    toast.success('Orden de venta creada')
     onClose()
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al crear orden de venta')
+    }
   }
 
   return (
@@ -247,6 +265,54 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
                 <option value="48">Tarjeta crédito</option>
                 <option value="49">Tarjeta débito</option>
                 <option value="1">Instrumento no definido</option>
+              </select>
+            </div>
+          </div>
+          {/* Export readiness — commodity / currency / incoterm / destination */}
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase">Commodity</label>
+              <select value={form.commodity_type} onChange={e => setForm(f => ({ ...f, commodity_type: e.target.value }))} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="">— (no aplica)</option>
+                <option value="coffee">Cafe</option>
+                <option value="cacao">Cacao</option>
+                <option value="palm">Palma</option>
+                <option value="other">Otro</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase">Moneda</label>
+              <select value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="COP">COP — Peso colombiano</option>
+                <option value="USD">USD — Dolar</option>
+                <option value="EUR">EUR — Euro</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase">Incoterm</label>
+              <select value={form.incoterm} onChange={e => setForm(f => ({ ...f, incoterm: e.target.value }))} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="">— (no aplica)</option>
+                <option value="EXW">EXW — Ex Works</option>
+                <option value="FCA">FCA — Free Carrier</option>
+                <option value="FOB">FOB — Free On Board</option>
+                <option value="CFR">CFR — Cost &amp; Freight</option>
+                <option value="CIF">CIF — Cost, Insurance &amp; Freight</option>
+                <option value="DAP">DAP — Delivered At Place</option>
+                <option value="DDP">DDP — Delivered Duty Paid</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase">Pais destino</label>
+              <select value={form.destination_country} onChange={e => setForm(f => ({ ...f, destination_country: e.target.value }))} className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="">— (Colombia / nacional)</option>
+                <option value="DE">DE — Alemania</option>
+                <option value="ES">ES — Espana</option>
+                <option value="FR">FR — Francia</option>
+                <option value="IT">IT — Italia</option>
+                <option value="NL">NL — Paises Bajos</option>
+                <option value="US">US — Estados Unidos</option>
+                <option value="GB">GB — Reino Unido</option>
+                <option value="CO">CO — Colombia</option>
               </select>
             </div>
           </div>
@@ -313,7 +379,7 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
                       <div className="absolute -top-2 -right-1 inline-flex items-center gap-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-[9px] font-bold text-blue-700 whitespace-nowrap">
                         Esp.
                         {priceSource.original_price != null && priceSource.original_price !== priceSource.price && (
-                          <span className="text-muted-foreground line-through font-normal">${priceSource.original_price.toLocaleString()}</span>
+                          <span className="text-muted-foreground line-through font-normal">${priceSource.original_price.toLocaleString('es-CO')}</span>
                         )}
                       </div>
                     )}
@@ -500,6 +566,7 @@ export function SalesOrdersPage() {
               <th className="px-6 py-3">Cliente</th>
               <th className="px-6 py-3">Bodega</th>
               <th className="px-6 py-3">Remisión</th>
+              <th className="px-6 py-3">Commodity / Export</th>
               <th className="px-6 py-3">Estado</th>
               <th className="px-6 py-3 text-right">Total</th>
               <th className="px-6 py-3">Fecha</th>
@@ -516,13 +583,32 @@ export function SalesOrdersPage() {
                   <td className="px-6 py-3 font-semibold text-foreground">{o.customer_name ?? customersMap.get(o.customer_id) ?? o.customer_id.slice(0, 8)}</td>
                   <td className="px-6 py-3 text-sm text-muted-foreground">{o.warehouse_name ?? '—'}</td>
                   <td className="px-6 py-3 font-mono text-xs">{o.remission_number ? <span className="text-orange-700 font-semibold">{o.remission_number}</span> : <span className="text-slate-300">—</span>}</td>
+                  <td className="px-6 py-3">
+                    <div className="flex flex-wrap items-center gap-1">
+                      {o.commodity_type && (
+                        <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-100">
+                          {o.commodity_type === 'coffee' ? 'Cafe' : o.commodity_type === 'cacao' ? 'Cacao' : o.commodity_type === 'palm' ? 'Palma' : o.commodity_type}
+                        </span>
+                      )}
+                      {o.currency && o.currency !== 'COP' && (
+                        <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">{o.currency}</span>
+                      )}
+                      {o.incoterm && (
+                        <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">{o.incoterm}</span>
+                      )}
+                      {o.destination_country && (
+                        <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">{o.destination_country}</span>
+                      )}
+                      {!o.commodity_type && !o.incoterm && !o.destination_country && <span className="text-slate-300 text-xs">—</span>}
+                    </div>
+                  </td>
                   <td className="px-6 py-3"><span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold', STATUS_CONFIG[o.status]?.color)}>{STATUS_CONFIG[o.status]?.label}</span></td>
-                  <td className="px-6 py-3 text-right font-mono">${o.total.toLocaleString()}</td>
-                  <td className="px-6 py-3 text-muted-foreground text-xs">{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</td>
+                  <td className="px-6 py-3 text-right font-mono">${o.total.toLocaleString('es-CO')}</td>
+                  <td className="px-6 py-3 text-muted-foreground text-xs">{o.created_at ? new Date(o.created_at).toLocaleDateString('es-CO') : ''}</td>
                   <td className="px-6 py-3" onClick={e => e.stopPropagation()}>{actionBtn(o)}</td>
                 </tr>
               ))}
-              {orders.length === 0 && <tr><td colSpan={8} className="px-6 py-12 text-center text-muted-foreground">Sin ordenes de venta</td></tr>}
+              {orders.length === 0 && <tr><td colSpan={9} className="px-6 py-12 text-center text-muted-foreground">Sin ordenes de venta</td></tr>}
             </tbody>
           </table>
         </div>

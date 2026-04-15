@@ -113,6 +113,28 @@ export class ApiError extends Error {
   }
 }
 
+function formatInventoryError(err: any, status: number, statusText: string): string {
+  const d = err?.detail
+  if (typeof d === 'string' && d.trim()) return d
+  if (Array.isArray(d)) {
+    const parts = d
+      .map((item: any) => {
+        if (typeof item === 'string') return item
+        if (item && typeof item === 'object') {
+          const loc = Array.isArray(item.loc) ? item.loc.filter((x: any) => x !== 'body').join('.') : ''
+          const msg = item.msg ?? item.message ?? ''
+          return loc ? `${loc}: ${msg}` : msg
+        }
+        return ''
+      })
+      .filter(Boolean)
+    if (parts.length) return parts.join(' · ')
+  }
+  if (d && typeof d === 'object' && typeof (d as any).message === 'string') return (d as any).message
+  if (err?.error?.message) return err.error.message
+  return statusText || `HTTP ${status}`
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await authFetch(`${BASE}${path}`, options)
   if (!res.ok) {
@@ -126,7 +148,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         message: err?.error?.message ?? err?.detail ?? 'Has alcanzado el limite de tu plan actual.',
       })
     }
-    const msg = err?.error?.message ?? err?.detail?.message ?? err?.detail ?? res.statusText
+    const msg = formatInventoryError(err, res.status, res.statusText)
     throw new ApiError(res.status, msg, err)
   }
   return res.json()
@@ -145,7 +167,7 @@ async function requestVoid(path: string, options: RequestInit = {}): Promise<voi
         message: err?.error?.message ?? err?.detail ?? 'Has alcanzado el limite de tu plan actual.',
       })
     }
-    const msg = err?.error?.message ?? err?.detail?.message ?? err?.detail ?? res.statusText
+    const msg = formatInventoryError(err, res.status, res.statusText)
     throw new ApiError(res.status, msg, err)
   }
 }
@@ -1244,4 +1266,57 @@ export const inventoryPartnersApi = {
     request<BusinessPartner>(`/api/v1/partners/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (id: string) =>
     requestVoid(`/api/v1/partners/${id}`, { method: 'DELETE' }),
+}
+
+// ─── Quality tests & batch plot origins ─────────────────────────────────────
+
+export interface QualityTest {
+  id: string
+  tenant_id: string
+  batch_id: string
+  test_type: string
+  value: number
+  unit: string
+  threshold_min: number | null
+  threshold_max: number | null
+  passed: boolean | null
+  lab: string | null
+  test_date: string
+  doc_hash: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface BatchPlotOrigin {
+  id: string
+  tenant_id: string
+  batch_id: string
+  plot_id: string
+  plot_code: string | null
+  origin_quantity_kg: number
+  created_at: string
+}
+
+export const inventoryQualityTestsApi = {
+  create: (data: {
+    batch_id: string
+    test_type: string
+    value: number
+    unit: string
+    threshold_min?: number | null
+    threshold_max?: number | null
+    lab?: string | null
+    test_date: string
+    doc_hash?: string | null
+    notes?: string | null
+  }) => request<QualityTest>('/api/v1/quality-tests', { method: 'POST', body: JSON.stringify(data) }),
+  listForBatch: (batchId: string) =>
+    request<QualityTest[]>(`/api/v1/batches/${batchId}/quality-tests`),
+}
+
+export const inventoryBatchOriginsApi = {
+  create: (batchId: string, data: { plot_id: string; plot_code?: string | null; origin_quantity_kg: number }) =>
+    request<BatchPlotOrigin>(`/api/v1/batches/${batchId}/origins`, { method: 'POST', body: JSON.stringify(data) }),
+  listForBatch: (batchId: string) =>
+    request<BatchPlotOrigin[]>(`/api/v1/batches/${batchId}/origins`),
 }

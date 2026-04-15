@@ -135,6 +135,7 @@ export interface Asset {
   blockchain_tx_signature: string | null
   blockchain_status: BlockchainStatus
   is_compressed: boolean
+  plot_id?: string | null
   created_at: string
   updated_at: string
 }
@@ -142,6 +143,9 @@ export interface Asset {
 export interface LocationData {
   lat?: number
   lng?: number
+  city?: string
+  country?: string
+  accuracy_m?: number
   label?: string
   extra?: Record<string, unknown>
 }
@@ -198,12 +202,14 @@ export interface AssetCreate {
   product_type: string
   metadata: Record<string, unknown>
   initial_custodian_wallet: string
+  plot_id?: string
 }
 
 export interface AssetMintRequest {
   product_type: string
   metadata: Record<string, unknown>
   initial_custodian_wallet: string
+  plot_id?: string
 }
 
 // ─── Response wrappers ────────────────────────────────────────────────────────

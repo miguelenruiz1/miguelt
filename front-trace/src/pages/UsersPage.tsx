@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Users, ChevronDown, UserX, UserPlus, UserCheck, X, AlertTriangle, MailPlus, RefreshCw } from 'lucide-react'
+import { Users as UserIcon, ChevronDown, UserX, UserPlus, UserCheck, X, AlertTriangle, MailPlus, RefreshCw, Plus } from 'lucide-react'
 import { useUsers, useAssignRole, useRemoveRole, useDeactivateUser, useReactivateUser, useInviteUser, useResendInvitation } from '@/hooks/useUsers'
 import { useRoles } from '@/hooks/useRoles'
 import { useSubscription } from '@/hooks/useSubscriptions'
@@ -216,7 +216,7 @@ export function UsersPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
-            <Users className="h-5 w-5 text-primary" />
+            <UserIcon className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">Mi Equipo</h1>
@@ -247,6 +247,19 @@ export function UsersPage() {
       <div className="bg-card/80 rounded-2xl border border-border  overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center text-muted-foreground">Cargando...</div>
+        ) : !data?.items?.length ? (
+          <div className="p-12 text-center">
+            <UserIcon className="h-10 w-10 text-gray-200 mx-auto mb-3" />
+            <p className="text-sm font-medium text-foreground">No hay usuarios registrados</p>
+            <p className="text-xs text-muted-foreground mt-1">Invita a miembros de tu equipo para colaborar en la plataforma.</p>
+            <button
+              type="button"
+              onClick={() => setShowInvite(true)}
+              className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="h-3.5 w-3.5" /> Invitar usuario
+            </button>
+          </div>
         ) : (<>
           {/* Mobile cards */}
           <div className="space-y-3 p-4 md:hidden">

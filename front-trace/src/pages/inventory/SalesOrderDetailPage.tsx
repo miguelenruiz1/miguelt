@@ -425,7 +425,17 @@ export function SalesOrderDetailPage() {
   const [showDiscount, setShowDiscount] = useState(false)
   const applyDiscount = useApplyDiscount()
 
-  if (isLoading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>
+  if (isLoading) return (
+    <div className="space-y-4">
+      <div className="h-8 w-64 rounded bg-muted animate-pulse" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="h-24 rounded-xl bg-muted animate-pulse" />
+        <div className="h-24 rounded-xl bg-muted animate-pulse" />
+        <div className="h-24 rounded-xl bg-muted animate-pulse" />
+      </div>
+      <div className="h-64 rounded-xl bg-muted animate-pulse" />
+    </div>
+  )
   if (!order) return <p className="text-center text-muted-foreground py-20">Orden no encontrada</p>
 
   const steps: SalesOrderStatus[] = order.approval_required
@@ -593,7 +603,7 @@ export function SalesOrderDetailPage() {
                   <li key={i} className="flex items-center gap-2">
                     <span className="text-red-500 font-bold">✗</span>
                     <span className="font-semibold">{item.product_name}</span>
-                    <span className="text-red-500">— disponible: {item.available}, requerido: {item.required} (faltan {(item.required - item.available).toLocaleString()})</span>
+                    <span className="text-red-500">— disponible: {item.available}, requerido: {item.required} (faltan {(item.required - item.available).toLocaleString('es-CO')})</span>
                   </li>
                 ))}
               </ul>
@@ -1016,7 +1026,7 @@ export function SalesOrderDetailPage() {
                     </span>
                     {r.released_reason && <span className="ml-1 text-[10px] text-muted-foreground">({r.released_reason})</span>}
                   </td>
-                  <td className="px-6 py-2 text-xs text-muted-foreground">{r.reserved_at ? new Date(r.reserved_at).toLocaleDateString() : ''}</td>
+                  <td className="px-6 py-2 text-xs text-muted-foreground">{r.reserved_at ? new Date(r.reserved_at).toLocaleDateString('es-CO') : ''}</td>
                 </tr>
               ))}
             </tbody>
@@ -1184,10 +1194,10 @@ export function SalesOrderDetailPage() {
                 <td className="px-6 py-3 text-right font-mono">{l.qty_ordered}</td>
                 <td className="px-6 py-3 text-right font-mono">{l.qty_shipped}</td>
                 <td className="px-6 py-3 text-right">
-                  <span className="font-mono">${l.unit_price.toLocaleString()}</span>
+                  <span className="font-mono">${l.unit_price.toLocaleString('es-CO')}</span>
                   {l.price_source === 'customer_special' && l.original_unit_price != null && (
                     <div className="mt-0.5">
-                      <span className="text-[10px] text-muted-foreground line-through font-mono">${l.original_unit_price.toLocaleString()}</span>
+                      <span className="text-[10px] text-muted-foreground line-through font-mono">${l.original_unit_price.toLocaleString('es-CO')}</span>
                       <span className="ml-1 inline-flex rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
                         Precio especial ({Math.round((1 - l.unit_price / l.original_unit_price) * 100)}% dto.)
                       </span>
@@ -1196,7 +1206,7 @@ export function SalesOrderDetailPage() {
                   {l.price_source === 'manual' && (
                     <div className="mt-0.5">
                       {l.original_unit_price != null && (
-                        <span className="text-[10px] text-muted-foreground line-through font-mono mr-1">${l.original_unit_price.toLocaleString()}</span>
+                        <span className="text-[10px] text-muted-foreground line-through font-mono mr-1">${l.original_unit_price.toLocaleString('es-CO')}</span>
                       )}
                       <span className="inline-flex rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Manual</span>
                     </div>
@@ -1211,7 +1221,7 @@ export function SalesOrderDetailPage() {
                 <td className="px-6 py-3 text-right font-mono text-xs">${(l.tax_amount ?? 0).toLocaleString('es-CO', { minimumFractionDigits: 2 })}</td>
                 <td className="px-6 py-3 text-right">{(l.retention_pct ?? 0) > 0 ? `${l.retention_pct}%` : <span className="text-slate-300">—</span>}</td>
                 <td className="px-6 py-3 text-right font-mono text-xs">{(l.retention_amount ?? 0) > 0 ? `$${(l.retention_amount ?? 0).toLocaleString('es-CO', { minimumFractionDigits: 2 })}` : <span className="text-slate-300">—</span>}</td>
-                <td className="px-6 py-3 text-right font-bold">${l.line_total.toLocaleString()}</td>
+                <td className="px-6 py-3 text-right font-bold">${l.line_total.toLocaleString('es-CO')}</td>
               </tr>
             ))}
           </tbody>
