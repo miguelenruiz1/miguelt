@@ -898,6 +898,59 @@ export function PurchaseOrderDetailPage() {
         </div>
       )}
 
+      {/* Multi-supplier contributions (read-only if PO has them) */}
+      {po.suppliers && po.suppliers.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border p-4 mt-4">
+          <div className="mb-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase">Proveedores</p>
+            <p className="text-xs text-muted-foreground">OC consolidada: contribuciones por proveedor</p>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="text-xs text-muted-foreground border-b border-border">
+              <tr>
+                <th className="text-left py-2">Proveedor</th>
+                <th className="text-right py-2">Cant.</th>
+                <th className="text-right py-2">Monto</th>
+                <th className="text-right py-2">Adelanto</th>
+                <th className="text-left py-2">Lote / Plot</th>
+              </tr>
+            </thead>
+            <tbody>
+              {po.suppliers.map((s) => (
+                <tr key={s.id} className="border-b border-border/60">
+                  <td className="py-2 font-medium">{s.supplier_id.slice(0, 8)}</td>
+                  <td className="py-2 text-right">{Number(s.contribution_qty).toFixed(2)}</td>
+                  <td className="py-2 text-right">{Number(s.contribution_amount).toFixed(2)}</td>
+                  <td className="py-2 text-right">{Number(s.advance_to_supplier).toFixed(2)}</td>
+                  <td className="py-2 text-muted-foreground">{s.plot_id ? s.plot_id.slice(0, 8) : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="text-xs font-semibold border-t border-border">
+              <tr>
+                <td className="pt-2">Total</td>
+                <td className="pt-2 text-right">
+                  {po.suppliers.reduce((s, x) => s + Number(x.contribution_qty), 0).toFixed(2)}
+                </td>
+                <td className="pt-2 text-right">
+                  {po.suppliers.reduce((s, x) => s + Number(x.contribution_amount), 0).toFixed(2)}
+                </td>
+                <td className="pt-2 text-right">
+                  {po.suppliers.reduce((s, x) => s + Number(x.advance_to_supplier), 0).toFixed(2)}
+                </td>
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+          {po.advance_amount && Number(po.advance_amount) > 0 && (
+            <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground flex items-center justify-between">
+              <span>Adelanto OC{po.advance_reference ? ` (${po.advance_reference})` : ''}</span>
+              <span className="font-semibold text-foreground">{Number(po.advance_amount).toFixed(2)}</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* GRN (Goods Receipt Notes) */}
       <div className="bg-card rounded-2xl border border-border p-4 mt-4">
         <div className="flex items-center justify-between mb-3">

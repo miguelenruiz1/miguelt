@@ -90,13 +90,22 @@ class POService:
             await self.db.flush()
 
     async def create_draft(self, tenant_id: str, data: dict) -> PurchaseOrder:
-        supplier = await self._find_supplier(data["supplier_id"], tenant_id)
-        if not supplier:
-            raise NotFoundError(f"Proveedor {data['supplier_id']!r} no encontrado")
+        # Multi-supplier: either header supplier_id OR suppliers[] must be present
+        suppliers_payload = data.pop("suppliers", None)
+        supplier_id = data.get("supplier_id")
 
-        # Ensure legacy supplier record exists for FK constraint
-        if isinstance(supplier, BusinessPartner):
-            await self._ensure_legacy_supplier(supplier, tenant_id)
+        if not supplier_id and not suppliers_payload:
+            raise ValidationError(
+                "Proveedor requerido: especifique supplier_id o la lista suppliers[]"
+            )
+
+        if supplier_id:
+            supplier = await self._find_supplier(supplier_id, tenant_id)
+            if not supplier:
+                raise NotFoundError(f"Proveedor {supplier_id!r} no encontrado")
+            # Ensure legacy supplier record exists for FK constraint
+            if isinstance(supplier, BusinessPartner):
+                await self._ensure_legacy_supplier(supplier, tenant_id)
 
         lines = data.get("lines", [])
         if not lines:
@@ -111,18 +120,62 @@ class POService:
             if qty is None or Decimal(str(qty)) <= 0:
                 raise ValidationError(f"Línea {i+1}: la cantidad es obligatoria y debe ser mayor a cero")
 
+        # Validate multi-supplier contributions sum == PO total (±1% rounding slack)
+        if suppliers_payload:
+            po_total = sum(
+                Decimal(str(ln["qty_ordered"])) * Decimal(str(ln["unit_cost"]))
+                for ln in lines
+            )
+            contribution_sum = sum(
+                Decimal(str(s.get("contribution_amount", 0))) for s in suppliers_payload
+            )
+            if po_total > 0:
+                drift = abs(po_total - contribution_sum) / po_total
+                if contribution_sum > 0 and drift > Decimal("0.01"):
+                    raise ValidationError(
+                        f"La suma de contribuciones por proveedor ({contribution_sum}) "
+                        f"no coincide con el total de la OC ({po_total})"
+                    )
+            # Validate each supplier exists
+            for s in suppliers_payload:
+                sup = await self._find_supplier(s["supplier_id"], tenant_id)
+                if not sup:
+                    raise NotFoundError(f"Proveedor {s['supplier_id']!r} no encontrado")
+                if isinstance(sup, BusinessPartner):
+                    await self._ensure_legacy_supplier(sup, tenant_id)
+
         po_number = await self.repo.next_po_number(tenant_id)
         # Resolve warehouse_id: explicit → tenant default → null
         if not data.get("warehouse_id"):
             default_wh = await self.warehouse_repo.get_default(tenant_id)
             if default_wh is not None:
                 data = {**data, "warehouse_id": default_wh.id}
-        return await self.repo.create({
+        po = await self.repo.create({
             "tenant_id": tenant_id,
             "po_number": po_number,
             "status": POStatus.draft,
             **data,
         })
+
+        # Persist per-supplier contributions if provided
+        if suppliers_payload:
+            import uuid
+            from app.db.models import PurchaseOrderSupplier
+            for s in suppliers_payload:
+                self.db.add(PurchaseOrderSupplier(
+                    id=str(uuid.uuid4()),
+                    tenant_id=tenant_id,
+                    purchase_order_id=po.id,
+                    supplier_id=s["supplier_id"],
+                    contribution_qty=Decimal(str(s.get("contribution_qty", 0))),
+                    contribution_amount=Decimal(str(s.get("contribution_amount", 0))),
+                    advance_to_supplier=Decimal(str(s.get("advance_to_supplier", 0))),
+                    plot_id=s.get("plot_id"),
+                    notes=s.get("notes"),
+                ))
+            await self.db.flush()
+
+        return po
 
     async def delete(self, po_id: str, tenant_id: str) -> None:
         po = await self.get(po_id, tenant_id)

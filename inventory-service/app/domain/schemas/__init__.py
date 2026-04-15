@@ -19,6 +19,7 @@ from app.domain.schemas.purchase_order import (
     POLineCreate, POCreate, POUpdate, POLineOut, POOut, PaginatedPOs,
     LineReceiptIn, ReceivePOIn, PORejectIn, POApprovalLogOut, POKPIs,
     ConsolidateRequest, ConsolidationCandidate, ConsolidationResult, ConsolidationInfo,
+    POSupplierContribution, POSupplierContributionOut,
 )
 from app.domain.schemas.config import (
     MovementTypeCreate, MovementTypeUpdate, MovementTypeOut,

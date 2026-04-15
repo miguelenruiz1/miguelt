@@ -152,12 +152,26 @@ export interface PurchaseOrderLine {
 
 export type POStatus = 'draft' | 'pending_approval' | 'approved' | 'sent' | 'confirmed' | 'partial' | 'received' | 'canceled' | 'consolidated'
 
+export interface POSupplierContribution {
+  id: string
+  supplier_id: string
+  contribution_qty: string
+  contribution_amount: string
+  advance_to_supplier: string
+  plot_id: string | null
+  notes: string | null
+}
+
 export interface PurchaseOrder {
   id: string
   tenant_id: string
   po_number: string
-  supplier_id: string
+  supplier_id: string | null
   status: POStatus
+  advance_amount?: string
+  advance_paid_at?: string | null
+  advance_reference?: string | null
+  suppliers?: POSupplierContribution[]
   warehouse_id: string | null
   order_type_id: string | null
   expected_date: string | null
