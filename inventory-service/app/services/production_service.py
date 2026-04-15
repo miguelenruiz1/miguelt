@@ -504,6 +504,25 @@ class ProductionService:
         if remaining_output <= 0:
             raise ValidationError("Ya se recibio la totalidad de la produccion planificada")
 
+        # Multi-output validation: if the recipe declares explicit output_components
+        # (finished product + byproducts), the client must list a line for every
+        # declared output entity. We refuse partial receipts so traceability/cost
+        # allocation stays explicit — no silent zero-cost byproducts.
+        recipe_outputs = [
+            oc for oc in (getattr(recipe, "output_components", None) or [])
+            if oc.output_entity_id
+        ]
+        input_lines_pre = data.get("lines") or []
+        if len(recipe_outputs) > 1 and input_lines_pre:
+            expected_ids = {str(oc.output_entity_id) for oc in recipe_outputs}
+            provided_ids = {str(ln.get("entity_id")) for ln in input_lines_pre if ln.get("entity_id")}
+            missing = expected_ids - provided_ids
+            if missing:
+                raise ValidationError(
+                    "La receta declara multiples salidas (output_components); "
+                    f"faltan batches para las entidades: {sorted(missing)}"
+                )
+
         now = datetime.now(timezone.utc)
         receipt_date = data.get("receipt_date") or now
         output_wh = data.get("output_warehouse_id") or run.output_warehouse_id or run.warehouse_id
