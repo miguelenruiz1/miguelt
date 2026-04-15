@@ -656,6 +656,53 @@ class ProductionService:
                 "actual_output": float(actual_output), "total_cost": float(total_production),
             })
 
+        # ── Trace-service custody bridge (fire-and-forget) ─────────────────
+        # Best-effort: notify trace-service that a production batch was
+        # produced, so the custody chain extends from input plots/batches
+        # to this output batch. Wrapped in SAVEPOINT + try/except so a
+        # failure here cannot poison the transaction (regla #2).
+        try:
+            async with self.db.begin_nested():
+                # Gather consumed input batch ids and plot origins
+                from app.db.models.production import ProductionEmission, ProductionEmissionLine
+                from app.db.models.tracking import BatchPlotOrigin
+                from sqlalchemy import select
+
+                q = await self.db.execute(
+                    select(ProductionEmissionLine.batch_id)
+                    .join(ProductionEmission, ProductionEmissionLine.emission_id == ProductionEmission.id)
+                    .where(ProductionEmission.production_run_id == run_id)
+                )
+                input_batch_ids = [str(b) for b in q.scalars().all() if b]
+
+                plot_ids: list[str] = []
+                if input_batch_ids:
+                    pq = await self.db.execute(
+                        select(BatchPlotOrigin.plot_id)
+                        .where(BatchPlotOrigin.batch_id.in_(input_batch_ids))
+                        .distinct()
+                    )
+                    plot_ids = [str(p) for p in pq.scalars().all() if p]
+        except Exception:
+            input_batch_ids = []
+            plot_ids = []
+
+        try:
+            from app.clients import trace_client
+            await trace_client.notify_production_completed_background(
+                tenant_id=tenant_id,
+                production_run_id=run_id,
+                run_number=run.run_number,
+                output_entity_id=recipe.output_entity_id,
+                output_batch_id=batch_id,
+                output_warehouse_id=output_wh,
+                quantity=float(received_qty),
+                input_batch_ids=input_batch_ids,
+                plot_ids=plot_ids,
+            )
+        except Exception:
+            pass
+
         return await self.receipt_repo.get(tenant_id, receipt.id)
 
     async def _create_disassembly_receipt(self, tenant_id, run, recipe, data, performed_by):

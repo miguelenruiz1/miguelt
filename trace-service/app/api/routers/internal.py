@@ -69,6 +69,27 @@ class POReceiptResponse(BaseModel):
     event_hash: str
 
 
+class ProductionReceiptRequest(BaseModel):
+    tenant_id: str
+    production_run_id: str
+    run_number: str | None = None
+    output_entity_id: str
+    output_batch_id: str | None = None
+    output_warehouse_id: str | None = None
+    quantity: float = Field(..., gt=0)
+    input_batch_ids: list[str] = Field(default_factory=list)
+    plot_ids: list[str] = Field(default_factory=list)
+    parent_event_id: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ProductionReceiptResponse(BaseModel):
+    asset_id: str
+    state: str
+    wallet: str
+    event_hash: str
+
+
 class SOHandoffRequest(BaseModel):
     so_id: str
     asset_ids: list[str] = Field(..., min_length=1)
@@ -226,3 +247,84 @@ async def handoff_assets_from_so(
     )
 
     return SOHandoffResponse(handoffs=handoffs, errors=errors)
+
+
+# ─── POST /internal/assets/from-production-receipt ──────────────────────────
+
+@router.post(
+    "/assets/from-production-receipt",
+    response_model=ProductionReceiptResponse,
+    status_code=201,
+    dependencies=[Depends(verify_service_token)],
+)
+async def create_asset_from_production_receipt(
+    body: ProductionReceiptRequest,
+    db: AsyncSession = Depends(get_db_session),
+) -> ProductionReceiptResponse:
+    """
+    Called by inventory-service when a production run is (partially) received.
+    Creates an Asset in trace-service for the produced output batch, linking
+    back to the consumed input batches and originating plots via metadata.
+    """
+    tenant_id = await _resolve_tenant(body.tenant_id, db)
+
+    from app.repositories.registry_repo import RegistryRepository
+    registry = RegistryRepository(db)
+
+    wallet = None
+    if body.output_warehouse_id:
+        wallet = await registry.find_by_tag(
+            tenant_id, f"warehouse:{body.output_warehouse_id}"
+        )
+    if not wallet:
+        wallets, _ = await registry.list(tenant_id=tenant_id, status="active", limit=1)
+        wallet = wallets[0] if wallets else None
+    if not wallet:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"No active wallet found for tenant '{body.tenant_id}'.",
+        )
+
+    asset_metadata: dict[str, Any] = {
+        "source": "inventory-service",
+        "event_type": "transformation",
+        "production_run_id": body.production_run_id,
+        "run_number": body.run_number,
+        "output_entity_id": body.output_entity_id,
+        "output_batch_id": body.output_batch_id,
+        "output_warehouse_id": body.output_warehouse_id,
+        "quantity": body.quantity,
+        "input_batch_ids": body.input_batch_ids,
+        "plot_ids": body.plot_ids,
+        **body.metadata,
+    }
+    if body.parent_event_id:
+        asset_metadata["parent_event_id"] = body.parent_event_id
+
+    svc = CustodyService(db, tenant_id)
+    placeholder_mint = (
+        f"prod_{body.production_run_id[:8]}_{uuid.uuid4().hex[:8]}"
+    )
+
+    asset, event = await svc.create_asset(
+        asset_mint=placeholder_mint,
+        product_type="production_output",
+        metadata=asset_metadata,
+        initial_custodian_wallet=wallet.wallet_pubkey,
+    )
+    await db.commit()
+
+    log.info(
+        "asset_created_from_production",
+        asset_id=str(asset.id),
+        production_run_id=body.production_run_id,
+        output_batch_id=body.output_batch_id,
+        tenant_id=body.tenant_id,
+    )
+
+    return ProductionReceiptResponse(
+        asset_id=str(asset.id),
+        state=asset.state,
+        wallet=wallet.wallet_pubkey,
+        event_hash=event.event_hash,
+    )
