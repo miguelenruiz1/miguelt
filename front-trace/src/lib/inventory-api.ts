@@ -1,6 +1,6 @@
 import { authFetch } from '@/lib/auth-fetch'
 import { useAuthStore } from '@/store/auth'
-import type { DemoDeleteResult, DemoImportResult, ImportResult, GoodsReceipt, GRNCreatePayload } from '@/types/inventory'
+import type { DemoDeleteResult, DemoImportResult, ImportResult } from '@/types/inventory'
 import type {
   ABCClassification,
   AnalyticsOverview,
@@ -419,17 +419,6 @@ export const inventoryPOApi = {
 }
 
 // ─── Analytics ────────────────────────────────────────────────────────────────
-
-export const inventoryGRNApi = {
-  listForPO: (poId: string) =>
-    request<GoodsReceipt[]>(`/api/v1/purchase-orders/${poId}/receipts`),
-  create: (poId: string, data: GRNCreatePayload) =>
-    request<GoodsReceipt>(`/api/v1/purchase-orders/${poId}/receipts`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-  get: (id: string) => request<GoodsReceipt>(`/api/v1/goods-receipts/${id}`),
-}
 
 export const inventoryAnalyticsApi = {
   overview: () => request<AnalyticsOverview>('/api/v1/analytics/overview'),

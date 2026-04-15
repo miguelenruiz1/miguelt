@@ -17,8 +17,6 @@ import {
   useSubmitPOForApproval,
   useApprovePO,
   useRejectPO,
-  useGRNsForPO,
-  useCreateGRN,
 } from '@/hooks/useInventory'
 import { useAuthStore } from '@/store/auth'
 import { inventoryPOApi } from '@/lib/inventory-api'
@@ -68,137 +66,6 @@ interface ReceiveFormData {
   supplier_invoice_total?: number
   payment_terms?: string
   attachments?: Array<{ url: string; name: string; type: string; classification: string }>
-}
-
-function GRNModal({
-  lines,
-  productMap,
-  onClose,
-  onSubmit,
-  isPending,
-}: {
-  lines: PurchaseOrderLine[]
-  productMap: Record<string, string>
-  onClose: () => void
-  onSubmit: (payload: { receipt_date: string; notes?: string | null; lines: Array<{ po_line_id: string; qty_received: string; batch_number?: string | null; discrepancy_reason?: string | null }> }) => void
-  isPending: boolean
-}) {
-  const today = new Date().toISOString().slice(0, 10)
-  const [receiptDate, setReceiptDate] = useState(today)
-  const [notes, setNotes] = useState('')
-  const [rows, setRows] = useState<Record<string, { qty: string; batch: string; reason: string }>>(() =>
-    Object.fromEntries(
-      lines.map((l) => {
-        const remaining = Math.max(0, Number(l.qty_ordered) - Number(l.qty_received))
-        return [l.id, { qty: remaining > 0 ? String(remaining) : '', batch: '', reason: '' }]
-      })
-    )
-  )
-  const [error, setError] = useState('')
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError('')
-    const payloadLines = Object.entries(rows)
-      .filter(([, v]) => v.qty && Number(v.qty) > 0)
-      .map(([po_line_id, v]) => ({
-        po_line_id,
-        qty_received: v.qty,
-        batch_number: v.batch || null,
-        discrepancy_reason: v.reason || null,
-      }))
-    if (payloadLines.length === 0) {
-      setError('Ingresa al menos una cantidad recibida')
-      return
-    }
-    onSubmit({ receipt_date: receiptDate, notes: notes || null, lines: payloadLines })
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <form onSubmit={handleSubmit} className="bg-card rounded-xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Nueva recepción (GRN)</h2>
-          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Fecha de recepción</label>
-            <input type="date" value={receiptDate} onChange={(e) => setReceiptDate(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border border-border rounded-lg text-sm" required />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Notas generales</label>
-            <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border border-border rounded-lg text-sm"
-              placeholder="Opcional" />
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-border overflow-hidden mb-4">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-xs text-muted-foreground">
-              <tr>
-                <th className="text-left px-3 py-2">Producto</th>
-                <th className="text-right px-3 py-2">Pendiente</th>
-                <th className="text-right px-3 py-2">Cant. recibida</th>
-                <th className="text-left px-3 py-2">Lote</th>
-                <th className="text-left px-3 py-2">Motivo discrepancia</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((l) => {
-                const remaining = Math.max(0, Number(l.qty_ordered) - Number(l.qty_received))
-                const row = rows[l.id] ?? { qty: '', batch: '', reason: '' }
-                const qtyNum = Number(row.qty || 0)
-                const discrepancy = qtyNum - remaining
-                return (
-                  <tr key={l.id} className="border-t border-border">
-                    <td className="px-3 py-2">{productMap[l.product_id] ?? l.product_id.slice(0, 8)}</td>
-                    <td className="px-3 py-2 text-right">{remaining.toFixed(2)}</td>
-                    <td className="px-3 py-2 text-right">
-                      <input type="number" step="0.01" min="0" value={row.qty}
-                        onChange={(e) => setRows((p) => ({ ...p, [l.id]: { ...row, qty: e.target.value } }))}
-                        className="w-24 px-2 py-1 border border-border rounded text-right text-sm" />
-                      {discrepancy !== 0 && row.qty && (
-                        <div className="text-xs text-amber-600 mt-0.5">Δ {discrepancy > 0 ? '+' : ''}{discrepancy.toFixed(2)}</div>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      <input type="text" value={row.batch}
-                        onChange={(e) => setRows((p) => ({ ...p, [l.id]: { ...row, batch: e.target.value } }))}
-                        className="w-full px-2 py-1 border border-border rounded text-sm" />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input type="text" value={row.reason}
-                        onChange={(e) => setRows((p) => ({ ...p, [l.id]: { ...row, reason: e.target.value } }))}
-                        placeholder={discrepancy !== 0 && row.qty ? 'Obligatorio si hay discrepancia' : ''}
-                        className="w-full px-2 py-1 border border-border rounded text-sm" />
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
-
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-border text-sm">
-            Cancelar
-          </button>
-          <button type="submit" disabled={isPending}
-            className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm disabled:opacity-50">
-            {isPending ? 'Creando...' : 'Crear GRN'}
-          </button>
-        </div>
-      </form>
-    </div>
-  )
 }
 
 function ReceiveModal({
@@ -428,9 +295,6 @@ export function PurchaseOrderDetailPage() {
   const deconsolidatePO = useDeconsolidatePO()
   const { data: consolidationInfo } = useConsolidationInfo(id!)
   const [showReceive, setShowReceive] = useState(false)
-  const [showGRN, setShowGRN] = useState(false)
-  const { data: grns } = useGRNsForPO(id)
-  const createGRN = useCreateGRN()
   const updatePO = useUpdatePO()
   const [showEdit, setShowEdit] = useState(false)
   const submitApproval = useSubmitPOForApproval()
@@ -898,63 +762,6 @@ export function PurchaseOrderDetailPage() {
         </div>
       )}
 
-      {/* GRN (Goods Receipt Notes) */}
-      <div className="bg-card rounded-2xl border border-border p-4 mt-4">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase">Recepciones (GRN)</p>
-            <p className="text-xs text-muted-foreground">Actas formales de recepción contra esta orden</p>
-          </div>
-          {pendingReceive > 0 && po.status !== 'canceled' && po.status !== 'consolidated' && (
-            <button
-              onClick={() => setShowGRN(true)}
-              className="text-sm px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1.5"
-            >
-              <PackageCheck className="h-4 w-4" /> Nueva recepción
-            </button>
-          )}
-        </div>
-        {(grns ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">Sin recepciones registradas</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="text-xs text-muted-foreground border-b border-border">
-              <tr>
-                <th className="text-left py-2">GRN</th>
-                <th className="text-left py-2">Fecha</th>
-                <th className="text-right py-2">Líneas</th>
-                <th className="text-right py-2">Qty recibida</th>
-                <th className="text-center py-2">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(grns ?? []).map((g) => {
-                const totalQty = g.lines.reduce((s, l) => s + Number(l.qty_received), 0)
-                return (
-                  <tr key={g.id} className="border-b border-border/60">
-                    <td className="py-2 font-medium">{g.grn_number}</td>
-                    <td className="py-2 text-muted-foreground">{new Date(g.receipt_date).toLocaleDateString('es')}</td>
-                    <td className="py-2 text-right">{g.lines.length}</td>
-                    <td className="py-2 text-right">{totalQty.toFixed(2)}</td>
-                    <td className="py-2 text-center">
-                      {g.has_discrepancy ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-xs">
-                          <Info className="h-3 w-3" /> Con discrepancia
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-xs">
-                          <CheckCircle2 className="h-3 w-3" /> Conforme
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-
       {/* Activity timeline */}
       <div className="bg-card rounded-2xl border border-border  p-4">
         <ActivityTimeline resourceType="purchase_order" resourceId={id!} />
@@ -974,24 +781,6 @@ export function PurchaseOrderDetailPage() {
 
       {/* Edit modal */}
       {showEdit && po && <EditPOModal po={po} onClose={() => setShowEdit(false)} />}
-
-      {/* GRN modal */}
-      {showGRN && (
-        <GRNModal
-          lines={lines}
-          productMap={productMap}
-          onClose={() => setShowGRN(false)}
-          onSubmit={async (payload) => {
-            try {
-              await createGRN.mutateAsync({ poId: po!.id, ...payload })
-              setShowGRN(false)
-            } catch (err: unknown) {
-              alert(err instanceof Error ? err.message : 'Error al crear GRN')
-            }
-          }}
-          isPending={createGRN.isPending}
-        />
-      )}
     </div>
   )
 }

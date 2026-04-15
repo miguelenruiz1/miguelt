@@ -13,7 +13,6 @@ import {
   inventoryMovementTypesApi,
   inventoryMovementsApi,
   inventoryPOApi,
-  inventoryGRNApi,
   inventoryProductionApi,
   inventoryResourcesApi,
   inventoryProductsApi,
@@ -531,28 +530,6 @@ export function useReceivePO() {
       qc.invalidateQueries({ queryKey: ['inventory', 'stock'] })
       qc.invalidateQueries({ queryKey: ['inventory', 'movements'] })
       qc.invalidateQueries({ queryKey: ['inventory', 'analytics'] })
-    },
-  })
-}
-
-export function useGRNsForPO(poId: string | undefined) {
-  return useQuery({
-    queryKey: ['inventory', 'grns', poId],
-    queryFn: () => inventoryGRNApi.listForPO(poId as string),
-    enabled: Boolean(poId),
-  })
-}
-
-export function useCreateGRN() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({ poId, ...data }: { poId: string } & Parameters<typeof inventoryGRNApi.create>[1]) =>
-      inventoryGRNApi.create(poId, data),
-    onSuccess: (_, variables) => {
-      qc.invalidateQueries({ queryKey: ['inventory', 'grns', variables.poId] })
-      qc.invalidateQueries({ queryKey: ['inventory', 'pos'] })
-      qc.invalidateQueries({ queryKey: ['inventory', 'stock'] })
-      qc.invalidateQueries({ queryKey: ['inventory', 'movements'] })
     },
   })
 }
