@@ -21,10 +21,11 @@ class SequenceRepository:
         Atomic: uses INSERT ON CONFLICT DO UPDATE … RETURNING in a single
         statement, so concurrent calls are serialized at the row level.
         """
+        # tenant_id is VARCHAR(255) since migration 085 — no cast needed.
         sql = text(
             """
             INSERT INTO sequence_counters (tenant_id, scope, value, updated_at)
-            VALUES (:tenant_id::uuid, :scope, 1, NOW())
+            VALUES (:tenant_id, :scope, 1, NOW())
             ON CONFLICT (tenant_id, scope) DO UPDATE
                 SET value = sequence_counters.value + 1,
                     updated_at = NOW()

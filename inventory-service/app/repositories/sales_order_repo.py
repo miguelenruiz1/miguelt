@@ -14,6 +14,7 @@ _SO_OPTIONS = (
     selectinload(SalesOrder.lines).selectinload(SalesOrderLine.product),
     selectinload(SalesOrder.lines).selectinload(SalesOrderLine.variant),
     selectinload(SalesOrder.lines).selectinload(SalesOrderLine.warehouse),
+    selectinload(SalesOrder.lines).selectinload(SalesOrderLine.line_taxes),
     selectinload(SalesOrder.customer),
     selectinload(SalesOrder.warehouse),
     selectinload(SalesOrder.backorders),
@@ -104,8 +105,13 @@ class SalesOrderRepository:
         if any(line_tax_ids_per_line):
             await self.db.flush()
 
-        # Eagerly load the lines relationship to avoid MissingGreenlet on assignment
+        # Eagerly load the lines relationship to avoid MissingGreenlet on assignment.
+        # recalculate_so_totals also touches line.line_taxes on every line, so
+        # re-fetch the order with both relationships eagerly loaded before calling it.
         await self.db.refresh(order, ["lines"])
+        full = await self.get_by_id(order.id, order.tenant_id)
+        if full is not None:
+            order = full
         recalculate_so_totals(order)
         await self.db.flush()
         # Re-fetch with lines eagerly loaded to avoid MissingGreenlet on serialization

@@ -83,7 +83,7 @@ PLOT_BODY=$(cat <<'JSON'
 }
 JSON
 )
-PLOT_RESP=$(POST "/api/v1/compliance/plots" "$PLOT_BODY")
+PLOT_RESP=$(POST "/api/v1/compliance/plots/" "$PLOT_BODY")
 PLOT_ID=$(echo "$PLOT_RESP" | python -c 'import json,sys;d=json.load(sys.stdin);print(d.get("id",""))' 2>/dev/null || true)
 [ -n "$PLOT_ID" ] || fail "Plot create: $PLOT_RESP"
 echo "  plot_id=$PLOT_ID"
@@ -159,7 +159,7 @@ fi
 
 say "7/8  Smoke check plot list"
 curl -sS -o /tmp/seed_plots.json -w "  plots HTTP %{http_code}\n" \
-  "${GATEWAY}/api/v1/compliance/plots?limit=1" \
+  "${GATEWAY}/api/v1/compliance/plots/?limit=1" \
   -H "$H_TENANT" -H "$H_S2S"
 
 say "8/8  Done"
