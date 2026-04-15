@@ -80,6 +80,7 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
 interface SOLine { product_id: string; variant_id: string; warehouse_id: string; qty_ordered: string; unit_price: string; discount_pct: string; tax_rate: string; tax_rate_ids: string[] }
 
 function CreateSOModal({ onClose }: { onClose: () => void }) {
+  const toast = useToast()
   const { data: partnersData } = usePartners({ limit: 200 })
   const { data: productsData } = useProducts()
   const { data: warehouses = [] } = useWarehouses()
@@ -180,6 +181,15 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
   const { formRef, handleSubmit: validateAndSubmit } = useFormValidation(doSubmit)
 
   async function doSubmit() {
+    if (!form.customer_id) {
+      toast.error('Selecciona un cliente')
+      return
+    }
+    if (!lines.length || lines.some(l => !l.product_id || Number(l.qty_ordered) <= 0)) {
+      toast.error('Agrega al menos una linea con producto y cantidad > 0')
+      return
+    }
+    try {
     await create.mutateAsync({
       customer_id: form.customer_id,
       warehouse_id: form.warehouse_id || null,
@@ -204,7 +214,11 @@ function CreateSOModal({ onClose }: { onClose: () => void }) {
         tax_rate_ids: l.tax_rate_ids,
       })),
     })
+    toast.success('Orden de venta creada')
     onClose()
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al crear orden de venta')
+    }
   }
 
   return (

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, Link, Navigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { authFetch } from '@/lib/auth-fetch'
 import {
   ChevronRight, Package, MapPin, ShieldCheck, FileText, Award,
@@ -88,6 +89,8 @@ function isPalmRecord(record: ComplianceRecord): boolean {
 }
 
 function CadmiumCard({ record }: { record: ComplianceRecord }) {
+  const qc = useQueryClient()
+  const toast = useToast()
   const [value, setValue] = useState('')
   const [testDate, setTestDate] = useState(new Date().toISOString().slice(0, 10))
   const [lab, setLab] = useState('')
@@ -96,29 +99,42 @@ function CadmiumCard({ record }: { record: ComplianceRecord }) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    setSubmitting(true)
     setError(null)
+    const num = Number(value)
+    if (!Number.isFinite(num) || num < 0) {
+      setError('Ingresa un valor numerico valido (mg/kg)')
+      return
+    }
+    setSubmitting(true)
     try {
       const base = (import.meta as unknown as { env: { VITE_API_URL?: string } }).env.VITE_API_URL ?? ''
-      const tenantId = (import.meta as unknown as { env: { VITE_TENANT_ID?: string } }).env.VITE_TENANT_ID ?? 'default'
-      const res = await fetch(`${base}/api/v1/compliance/records/${record.id}/cadmium-test`, {
+      const res = await authFetch(`${base}/api/v1/compliance/records/${record.id}/cadmium-test`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant-Id': tenantId,
-        },
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          value_mg_per_kg: Number(value),
+          value_mg_per_kg: num,
           test_date: testDate,
           lab: lab || 'Lab sin especificar',
         }),
       })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      // Reload page to refresh record cache
-      window.location.reload()
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        let msg = `HTTP ${res.status}`
+        const d = body?.detail
+        if (typeof d === 'string') msg = d
+        else if (Array.isArray(d)) msg = d.map((x: any) => x?.msg ?? '').filter(Boolean).join(' · ') || msg
+        else if (body?.error?.message) msg = body.error.message
+        throw new Error(msg)
+      }
+      toast.success('Resultado de cadmio registrado')
+      setValue('')
+      setLab('')
+      await qc.invalidateQueries({ queryKey: ['compliance', 'records', record.id] })
+      await qc.invalidateQueries({ queryKey: ['compliance', 'records'] })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error')
+      const msg = err instanceof Error ? err.message : 'Error al registrar'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setSubmitting(false)
     }

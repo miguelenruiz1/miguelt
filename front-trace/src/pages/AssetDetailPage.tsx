@@ -24,6 +24,7 @@ import { useAssetCompliance, useRecordCertificate, useGenerateCertificate, usePl
 import { authFetch } from '@/lib/auth-fetch'
 import { useIsModuleActive } from '@/hooks/useModules'
 import { resolveIcon, colorStyle } from '@/lib/icon-map'
+import { useToast } from '@/store/toast'
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,7 @@ export function AssetDetailPage() {
   const [showBlockchainDetails, setShowBlockchainDetails] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const deleteAsset = useDeleteAsset()
+  const toast = useToast()
 
   const { data: asset, isLoading, refetch, isFetching } = useAsset(id)
   const { data: eventsData, isLoading: eventsLoading } = useAssetEvents(id)
@@ -502,9 +504,10 @@ export function AssetDetailPage() {
                       const adminKey = useSettingsStore.getState().adminKey || ''
                       try {
                         await deleteAsset.mutateAsync({ id: asset.id, adminKey })
+                        toast.success('Carga eliminada')
                         navigate('/assets')
                       } catch (e: any) {
-                        alert(e.message || 'Error al eliminar')
+                        toast.error(e?.message || 'Error al eliminar')
                       }
                     }}
                   >
