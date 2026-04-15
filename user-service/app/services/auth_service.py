@@ -53,6 +53,17 @@ _PERMISSIONS = [
     ("inventory",     "purchase_orders.approve",   "Aprobar órdenes de compra"),
     ("inventory",     "purchase_orders.view_cost", "Ver costos en OC"),
     ("inventory",     "purchase_orders.manage",    "Gestionar órdenes de compra"),
+    # Production
+    ("production",    "production.view",           "Ver módulo de producción"),
+    ("production",    "production.create",         "Crear recetas y corridas"),
+    ("production",    "production.execute",        "Ejecutar y finalizar corridas"),
+    ("production",    "production.approve",        "Aprobar o rechazar corridas"),
+    ("production",    "production.manage",         "Gestionar producción"),
+    ("production",    "production.admin",          "Administrar producción"),
+    # Compliance (EUDR, certifications)
+    ("compliance",    "compliance.view",           "Ver registros y certificados de cumplimiento"),
+    ("compliance",    "compliance.manage",         "Crear/editar registros y generar certificados"),
+    ("compliance",    "compliance.admin",          "Configurar integraciones de cumplimiento"),
 ]
 
 
