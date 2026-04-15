@@ -2662,7 +2662,15 @@ export function ProductsPage() {
             ) : totalEntries === 0 ? (
               <div className="p-12 text-center">
                 <Package className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">Sin productos encontrados.</p>
+                <p className="text-sm font-medium text-foreground">No hay productos registrados</p>
+                <p className="text-xs text-muted-foreground mt-1">Crea tu primer producto para comenzar a gestionar el inventario.</p>
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(true)}
+                  className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Nuevo producto
+                </button>
               </div>
             ) : (
               <>
