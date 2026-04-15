@@ -169,7 +169,16 @@ echo "  customer_id=${CUST_ID:-<unknown>}"
 
 say "7/10  Sales order EUR / FOB / NL"
 if [ -n "$CUST_ID" ]; then
-  SO_BODY=$(cat <<JSON
+  PROD_ID=$(curl -sS "${GATEWAY}/api/v1/products?limit=1" \
+    -H "$H_TENANT" -H "$H_USER" -H "$H_S2S" \
+    | python -c 'import json,sys
+try:
+  d=json.load(sys.stdin); items=d.get("items",[])
+  print(items[0]["id"] if items else "")
+except Exception:
+  print("")' 2>/dev/null || true)
+  if [ -n "$PROD_ID" ]; then
+    SO_BODY=$(cat <<JSON
 {
   "customer_id": "${CUST_ID}",
   "currency": "EUR",
@@ -177,12 +186,17 @@ if [ -n "$CUST_ID" ]; then
   "destination_country": "NL",
   "commodity_type": "cacao",
   "notes": "Lote LT-APRO-2026-042 — 1000 kg cacao seco — Tumaco a Amsterdam",
-  "lines": []
+  "lines": [
+    {"product_id": "${PROD_ID}", "qty_ordered": 1000, "unit_price": 3.20}
+  ]
 }
 JSON
 )
-  SO_RESP=$(POST "/api/v1/sales-orders" "$SO_BODY")
-  echo "  sales-order create: $(echo "$SO_RESP" | head -c 200)..."
+    SO_RESP=$(POST "/api/v1/sales-orders" "$SO_BODY")
+    echo "  sales-order create: $(echo "$SO_RESP" | head -c 200)..."
+  else
+    echo "  (no product available — skipping SO)"
+  fi
 fi
 
 say "8/10  Quality test humedad 7.3% (passed 5-8%)"

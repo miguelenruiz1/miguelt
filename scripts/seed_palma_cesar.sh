@@ -254,7 +254,7 @@ if [ -n "$CUST_ID" ]; then
   "commodity_type": "palm",
   "notes": "Lote CPO-CES-2026-088 — 5000 kg CPO — San Alberto a Mannheim",
   "lines": [
-    {"product_id": "${CPO_ID}", "quantity": 5000, "unit_price": 0.85, "currency": "USD"}
+    {"product_id": "${CPO_ID}", "qty_ordered": 5000, "unit_price": 0.85}
   ]
 }
 JSON

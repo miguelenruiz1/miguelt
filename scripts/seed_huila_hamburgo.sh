@@ -142,19 +142,34 @@ echo "  customer_id=${CUST_ID:-<unknown>}"
 
 say "6/8  Sales order EUR / FOB / DE"
 if [ -n "$CUST_ID" ]; then
-  SO_BODY=$(cat <<JSON
+  # Resolve first available product to satisfy lines[] requirement.
+  PROD_ID=$(curl -sS "${GATEWAY}/api/v1/products?limit=1" \
+    -H "$H_TENANT" -H "$H_USER" -H "$H_S2S" \
+    | python -c 'import json,sys
+try:
+  d=json.load(sys.stdin); items=d.get("items",[])
+  print(items[0]["id"] if items else "")
+except Exception:
+  print("")' 2>/dev/null || true)
+  if [ -n "$PROD_ID" ]; then
+    SO_BODY=$(cat <<JSON
 {
   "customer_id": "${CUST_ID}",
   "currency": "EUR",
   "incoterm": "FOB",
   "destination_country": "DE",
   "notes": "Lote HU-2026-042 — 500 kg verde — Huila a Hamburgo",
-  "lines": []
+  "lines": [
+    {"product_id": "${PROD_ID}", "qty_ordered": 500, "unit_price": 5.50}
+  ]
 }
 JSON
 )
-  SO_RESP=$(POST "/api/v1/sales-orders" "$SO_BODY")
-  echo "  sales-order create response: $(echo "$SO_RESP" | head -c 200)..."
+    SO_RESP=$(POST "/api/v1/sales-orders" "$SO_BODY")
+    echo "  sales-order create response: $(echo "$SO_RESP" | head -c 200)..."
+  else
+    echo "  (no product available — skipping SO)"
+  fi
 fi
 
 say "7/8  Smoke check plot list"
