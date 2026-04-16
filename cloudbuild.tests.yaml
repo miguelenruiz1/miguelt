@@ -51,5 +51,33 @@ steps:
         pip install --quiet -r requirements-test.txt
         python -m pytest tests/unit -x --tb=short
 
+  # ── user-service unit tests ────────────────────────────────────────────────
+  - name: 'python:3.12-slim'
+    id: 'test-user'
+    entrypoint: 'bash'
+    waitFor: ['-']
+    args:
+      - '-ceu'
+      - |
+        cd user-service
+        pip install --quiet -r requirements.txt
+        pip install --quiet -r requirements-test.txt
+        python -m pytest tests/unit -x --tb=short
+
+  # ── compliance-service unit tests ──────────────────────────────────────────
+  # test_endpoints.py is an integration suite that talks to a running instance
+  # and is excluded from the CI gate. All pure-python suites run here.
+  - name: 'python:3.12-slim'
+    id: 'test-compliance'
+    entrypoint: 'bash'
+    waitFor: ['-']
+    args:
+      - '-ceu'
+      - |
+        cd compliance-service
+        pip install --quiet -r requirements.txt
+        pip install --quiet -r requirements-test.txt
+        python -m pytest tests --ignore=tests/test_endpoints.py -x --tb=short
+
 options:
   logging: CLOUD_LOGGING_ONLY

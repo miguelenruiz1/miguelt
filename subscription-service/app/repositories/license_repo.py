@@ -12,9 +12,14 @@ from app.db.models import LicenseKey, LicenseStatus
 
 
 def _generate_key() -> str:
-    """Generate TRACE-XXXX-XXXX-XXXX-XXXX format license key."""
+    """Generate TRACE-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX license key.
+
+    32 hex chars = 128 bits of entropy — industry-standard minimum for secrets
+    that grant recurring access. The older 64-bit format (token_hex(2) × 4)
+    was auditor-flagged as brute-force feasible at scale.
+    """
     def segment() -> str:
-        return secrets.token_hex(2).upper()
+        return secrets.token_hex(4).upper()
     return f"TRACE-{segment()}-{segment()}-{segment()}-{segment()}"
 
 

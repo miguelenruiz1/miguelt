@@ -117,10 +117,26 @@ def create_app() -> FastAPI:
     app.include_router(onboarding_router)
     app.include_router(internal_router)
 
-    # ─── Prometheus metrics (optional) ────────────────────────────────────────
+    # ─── Prometheus metrics (optional, S2S-token gated) ──────────────────────
+    # Raw /metrics leaks latency profiles, error rates, and per-endpoint
+    # volumes — useful for an attacker doing recon. Gate it on the same
+    # service token used for inter-service calls so only the scraper (with
+    # the token configured) can read it. Dev uses the default token value.
     try:
         from prometheus_fastapi_instrumentator import Instrumentator  # type: ignore
-        Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+        from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+        from fastapi import Request
+        from fastapi.responses import Response
+
+        Instrumentator().instrument(app)
+        expected_token = settings.S2S_SERVICE_TOKEN
+
+        @app.get("/metrics", include_in_schema=False)
+        async def metrics(request: Request) -> Response:
+            token = request.headers.get("X-Service-Token") or request.query_params.get("token")
+            if not token or token != expected_token:
+                return Response(status_code=401, content="unauthorized")
+            return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
     except ImportError:
         pass
 
