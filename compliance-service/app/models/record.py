@@ -31,7 +31,8 @@ class ComplianceRecord(Base):
             name="ck_records_compliance_status",
         ),
         CheckConstraint(
-            "declaration_status IN ('not_required','pending','submitted','accepted','rejected')",
+            "declaration_status IN ('not_required','pending','submitted','accepted',"
+            "'rejected','validated','amended')",
             name="ck_records_declaration_status",
         ),
         CheckConstraint(
@@ -93,6 +94,10 @@ class ComplianceRecord(Base):
     declaration_submission_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     declaration_status: Mapped[str] = mapped_column(Text, nullable=False, default="not_required")
     declaration_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # DDS polling state (mig 032). Populated by the TRACES NT polling loop.
+    declaration_validated_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    declaration_rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    declaration_last_polled_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
 
     # Status
     compliance_status: Mapped[str] = mapped_column(Text, nullable=False, default="incomplete")

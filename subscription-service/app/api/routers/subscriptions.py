@@ -3,10 +3,13 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response, StreamingResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import require_permission
+from app.api.deps import CurrentUser, require_permission
+from app.core.settings import get_settings
 from app.db.session import get_db_session
 from app.domain.schemas import (
     CancelRequest,
@@ -159,3 +162,107 @@ async def list_events(
     svc: SubscriptionService = Depends(_svc),
 ):
     return await svc.get_events(tenant_id)
+
+
+# ─── FASE2 Billing Completeness ──────────────────────────────────────────────
+
+class RefundRequest(BaseModel):
+    reason: str = Field(..., min_length=1, max_length=500)
+    partial_amount: float | None = Field(default=None, ge=0)
+
+
+@router.get(
+    "/{tenant_id}/invoices/{invoice_id}/pdf",
+    summary="Download invoice as PDF",
+)
+async def download_invoice_pdf(
+    tenant_id: str,
+    invoice_id: str,
+    current_user: Annotated[dict, Depends(require_permission("subscription.view"))],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+):
+    _enforce_tenant_match(current_user, tenant_id)
+    from app.repositories.invoice_repo import InvoiceRepository
+    from app.services.invoice_pdf_service import render_invoice_pdf
+
+    inv = await InvoiceRepository(db).get_by_id(invoice_id)
+    if inv is None or inv.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    settings = get_settings()
+    try:
+        pdf_bytes = await render_invoice_pdf(db, invoice_id, app_url=settings.APP_URL)
+    except RuntimeError as exc:
+        # weasyprint not installed / missing libs
+        raise HTTPException(status_code=503, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+    filename = f"{inv.invoice_number}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post(
+    "/{tenant_id}/invoices/{invoice_id}/send",
+    summary="Send invoice by email (generates PDF + attaches)",
+)
+async def send_invoice_email(
+    tenant_id: str,
+    invoice_id: str,
+    current_user: Annotated[dict, Depends(require_permission("subscription.manage"))],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    resend: bool = Query(default=False, description="If true, log as resend_manual"),
+):
+    _enforce_tenant_match(current_user, tenant_id)
+    from app.services.invoice_service import send_invoice  # local import to avoid cycles
+
+    performed_by = current_user.get("id") or current_user.get("email") or "api"
+    method = "resend_manual" if resend else "manual"
+    try:
+        return await send_invoice(
+            db=db,
+            tenant_id=tenant_id,
+            invoice_id=invoice_id,
+            performed_by=performed_by,
+            method=method,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post(
+    "/{tenant_id}/invoices/{invoice_id}/refund",
+    summary="Issue a credit note (refund) for an invoice",
+    status_code=201,
+)
+async def refund_invoice(
+    tenant_id: str,
+    invoice_id: str,
+    body: RefundRequest,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+):
+    # Superuser-only
+    if not current_user.get("is_superuser"):
+        raise HTTPException(status_code=403, detail="Superuser access required")
+
+    from app.services.invoice_service import issue_credit_note
+
+    performed_by = current_user.get("id") or current_user.get("email") or "api"
+    try:
+        return await issue_credit_note(
+            db=db,
+            tenant_id=tenant_id,
+            invoice_id=invoice_id,
+            reason=body.reason,
+            partial_amount=body.partial_amount,
+            performed_by=performed_by,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))

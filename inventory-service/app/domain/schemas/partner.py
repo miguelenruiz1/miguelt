@@ -39,6 +39,8 @@ class PartnerUpdate(BaseModel):
     supplier_type_id: str | None = None
     customer_type_id: str | None = None
     tax_id: str | None = Field(None, max_length=50)
+    # DIAN: 1 = Responsable IVA, 2 = No responsable IVA
+    tax_regime: int | None = None
     contact_name: str | None = Field(None, max_length=255)
     email: str | None = Field(None, max_length=255)
     phone: str | None = Field(None, max_length=50)
@@ -63,6 +65,7 @@ class PartnerOut(OrmBase):
     supplier_type_id: str | None = None
     customer_type_id: str | None = None
     tax_id: str | None = None
+    tax_regime: int | None = None
     contact_name: str | None = None
     email: str | None = None
     phone: str | None = None

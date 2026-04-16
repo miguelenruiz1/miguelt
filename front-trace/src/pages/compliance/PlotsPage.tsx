@@ -6,6 +6,8 @@ import { useOrganizations } from '@/hooks/useTaxonomy'
 import { useConfirm } from '@/store/confirm'
 import { useToast } from '@/store/toast'
 import { DataTable, type Column } from '@/components/ui/datatable'
+import { SkeletonTable } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PlotMap } from '@/components/compliance/PlotMap'
@@ -306,6 +308,15 @@ export default function PlotsPage() {
         data={filteredPlots}
         rowKey={(row) => row.id}
         isLoading={isLoading}
+        loadingState={<SkeletonTable columns={6} rows={8} />}
+        emptyState={
+          <EmptyState
+            icon={MapPin}
+            title="Sin parcelas registradas"
+            description="Crea una parcela para comenzar a gestionar tu cumplimiento EUDR."
+            action={{ label: 'Nueva parcela', to: '/cumplimiento/parcelas/nueva', icon: Plus }}
+          />
+        }
         emptyMessage="No hay parcelas registradas. Crea una para comenzar."
       />
 

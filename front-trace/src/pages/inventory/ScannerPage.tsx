@@ -690,7 +690,7 @@ export function ScannerPage() {
                   </div>
                 </div>
                 <span className="shrink-0 text-xs text-slate-300 tabular-nums">
-                  {entry.timestamp.toLocaleTimeString('es', {
+                  {entry.timestamp.toLocaleTimeString('es-CO', {
                     hour: '2-digit',
                     minute: '2-digit',
                     second: '2-digit',

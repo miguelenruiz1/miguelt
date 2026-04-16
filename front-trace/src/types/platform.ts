@@ -55,6 +55,8 @@ export interface TenantListResponse {
 
 export interface TenantModule {
   slug: string
+  name?: string
+  description?: string | null
   is_active: boolean
   activated_at: string | null
   deactivated_at: string | null

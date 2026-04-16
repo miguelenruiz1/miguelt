@@ -62,6 +62,7 @@ class InviteUserRequest(BaseModel):
 class AdminUpdateUser(BaseModel):
     full_name: str | None = Field(None, min_length=1, max_length=255)
     is_active: bool | None = None
+    is_superuser: bool | None = None  # superuser-only — gated in router
     username: str | None = Field(None, min_length=1, max_length=150)
     phone: str | None = None
     job_title: str | None = None
@@ -83,6 +84,53 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str = Field(min_length=8)
+
+
+# ─── 2FA (TOTP) ──────────────────────────────────────────────────────────────
+
+class TwoFASetupResponse(BaseModel):
+    secret: str
+    otpauth_uri: str
+    issuer: str
+    account: str
+
+
+class TwoFAVerifyRequest(BaseModel):
+    totp_code: str = Field(min_length=6, max_length=16)
+
+
+class TwoFAVerifyResponse(BaseModel):
+    enabled: bool
+    recovery_codes: list[str]
+
+
+class TwoFADisableRequest(BaseModel):
+    password: str
+    totp_code: str = Field(min_length=6, max_length=16)
+
+
+class TwoFAChallengeResponse(BaseModel):
+    requires_2fa: bool = True
+    challenge_token: str
+
+
+class TwoFALoginRequest(BaseModel):
+    challenge_token: str
+    totp_code: str = Field(min_length=6, max_length=16)
+
+
+# ─── Sessions ─────────────────────────────────────────────────────────────────
+
+class SessionResponse(BaseModel):
+    id: str
+    device_fingerprint: str | None = None
+    user_agent: str | None = None
+    ip_address: str | None = None
+    created_at: datetime
+    last_used_at: datetime
+    is_current: bool = False
+
+    model_config = {"from_attributes": True}
 
 
 # ─── Roles & Permissions ─────────────────────────────────────────────────────

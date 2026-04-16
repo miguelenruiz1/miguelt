@@ -113,7 +113,7 @@ export function PlatformSalesPage() {
                       {daysLeft != null ? `${daysLeft} dias` : '-'}
                     </span>
                     <p className="text-xs text-muted-foreground">
-                      {s.current_period_end ? new Date(s.current_period_end).toLocaleDateString('es') : '-'}
+                      {s.current_period_end ? new Date(s.current_period_end).toLocaleDateString('es-CO') : '-'}
                     </p>
                   </div>
                   <Link to={`/platform/tenants/${encodeURIComponent(s.tenant_id)}`} className="text-muted-foreground hover:text-primary">
@@ -131,7 +131,7 @@ export function PlatformSalesPage() {
         <div className="bg-card rounded-2xl border border-red-200  overflow-hidden">
           <div className="px-6 py-4 border-b border-red-100 bg-red-50/50 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-red-500" />
-            <h3 className="text-sm font-semibold text-red-700">Vencidas — Accion Requerida</h3>
+            <h3 className="text-sm font-semibold text-red-700">Vencidas — Acción Requerida</h3>
             <span className="ml-auto text-xs text-red-500">{data.overdue.length} empresas</span>
           </div>
           <div className="divide-y divide-red-100">
@@ -196,7 +196,7 @@ export function PlatformSalesPage() {
                   </td>
                   <td className="px-5 py-2.5 text-right font-semibold">${inv.amount.toLocaleString('es-CO')} {inv.currency}</td>
                   <td className="px-5 py-2.5 text-muted-foreground">
-                    {inv.created_at ? new Date(inv.created_at).toLocaleDateString('es') : '-'}
+                    {inv.created_at ? new Date(inv.created_at).toLocaleDateString('es-CO') : '-'}
                   </td>
                 </tr>
               ))}
@@ -228,7 +228,7 @@ export function PlatformSalesPage() {
                   </p>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {s.canceled_at ? new Date(s.canceled_at).toLocaleDateString('es') : '-'}
+                  {s.canceled_at ? new Date(s.canceled_at).toLocaleDateString('es-CO') : '-'}
                 </div>
               </div>
             ))}

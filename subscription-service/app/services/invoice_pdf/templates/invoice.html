@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Factura {{ invoice.invoice_number }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm;
+      @bottom-center {
+        content: "Trace S.A.S. — NIT 900.123.456-7 — Resolución DIAN 18764000{{ invoice.year }} — Página " counter(page) " de " counter(pages);
+        font-size: 9pt;
+        color: #888;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+      font-size: 10pt;
+      color: #1f2937;
+      line-height: 1.45;
+      margin: 0;
+    }
+    h1, h2, h3 { margin: 0; font-weight: 600; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111827; padding-bottom: 16px; margin-bottom: 24px; }
+    .brand { }
+    .brand .logo { font-size: 26pt; font-weight: 700; color: #111827; letter-spacing: -0.5px; }
+    .brand .tagline { font-size: 9pt; color: #6b7280; margin-top: 2px; }
+    .issuer { font-size: 9pt; color: #374151; text-align: right; }
+    .issuer strong { color: #111827; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 16px; background: #f9fafb; }
+    .card .label { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; margin-bottom: 4px; }
+    .card .value { font-size: 11pt; font-weight: 600; color: #111827; }
+    .doc-info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .doc-info .label { font-size: 7.5pt; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px; }
+    .doc-info .value { font-size: 10pt; font-weight: 600; color: #111827; margin-top: 2px; }
+    table.lines { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    table.lines th { background: #111827; color: #fff; font-size: 9pt; text-align: left; padding: 10px 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    table.lines td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-size: 10pt; }
+    table.lines td.num, table.lines th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .totals { width: 45%; margin-left: auto; margin-top: 10px; }
+    .totals .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 10pt; }
+    .totals .row.total { border-top: 2px solid #111827; margin-top: 8px; padding-top: 10px; font-weight: 700; font-size: 12pt; color: #111827; }
+    .footer-notes { margin-top: 40px; padding: 14px 16px; background: #f3f4f6; border-radius: 8px; font-size: 9pt; color: #4b5563; }
+    .footer-notes strong { color: #111827; }
+    .pay-link { color: #2563eb; text-decoration: none; font-weight: 500; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; }
+    .badge-paid { background: #d1fae5; color: #065f46; }
+    .badge-open { background: #fef3c7; color: #92400e; }
+    .badge-void { background: #fee2e2; color: #991b1b; }
+    .badge-cn  { background: #e0e7ff; color: #3730a3; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <div class="logo">TRACE</div>
+      <div class="tagline">Trazabilidad industrial en blockchain</div>
+    </div>
+    <div class="issuer">
+      <strong>Trace S.A.S.</strong><br>
+      NIT: 900.123.456-7<br>
+      Carrera 7 # 71-21, Bogotá, D.C.<br>
+      Régimen Común — IVA 19%<br>
+      Resolución DIAN 18764000{{ invoice.year }}<br>
+      Numeración autorizada INV-{{ invoice.year }}-0001 a INV-{{ invoice.year }}-9999
+    </div>
+  </div>
+
+  <div class="meta-grid">
+    <div class="card">
+      <div class="label">Facturar a</div>
+      <div class="value">{{ customer.name }}</div>
+      <div style="margin-top:6px; font-size:9pt; color:#4b5563;">
+        {% if customer.nit %}NIT/CC: {{ customer.nit }}<br>{% endif %}
+        {% if customer.address %}{{ customer.address }}<br>{% endif %}
+        {% if customer.email %}{{ customer.email }}{% endif %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="label">Documento</div>
+      <div class="value">
+        {% if invoice.invoice_type == 'credit_note' %}
+          Nota Crédito <span class="badge badge-cn">NC</span>
+        {% else %}
+          Factura de Venta
+        {% endif %}
+      </div>
+      <div style="margin-top:6px; font-size:9pt; color:#4b5563;">
+        Estado:
+        {% if invoice.status == 'paid' %}<span class="badge badge-paid">Pagada</span>
+        {% elif invoice.status == 'open' %}<span class="badge badge-open">Pendiente</span>
+        {% elif invoice.status == 'void' %}<span class="badge badge-void">Anulada</span>
+        {% else %}{{ invoice.status }}{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-info">
+    <div>
+      <div class="label">Número</div>
+      <div class="value">{{ invoice.invoice_number }}</div>
+    </div>
+    <div>
+      <div class="label">Fecha emisión</div>
+      <div class="value">{{ invoice.issue_date }}</div>
+    </div>
+    <div>
+      <div class="label">Período servicio</div>
+      <div class="value">{{ invoice.period_start }} — {{ invoice.period_end }}</div>
+    </div>
+    <div>
+      <div class="label">Vencimiento</div>
+      <div class="value">{{ invoice.due_date or "—" }}</div>
+    </div>
+  </div>
+
+  <table class="lines">
+    <thead>
+      <tr>
+        <th style="width:50%;">Descripción</th>
+        <th class="num" style="width:10%;">Cant.</th>
+        <th class="num" style="width:20%;">Precio unit.</th>
+        <th class="num" style="width:20%;">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for line in line_items %}
+      <tr>
+        <td>{{ line.description }}</td>
+        <td class="num">{{ line.quantity }}</td>
+        <td class="num">{{ line.unit_price_fmt }}</td>
+        <td class="num">{{ line.amount_fmt }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="row"><span>Subtotal</span><span>{{ totals.subtotal_fmt }}</span></div>
+    <div class="row"><span>IVA (19%)</span><span>{{ totals.iva_fmt }}</span></div>
+    {% if totals.retefuente %}
+    <div class="row"><span>Retefuente</span><span>-{{ totals.retefuente_fmt }}</span></div>
+    {% endif %}
+    <div class="row total"><span>TOTAL A PAGAR ({{ invoice.currency }})</span><span>{{ totals.total_fmt }}</span></div>
+  </div>
+
+  <div class="footer-notes">
+    <strong>Cómo pagar:</strong> realiza el pago vía nuestro portal seguro Wompi o por transferencia bancaria.<br>
+    <strong>Banco:</strong> Bancolombia, Cuenta Corriente 1234567890, a nombre de Trace S.A.S.<br>
+    <strong>Portal de pago:</strong> <a class="pay-link" href="{{ pay_link }}">{{ pay_link }}</a><br>
+    <strong>Términos:</strong> Factura vence a 15 días de la fecha de emisión. Mora genera intereses conforme a ley.<br>
+    {% if invoice.notes %}<br><strong>Notas:</strong> {{ invoice.notes }}{% endif %}
+  </div>
+</body>
+</html>

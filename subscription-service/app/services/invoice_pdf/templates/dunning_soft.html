@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Recordatorio de pago</title></head>
+<body style="font-family:Inter,Arial,sans-serif;color:#1f2937;max-width:600px;margin:0 auto;padding:24px;">
+  <h2 style="color:#111827;">Recordatorio amable</h2>
+  <p>Hola {{ customer_name }},</p>
+  <p>Queríamos recordarte que tu factura <strong>{{ invoice.invoice_number }}</strong>
+     por <strong>{{ invoice.total_fmt }} {{ invoice.currency }}</strong>
+     se encuentra vencida hace {{ days_overdue }} día(s).</p>
+  <p>Sabemos que a veces se pasa — si ya realizaste el pago, ignora este mensaje.
+     Si aún no, puedes hacerlo desde: <a href="{{ pay_link }}">{{ pay_link }}</a></p>
+  <p>Adjuntamos la factura en PDF para tu referencia.</p>
+  <p style="color:#6b7280;font-size:12px;margin-top:32px;">Equipo Trace — cobros@tracelog.co</p>
+</body>
+</html>

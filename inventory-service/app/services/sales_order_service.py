@@ -664,13 +664,6 @@ class SalesOrderService:
 
         result = await self.repo.set_status(order, SalesOrderStatus.shipped)
 
-        # Emit webhook event
-        from app.clients.webhook_client import emit_event
-        await emit_event("inventory.so.shipped", tenant_id, {
-            "order_id": order.id, "order_number": order.order_number,
-            "customer_id": order.customer_id, "total": float(order.total or 0),
-        })
-
         return result
 
     async def deliver(self, order_id: str, tenant_id: str, user_id: str | None = None):
@@ -769,12 +762,6 @@ class SalesOrderService:
 
         order.updated_by = user_id
         result = await self.repo.set_status(order, SalesOrderStatus.delivered)
-
-        from app.clients.webhook_client import emit_event
-        await emit_event("inventory.so.delivered", tenant_id, {
-            "order_id": order.id, "order_number": order.order_number,
-            "customer_id": order.customer_id, "total": float(order.total or 0),
-        })
 
         return result
 

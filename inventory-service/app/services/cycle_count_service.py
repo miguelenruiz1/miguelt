@@ -78,7 +78,10 @@ class CycleCountService:
                 levels.append((pid, level))
         else:
             # All products with stock in this warehouse
-            all_levels = await self.stock_repo.list_levels(tenant_id, warehouse_id=warehouse_id)
+            # list_levels returns (list[StockLevel], total_count). We only need the rows.
+            all_levels, _ = await self.stock_repo.list_levels(
+                tenant_id, warehouse_id=warehouse_id, limit=10_000
+            )
             levels = [(sl.product_id, sl) for sl in all_levels]
 
         # Create snapshot items

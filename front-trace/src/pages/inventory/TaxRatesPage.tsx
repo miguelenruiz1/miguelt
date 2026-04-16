@@ -44,8 +44,8 @@ export function TaxRatesPage() {
             <Receipt className="h-6 w-6 text-primary" /> Tarifas de Impuesto
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Configurá tus categorías fiscales y las tarifas asociadas. El sistema soporta cualquier país: IVA/VAT/GST,
-            retenciones (IRPF/Retefuente/withholding), e impuestos cumulativos (Brasil ICMS+IPI+PIS+COFINS+ISS).
+            Configurá las tarifas de IVA (19% / 5% / 0%) y de Retefuente. Colombia MVP — solo las
+            categorías DIAN soportadas aparecen acá.
           </p>
         </div>
         <div className="flex gap-2">
@@ -120,18 +120,17 @@ function EmptyState() {
     <div className="bg-card rounded-2xl border border-border p-10 text-center space-y-4">
       <Info className="h-10 w-10 text-blue-600 mx-auto" />
       <div>
-        <h3 className="font-semibold text-base">Aún no tenés categorías de impuesto</h3>
+        <h3 className="font-semibold text-base">No hay categorías inicializadas</h3>
         <p className="text-sm text-muted-foreground mt-2 max-w-xl mx-auto">
-          Empezá creando las categorías que usa tu país: IVA, Retención en la fuente, IRPF, etc.
-          Cada categoría declara su comportamiento (suma al total o retiene del pagar) y podés
-          asociarle múltiples tarifas (ej: IVA con tasas 19%, 5%, 0%).
+          IVA y Retefuente deberían estar presentes por defecto. Si no aparecen,
+          corré las migraciones del servicio de inventario.
         </p>
       </div>
       <Link
         to="/inventario/configuracion/categorias-impuesto"
         className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90"
       >
-        <Plus className="h-4 w-4" /> Crear categorías
+        Ver categorías
       </Link>
     </div>
   )

@@ -6,6 +6,7 @@ import re
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 
 from app.core.errors import ConflictError, NotFoundError, ValidationError
 from app.db.models import Product
@@ -46,7 +47,11 @@ class ConfigService:
     async def create_product_type(self, tenant_id: str, data: dict):
         if not data.get("slug"):
             data["slug"] = _slugify(data["name"])
-        return await self.pt_repo.create(tenant_id, data)
+        try:
+            async with self.db.begin_nested():
+                return await self.pt_repo.create(tenant_id, data)
+        except IntegrityError:
+            raise ConflictError(f"Ya existe un tipo de producto con slug '{data['slug']}'")
 
     async def update_product_type(self, tenant_id: str, type_id: str, data: dict):
         obj = await self.pt_repo.get(tenant_id, type_id)
@@ -79,7 +84,11 @@ class ConfigService:
     async def create_order_type(self, tenant_id: str, data: dict):
         if not data.get("slug"):
             data["slug"] = _slugify(data["name"])
-        return await self.ot_repo.create(tenant_id, data)
+        try:
+            async with self.db.begin_nested():
+                return await self.ot_repo.create(tenant_id, data)
+        except IntegrityError:
+            raise ConflictError(f"Ya existe un tipo de orden con slug '{data['slug']}'")
 
     async def update_order_type(self, tenant_id: str, type_id: str, data: dict):
         obj = await self.ot_repo.get(tenant_id, type_id)
@@ -129,7 +138,11 @@ class ConfigService:
     async def create_supplier_type(self, tenant_id: str, data: dict):
         if not data.get("slug"):
             data["slug"] = _slugify(data["name"])
-        return await self.st_repo.create(tenant_id, data)
+        try:
+            async with self.db.begin_nested():
+                return await self.st_repo.create(tenant_id, data)
+        except IntegrityError:
+            raise ConflictError(f"Ya existe un tipo de proveedor con slug '{data['slug']}'")
 
     async def update_supplier_type(self, tenant_id: str, type_id: str, data: dict):
         obj = await self.st_repo.get(tenant_id, type_id)

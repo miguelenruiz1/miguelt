@@ -437,13 +437,13 @@ function MerkleTreeWidget() {
               <div className="rounded-xl border border-border bg-muted p-3">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Capacidad</p>
                 <p className="text-sm font-semibold text-foreground">
-                  {((tree as any).total ?? Math.pow(2, (tree as any).max_depth ?? 0)).toLocaleString('es')} hojas
+                  {((tree as any).total ?? Math.pow(2, (tree as any).max_depth ?? 0)).toLocaleString('es-CO')} hojas
                 </p>
               </div>
               <div className="rounded-xl border border-border bg-muted p-3">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Usadas</p>
                 <p className="text-sm font-semibold text-foreground">
-                  {((tree as any).used ?? (tree as any).num_minted ?? 0).toLocaleString('es')}
+                  {((tree as any).used ?? (tree as any).num_minted ?? 0).toLocaleString('es-CO')}
                 </p>
               </div>
             </div>

@@ -77,7 +77,7 @@ export function SerialsPage() {
                 <div key={s.id} className="rounded-xl border border-border bg-card p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs text-foreground font-semibold">{s.serial_number}</span>
-                    <span className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleDateString('es')}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleDateString('es-CO')}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-foreground">{productMap[s.entity_id] ?? s.entity_id.slice(0, 8)}</span>
@@ -128,7 +128,7 @@ export function SerialsPage() {
                       </select>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">{s.warehouse_id ? whMap[s.warehouse_id] ?? '—' : '—'}</td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(s.created_at).toLocaleDateString('es')}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(s.created_at).toLocaleDateString('es-CO')}</td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">{resolve(s.created_by)}</td>
                     <td className="px-4 py-3 text-right">
                       <button onClick={async () => { if (confirm('¿Eliminar serial ' + s.serial_number + '?')) await deleteSerial.mutateAsync(s.id) }}

@@ -13,6 +13,10 @@ PyJWT[crypto]>=2.8.0,<3.0.0
 httpx>=0.27.0
 structlog>=24.1.0
 
+# Billing completeness (FASE2)
+weasyprint>=60.0
+jinja2>=3.1.0
+
 # Observability
 opentelemetry-api>=1.25.0
 opentelemetry-sdk>=1.25.0

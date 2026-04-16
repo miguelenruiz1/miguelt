@@ -15,6 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import ConflictError, NotFoundError, ValidationError
 from app.db.models.tax import TaxCategory, TaxRate
 
+# Colombia MVP — catálogo bloqueado. Espejo de tax_service.CO_ALLOWED_TAX_SLUGS.
+CO_ALLOWED_TAX_SLUGS = frozenset({"iva", "retefuente"})
+
 
 class TaxCategoryService:
     def __init__(self, db: AsyncSession) -> None:
@@ -64,6 +67,11 @@ class TaxCategoryService:
         slug = data.get("slug", "").strip().lower()
         if not slug:
             raise ValidationError("El slug es obligatorio")
+        # Colombia MVP: solo IVA y Retefuente
+        if slug not in CO_ALLOWED_TAX_SLUGS:
+            raise ValidationError(
+                "Solo se permiten categorías IVA y Retefuente en Colombia"
+            )
         existing = (await self.db.execute(
             select(TaxCategory).where(
                 TaxCategory.tenant_id == tenant_id,

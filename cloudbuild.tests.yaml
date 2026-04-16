@@ -1,0 +1,55 @@
+# Cloud Build config: Phase 1 test gate for backend services.
+#
+# Invoke with:
+#   gcloud builds submit --config cloudbuild.tests.yaml --project trace-log
+#
+# Services are built in parallel (waitFor: ['-']) and must all pass before the
+# pipeline succeeds. Hook this as a prerequisite step (via waitFor) on the
+# existing per-service deploy pipelines, or run it standalone as a pre-deploy
+# validation.
+
+steps:
+  # ── inventory-service unit tests ────────────────────────────────────────────
+  - name: 'python:3.12-slim'
+    id: 'test-inventory'
+    entrypoint: 'bash'
+    waitFor: ['-']
+    args:
+      - '-ceu'
+      - |
+        cd inventory-service
+        pip install --quiet -r requirements.txt
+        pip install --quiet -r requirements-test.txt
+        python -m pytest tests/unit -x --tb=short
+
+  # ── subscription-service unit + integration tests ──────────────────────────
+  - name: 'python:3.12-slim'
+    id: 'test-subscription'
+    entrypoint: 'bash'
+    waitFor: ['-']
+    args:
+      - '-ceu'
+      - |
+        cd subscription-service
+        pip install --quiet -r requirements.txt
+        pip install --quiet -r requirements-test.txt
+        python -m pytest tests -x --tb=short
+
+  # ── trace-service unit tests ───────────────────────────────────────────────
+  # Only the unit suite is wired here. The legacy tests in tests/ require a
+  # real Postgres test DB (see trace-service/tests/conftest.py) and should be
+  # migrated to an isolated unit/integration split before being added here.
+  - name: 'python:3.12-slim'
+    id: 'test-trace'
+    entrypoint: 'bash'
+    waitFor: ['-']
+    args:
+      - '-ceu'
+      - |
+        cd trace-service
+        pip install --quiet fastapi 'sqlalchemy[asyncio]' 'pydantic>=2.7' pydantic-settings orjson asyncpg redis
+        pip install --quiet -r requirements-test.txt
+        python -m pytest tests/unit -x --tb=short
+
+options:
+  logging: CLOUD_LOGGING_ONLY

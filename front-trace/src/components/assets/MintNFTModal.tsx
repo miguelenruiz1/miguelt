@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { z } from 'zod'
 import { Sparkles, FolderOpen, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useMintAsset } from '@/hooks/useAssets'
@@ -75,14 +76,30 @@ export function MintNFTModal({ open, onClose, preSelectedOrgId }: Props) {
     setWalletPubkey('')
   }
 
+  // Zod schema — keeps validation centralized and consistent across the form
+  const mintSchema = z.object({
+    productType: z.string().min(1, 'Selecciona o escribe el tipo de producto'),
+    walletPubkey: z.string().min(1, 'Selecciona un wallet custodio inicial'),
+    weight: z
+      .string()
+      .refine((v) => v === '' || !isNaN(Number(v)), { message: 'Debe ser un número válido' })
+      .refine((v) => v === '' || Number(v) > 0, { message: 'El peso debe ser mayor a cero' }),
+  })
+
   const validate = () => {
-    const e: Record<string, string> = {}
     const pt = productType === 'otro' ? customProductType.trim() : productType
-    if (!pt)           e.productType  = 'Selecciona o escribe el tipo de producto'
-    if (!walletPubkey) e.walletPubkey = 'Selecciona un wallet custodio inicial'
-    if (weight && isNaN(Number(weight))) e.weight = 'Debe ser un número válido'
+    const parsed = mintSchema.safeParse({ productType: pt, walletPubkey, weight })
+    if (parsed.success) {
+      setErrs({})
+      return true
+    }
+    const e: Record<string, string> = {}
+    for (const issue of parsed.error.issues) {
+      const key = issue.path[0] as string
+      if (!e[key]) e[key] = issue.message
+    }
     setErrs(e)
-    return Object.keys(e).length === 0
+    return false
   }
 
   const handleSubmit = async () => {

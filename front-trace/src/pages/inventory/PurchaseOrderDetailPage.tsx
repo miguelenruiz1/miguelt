@@ -374,9 +374,9 @@ export function PurchaseOrderDetailPage() {
             )}
           </div>
           <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mt-1">
-            <span>Creado: {new Date(po.created_at).toLocaleDateString('es')}</span>
-            {po.expected_date && <span>Esperado: {new Date(po.expected_date).toLocaleDateString('es')}</span>}
-            {po.received_date && <span>Recibido: {new Date(po.received_date).toLocaleDateString('es')}</span>}
+            <span>Creado: {new Date(po.created_at).toLocaleDateString('es-CO')}</span>
+            {po.expected_date && <span>Esperado: {new Date(po.expected_date).toLocaleDateString('es-CO')}</span>}
+            {po.received_date && <span>Recibido: {new Date(po.received_date).toLocaleDateString('es-CO')}</span>}
             {po.created_by && <span>Por: {resolve(po.created_by)}</span>}
           </div>
           {po.is_auto_generated && (
@@ -577,7 +577,7 @@ export function PurchaseOrderDetailPage() {
           </p>
           {consolidationInfo.consolidated_at && (
             <p className="text-xs text-blue-500 mt-1">
-              Consolidada el {new Date(consolidationInfo.consolidated_at).toLocaleDateString('es')}
+              Consolidada el {new Date(consolidationInfo.consolidated_at).toLocaleDateString('es-CO')}
             </p>
           )}
           {po.status === 'draft' && (
@@ -615,11 +615,11 @@ export function PurchaseOrderDetailPage() {
         </div>
         <div className="bg-card rounded-2xl border border-border  p-4">
           <p className="text-xs font-semibold text-muted-foreground uppercase">Valor total</p>
-          <p className="text-2xl font-bold text-foreground mt-1">${totalValue.toLocaleString('es', { minimumFractionDigits: 2 })}</p>
+          <p className="text-2xl font-bold text-foreground mt-1">${totalValue.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</p>
         </div>
         <div className="bg-card rounded-2xl border border-border  p-4">
           <p className="text-xs font-semibold text-muted-foreground uppercase">Pendiente por recibir</p>
-          <p className="text-2xl font-bold text-amber-600 mt-1">{pendingReceive.toLocaleString('es', { minimumFractionDigits: 2 })}</p>
+          <p className="text-2xl font-bold text-amber-600 mt-1">{pendingReceive.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</p>
         </div>
       </div>
 
@@ -664,8 +664,8 @@ export function PurchaseOrderDetailPage() {
                   </td>
                   <td className="px-4 py-3 font-mono text-foreground text-right">{line.qty_ordered}</td>
                   <td className="px-4 py-3 font-mono text-foreground text-right">{line.qty_received}</td>
-                  <td className="px-4 py-3 font-mono text-foreground text-right">${Number(line.unit_cost).toLocaleString('es', { minimumFractionDigits: 2 })}</td>
-                  <td className="px-4 py-3 font-mono text-foreground text-right">${Number(line.line_total).toLocaleString('es', { minimumFractionDigits: 2 })}</td>
+                  <td className="px-4 py-3 font-mono text-foreground text-right">${Number(line.unit_cost).toLocaleString('es-CO', { minimumFractionDigits: 2 })}</td>
+                  <td className="px-4 py-3 font-mono text-foreground text-right">${Number(line.line_total).toLocaleString('es-CO', { minimumFractionDigits: 2 })}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
@@ -693,7 +693,7 @@ export function PurchaseOrderDetailPage() {
               <div><span className="text-muted-foreground">N° Factura:</span> <span className="font-medium">{po.supplier_invoice_number}</span></div>
             )}
             {po.supplier_invoice_date && (
-              <div><span className="text-muted-foreground">Fecha factura:</span> <span className="font-medium">{new Date(po.supplier_invoice_date).toLocaleDateString('es')}</span></div>
+              <div><span className="text-muted-foreground">Fecha factura:</span> <span className="font-medium">{new Date(po.supplier_invoice_date).toLocaleDateString('es-CO')}</span></div>
             )}
             {po.supplier_invoice_total != null && (
               <div><span className="text-muted-foreground">Total factura:</span> <span className="font-medium">${Number(po.supplier_invoice_total).toLocaleString('es-CO')}</span></div>
@@ -702,7 +702,7 @@ export function PurchaseOrderDetailPage() {
               <div><span className="text-muted-foreground">Términos pago:</span> <span className="font-medium">{po.payment_terms}</span></div>
             )}
             {po.payment_due_date && (
-              <div><span className="text-muted-foreground">Vence:</span> <span className="font-medium">{new Date(po.payment_due_date).toLocaleDateString('es')}</span></div>
+              <div><span className="text-muted-foreground">Vence:</span> <span className="font-medium">{new Date(po.payment_due_date).toLocaleDateString('es-CO')}</span></div>
             )}
           </div>
         </div>
@@ -757,16 +757,16 @@ export function PurchaseOrderDetailPage() {
           <p className="text-xs font-semibold text-muted-foreground uppercase">Historial</p>
           <div className="space-y-1.5 text-sm">
             {po.approved_at && (
-              <div className="flex justify-between"><span className="text-muted-foreground">Aprobada</span><span className="text-foreground">{new Date(po.approved_at).toLocaleString('es')}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Aprobada</span><span className="text-foreground">{new Date(po.approved_at).toLocaleString('es-CO')}</span></div>
             )}
             {po.sent_at && (
-              <div className="flex justify-between"><span className="text-muted-foreground">Enviada</span><span className="text-foreground">{new Date(po.sent_at).toLocaleString('es')}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Enviada</span><span className="text-foreground">{new Date(po.sent_at).toLocaleString('es-CO')}</span></div>
             )}
             {po.confirmed_at && (
-              <div className="flex justify-between"><span className="text-muted-foreground">Confirmada</span><span className="text-foreground">{new Date(po.confirmed_at).toLocaleString('es')}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Confirmada</span><span className="text-foreground">{new Date(po.confirmed_at).toLocaleString('es-CO')}</span></div>
             )}
             {po.received_date && (
-              <div className="flex justify-between"><span className="text-muted-foreground">Recibida</span><span className="text-foreground">{new Date(po.received_date).toLocaleString('es')}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Recibida</span><span className="text-foreground">{new Date(po.received_date).toLocaleString('es-CO')}</span></div>
             )}
           </div>
         </div>

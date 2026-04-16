@@ -904,3 +904,222 @@ class TracesNTService:
 
     def export_dds_json(self, dds: dict) -> str:
         return json.dumps(dds, indent=2, ensure_ascii=False, default=str)
+
+    async def retrieve_dds_info(self, reference_number: str) -> dict[str, Any]:
+        """Call TRACES NT retrieveDdsInfoByReferences for a single reference.
+
+        Returns a normalized dict:
+            {
+              "ok": bool,
+              "status": "validated" | "rejected" | "submitted" | "amended" | "unknown",
+              "raw_status": str | None,      # raw string from TRACES NT
+              "validated_at": ISO str | None,
+              "rejection_reason": str | None,
+              "amendments": list[str],
+              "reference_number": str,
+              "error": str | None,
+            }
+
+        El SOAP retrieve endpoint NO esta documentado publicamente con el
+        mismo nivel de detalle que submitDds. Construimos el envelope siguiendo
+        el mismo patron (WS-Security header + operationName distinto). Si el
+        endpoint real difiere levemente en nombres de tags, el parsing por
+        regex tolera namespace prefixes y cambios de casing.
+        """
+        if not self.is_configured:
+            return {
+                "ok": False,
+                "status": "unknown",
+                "raw_status": None,
+                "validated_at": None,
+                "rejection_reason": None,
+                "amendments": [],
+                "reference_number": reference_number,
+                "error": "TRACES NT credentials not configured",
+            }
+
+        envelope = build_retrieve_envelope(
+            reference_number=reference_number,
+            username=self._username,
+            auth_key=self._auth_key,
+            client_id=self._client_id,
+        )
+        timeout = get_settings().TRACES_NT_TIMEOUT
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as http:
+                resp = await http.post(
+                    self._base_url,
+                    content=envelope.encode("utf-8"),
+                    headers={
+                        "Content-Type": "text/xml; charset=utf-8",
+                        "SOAPAction": "retrieveDdsInfoByReferences",
+                    },
+                )
+                if resp.status_code != 200:
+                    log.warning(
+                        "traces_retrieve_failed",
+                        status=resp.status_code,
+                        body=resp.text[:500],
+                    )
+                    return {
+                        "ok": False,
+                        "status": "unknown",
+                        "raw_status": None,
+                        "validated_at": None,
+                        "rejection_reason": None,
+                        "amendments": [],
+                        "reference_number": reference_number,
+                        "error": f"TRACES NT returned {resp.status_code}",
+                    }
+                parsed = parse_retrieve_response(resp.text, reference_number)
+                parsed["ok"] = True
+                parsed["error"] = None
+                return parsed
+        except Exception as exc:
+            log.error("traces_retrieve_error", exc=str(exc))
+            return {
+                "ok": False,
+                "status": "unknown",
+                "raw_status": None,
+                "validated_at": None,
+                "rejection_reason": None,
+                "amendments": [],
+                "reference_number": reference_number,
+                "error": str(exc),
+            }
+
+
+# ─── SOAP retrieve envelope + response parser ────────────────────────────────
+
+def build_retrieve_envelope(
+    reference_number: str,
+    username: str,
+    auth_key: str,
+    client_id: str = "eudr-test",
+) -> str:
+    """Build SOAP envelope for retrieveDdsInfoByReferences.
+
+    Same WS-Security UsernameToken (PasswordDigest) pattern as submit.
+    """
+    import secrets
+    from datetime import timedelta
+
+    now = datetime.now(tz=timezone.utc)
+    nonce_raw = secrets.token_bytes(16)
+    nonce_b64 = base64.b64encode(nonce_raw).decode()
+    created = now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    expires = (now + timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+    digest_input = nonce_raw + created.encode() + auth_key.encode()
+    password_digest = base64.b64encode(hashlib.sha1(digest_input).digest()).decode()
+
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+               xmlns:eudr="http://ec.europa.eu/tracesnt/eudr">
+  <soap:Header>
+    <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+                   xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+                   soap:mustUnderstand="1">
+      <wsu:Timestamp wsu:Id="TS-1">
+        <wsu:Created>{_xe(created)}</wsu:Created>
+        <wsu:Expires>{_xe(expires)}</wsu:Expires>
+      </wsu:Timestamp>
+      <wsse:UsernameToken>
+        <wsse:Username>{_xe(username)}</wsse:Username>
+        <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest">{_xe(password_digest)}</wsse:Password>
+        <wsse:Nonce EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary">{_xe(nonce_b64)}</wsse:Nonce>
+        <wsu:Created>{_xe(created)}</wsu:Created>
+      </wsse:UsernameToken>
+    </wsse:Security>
+    <eudr:webServiceClientId>{_xe(client_id)}</eudr:webServiceClientId>
+  </soap:Header>
+  <soap:Body>
+    <eudr:retrieveDdsInfoByReferences>
+      <eudr:referenceNumber>{_xe(reference_number)}</eudr:referenceNumber>
+    </eudr:retrieveDdsInfoByReferences>
+  </soap:Body>
+</soap:Envelope>"""
+
+
+# Regex-based parser — tolerates any namespace prefix and variable casing.
+def _match_one(patterns: list[str], body: str) -> str | None:
+    for pat in patterns:
+        m = re.search(pat, body, flags=re.IGNORECASE | re.DOTALL)
+        if m:
+            val = m.group(1).strip()
+            if val:
+                return val
+    return None
+
+
+_STATUS_MAP = {
+    # Known verdict literals emitted by TRACES NT (from public docs + mock
+    # harnesses). We normalize to our DB-safe set.
+    "AVAILABLE": "validated",
+    "VALIDATED": "validated",
+    "ACCEPTED": "validated",
+    "REJECTED": "rejected",
+    "WITHDRAWN": "rejected",
+    "SUBMITTED": "submitted",
+    "IN_PROGRESS": "submitted",
+    "PENDING": "submitted",
+    "AMENDED": "amended",
+    "SUPERSEDED": "amended",
+}
+
+
+def parse_retrieve_response(xml_body: str, reference_number: str) -> dict[str, Any]:
+    """Parse a TRACES NT retrieveDdsInfoByReferences SOAP response.
+
+    Returns the normalized dict shape documented in
+    TracesNTService.retrieve_dds_info. Tolerant of namespace prefixes and
+    empty responses: on unparseable bodies returns status='unknown'.
+    """
+    raw_status = _match_one(
+        [
+            r"<(?:[a-zA-Z][\w-]*:)?status>([^<]+)</(?:[a-zA-Z][\w-]*:)?status>",
+            r"<(?:[a-zA-Z][\w-]*:)?ddsStatus>([^<]+)</(?:[a-zA-Z][\w-]*:)?ddsStatus>",
+            r"<(?:[a-zA-Z][\w-]*:)?state>([^<]+)</(?:[a-zA-Z][\w-]*:)?state>",
+        ],
+        xml_body,
+    )
+    validated_at = _match_one(
+        [
+            r"<(?:[a-zA-Z][\w-]*:)?validatedAt>([^<]+)</(?:[a-zA-Z][\w-]*:)?validatedAt>",
+            r"<(?:[a-zA-Z][\w-]*:)?validationDate>([^<]+)</(?:[a-zA-Z][\w-]*:)?validationDate>",
+            r"<(?:[a-zA-Z][\w-]*:)?updatedAt>([^<]+)</(?:[a-zA-Z][\w-]*:)?updatedAt>",
+        ],
+        xml_body,
+    )
+    rejection_reason = _match_one(
+        [
+            r"<(?:[a-zA-Z][\w-]*:)?rejectionReason>([^<]+)</(?:[a-zA-Z][\w-]*:)?rejectionReason>",
+            r"<(?:[a-zA-Z][\w-]*:)?reason>([^<]+)</(?:[a-zA-Z][\w-]*:)?reason>",
+            r"<(?:[a-zA-Z][\w-]*:)?message>([^<]+)</(?:[a-zA-Z][\w-]*:)?message>",
+        ],
+        xml_body,
+    )
+    # Amendments — list of prior/next reference numbers.
+    amendments = re.findall(
+        r"<(?:[a-zA-Z][\w-]*:)?amendmentReference>([^<]+)</(?:[a-zA-Z][\w-]*:)?amendmentReference>",
+        xml_body,
+        flags=re.IGNORECASE,
+    )
+
+    normalized = _STATUS_MAP.get((raw_status or "").upper(), None)
+    if normalized is None:
+        # If no recognizable status, but the response clearly names the
+        # reference, treat as 'submitted' (still pending on EU side).
+        if reference_number and reference_number in xml_body:
+            normalized = "submitted"
+        else:
+            normalized = "unknown"
+
+    return {
+        "status": normalized,
+        "raw_status": raw_status,
+        "validated_at": validated_at,
+        "rejection_reason": rejection_reason,
+        "amendments": amendments,
+        "reference_number": reference_number,
+    }
