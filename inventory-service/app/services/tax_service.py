@@ -19,6 +19,10 @@ from sqlalchemy.orm import selectinload
 from app.db.models.tax import TaxRate, TaxCategory
 
 
+# Colombia MVP — catálogo bloqueado. Agregar slugs acá cuando se expanda soporte.
+CO_ALLOWED_TAX_SLUGS = frozenset({"iva", "retefuente"})
+
+
 class TaxService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
@@ -127,20 +131,35 @@ class TaxService:
                 "Debes especificar una categoría de impuesto (category_id o category_slug)."
             )
 
+        # Colombia MVP: bloquear cualquier categoría fuera de IVA/Retefuente
+        from app.core.errors import ConflictError as _ConflictError
+        if category.slug not in CO_ALLOWED_TAX_SLUGS:
+            raise _ConflictError(
+                "Impuesto no soportado en Colombia MVP: use IVA o Retefuente"
+            )
+
         # Sync the legacy tax_type column to the category slug (kept for compat)
         data["tax_type"] = category.slug
 
         if data.get("is_default"):
             await self._unset_default(tenant_id, category.slug)
 
-        tax = TaxRate(
-            id=str(uuid4()),
-            tenant_id=tenant_id,
-            category_id=category.id,
-            **data,
-        )
-        self.db.add(tax)
-        await self.db.flush()
+        from sqlalchemy.exc import IntegrityError
+        from app.core.errors import ConflictError
+        try:
+            async with self.db.begin_nested():
+                tax = TaxRate(
+                    id=str(uuid4()),
+                    tenant_id=tenant_id,
+                    category_id=category.id,
+                    **data,
+                )
+                self.db.add(tax)
+                await self.db.flush()
+        except IntegrityError:
+            raise ConflictError(
+                f"Ya existe una tasa con ese nombre o valor para la categoría '{category.slug}'"
+            )
         # Re-fetch with category eager-loaded for the response
         await self.db.refresh(tax, attribute_names=["category"])
         return tax

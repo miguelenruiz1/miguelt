@@ -39,6 +39,10 @@ export interface DataTableProps<T> {
   className?: string
   /** Disable the mobile card layout (force table always) */
   forceTable?: boolean
+  /** Custom slot rendered when isLoading is true (replaces default spinner) */
+  loadingState?: ReactNode
+  /** Custom slot rendered when data is empty (replaces default emptyMessage block) */
+  emptyState?: ReactNode
 }
 
 type SortDir = 'asc' | 'desc'
@@ -57,6 +61,8 @@ export function DataTable<T>({
   isLoading,
   className,
   forceTable,
+  loadingState,
+  emptyState,
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<SortDir>('asc')
@@ -96,6 +102,9 @@ export function DataTable<T>({
 
   /* ---- Loading / Empty ---- */
   if (isLoading) {
+    if (loadingState !== undefined) {
+      return <div className={className}>{loadingState}</div>
+    }
     return (
       <div className={cn('rounded-md bg-card  border border-border', className)}>
         <div className="flex items-center justify-center py-16">
@@ -106,6 +115,9 @@ export function DataTable<T>({
   }
 
   if (!data.length) {
+    if (emptyState !== undefined) {
+      return <div className={className}>{emptyState}</div>
+    }
     return (
       <div className={cn('rounded-md bg-card  border border-border', className)}>
         <div className="py-16 text-center text-sm text-muted-foreground">{emptyMessage}</div>

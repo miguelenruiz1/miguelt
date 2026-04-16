@@ -99,6 +99,7 @@ const cumplimientoItems = [
   { to: '/cumplimiento/activaciones', icon: CheckCircle, label: 'Mis Normas' },
   { to: '/cumplimiento/parcelas', icon: MapPin, label: 'Parcelas' },
   { to: '/cumplimiento/registros', icon: FileText, label: 'Registros' },
+  { to: '/cumplimiento/dds-status', icon: Send, label: 'DDS TRACES NT' },
   { to: '/cumplimiento/certificados', icon: Award, label: 'Certificados' },
   { to: '/cumplimiento/certificaciones', icon: Shield, label: 'Certificaciones' },
   { to: '/cumplimiento/biblioteca-legal', icon: CircleHelp, label: 'Biblioteca legal' },
@@ -116,9 +117,8 @@ const logisticaItems = [
 
 
 const empresaAlwaysItems = [
-  { to: '/empresa/suscripcion', icon: CreditCard, label: 'Suscripcion', permission: 'subscription.view' },
-  { to: '/settings/billing',    icon: Banknote,    label: 'Facturacion', permission: 'subscription.view' },
-  { to: '/empresa/webhooks',    icon: Zap,         label: 'Webhooks',    permission: 'subscription.view' },
+  { to: '/empresa/suscripcion', icon: CreditCard, label: 'Suscripción', permission: 'subscription.view' },
+  { to: '/settings/billing',    icon: Banknote,    label: 'Facturación', permission: 'subscription.view' },
 ]
 const empresaModuleItems: typeof empresaAlwaysItems = []
 
@@ -149,10 +149,10 @@ function SubNavLink({ to, label, onClick }: { to: string; label: string; onClick
   return (
     <NavLink key={to} to={to} onClick={handleClick}
       className={({ isActive }) => cn(
-        'flex items-center rounded-lg py-2 pl-10 pr-3 text-[14px] transition-colors duration-150',
+        'flex items-center rounded-md py-1.5 pl-9 pr-2.5 text-[13px] transition-colors duration-150',
         isActive
-          ? 'text-white font-medium bg-white/[0.06]'
-          : 'text-[color:var(--sidebar-foreground)] hover:text-white/90 hover:bg-white/[0.04]',
+          ? 'text-[color:var(--sidebar-foreground-strong)] font-medium bg-[color:var(--sidebar-item-active)]'
+          : 'text-[color:var(--sidebar-foreground)] hover:text-[color:var(--sidebar-foreground-strong)] hover:bg-[color:var(--sidebar-item-hover)]',
       )}>
       {label}
     </NavLink>
@@ -174,15 +174,15 @@ function NavItem({ to, icon: Icon, label, onClick, collapsed }: {
           onClick={handleClick}
           className={({ isActive }) =>
             cn(
-              'flex items-center justify-center rounded-lg py-2.5 mx-auto w-11 transition-colors duration-150',
+              'flex items-center justify-center rounded-md py-2 mx-auto w-10 transition-colors duration-150',
               isActive
-                ? 'bg-emerald-500/15 text-white'
-                : 'text-[color:var(--sidebar-foreground)] hover:bg-white/[0.06]',
+                ? 'bg-[color:var(--sidebar-item-active)] text-[color:var(--sidebar-foreground-strong)]'
+                : 'text-[color:var(--sidebar-foreground)] hover:bg-[color:var(--sidebar-item-hover)]',
             )
           }
         >
           {({ isActive }) => (
-            <Icon className={cn('h-5 w-5 shrink-0', isActive ? 'text-emerald-400' : 'opacity-60')} />
+            <Icon strokeWidth={1.5} className={cn('h-[18px] w-[18px] shrink-0', isActive ? 'text-[color:var(--sidebar-icon-active)]' : 'text-[color:var(--sidebar-icon-idle)]')} />
           )}
         </NavLink>
         <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 bg-gray-950 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-[60]">
@@ -199,16 +199,16 @@ function NavItem({ to, icon: Icon, label, onClick, collapsed }: {
       onClick={handleClick}
       className={({ isActive }) =>
         cn(
-          'flex items-center gap-3 rounded-lg px-3 py-2 text-[14px] transition-colors duration-150',
+          'flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors duration-150',
           isActive
-            ? 'bg-emerald-500/15 text-white font-semibold border-l-[3px] border-emerald-400 -ml-[3px]'
-            : 'text-[color:var(--sidebar-foreground)] hover:bg-white/[0.06] hover:text-white/90 font-normal',
+            ? 'bg-[color:var(--sidebar-item-active)] text-[color:var(--sidebar-foreground-strong)] font-medium border-l-[2px] border-[color:var(--sidebar-icon-active)] -ml-[2px]'
+            : 'text-[color:var(--sidebar-foreground)] hover:bg-[color:var(--sidebar-item-hover)] hover:text-[color:var(--sidebar-foreground-strong)] font-normal',
         )
       }
     >
       {({ isActive }) => (
         <>
-          <Icon className={cn('h-[18px] w-[18px] shrink-0', isActive ? 'text-emerald-400' : 'opacity-60')} />
+          <Icon strokeWidth={1.5} className={cn('h-4 w-4 shrink-0', isActive ? 'text-[color:var(--sidebar-icon-active)]' : 'text-[color:var(--sidebar-icon-idle)]')} />
           <span className="truncate">{label}</span>
         </>
       )}
@@ -220,7 +220,7 @@ function NavItem({ to, icon: Icon, label, onClick, collapsed }: {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="px-3 pt-5 pb-1.5 text-[12px] font-semibold uppercase tracking-wider select-none text-[color:var(--sidebar-foreground)] opacity-50">
+    <p className="px-3 pt-4 pb-1 text-[10.5px] font-medium uppercase tracking-[0.14em] select-none text-[color:var(--sidebar-muted)]">
       {children}
     </p>
   )
@@ -238,7 +238,7 @@ function Section({ label, isOpen, onToggle, children, collapsed }: {
     <div>
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-3 pt-5 pb-1.5 text-[12px] font-semibold uppercase tracking-wider select-none text-[color:var(--sidebar-foreground)] opacity-50 hover:opacity-70 transition-opacity"
+        className="w-full flex items-center justify-between px-3 pt-4 pb-1 text-[10.5px] font-medium uppercase tracking-[0.14em] select-none text-[color:var(--sidebar-muted)] hover:text-[color:var(--sidebar-foreground)] transition-colors"
       >
         <span>{label}</span>
         <ChevronRight className={cn('h-3 w-3 transition-transform duration-200', isOpen && 'rotate-90')} />
@@ -389,14 +389,14 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               <path d="M20 17h2.5v5.5H27V25H20V17Z" fill="white" opacity="0.7" />
             </svg>
           </div>
-          <span className="text-[15px] font-semibold text-white tracking-tight leading-none">
+          <span className="text-[14px] font-semibold text-[color:var(--sidebar-foreground-strong)] tracking-tight leading-none">
             TraceLog
           </span>
         </NavLink>
       )}
 
       {/* Separator */}
-      {!collapsed && <div className="mx-3 h-px bg-card/[0.06]" />}
+      {!collapsed && <div className="mx-3 h-px bg-[color:var(--sidebar-divider)]" />}
 
       {/* ── Navigation ──────────────────────────────────────────────── */}
       <nav className="flex-1 px-2 py-2 overflow-y-auto sidebar-scroll">
@@ -437,15 +437,15 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                       <button
                         onClick={() => setOpenInvGroup(isGroupOpen ? null : group.key)}
                         className={cn(
-                          'w-full flex items-center gap-3 px-3 py-2 text-[14px] rounded-lg transition-colors duration-150',
+                          'w-full flex items-center gap-2.5 px-2.5 py-1.5 text-[13px] rounded-md transition-colors duration-150',
                           isGroupOpen
-                            ? 'bg-white/[0.06] text-white font-semibold'
-                            : 'text-[color:var(--sidebar-foreground)] hover:bg-white/[0.04] hover:text-white/90',
+                            ? 'bg-[color:var(--sidebar-item-active)] text-[color:var(--sidebar-foreground-strong)] font-medium'
+                            : 'text-[color:var(--sidebar-foreground)] hover:bg-[color:var(--sidebar-item-hover)] hover:text-[color:var(--sidebar-foreground-strong)]',
                         )}
                       >
-                        <GroupIcon className={cn('h-[18px] w-[18px] shrink-0', isGroupOpen ? 'text-emerald-400' : 'opacity-60')} />
+                        <GroupIcon strokeWidth={1.5} className={cn('h-4 w-4 shrink-0', isGroupOpen ? 'text-[color:var(--sidebar-icon-active)]' : 'text-[color:var(--sidebar-icon-idle)]')} />
                         <span className="flex-1 text-left truncate">{group.label}</span>
-                        <ChevronRight className={cn('h-3 w-3 opacity-30 transition-transform duration-200', isGroupOpen && 'rotate-90')} />
+                        <ChevronRight className={cn('h-3 w-3 text-[color:var(--sidebar-muted)] transition-transform duration-200', isGroupOpen && 'rotate-90')} />
                       </button>
                       {isGroupOpen && (
                         <div className="space-y-0.5 mt-0.5">
@@ -516,7 +516,6 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             <NavItem to="/platform/payments" icon={Banknote} label="Pagos" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/ai" icon={Sparkles} label="Inteligencia Artificial" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/blockchain" icon={Link2} label="Blockchain" onClick={onClose} collapsed={collapsed} />
-            <NavItem to="/platform/cms" icon={FileText} label="Landing Pages" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/facturacion-electronica" icon={FileText} label="Facturacion Electronica" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/empresa/correo" icon={Mail} label="Correo" onClick={onClose} collapsed={collapsed} />
           </Section>
@@ -544,12 +543,12 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             {!collapsed && (
               <>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium text-white truncate leading-none">{user.full_name}</p>
-                  <p className="text-[12px] truncate mt-0.5 text-[color:var(--sidebar-foreground)] opacity-60">{user.email}</p>
+                  <p className="text-[13px] font-medium text-[color:var(--sidebar-foreground-strong)] truncate leading-none">{user.full_name}</p>
+                  <p className="text-[12px] truncate mt-0.5 text-[color:var(--sidebar-muted)]">{user.email}</p>
                 </div>
                 <button
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); logout.mutate() }}
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-card/[0.08] text-[color:var(--sidebar-foreground)] hover:text-red-400 transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-[color:var(--sidebar-item-hover)] text-[color:var(--sidebar-foreground)] hover:text-red-400 transition-all"
                   title="Cerrar sesion"
                 >
                   <LogOut className="h-3.5 w-3.5" />

@@ -17,15 +17,8 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { subscriptionApi } from '@/lib/subscription-api'
 import { cn } from '@/lib/utils'
+import { SUBSCRIPTION_STATUS_BADGE as STATUS_BADGE } from '@/lib/status-badges'
 import type { PaymentLinkResult } from '@/types/platform'
-
-const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> = {
-  active:   { bg: 'bg-green-100', text: 'text-green-700', label: 'Activa' },
-  trialing: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Prueba' },
-  past_due: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Mora' },
-  canceled: { bg: 'bg-red-100', text: 'text-red-700', label: 'Cancelada' },
-  expired:  { bg: 'bg-secondary', text: 'text-muted-foreground', label: 'Expirada' },
-}
 
 const INV_BADGE: Record<string, string> = {
   paid: 'bg-green-100 text-green-700',
@@ -45,8 +38,6 @@ const EVENT_ICONS: Record<string, React.ElementType> = {
   trial_started: Clock,
   trial_ended: AlertTriangle,
 }
-
-const ALL_MODULES = ['logistics', 'inventory']
 
 const tabs = ['Resumen', 'Acciones', 'Facturas', 'Licencias', 'Eventos'] as const
 type Tab = (typeof tabs)[number]
@@ -141,15 +132,15 @@ export function PlatformTenantDetailPage() {
           {/* Subscription info */}
           <div className="bg-card rounded-2xl border border-border/60 p-6 ">
             <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-primary" /> Suscripcion
+              <CreditCard className="h-4 w-4 text-primary" /> Suscripción
             </h3>
             <dl className="space-y-3 text-sm">
               {([
                 ['Plan', sub.plan.name],
                 ['Precio', `$${sub.plan.price_monthly}/mes`],
                 ['Ciclo', sub.billing_cycle],
-                ['Periodo actual', sub.current_period_end ? new Date(sub.current_period_end).toLocaleDateString('es') : '-'],
-                ['Creada', sub.created_at ? new Date(sub.created_at).toLocaleDateString('es') : '-'],
+                ['Periodo actual', sub.current_period_end ? new Date(sub.current_period_end).toLocaleDateString('es-CO') : '-'],
+                ['Creada', sub.created_at ? new Date(sub.created_at).toLocaleDateString('es-CO') : '-'],
               ] as const).map(([label, val]) => (
                 <div key={label} className="flex justify-between">
                   <dt className="text-muted-foreground">{label}</dt>
@@ -159,7 +150,7 @@ export function PlatformTenantDetailPage() {
               {sub.canceled_at && (
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Cancelada</dt>
-                  <dd className="font-medium text-red-600">{new Date(sub.canceled_at).toLocaleDateString('es')}</dd>
+                  <dd className="font-medium text-red-600">{new Date(sub.canceled_at).toLocaleDateString('es-CO')}</dd>
                 </div>
               )}
             </dl>
@@ -179,7 +170,7 @@ export function PlatformTenantDetailPage() {
           {/* Modules + gateway */}
           <div className="bg-card rounded-2xl border border-border/60 p-6 ">
             <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Layers className="h-4 w-4 text-primary" /> Modulos
+              <Layers className="h-4 w-4 text-primary" /> Módulos
             </h3>
             <div className="space-y-3">
               {data.modules.length > 0 ? data.modules.map(m => (
@@ -245,36 +236,35 @@ export function PlatformTenantDetailPage() {
           {/* Toggle modules */}
           <div className="bg-card rounded-2xl border border-border/60 p-6 ">
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-              <Layers className="h-4 w-4 text-primary" /> Modulos
+              <Layers className="h-4 w-4 text-primary" /> Módulos
             </h3>
-            <div className="flex gap-3">
-              {ALL_MODULES.map(m => {
-                const isActive = data.modules.some(mod => mod.slug === m && mod.is_active)
-                return (
-                  <button
-                    key={m}
-                    onClick={() => toggleModule.mutate({ slug: m, active: !isActive })}
-                    disabled={toggleModule.isPending}
-                    className={cn(
-                      'flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition',
-                      isActive
-                        ? 'border-green-500 bg-green-50 text-green-700'
-                        : 'border-border text-muted-foreground hover:border-slate-300',
-                    )}
-                  >
-                    <Power className="h-4 w-4" />
-                    <span className="capitalize">{m}</span>
-                    <span className="text-xs">{isActive ? 'ON' : 'OFF'}</span>
-                  </button>
-                )
-              })}
+            <div className="flex flex-wrap gap-3">
+              {data.modules.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sin módulos en el catálogo</p>
+              ) : data.modules.map(mod => (
+                <button
+                  key={mod.slug}
+                  onClick={() => toggleModule.mutate({ slug: mod.slug, active: !mod.is_active })}
+                  disabled={toggleModule.isPending}
+                  className={cn(
+                    'flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition',
+                    mod.is_active
+                      ? 'border-green-500 bg-green-50 text-green-700'
+                      : 'border-border text-muted-foreground hover:border-slate-300',
+                  )}
+                >
+                  <Power className="h-4 w-4" />
+                  <span className="capitalize">{mod.name ?? mod.slug}</span>
+                  <span className="text-xs">{mod.is_active ? 'ON' : 'OFF'}</span>
+                </button>
+              ))}
             </div>
           </div>
 
           {/* Invoice + payment link */}
           <div className="bg-card rounded-2xl border border-border/60 p-6 ">
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-              <Receipt className="h-4 w-4 text-primary" /> Facturacion
+              <Receipt className="h-4 w-4 text-primary" /> Facturación
             </h3>
             <div className="flex flex-wrap gap-3">
               <button
@@ -325,7 +315,7 @@ export function PlatformTenantDetailPage() {
           <div className="bg-card rounded-2xl border border-border/60 p-6 ">
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               {isCanceled ? <RefreshCw className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
-              {isCanceled ? 'Reactivar Suscripcion' : 'Cancelar Suscripcion'}
+              {isCanceled ? 'Reactivar Suscripción' : 'Cancelar Suscripción'}
             </h3>
             {isCanceled ? (
               <button
@@ -340,17 +330,17 @@ export function PlatformTenantDetailPage() {
                 <textarea
                   value={cancelReason}
                   onChange={e => setCancelReason(e.target.value)}
-                  placeholder="Razon de cancelacion (opcional)..."
+                  placeholder="Motivo de la cancelación (obligatorio, mín. 10 caracteres)..."
                   rows={2}
                   className="w-full px-3 py-2 text-sm border border-border rounded-xl outline-none resize-none"
                 />
                 <div className="flex gap-2">
                   <button
-                    onClick={() => { cancelSub.mutate(cancelReason || undefined); setShowCancelConfirm(false) }}
-                    disabled={cancelSub.isPending}
-                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition"
+                    onClick={() => { cancelSub.mutate(cancelReason.trim()); setShowCancelConfirm(false); setCancelReason('') }}
+                    disabled={cancelSub.isPending || cancelReason.trim().length < 10}
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Confirmar Cancelacion
+                    Confirmar Cancelación
                   </button>
                   <button
                     onClick={() => setShowCancelConfirm(false)}
@@ -365,7 +355,7 @@ export function PlatformTenantDetailPage() {
                 onClick={() => setShowCancelConfirm(true)}
                 className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition"
               >
-                <XCircle className="h-4 w-4" /> Cancelar Suscripcion
+                <XCircle className="h-4 w-4" /> Cancelar Suscripción
               </button>
             )}
           </div>
@@ -402,10 +392,10 @@ export function PlatformTenantDetailPage() {
                     </td>
                     <td className="px-5 py-3 text-right font-semibold">${inv.amount.toLocaleString('es-CO')} {inv.currency}</td>
                     <td className="px-5 py-3 text-muted-foreground">
-                      {inv.period_start ? new Date(inv.period_start).toLocaleDateString('es', { month: 'short', year: 'numeric' }) : '-'}
+                      {inv.period_start ? new Date(inv.period_start).toLocaleDateString('es-CO', { month: 'short', year: 'numeric' }) : '-'}
                     </td>
                     <td className="px-5 py-3 text-muted-foreground">
-                      {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString('es') : '-'}
+                      {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString('es-CO') : '-'}
                     </td>
                   </tr>
                 ))}
@@ -449,7 +439,7 @@ export function PlatformTenantDetailPage() {
                       {lic.activations_count} / {lic.max_activations === -1 ? 'ilimitado' : lic.max_activations}
                     </td>
                     <td className="px-5 py-3 text-muted-foreground">
-                      {lic.issued_at ? new Date(lic.issued_at).toLocaleDateString('es') : '-'}
+                      {lic.issued_at ? new Date(lic.issued_at).toLocaleDateString('es-CO') : '-'}
                     </td>
                   </tr>
                 ))}
@@ -483,7 +473,7 @@ export function PlatformTenantDetailPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-foreground">{ev.event_type.replace(/_/g, ' ')}</span>
                         <span className="text-xs text-muted-foreground">
-                          {ev.created_at ? new Date(ev.created_at).toLocaleString('es') : ''}
+                          {ev.created_at ? new Date(ev.created_at).toLocaleString('es-CO') : ''}
                         </span>
                       </div>
                       {ev.performed_by && <p className="text-xs text-muted-foreground mt-0.5">por {ev.performed_by}</p>}

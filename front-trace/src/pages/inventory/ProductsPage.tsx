@@ -26,6 +26,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import type { CustomField, Product, ProductType, ProductVariant } from '@/types/inventory'
 import { inventoryProductsApi } from '@/lib/inventory-api'
 import MediaPickerModal from '@/components/compliance/MediaPickerModal'
+import { SkeletonTable } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 // Both inventory and media go through the same gateway URL
@@ -795,7 +797,7 @@ function CustomerPricesSection({ productId }: { productId: string }) {
               <span className="font-medium text-foreground">{p.customer_name ?? 'Cliente'}</span>
               <div className="text-right">
                 <span className="font-bold text-primary">${Number(p.price).toFixed(2)}</span>
-                {p.valid_to && <span className="ml-2 text-muted-foreground">hasta {new Date(p.valid_to).toLocaleDateString('es')}</span>}
+                {p.valid_to && <span className="ml-2 text-muted-foreground">hasta {new Date(p.valid_to).toLocaleDateString('es-CO')}</span>}
               </div>
             </div>
           ))}
@@ -2658,20 +2660,14 @@ export function ProductsPage() {
 
             {/* Table / Cards */}
             {isLoading ? (
-              <div className="p-12 text-center text-muted-foreground">Cargando...</div>
+              <SkeletonTable columns={6} rows={8} className="border-0 rounded-none" />
             ) : totalEntries === 0 ? (
-              <div className="p-12 text-center">
-                <Package className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-                <p className="text-sm font-medium text-foreground">No hay productos registrados</p>
-                <p className="text-xs text-muted-foreground mt-1">Crea tu primer producto para comenzar a gestionar el inventario.</p>
-                <button
-                  type="button"
-                  onClick={() => setShowCreate(true)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  <Plus className="h-3.5 w-3.5" /> Nuevo producto
-                </button>
-              </div>
+              <EmptyState
+                icon={Package}
+                title="Aún no tenés productos"
+                description="Creá tu primer producto del catálogo para empezar a gestionar el inventario."
+                action={{ label: 'Nuevo producto', onClick: () => setShowCreate(true), icon: Plus }}
+              />
             ) : (
               <>
                 {/* Mobile cards */}

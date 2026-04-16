@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Pencil, Building2, Mail, Phone, MapPin, Truck, ShoppingBag,
@@ -229,6 +232,53 @@ export function PartnerDetailPage() {
   )
 }
 
+// ─── NIT validation (Colombia) ────────────────────────────────────────────────
+
+const nitRegex = /^\d{6,10}(-?\d)?$/
+
+function validateNitDv(nit: string): boolean {
+  const [body, dv] = nit.split('-')
+  if (!dv) return true // DV optional per regex
+  const weights = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71]
+  const digits = body.padStart(15, '0').split('').map(Number)
+  const sum = digits.reduce((acc, d, i) => acc + d * weights[14 - i], 0)
+  const remainder = sum % 11
+  const expectedDv = remainder < 2 ? remainder : 11 - remainder
+  return expectedDv === parseInt(dv)
+}
+
+const partnerUpdateSchema = z.object({
+  name: z.string().min(1, 'Campo obligatorio').max(255),
+  code: z.string().min(1, 'Campo obligatorio'),
+  tax_id: z.string().regex(nitRegex, 'NIT inválido (formato: 900123456-7)')
+    .refine(v => !v.includes('-') || validateNitDv(v), { message: 'Dígito verificador incorrecto' }),
+  tax_regime: z.enum(['1', '2']).default('2'),
+  contact_name: z.string().optional(),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  payment_terms_days: z.coerce.number().int().min(0).default(0),
+  lead_time_days: z.coerce.number().int().min(0).default(0),
+  credit_limit: z.coerce.number().min(0).default(0),
+  discount_percent: z.coerce.number().min(0).max(100).default(0),
+  supplier_type_id: z.string().optional(),
+  customer_type_id: z.string().optional(),
+  notes: z.string().optional(),
+  address_line1: z.string().optional(),
+  address_line2: z.string().optional(),
+  address_city: z.string().optional(),
+  address_state: z.string().optional(),
+  address_zip: z.string().optional(),
+  address_country: z.string().optional(),
+  shipping_line1: z.string().optional(),
+  shipping_line2: z.string().optional(),
+  shipping_city: z.string().optional(),
+  shipping_state: z.string().optional(),
+  shipping_zip: z.string().optional(),
+  shipping_country: z.string().optional(),
+})
+
+type PartnerUpdateFormData = z.infer<typeof partnerUpdateSchema>
+
 function EditPartnerModal({ partner, supplierTypes, customerTypes, updateMut, toast, onClose }: {
   partner: BusinessPartner
   supplierTypes: any
@@ -239,38 +289,47 @@ function EditPartnerModal({ partner, supplierTypes, customerTypes, updateMut, to
 }) {
   const addr = partner.address as any ?? {}
   const ship = partner.shipping_address as any ?? {}
-  const [form, setForm] = useState({
-    name: partner.name,
-    code: partner.code,
-    tax_id: partner.tax_id ?? '',
-    contact_name: partner.contact_name ?? '',
-    email: partner.email ?? '',
-    phone: partner.phone ?? '',
-    payment_terms_days: String(partner.payment_terms_days),
-    lead_time_days: String(partner.lead_time_days),
-    credit_limit: String(partner.credit_limit),
-    discount_percent: String(partner.discount_percent),
-    supplier_type_id: partner.supplier_type_id ?? '',
-    customer_type_id: partner.customer_type_id ?? '',
-    notes: partner.notes ?? '',
-    address_line1: addr.line1 ?? '', address_line2: addr.line2 ?? '',
-    address_city: addr.city ?? '', address_state: addr.state ?? '',
-    address_zip: addr.zip ?? '', address_country: addr.country ?? '',
-    shipping_line1: ship.line1 ?? '', shipping_line2: ship.line2 ?? '',
-    shipping_city: ship.city ?? '', shipping_state: ship.state ?? '',
-    shipping_zip: ship.zip ?? '', shipping_country: ship.country ?? '',
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid, isSubmitting },
+  } = useForm<PartnerUpdateFormData>({
+    resolver: zodResolver(partnerUpdateSchema),
+    mode: 'onChange',
+    defaultValues: {
+      name: partner.name,
+      code: partner.code,
+      tax_id: partner.tax_id ?? '',
+      tax_regime: (String((partner as any).tax_regime ?? 2) === '1' ? '1' : '2') as '1' | '2',
+      contact_name: partner.contact_name ?? '',
+      email: partner.email ?? '',
+      phone: partner.phone ?? '',
+      payment_terms_days: partner.payment_terms_days,
+      lead_time_days: partner.lead_time_days,
+      credit_limit: partner.credit_limit,
+      discount_percent: partner.discount_percent,
+      supplier_type_id: partner.supplier_type_id ?? '',
+      customer_type_id: partner.customer_type_id ?? '',
+      notes: partner.notes ?? '',
+      address_line1: addr.line1 ?? '', address_line2: addr.line2 ?? '',
+      address_city: addr.city ?? '', address_state: addr.state ?? '',
+      address_zip: addr.zip ?? '', address_country: addr.country ?? '',
+      shipping_line1: ship.line1 ?? '', shipping_line2: ship.line2 ?? '',
+      shipping_city: ship.city ?? '', shipping_state: ship.state ?? '',
+      shipping_zip: ship.zip ?? '', shipping_country: ship.country ?? '',
+    },
   })
 
-  const hasAddr = [form.address_line1, form.address_city, form.address_country].some(v => v.trim())
-  const hasShip = [form.shipping_line1, form.shipping_city, form.shipping_country].some(v => v.trim())
-
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault()
+  const onSubmit = async (form: PartnerUpdateFormData) => {
+    const hasAddr = [form.address_line1, form.address_city, form.address_country].some(v => (v ?? '').trim())
+    const hasShip = [form.shipping_line1, form.shipping_city, form.shipping_country].some(v => (v ?? '').trim())
     await updateMut.mutateAsync({
       id: partner.id,
       data: {
         name: form.name, code: form.code,
         tax_id: form.tax_id || null,
+        tax_regime: Number(form.tax_regime) || 2,
         contact_name: form.contact_name || null,
         email: form.email || null, phone: form.phone || null,
         payment_terms_days: Number(form.payment_terms_days),
@@ -289,56 +348,58 @@ function EditPartnerModal({ partner, supplierTypes, customerTypes, updateMut, to
   }
 
   const inputCls = "w-full bg-muted border border-border rounded-xl px-3 py-2.5 text-sm focus:bg-card focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all outline-none"
+  const errCls = 'mt-1 text-xs text-red-600'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <form onSubmit={handleSave} className="bg-card rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-card rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()} noValidate>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Editar socio</h3>
           <button type="button" onClick={onClose} className="p-1 text-muted-foreground hover:text-muted-foreground"><X className="h-5 w-5" /></button>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2"><label className="text-xs text-muted-foreground">Nombre *</label><input required value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-muted-foreground">Codigo *</label><input required value={form.code} onChange={e => setForm(f => ({...f, code: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-muted-foreground">NIT / RUT</label><input value={form.tax_id} onChange={e => setForm(f => ({...f, tax_id: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-muted-foreground">Contacto</label><input value={form.contact_name} onChange={e => setForm(f => ({...f, contact_name: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-muted-foreground">Email</label><input type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-muted-foreground">Telefono</label><input value={form.phone} onChange={e => setForm(f => ({...f, phone: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-muted-foreground">Plazo pago (dias)</label><input type="number" value={form.payment_terms_days} onChange={e => setForm(f => ({...f, payment_terms_days: e.target.value}))} className={inputCls} /></div>
+          <div className="col-span-2"><label className="text-xs text-muted-foreground">Nombre *</label><input {...register('name')} className={inputCls} />{errors.name && <p className={errCls}>{errors.name.message}</p>}</div>
+          <div><label className="text-xs text-muted-foreground">Codigo *</label><input {...register('code')} className={inputCls} />{errors.code && <p className={errCls}>{errors.code.message}</p>}</div>
+          <div><label className="text-xs text-muted-foreground">NIT / Número de identificación *</label><input {...register('tax_id')} placeholder="Ej: 900123456-7" className={inputCls} />{errors.tax_id && <p className={errCls}>{errors.tax_id.message}</p>}</div>
+          <div><label className="text-xs text-muted-foreground">Régimen fiscal</label><select {...register('tax_regime')} className={inputCls}><option value="1">Responsable de IVA</option><option value="2">No responsable de IVA</option></select></div>
+          <div><label className="text-xs text-muted-foreground">Contacto</label><input {...register('contact_name')} className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Email</label><input type="email" {...register('email')} className={inputCls} />{errors.email && <p className={errCls}>{errors.email.message}</p>}</div>
+          <div><label className="text-xs text-muted-foreground">Telefono</label><input {...register('phone')} className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Plazo pago (dias)</label><input type="number" {...register('payment_terms_days')} className={inputCls} />{errors.payment_terms_days && <p className={errCls}>{errors.payment_terms_days.message}</p>}</div>
           {partner.is_supplier && (<>
-            <div><label className="text-xs text-muted-foreground">Tipo proveedor</label><select value={form.supplier_type_id} onChange={e => setForm(f => ({...f, supplier_type_id: e.target.value}))} className={inputCls}><option value="">Sin tipo</option>{(supplierTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
-            <div><label className="text-xs text-muted-foreground">Lead time (dias)</label><input type="number" value={form.lead_time_days} onChange={e => setForm(f => ({...f, lead_time_days: e.target.value}))} className={inputCls} /></div>
+            <div><label className="text-xs text-muted-foreground">Tipo proveedor</label><select {...register('supplier_type_id')} className={inputCls}><option value="">Sin tipo</option>{(supplierTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
+            <div><label className="text-xs text-muted-foreground">Lead time (dias)</label><input type="number" {...register('lead_time_days')} className={inputCls} />{errors.lead_time_days && <p className={errCls}>{errors.lead_time_days.message}</p>}</div>
           </>)}
           {partner.is_customer && (<>
-            <div><label className="text-xs text-muted-foreground">Tipo cliente</label><select value={form.customer_type_id} onChange={e => setForm(f => ({...f, customer_type_id: e.target.value}))} className={inputCls}><option value="">Sin tipo</option>{(customerTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
-            <div><label className="text-xs text-muted-foreground">Limite credito</label><input type="number" value={form.credit_limit} onChange={e => setForm(f => ({...f, credit_limit: e.target.value}))} className={inputCls} /></div>
-            <div><label className="text-xs text-muted-foreground">Descuento %</label><input type="number" min="0" max="100" value={form.discount_percent} onChange={e => setForm(f => ({...f, discount_percent: e.target.value}))} className={inputCls} /></div>
+            <div><label className="text-xs text-muted-foreground">Tipo cliente</label><select {...register('customer_type_id')} className={inputCls}><option value="">Sin tipo</option>{(customerTypes as any)?.items?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
+            <div><label className="text-xs text-muted-foreground">Limite credito</label><input type="number" {...register('credit_limit')} className={inputCls} />{errors.credit_limit && <p className={errCls}>{errors.credit_limit.message}</p>}</div>
+            <div><label className="text-xs text-muted-foreground">Descuento %</label><input type="number" min="0" max="100" {...register('discount_percent')} className={inputCls} />{errors.discount_percent && <p className={errCls}>{errors.discount_percent.message}</p>}</div>
           </>)}
 
           {/* Address */}
           <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Direccion</p></div>
-          <div className="col-span-2"><label className="text-xs text-muted-foreground">Linea 1</label><input value={form.address_line1} onChange={e => setForm(f => ({...f, address_line1: e.target.value}))} placeholder="Calle, carrera, numero" className={inputCls} /></div>
-          <div className="col-span-2"><label className="text-xs text-muted-foreground">Linea 2</label><input value={form.address_line2} onChange={e => setForm(f => ({...f, address_line2: e.target.value}))} placeholder="Barrio, vereda (opcional)" className={inputCls} /></div>
-          <div><label className="text-xs text-muted-foreground">Ciudad</label><input value={form.address_city} onChange={e => setForm(f => ({...f, address_city: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-muted-foreground">Depto / Estado</label><input value={form.address_state} onChange={e => setForm(f => ({...f, address_state: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-muted-foreground">Codigo postal</label><input value={form.address_zip} onChange={e => setForm(f => ({...f, address_zip: e.target.value}))} className={inputCls} /></div>
-          <div><label className="text-xs text-muted-foreground">Pais</label><input value={form.address_country} onChange={e => setForm(f => ({...f, address_country: e.target.value}))} placeholder="CO, DE, US..." className={inputCls} /></div>
+          <div className="col-span-2"><label className="text-xs text-muted-foreground">Linea 1</label><input {...register('address_line1')} placeholder="Calle, carrera, numero" className={inputCls} /></div>
+          <div className="col-span-2"><label className="text-xs text-muted-foreground">Linea 2</label><input {...register('address_line2')} placeholder="Barrio, vereda (opcional)" className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Ciudad</label><input {...register('address_city')} className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Depto / Estado</label><input {...register('address_state')} className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Codigo postal</label><input {...register('address_zip')} className={inputCls} /></div>
+          <div><label className="text-xs text-muted-foreground">Pais</label><input {...register('address_country')} placeholder="CO, DE, US..." className={inputCls} /></div>
 
           {partner.is_customer && (<>
             <div className="col-span-2 pt-2"><p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Direccion de envio</p></div>
-            <div className="col-span-2"><label className="text-xs text-muted-foreground">Linea 1</label><input value={form.shipping_line1} onChange={e => setForm(f => ({...f, shipping_line1: e.target.value}))} className={inputCls} /></div>
-            <div className="col-span-2"><label className="text-xs text-muted-foreground">Linea 2</label><input value={form.shipping_line2} onChange={e => setForm(f => ({...f, shipping_line2: e.target.value}))} className={inputCls} /></div>
-            <div><label className="text-xs text-muted-foreground">Ciudad</label><input value={form.shipping_city} onChange={e => setForm(f => ({...f, shipping_city: e.target.value}))} className={inputCls} /></div>
-            <div><label className="text-xs text-muted-foreground">Depto / Estado</label><input value={form.shipping_state} onChange={e => setForm(f => ({...f, shipping_state: e.target.value}))} className={inputCls} /></div>
-            <div><label className="text-xs text-muted-foreground">Codigo postal</label><input value={form.shipping_zip} onChange={e => setForm(f => ({...f, shipping_zip: e.target.value}))} className={inputCls} /></div>
-            <div><label className="text-xs text-muted-foreground">Pais</label><input value={form.shipping_country} onChange={e => setForm(f => ({...f, shipping_country: e.target.value}))} placeholder="CO, DE, US..." className={inputCls} /></div>
+            <div className="col-span-2"><label className="text-xs text-muted-foreground">Linea 1</label><input {...register('shipping_line1')} className={inputCls} /></div>
+            <div className="col-span-2"><label className="text-xs text-muted-foreground">Linea 2</label><input {...register('shipping_line2')} className={inputCls} /></div>
+            <div><label className="text-xs text-muted-foreground">Ciudad</label><input {...register('shipping_city')} className={inputCls} /></div>
+            <div><label className="text-xs text-muted-foreground">Depto / Estado</label><input {...register('shipping_state')} className={inputCls} /></div>
+            <div><label className="text-xs text-muted-foreground">Codigo postal</label><input {...register('shipping_zip')} className={inputCls} /></div>
+            <div><label className="text-xs text-muted-foreground">Pais</label><input {...register('shipping_country')} placeholder="CO, DE, US..." className={inputCls} /></div>
           </>)}
 
-          <div className="col-span-2"><label className="text-xs text-muted-foreground">Notas</label><textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className={inputCls} /></div>
+          <div className="col-span-2"><label className="text-xs text-muted-foreground">Notas</label><textarea {...register('notes')} rows={2} className={inputCls} /></div>
         </div>
         <div className="flex gap-3 mt-4">
           <button type="button" onClick={onClose} className="flex-1 bg-secondary text-foreground rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-gray-200 transition-colors">Cancelar</button>
-          <button type="submit" disabled={updateMut.isPending} className="flex-1 bg-gray-900 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 transition-colors">Guardar</button>
+          <button type="submit" disabled={!isValid || isSubmitting || updateMut.isPending} className="flex-1 bg-gray-900 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 transition-colors">Guardar</button>
         </div>
       </form>
     </div>

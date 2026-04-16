@@ -162,9 +162,15 @@ async def update_user(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     tenant_id: Annotated[str, Depends(get_tenant_id)],
 ) -> UserResponse:
+    data = body.model_dump(exclude_unset=True)
+    if "is_superuser" in data and not current_user.get("is_superuser"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo un superusuario puede modificar is_superuser",
+        )
     svc = UserService(db)
     scope_tid = None if current_user.get("is_superuser") else tenant_id
-    user = await svc.update(user_id, tenant_id=scope_tid, **body.model_dump(exclude_unset=True))
+    user = await svc.update(user_id, tenant_id=scope_tid, **data)
     return await _user_response(user, db)
 
 

@@ -69,7 +69,10 @@ async def get_current_user(
     settings = get_settings()
     cached = await redis.get(cache_key)
     if cached:
-        return json.loads(cached)
+        data = json.loads(cached)
+        data["_token"] = token
+        data["2fa"] = bool(payload.get("2fa"))  # FASE4
+        return data
 
     # 4. Delegate to user-service
     try:
@@ -88,9 +91,14 @@ async def get_current_user(
 
     user_data = resp.json()
 
-    # 5. Cache for TTL seconds
+    # 5. Cache for TTL seconds (never persist the raw bearer token to Redis)
     await redis.setex(cache_key, settings.USER_CACHE_TTL, json.dumps(user_data))
 
+    user_data["_token"] = token
+    # FASE4: propagate the `2fa` claim from the JWT so superuser routes that
+    # require 2FA can enforce REQUIRE_SUPERUSER_2FA. Not cached in Redis
+    # (user-service /me doesn't know whether THIS token was 2FA-completed).
+    user_data["2fa"] = bool(payload.get("2fa"))
     return user_data
 
 

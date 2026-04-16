@@ -41,10 +41,23 @@ async def lifespan(app: FastAPI):
     get_http_client()
     log.info("http_client_ready")
 
+    # TRACES NT — DDS polling background loop (pulls EU-side verdicts for
+    # submitted DDS every 60s and emails the operator on 'validated').
+    import asyncio
+    from app.services.dds_polling_service import run_polling_loop
+
+    dds_poll_task = asyncio.create_task(run_polling_loop(interval_seconds=60))
+    log.info("dds_polling_loop_scheduled", interval=60)
+
     log.info("compliance_service_ready")
     yield
 
     log.info("compliance_service_shutting_down")
+    dds_poll_task.cancel()
+    try:
+        await dds_poll_task
+    except asyncio.CancelledError:
+        pass
     from app.db.session import close_engine
 
     await close_engine()

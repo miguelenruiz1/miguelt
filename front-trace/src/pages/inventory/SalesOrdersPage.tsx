@@ -18,6 +18,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useToast } from '@/store/toast'
 import { VariantPicker } from '@/components/inventory/VariantPicker'
 import { inventoryPricingApi } from '@/lib/inventory-api'
+import { SkeletonTable } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 import type { SalesOrder, SalesOrderStatus, ConfirmWithBackorderOut, PriceLookupResponse, TaxRate } from '@/types/inventory'
 
 function PriceSemaphore({ productId, unitPrice }: { productId: string; unitPrice: number }) {
@@ -556,8 +558,16 @@ export function SalesOrdersPage() {
         ))}
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>
+      {isLoading && orders.length === 0 ? (
+        <SkeletonTable columns={8} rows={6} />
+      ) : orders.length === 0 ? (
+        <div className="bg-card rounded-2xl border border-border/60 overflow-hidden">
+          <EmptyState
+            icon={ShoppingBag}
+            title="Sin órdenes de venta"
+            description="Creá tu primera orden de venta para empezar a facturar y despachar pedidos."
+          />
+        </div>
       ) : (
         <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
           <table className="w-full text-sm">

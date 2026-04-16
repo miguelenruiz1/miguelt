@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Cuenta suspendida por mora</title></head>
+<body style="font-family:Inter,Arial,sans-serif;color:#1f2937;max-width:600px;margin:0 auto;padding:24px;">
+  <h2 style="color:#7f1d1d;">Suscripción suspendida — {{ days_overdue }} días de mora</h2>
+  <p>Hola {{ customer_name }},</p>
+  <p>Tu factura <strong>{{ invoice.invoice_number }}</strong> por
+     <strong>{{ invoice.total_fmt }} {{ invoice.currency }}</strong>
+     lleva {{ days_overdue }} días sin pago.</p>
+  <p>Por política, tu suscripción ha pasado a estado <strong>past_due</strong>.
+     Para reactivar el servicio, paga aquí: <a href="{{ pay_link }}">{{ pay_link }}</a>.</p>
+  <p>Si necesitas un plan de pagos o condonación, responde este correo.</p>
+  <p style="color:#6b7280;font-size:12px;margin-top:32px;">Equipo Trace — cobros@tracelog.co</p>
+</body>
+</html>

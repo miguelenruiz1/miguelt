@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Recibo de pago</title></head>
+<body style="font-family:Inter,Arial,sans-serif;color:#1f2937;max-width:600px;margin:0 auto;padding:24px;">
+  <h2 style="color:#065f46;">Pago recibido — gracias</h2>
+  <p>Hola {{ customer_name }},</p>
+  <p>Confirmamos el pago de tu factura <strong>{{ invoice.invoice_number }}</strong>
+     por <strong>{{ invoice.total_fmt }} {{ invoice.currency }}</strong>.</p>
+  <p>Tu suscripción está activa y al día. Adjuntamos el recibo / factura pagada en PDF.</p>
+  <p>Referencia de transacción: <code>{{ gateway_tx_id }}</code></p>
+  <p style="color:#6b7280;font-size:12px;margin-top:32px;">Equipo Trace — facturas@tracelog.co</p>
+</body>
+</html>

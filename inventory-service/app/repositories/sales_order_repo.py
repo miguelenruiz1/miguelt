@@ -9,12 +9,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db.models import SalesOrder, SalesOrderLine, SalesOrderStatus
+from app.db.models.tax import SalesOrderLineTax, TaxRate
 
 _SO_OPTIONS = (
     selectinload(SalesOrder.lines).selectinload(SalesOrderLine.product),
     selectinload(SalesOrder.lines).selectinload(SalesOrderLine.variant),
     selectinload(SalesOrder.lines).selectinload(SalesOrderLine.warehouse),
-    selectinload(SalesOrder.lines).selectinload(SalesOrderLine.line_taxes),
+    # Multi-stack taxes: load the line_tax → rate → category chain eagerly
+    # to avoid MissingGreenlet when recalculate_so_totals walks category.behavior.
+    selectinload(SalesOrder.lines)
+        .selectinload(SalesOrderLine.line_taxes)
+        .selectinload(SalesOrderLineTax.rate)
+        .selectinload(TaxRate.category),
     selectinload(SalesOrder.customer),
     selectinload(SalesOrder.warehouse),
     selectinload(SalesOrder.backorders),

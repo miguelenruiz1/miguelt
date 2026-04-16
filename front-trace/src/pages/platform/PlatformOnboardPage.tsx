@@ -1,5 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import {
   ArrowLeft, Building2, CheckCircle2, Layers, CreditCard, Plus, User, Eye, EyeOff,
 } from 'lucide-react'
@@ -7,6 +10,23 @@ import { useOnboardTenant } from '@/hooks/usePlatform'
 import { useQuery } from '@tanstack/react-query'
 import { subscriptionApi } from '@/lib/subscription-api'
 import { cn } from '@/lib/utils'
+
+// ─── Zod schema ───────────────────────────────────────────────────────────────
+
+const onboardSchema = z.object({
+  tenant_id: z.string().regex(/^[a-z0-9-]{3,50}$/, '3-50 chars, minúsculas/números/guiones'),
+  company_name: z.string().min(1, 'Campo obligatorio').max(255),
+  country: z.enum(['CO']).default('CO'),
+  admin_email: z.string().email('Email inválido'),
+  admin_full_name: z.string().min(1, 'Campo obligatorio').max(255),
+  admin_password: z.string().min(6, 'Mínimo 6 caracteres'),
+  plan_slug: z.string().min(1, 'Seleccioná un plan'),
+  billing_cycle: z.enum(['monthly', 'annual']).default('monthly'),
+  modules: z.array(z.string()).min(1, 'Activá al menos un módulo'),
+  notes: z.string().optional(),
+})
+
+type OnboardFormData = z.infer<typeof onboardSchema>
 
 const AVAILABLE_MODULES = ['logistics', 'inventory', 'compliance', 'production', 'ai-analysis']
 
@@ -21,17 +41,30 @@ const MODULE_LABELS: Record<string, string> = {
 export function PlatformOnboardPage() {
   const navigate = useNavigate()
   const onboard = useOnboardTenant()
-
-  const [tenantId, setTenantId] = useState('')
-  const [companyName, setCompanyName] = useState('')
-  const [adminEmail, setAdminEmail] = useState('')
-  const [adminPassword, setAdminPassword] = useState('')
-  const [adminName, setAdminName] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [planSlug, setPlanSlug] = useState('free')
-  const [billingCycle, setBillingCycle] = useState('monthly')
-  const [modules, setModules] = useState<string[]>([])
-  const [notes, setNotes] = useState('')
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isValid, isSubmitting },
+  } = useForm<OnboardFormData>({
+    resolver: zodResolver(onboardSchema),
+    mode: 'onChange',
+    defaultValues: {
+      tenant_id: '',
+      company_name: '',
+      country: 'CO',
+      admin_email: '',
+      admin_full_name: '',
+      admin_password: '',
+      plan_slug: 'free',
+      billing_cycle: 'monthly',
+      modules: [],
+      notes: '',
+    },
+  })
 
   const { data: plans } = useQuery({
     queryKey: ['plans'],
@@ -41,35 +74,46 @@ export function PlatformOnboardPage() {
 
   const activePlans = (plans ?? []).filter(p => p.is_active && !p.is_archived)
 
-  const toggleModule = (slug: string) => {
-    setModules(prev => prev.includes(slug) ? prev.filter(m => m !== slug) : [...prev, slug])
-  }
+  const tenantId = watch('tenant_id')
+  const companyName = watch('company_name')
+  const planSlug = watch('plan_slug')
+  const billingCycle = watch('billing_cycle')
+  const modules = watch('modules') ?? []
 
-  // Auto-generate tenant slug from company name
-  const handleCompanyChange = (value: string) => {
-    setCompanyName(value)
-    if (!tenantId || tenantId === slugify(companyName)) {
-      setTenantId(slugify(value))
+  // Track previous company slugified value so we can keep tenant auto-synced until user edits it manually
+  const [prevCompanySlug, setPrevCompanySlug] = useState('')
+
+  useEffect(() => {
+    // When company_name changes, keep tenant_id in sync unless user manually edited it
+    if (!tenantId || tenantId === prevCompanySlug) {
+      const next = slugify(companyName ?? '')
+      if (next !== tenantId) {
+        setValue('tenant_id', next, { shouldValidate: true, shouldDirty: true })
+      }
+      setPrevCompanySlug(next)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyName])
+
+  const toggleModule = (slug: string) => {
+    const next = modules.includes(slug) ? modules.filter(m => m !== slug) : [...modules, slug]
+    setValue('modules', next, { shouldValidate: true, shouldDirty: true })
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!tenantId.trim() || !companyName.trim() || !adminEmail.trim() || !adminPassword.trim() || !adminName.trim()) return
-
+  const onSubmit = async (data: OnboardFormData) => {
     try {
       await onboard.mutateAsync({
-        tenant_id: tenantId.trim(),
-        company_name: companyName.trim(),
-        admin_email: adminEmail.trim(),
-        admin_password: adminPassword,
-        admin_name: adminName.trim(),
-        plan_slug: planSlug,
-        billing_cycle: billingCycle,
-        modules,
-        notes: notes || undefined,
+        tenant_id: data.tenant_id.trim(),
+        company_name: data.company_name.trim(),
+        admin_email: data.admin_email.trim(),
+        admin_password: data.admin_password,
+        admin_name: data.admin_full_name.trim(),
+        plan_slug: data.plan_slug,
+        billing_cycle: data.billing_cycle,
+        modules: data.modules,
+        notes: data.notes || undefined,
       })
-      navigate(`/platform/tenants/${encodeURIComponent(tenantId.trim())}`)
+      navigate(`/platform/tenants/${encodeURIComponent(data.tenant_id.trim())}`)
     } catch {
       // error handled by mutation
     }
@@ -89,7 +133,7 @@ export function PlatformOnboardPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
         {/* Company + Tenant */}
         <div className="bg-card rounded-2xl border border-border/60 p-6  space-y-4">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -101,12 +145,11 @@ export function PlatformOnboardPage() {
             </label>
             <input
               type="text"
-              value={companyName}
-              onChange={e => handleCompanyChange(e.target.value)}
+              {...register('company_name')}
               placeholder="Ejemplo: Café Origen S.A.S."
-              required
               className={inputCls}
             />
+            {errors.company_name && <p className="mt-1 text-xs text-red-600">{errors.company_name.message}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-muted-foreground mb-1">
@@ -114,19 +157,17 @@ export function PlatformOnboardPage() {
             </label>
             <input
               type="text"
-              value={tenantId}
-              onChange={e => setTenantId(e.target.value)}
+              {...register('tenant_id')}
               placeholder="cafe-origen"
-              required
               className={cn(inputCls, 'font-mono')}
             />
             <p className="text-xs text-muted-foreground mt-1">Identificador único. Se genera automáticamente del nombre.</p>
+            {errors.tenant_id && <p className="mt-1 text-xs text-red-600">{errors.tenant_id.message}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-muted-foreground mb-1">Notas (opcional)</label>
             <textarea
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
+              {...register('notes')}
               placeholder="Sector, contacto, observaciones..."
               rows={2}
               className={cn(inputCls, 'resize-none')}
@@ -149,12 +190,11 @@ export function PlatformOnboardPage() {
               </label>
               <input
                 type="text"
-                value={adminName}
-                onChange={e => setAdminName(e.target.value)}
+                {...register('admin_full_name')}
                 placeholder="Juan Pérez"
-                required
                 className={inputCls}
               />
+              {errors.admin_full_name && <p className="mt-1 text-xs text-red-600">{errors.admin_full_name.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">
@@ -162,12 +202,11 @@ export function PlatformOnboardPage() {
               </label>
               <input
                 type="email"
-                value={adminEmail}
-                onChange={e => setAdminEmail(e.target.value)}
+                {...register('admin_email')}
                 placeholder="admin@empresa.com"
-                required
                 className={inputCls}
               />
+              {errors.admin_email && <p className="mt-1 text-xs text-red-600">{errors.admin_email.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">
@@ -176,11 +215,8 @@ export function PlatformOnboardPage() {
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  value={adminPassword}
-                  onChange={e => setAdminPassword(e.target.value)}
+                  {...register('admin_password')}
                   placeholder="Mínimo 6 caracteres"
-                  required
-                  minLength={6}
                   className={cn(inputCls, 'pr-10')}
                 />
                 <button
@@ -191,6 +227,7 @@ export function PlatformOnboardPage() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              {errors.admin_password && <p className="mt-1 text-xs text-red-600">{errors.admin_password.message}</p>}
             </div>
           </div>
         </div>
@@ -205,7 +242,7 @@ export function PlatformOnboardPage() {
               <button
                 key={p.slug}
                 type="button"
-                onClick={() => setPlanSlug(p.slug)}
+                onClick={() => setValue('plan_slug', p.slug, { shouldValidate: true, shouldDirty: true })}
                 className={cn(
                   'text-left rounded-xl border-2 p-4 transition',
                   planSlug === p.slug
@@ -234,7 +271,7 @@ export function PlatformOnboardPage() {
                 <button
                   key={c}
                   type="button"
-                  onClick={() => setBillingCycle(c)}
+                  onClick={() => setValue('billing_cycle', c, { shouldValidate: true, shouldDirty: true })}
                   className={cn(
                     'px-4 py-2 text-sm rounded-xl border-2 font-medium transition',
                     billingCycle === c
@@ -276,13 +313,14 @@ export function PlatformOnboardPage() {
               </button>
             ))}
           </div>
+          {errors.modules && <p className="text-xs text-red-600">{errors.modules.message as string}</p>}
         </div>
 
         {/* Submit */}
         <div className="flex items-center gap-3">
           <button
             type="submit"
-            disabled={!tenantId.trim() || !companyName.trim() || !adminEmail.trim() || !adminPassword.trim() || !adminName.trim() || onboard.isPending}
+            disabled={!isValid || isSubmitting || onboard.isPending}
             className="flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-50 transition"
           >
             {onboard.isPending ? (

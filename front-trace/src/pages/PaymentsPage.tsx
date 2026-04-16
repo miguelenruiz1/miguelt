@@ -8,8 +8,7 @@ import {
   useSaveGatewayConfig,
   useSetActiveGateway,
 } from '@/hooks/usePayments'
-
-const TENANT_ID = import.meta.env.VITE_TENANT_ID ?? 'default'
+import { useAuthStore } from '@/store/auth'
 
 const FIELDS = [
   { key: 'public_key', label: 'Llave Pública', placeholder: 'pub_test_... o pub_prod_...', type: 'text' as const, required: true },
@@ -19,9 +18,10 @@ const FIELDS = [
 ]
 
 export function PaymentsPage() {
-  const { data: configs = [], isLoading } = useGatewayConfigs(TENANT_ID)
-  const saveMut = useSaveGatewayConfig(TENANT_ID)
-  const activateMut = useSetActiveGateway(TENANT_ID)
+  const tenantId = useAuthStore(s => s.user?.tenant_id ?? 'default')
+  const { data: configs = [], isLoading } = useGatewayConfigs(tenantId)
+  const saveMut = useSaveGatewayConfig(tenantId)
+  const activateMut = useSetActiveGateway(tenantId)
 
   const wompi = configs.find((c) => c.slug === 'wompi')
   const isConfigured = wompi?.configured ?? false

@@ -237,6 +237,8 @@ async def list_records(
     asset_id: uuid.UUID | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
     commodity_type: str | None = Query(None),
+    declaration_status: str | None = Query(None),
+    has_declaration: bool | None = Query(None),
 ):
     tid = _tenant_id(user)
     q = select(ComplianceRecord).where(ComplianceRecord.tenant_id == tid)
@@ -249,6 +251,11 @@ async def list_records(
         q = q.where(ComplianceRecord.compliance_status == status_filter)
     if commodity_type is not None:
         q = q.where(ComplianceRecord.commodity_type == commodity_type)
+    if declaration_status is not None:
+        q = q.where(ComplianceRecord.declaration_status == declaration_status)
+    if has_declaration is True:
+        # Anything other than 'not_required' — surface in the DDS dashboard
+        q = q.where(ComplianceRecord.declaration_status != "not_required")
 
     q = q.order_by(ComplianceRecord.created_at.desc())
     rows = (await db.execute(q)).scalars().all()
@@ -1028,6 +1035,99 @@ async def submit_to_traces(
         "record_id": str(record_id),
         **result,
     }
+
+
+# ─── TRACES NT — DDS Status Polling ──────────────────────────────────────────
+
+@router.get("/{record_id}/dds-status")
+async def get_dds_status(
+    record_id: uuid.UUID,
+    user: ModuleUser,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Query TRACES NT for the current DDS verdict and sync it to DB.
+
+    Returns the record's *current* DDS state after the poll. If the record
+    has no reference or is not in a pollable status, returns the existing
+    state without hitting TRACES NT.
+    """
+    tid = _tenant_id(user)
+    record = (
+        await db.execute(
+            select(ComplianceRecord)
+            .where(
+                ComplianceRecord.id == record_id,
+                ComplianceRecord.tenant_id == tid,
+            )
+            .with_for_update()
+        )
+    ).scalar_one_or_none()
+    if record is None:
+        raise NotFoundError(f"Record '{record_id}' not found")
+
+    response = {
+        "record_id": str(record_id),
+        "declaration_status": record.declaration_status,
+        "declaration_reference": record.declaration_reference,
+        "declaration_validated_at": (
+            record.declaration_validated_at.isoformat()
+            if record.declaration_validated_at
+            else None
+        ),
+        "declaration_rejection_reason": record.declaration_rejection_reason,
+        "declaration_last_polled_at": (
+            record.declaration_last_polled_at.isoformat()
+            if record.declaration_last_polled_at
+            else None
+        ),
+        "polled": False,
+    }
+
+    # Only poll if we have a reference AND the status is still pollable.
+    if not record.declaration_reference or record.declaration_status not in (
+        "submitted", "pending"
+    ):
+        return response
+
+    from app.services.traces_service import TracesNTService
+    svc = await TracesNTService.from_db(db, tenant_id=tid)
+    info = await svc.retrieve_dds_info(record.declaration_reference)
+    now = datetime.now(tz=timezone.utc)
+    record.declaration_last_polled_at = now
+    response["polled"] = True
+    response["traces_nt_response"] = {
+        "ok": info.get("ok"),
+        "raw_status": info.get("raw_status"),
+        "normalized_status": info.get("status"),
+        "error": info.get("error"),
+    }
+
+    new_status = info.get("status")
+    if info.get("ok") and new_status in ("validated", "rejected", "amended"):
+        if new_status == "validated" and record.declaration_status != "validated":
+            record.declaration_status = "validated"
+            record.declaration_validated_at = now
+            record.declaration_rejection_reason = None
+            log.info("dds_validated", record_id=str(record_id), ref=record.declaration_reference)
+        elif new_status == "rejected" and record.declaration_status != "rejected":
+            record.declaration_status = "rejected"
+            record.declaration_rejection_reason = info.get("rejection_reason") or "rejected"
+            log.info("dds_rejected", record_id=str(record_id), ref=record.declaration_reference)
+        elif new_status == "amended" and record.declaration_status != "amended":
+            record.declaration_status = "amended"
+            log.info("dds_amended", record_id=str(record_id), ref=record.declaration_reference)
+
+    await db.flush()
+
+    response["declaration_status"] = record.declaration_status
+    response["declaration_validated_at"] = (
+        record.declaration_validated_at.isoformat()
+        if record.declaration_validated_at
+        else None
+    )
+    response["declaration_rejection_reason"] = record.declaration_rejection_reason
+    response["declaration_last_polled_at"] = record.declaration_last_polled_at.isoformat()
+    return response
 
 
 # ─── Evidence documents ────────────────────────────────────────────────────────

@@ -5,7 +5,6 @@ import {
   integrationSyncApi,
   integrationInvoiceApi,
   resolutionApi,
-  webhookApi,
 } from '@/lib/integration-api'
 
 // ─── Catalog ──────────────────────────────────────────────────────────────────
@@ -140,57 +139,3 @@ export function useDeactivateResolution() {
   })
 }
 
-// ─── Webhooks ────────────────────────────────────────────────────────────────
-
-export function useEventsCatalog() {
-  return useQuery({
-    queryKey: ['webhooks', 'catalog'],
-    queryFn: webhookApi.eventsCatalog,
-    staleTime: 5 * 60_000,
-  })
-}
-
-export function useWebhookSubscriptions() {
-  return useQuery({
-    queryKey: ['webhooks', 'subscriptions'],
-    queryFn: webhookApi.list,
-  })
-}
-
-export function useCreateWebhookSubscription() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (data: Record<string, unknown>) => webhookApi.create(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['webhooks', 'subscriptions'] }),
-  })
-}
-
-export function useUpdateWebhookSubscription() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => webhookApi.update(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['webhooks', 'subscriptions'] }),
-  })
-}
-
-export function useDeleteWebhookSubscription() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (id: string) => webhookApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['webhooks', 'subscriptions'] }),
-  })
-}
-
-export function useTestWebhookSubscription() {
-  return useMutation({
-    mutationFn: (id: string) => webhookApi.test(id),
-  })
-}
-
-export function useWebhookDeliveries(subId: string, params?: { status?: string }) {
-  return useQuery({
-    queryKey: ['webhooks', 'deliveries', subId, params],
-    queryFn: () => webhookApi.deliveries(subId, params),
-    enabled: !!subId,
-  })
-}

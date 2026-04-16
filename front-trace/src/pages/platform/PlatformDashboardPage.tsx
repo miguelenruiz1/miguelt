@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { usePlatformDashboard } from '@/hooks/usePlatform'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
+import { SkeletonCard, SkeletonGrid } from '@/components/ui/skeleton'
 
 const STATUS_COLORS: Record<string, string> = {
   active: '#22c55e',
@@ -54,8 +55,13 @@ export function PlatformDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="space-y-6">
+        <SkeletonGrid items={4} columns={4} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <SkeletonCard lines={6} />
+          <SkeletonCard lines={6} />
+        </div>
+        <SkeletonCard lines={8} />
       </div>
     )
   }
@@ -144,14 +150,14 @@ export function PlatformDashboardPage() {
         <KpiCard label="Suscripciones Activas" value={data.active} icon={Users} color="bg-green-500" />
         <KpiCard label="En Periodo de Prueba" value={data.trialing} icon={Activity} color="bg-blue-500" />
         <KpiCard label="Licencias Activas" value={data.active_licenses} icon={CreditCard} color="bg-purple-500" />
-        <KpiCard label="Modulos Activados" value={data.active_modules} icon={Layers} color="bg-orange-500" />
+        <KpiCard label="Módulos Activados" value={data.active_modules} icon={Layers} color="bg-orange-500" />
       </div>
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status distribution pie */}
         <div className="rounded-2xl border border-border bg-card p-6 ">
-          <h3 className="text-sm font-medium text-foreground mb-4">Distribucion por Estado</h3>
+          <h3 className="text-sm font-medium text-foreground mb-4">Distribución por Estado</h3>
           {pieData.length > 0 ? (
             <div className="flex items-center gap-6">
               <ResponsiveContainer width="50%" height={180}>
@@ -181,7 +187,7 @@ export function PlatformDashboardPage() {
 
         {/* Plan breakdown bar */}
         <div className="rounded-2xl border border-border bg-card p-6 ">
-          <h3 className="text-sm font-medium text-foreground mb-4">Distribucion por Plan</h3>
+          <h3 className="text-sm font-medium text-foreground mb-4">Distribución por Plan</h3>
           {data.plan_breakdown.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={data.plan_breakdown}>
@@ -201,7 +207,7 @@ export function PlatformDashboardPage() {
       {/* Module adoption */}
       {data.module_adoption.length > 0 && (
         <div className="rounded-2xl border border-border bg-card p-6 ">
-          <h3 className="text-sm font-medium text-foreground mb-4">Adopcion de Modulos</h3>
+          <h3 className="text-sm font-medium text-foreground mb-4">Adopción de Módulos</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {data.module_adoption.map(m => (
               <div key={m.slug} className="bg-muted rounded-xl p-4">

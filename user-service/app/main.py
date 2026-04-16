@@ -94,6 +94,7 @@ def create_app() -> FastAPI:
     from app.api.routers.email_providers import router as email_providers_router
     from app.api.routers.notifications import router as notifications_router
     from app.api.routers.onboarding import router as onboarding_router
+    from app.api.routers.internal import router as internal_router
 
     # ─── Static files (uploads) ──────────────────────────────────────────────
     from pathlib import Path
@@ -114,6 +115,7 @@ def create_app() -> FastAPI:
     app.include_router(email_providers_router)
     app.include_router(notifications_router)
     app.include_router(onboarding_router)
+    app.include_router(internal_router)
 
     # ─── Prometheus metrics (optional) ────────────────────────────────────────
     try:

@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { Layout } from '@/components/layout/Layout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 // Helper for named exports — avoids the verbose .then(m => ({default: m.X})) repetition.
 const named = <K extends string>(loader: () => Promise<Record<K, React.ComponentType<unknown>>>, key: K) =>
@@ -106,7 +107,6 @@ const MRPPage = lazy(() => import('@/pages/production/MRPPage'))
 const TransportAnalyticsPage = lazy(() => import('@/pages/logistics/TransportAnalyticsPage'))
 // ── Misc lazy ───────────────────────────────────────────────────────────────
 const MediaPage = lazy(() => import('@/pages/MediaPage'))
-const WebhooksPage = lazy(() => import('@/pages/WebhooksPage'))
 
 // Guards (synchronous — used as wrappers, not pages)
 import { ModuleGuard } from '@/components/inventory/ModuleGuard'
@@ -121,6 +121,7 @@ const CreatePlotPage = lazy(() => import('@/pages/compliance/CreatePlotPage'))
 const PlotDetailPage = named(() => import('@/pages/compliance/PlotDetailPage'), 'PlotDetailPage')
 const RecordsPage = lazy(() => import('@/pages/compliance/RecordsPage'))
 const RecordDetailPage = lazy(() => import('@/pages/compliance/RecordDetailPage'))
+const DDSStatusPage = lazy(() => import('@/pages/compliance/DDSStatusPage'))
 const CertificatesPage = lazy(() => import('@/pages/compliance/CertificatesPage'))
 const VerifyCertificatePage = lazy(() => import('@/pages/compliance/VerifyCertificatePage'))
 const ComplianceIntegrationsPage = named(() => import('@/pages/compliance/IntegrationsPage'), 'ComplianceIntegrationsPage')
@@ -137,15 +138,12 @@ const PlatformTeamPage = named(() => import('@/pages/platform/PlatformTeamPage')
 const PlatformOnboardPage = named(() => import('@/pages/platform/PlatformOnboardPage'), 'PlatformOnboardPage')
 const PlatformUsersPage = named(() => import('@/pages/platform/PlatformUsersPage'), 'PlatformUsersPage')
 const PlatformAiSettingsPage = named(() => import('@/pages/platform/PlatformAiSettingsPage'), 'PlatformAiSettingsPage')
-const PlatformCmsPage = named(() => import('@/pages/platform/PlatformCmsPage'), 'PlatformCmsPage')
-const PlatformCmsEditorPage = named(() => import('@/pages/platform/PlatformCmsEditorPage'), 'PlatformCmsEditorPage')
 
 // ── Other pages (lazy) ─────────────────────────────────────────────────────
 const SettingsPage = named(() => import('@/pages/SettingsPage'), 'SettingsPage')
 const BillingPage = named(() => import('@/pages/settings/BillingPage'), 'BillingPage')
 const LandingPage = named(() => import('@/pages/LandingPage'), 'LandingPage')
 const EudrLandingPage = named(() => import('@/pages/EudrLandingPage'), 'EudrLandingPage')
-const CmsPublicPage = named(() => import('@/pages/CmsPublicPage'), 'CmsPublicPage')
 
 // Critical synchronous imports (small + always needed at root)
 import { PlanLimitModal } from '@/components/PlanLimitModal'
@@ -156,7 +154,6 @@ const router = createBrowserRouter([
   { path: '/home',               element: <LandingPage /> },
   { path: '/eudr',               element: <EudrLandingPage /> },
   { path: '/landing',            element: <LandingPage /> },
-  { path: '/p/:slug',            element: <CmsPublicPage /> },
 
   // ─── Public routes (no layout) ──────────────────────────────────────────────
   { path: '/login',              element: <LoginPage /> },
@@ -246,15 +243,6 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute permission="subscription.view">
             <BillingPage />
-          </ProtectedRoute>
-        ),
-      },
-
-      {
-        path: 'empresa/webhooks',
-        element: (
-          <ProtectedRoute permission="subscription.view">
-            <WebhooksPage />
           </ProtectedRoute>
         ),
       },
@@ -414,23 +402,6 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      {
-        path: 'platform/cms',
-        element: (
-          <ProtectedRoute superuserOnly>
-            <PlatformCmsPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'platform/cms/:pageId',
-        element: (
-          <ProtectedRoute superuserOnly>
-            <PlatformCmsEditorPage />
-          </ProtectedRoute>
-        ),
-      },
-
       // ── Inventario (module-gated) ──────────────────────────────────────────
       {
         path: 'inventario',
@@ -931,6 +902,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'cumplimiento/dds-status',
+        element: (
+          <React.Suspense fallback={null}>
+            <ComplianceGuard><DDSStatusPage /></ComplianceGuard>
+          </React.Suspense>
+        ),
+      },
+      {
         path: 'cumplimiento/certificados',
         element: (
           <React.Suspense fallback={null}>
@@ -984,11 +963,11 @@ function PageFallback() {
 
 export default function App() {
   return (
-    <>
+    <ErrorBoundary>
       <Suspense fallback={<PageFallback />}>
         <RouterProvider router={router} />
       </Suspense>
       <PlanLimitModal />
-    </>
+    </ErrorBoundary>
   )
 }

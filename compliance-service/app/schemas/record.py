@@ -106,6 +106,9 @@ class RecordResponse(OrmBase):
     declaration_submission_date: date | None
     declaration_status: str
     declaration_url: str | None
+    declaration_validated_at: datetime | None = None
+    declaration_rejection_reason: str | None = None
+    declaration_last_polled_at: datetime | None = None
     signatory_name: str | None = None
     signatory_role: str | None = None
     signatory_date: date | None = None

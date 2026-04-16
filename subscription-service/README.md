@@ -12,7 +12,7 @@
 - Invoices con numeración fiscal atómica (`INV-YYYY-NNNN`)
 - License keys con max_activations
 - Module activation (logistics, inventory, compliance)
-- Payment gateways (epayco, payu, wompi, mercadopago, bold, kushki, openpay)
+- Payment gateway (Wompi)
 - CMS para landing pages públicas
 
 ## Endpoints clave

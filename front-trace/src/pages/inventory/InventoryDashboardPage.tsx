@@ -29,7 +29,7 @@ const MOVEMENT_TYPE_LABELS: Record<string, string> = {
 
 const PIE_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899']
 
-const fmt = (n: number) => n.toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+const fmt = (n: number) => n.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
 /* ─── KPI Card — shadcn style ──────────────────────────────────── */
 

@@ -28,6 +28,7 @@ class VariantService:
         if options:
             for opt in options:
                 opt["attribute_id"] = attr.id
+                opt["tenant_id"] = tenant_id
                 await self.option_repo.create(opt)
             attr = await self.attr_repo._reload(attr.id, tenant_id)
         return attr
@@ -50,6 +51,7 @@ class VariantService:
         if not attr:
             raise NotFoundError("Variant attribute not found")
         data["attribute_id"] = attr_id
+        data["tenant_id"] = tenant_id
         return await self.option_repo.create(data)
 
     async def update_option(self, option_id: str, data: dict, tenant_id: str | None = None):
