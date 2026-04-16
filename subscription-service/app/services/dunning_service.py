@@ -11,6 +11,12 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
+from zoneinfo import ZoneInfo
+
+# Billing cadence must follow the customer's civil day, not UTC. All tenants
+# are invoiced from Colombia (UTC-5) today; when we onboard other regions this
+# should be promoted to a per-tenant setting.
+BILLING_TZ = ZoneInfo("America/Bogota")
 
 import httpx
 import structlog
@@ -66,7 +72,9 @@ async def _fetch_tenant_owner(tenant_id: str) -> dict | None:
 async def dunning_check(db: AsyncSession) -> dict[str, Any]:
     """Run one dunning pass. Returns a summary dict."""
     now = datetime.now(timezone.utc)
-    today = now.date()
+    # today is the local civil date — prevents off-by-one on invoices whose
+    # due_date rolls over in Bogota but not yet in UTC.
+    today = datetime.now(BILLING_TZ).date()
     three_days_ago = now - timedelta(days=3)
 
     # Select open invoices past due whose last_dunning was >3d ago or null.
