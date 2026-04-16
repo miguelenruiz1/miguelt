@@ -31,17 +31,27 @@ async def _get_arq_pool():
 
 
 async def enqueue_anchor(event_id: uuid.UUID) -> None:
-    """Enqueue an anchor_event job for the given event_id."""
+    """Enqueue an anchor_event job for the given event_id.
+
+    Best-effort: if Redis is down or the pool fails we only log. Safety net
+    is the `sweep_pending_anchors` cron which scans CustodyEvent rows that
+    never reached CONFIRMED every 5 minutes and re-enqueues them. Job-level
+    retries (max_tries=5, exponential backoff) live in WorkerSettings.
+
+    We pass `_job_id=f"anchor:{event_id}"` for dedup: if the caller and the
+    sweeper race to enqueue the same event, only one job lands in the queue.
+    """
     try:
         pool = await _get_arq_pool()
         job = await pool.enqueue_job(
             "anchor_event",
             str(event_id),
+            _job_id=f"anchor:{event_id}",
             _queue_name=get_settings().ANCHOR_QUEUE_NAME,
         )
         log.info("anchor_job_enqueued", event_id=str(event_id), job_id=getattr(job, "job_id", None))
     except Exception as exc:
-        # Non-fatal: the worker also picks up pending events on startup
+        # Non-fatal: the sweeper + worker retries guarantee eventual anchoring.
         log.warning("anchor_enqueue_failed", event_id=str(event_id), exc=str(exc))
 
 

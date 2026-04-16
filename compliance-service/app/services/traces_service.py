@@ -796,6 +796,7 @@ def build_soap_envelope(
       </eudr:supplier>
       <eudr:declarations>
         <eudr:deforestationFree>{str(dds['declarations']['deforestationFree']).lower()}</eudr:deforestationFree>
+        <eudr:degradationFree>{str(dds['declarations']['degradationFree']).lower()}</eudr:degradationFree>
         <eudr:legalCompliance>{str(dds['declarations']['legalCompliance']).lower()}</eudr:legalCompliance>
       </eudr:declarations>
       <eudr:signatory>
@@ -1068,13 +1069,46 @@ _STATUS_MAP = {
 }
 
 
+_XXE_MARKERS_RE = re.compile(r"<!(DOCTYPE|ENTITY)\b", re.IGNORECASE)
+
+
+def _strip_xxe_markers(xml_body: str) -> str:
+    """Remove any DOCTYPE / ENTITY declarations before downstream parsing.
+
+    We parse the response with regex so XXE is not currently exploitable, but
+    a future refactor that swaps regex for lxml.fromstring would instantly
+    regress. Neutralizing those markers up front keeps the response text
+    safe to feed into any parser.
+    """
+    if not xml_body:
+        return xml_body
+    # Drop the whole DOCTYPE declaration block (up to the matching '>').
+    return re.sub(
+        r"<!(?:DOCTYPE|ENTITY)\b[^>]*(?:\[[^\]]*\])?[^>]*>",
+        "",
+        xml_body,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
 def parse_retrieve_response(xml_body: str, reference_number: str) -> dict[str, Any]:
     """Parse a TRACES NT retrieveDdsInfoByReferences SOAP response.
 
     Returns the normalized dict shape documented in
     TracesNTService.retrieve_dds_info. Tolerant of namespace prefixes and
     empty responses: on unparseable bodies returns status='unknown'.
+
+    Hardening: DOCTYPE/ENTITY declarations in the response body are stripped
+    before regex extraction so the same body can be safely re-parsed by
+    other consumers without becoming an XXE vector.
     """
+    if _XXE_MARKERS_RE.search(xml_body or ""):
+        log.warning(
+            "traces_retrieve_doctype_stripped",
+            reference=reference_number,
+        )
+        xml_body = _strip_xxe_markers(xml_body)
+
     raw_status = _match_one(
         [
             r"<(?:[a-zA-Z][\w-]*:)?status>([^<]+)</(?:[a-zA-Z][\w-]*:)?status>",

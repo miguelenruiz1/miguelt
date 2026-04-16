@@ -7,6 +7,11 @@ operator (buyer) by email.
 
 Isolated from the request path so latency spikes in TRACES NT don't affect
 user-facing calls; runs inside the compliance-service lifespan as a task.
+
+Distributed-safe: before each pass the loop tries to grab a short-lived
+Redis lock (dds:poll:leader). Whichever replica wins runs the pass; the
+others sleep through the interval. Without this, N replicas would fire
+duplicate SOAP calls and — on transition to validated — duplicate emails.
 """
 from __future__ import annotations
 
@@ -28,6 +33,16 @@ POLL_INTERVAL_SECONDS_DEFAULT = 60
 POLL_MIN_SPACING_SECONDS = 60
 BATCH_LIMIT = 50
 
+# Leader election: lock TTL is slightly shorter than the poll interval so a
+# crashed leader can't hold the lock indefinitely — the next tick re-elects.
+POLL_LOCK_KEY = "dds:poll:leader"
+POLL_LOCK_TTL_SECONDS = POLL_INTERVAL_SECONDS_DEFAULT - 5
+
+# Email idempotency: once we've emailed about a given reference, skip for a
+# year (EUDR retains DDS records for 5y, but re-notifying annually is the
+# right balance between safety and noise). Key: dds:notified:<ref>.
+NOTIFY_GUARD_TTL_SECONDS = 60 * 60 * 24 * 365
+
 _TEMPLATE_PATH = Path(__file__).parent / "email_templates" / "dds_validated.html"
 
 
@@ -45,7 +60,11 @@ def _traces_portal_url(reference_number: str) -> str:
 
 
 async def _notify_validated(record: ComplianceRecord) -> None:
-    """Send the 'DDS validated' email to the operator (buyer)."""
+    """Send the 'DDS validated' email to the operator (buyer).
+
+    Gated by a Redis SETNX so two replicas (or a race between poll passes)
+    can't both hit the transition and spam the customer.
+    """
     # EU side: the buyer/operator is the one who cares about DDS validation.
     # Fall back to supplier_email only if no buyer_email is set.
     recipient = (record.buyer_email or record.supplier_email or "").strip()
@@ -56,6 +75,27 @@ async def _notify_validated(record: ComplianceRecord) -> None:
             reference=record.declaration_reference,
         )
         return
+
+    reference = record.declaration_reference or str(record.id)
+    try:
+        from app.api.deps import get_redis
+        rd = await get_redis()
+        claimed = await rd.set(
+            f"dds:notified:{reference}",
+            "1",
+            nx=True,
+            ex=NOTIFY_GUARD_TTL_SECONDS,
+        )
+        if not claimed:
+            log.info(
+                "dds_validated_notify_skipped_duplicate",
+                record_id=str(record.id),
+                reference=reference,
+            )
+            return
+    except Exception as exc:
+        # Redis down: degrade to fire — better one extra email than silent skip.
+        log.warning("dds_notify_guard_error", error=str(exc), reference=reference)
 
     validated_at = (
         record.declaration_validated_at.strftime("%Y-%m-%d %H:%M UTC")
@@ -189,14 +229,32 @@ async def poll_once(db) -> dict[str, Any]:
 
 
 async def run_polling_loop(interval_seconds: int = POLL_INTERVAL_SECONDS_DEFAULT) -> None:
-    """Background loop: run poll_once every `interval_seconds`."""
+    """Background loop: run poll_once every `interval_seconds`.
+
+    Only the replica that wins the Redis leader lock runs a pass; the rest
+    sleep. Lock TTL is slightly below the interval so a crashed leader
+    releases the lock naturally within one tick.
+    """
+    from app.api.deps import get_redis
     from app.db.session import get_session_factory
 
     factory = get_session_factory()
+    lock_ttl = max(10, interval_seconds - 5)
     while True:
+        leader = False
         try:
-            async with factory() as db:
-                await poll_once(db)
-        except Exception:
-            log.exception("dds_poll_loop_error")
+            rd = await get_redis()
+            leader = bool(await rd.set(POLL_LOCK_KEY, "1", nx=True, ex=lock_ttl))
+        except Exception as exc:
+            # Redis unavailable: run anyway — duplicate work is preferable to
+            # skipping polling entirely, and single-replica dev always wins.
+            log.warning("dds_poll_lock_error", error=str(exc))
+            leader = True
+
+        if leader:
+            try:
+                async with factory() as db:
+                    await poll_once(db)
+            except Exception:
+                log.exception("dds_poll_loop_error")
         await asyncio.sleep(interval_seconds)

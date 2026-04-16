@@ -13,6 +13,7 @@ from app.api.deps import CurrentUser, get_redis, get_tenant_id, require_permissi
 from app.core.settings import get_settings
 from app.db.session import get_db_session
 from app.domain.schemas import AdminUpdateUser, InviteUserRequest, PaginatedResponse, RoleSlim, UserResponse
+from app.repositories.audit_repo import AuditRepository
 from app.services.auth_service import AuthService
 from app.services.user_service import UserService
 
@@ -171,6 +172,16 @@ async def update_user(
     svc = UserService(db)
     scope_tid = None if current_user.get("is_superuser") else tenant_id
     user = await svc.update(user_id, tenant_id=scope_tid, **data)
+    # Audit trail: admin mutation on a user — record who did what.
+    await AuditRepository(db).create(
+        action="user.update",
+        tenant_id=user.tenant_id,
+        user_id=str(current_user.get("id")) if current_user.get("id") else None,
+        user_email=current_user.get("email"),
+        resource_type="user",
+        resource_id=user_id,
+        metadata={"fields": sorted(data.keys())},
+    )
     return await _user_response(user, db)
 
 
@@ -222,6 +233,15 @@ async def assign_role(
     svc = UserService(db)
     scope_tid = None if current_user.get("is_superuser") else tenant_id
     await svc.assign_role(user_id, role_id, tenant_id=scope_tid)
+    await AuditRepository(db).create(
+        action="user.role_assigned",
+        tenant_id=scope_tid or tenant_id,
+        user_id=str(current_user.get("id")) if current_user.get("id") else None,
+        user_email=current_user.get("email"),
+        resource_type="user",
+        resource_id=user_id,
+        metadata={"role_id": role_id},
+    )
     return Response(status_code=204)
 
 
@@ -236,4 +256,13 @@ async def remove_role(
     svc = UserService(db)
     scope_tid = None if current_user.get("is_superuser") else tenant_id
     await svc.remove_role(user_id, role_id, tenant_id=scope_tid)
+    await AuditRepository(db).create(
+        action="user.role_removed",
+        tenant_id=scope_tid or tenant_id,
+        user_id=str(current_user.get("id")) if current_user.get("id") else None,
+        user_email=current_user.get("email"),
+        resource_type="user",
+        resource_id=user_id,
+        metadata={"role_id": role_id},
+    )
     return Response(status_code=204)

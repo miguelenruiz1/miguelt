@@ -283,6 +283,7 @@ def test_soap_envelope_snapshot_stable_fields():
         "<eudr:supplier>",
         "<eudr:declarations>",
         "<eudr:deforestationFree>",
+        "<eudr:degradationFree>",
         "<eudr:legalCompliance>",
         "<eudr:signatory>",
     ]

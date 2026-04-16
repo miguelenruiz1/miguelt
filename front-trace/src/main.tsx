@@ -8,6 +8,30 @@ import './index.css'
 document.body.style.overflow = ''
 document.body.style.pointerEvents = ''
 
+// Global error telemetry. React ErrorBoundary only catches render/lifecycle
+// errors — promise rejections from event handlers or useEffect bodies fall
+// through to the host. Forward them to Sentry (when configured) and the
+// console so they don't disappear silently in production.
+type MaybeSentry = {
+  Sentry?: {
+    captureException?: (e: unknown, ctx?: unknown) => void
+  }
+}
+const _reportAsync = (err: unknown, source: string) => {
+  const s = (window as unknown as MaybeSentry).Sentry
+  if (s?.captureException) {
+    try { s.captureException(err, { tags: { source } }) } catch { /* noop */ }
+  }
+  // eslint-disable-next-line no-console
+  console.error(`[${source}]`, err)
+}
+window.addEventListener('unhandledrejection', (e) => {
+  _reportAsync(e.reason, 'unhandledrejection')
+})
+window.addEventListener('error', (e) => {
+  _reportAsync(e.error ?? e.message, 'window.error')
+})
+
 // Patch React 19 removeChild crash — known issue with dynamic DOM reconciliation
 // https://github.com/facebook/react/issues/29462
 const origRemoveChild = Node.prototype.removeChild
