@@ -51,6 +51,21 @@ async def process_successful_payment(
     sub_repo = SubscriptionRepository(db)
     event_repo = EventRepository(db)
 
+    # Cross-request idempotency: the invoice-status check below catches the
+    # common "already paid" case, but two webhooks that arrive within the
+    # same millisecond can both observe status=open and race through the
+    # mark-paid path — emitting duplicate receipt emails. A short SETNX
+    # lock on the gateway_tx_id collapses those into one winner.
+    lock_key = f"webhook:dedup:{gateway_slug}:{gateway_tx_id}"
+    try:
+        acquired = await redis.set(lock_key, "1", nx=True, ex=600)
+    except Exception as exc:
+        log.warning("webhook_dedup_lock_error", error=str(exc), tx_id=gateway_tx_id)
+        acquired = True
+    if not acquired:
+        log.info("webhook_duplicate_skipped", gateway=gateway_slug, tx_id=gateway_tx_id)
+        return
+
     invoice = None
     if invoice_id:
         invoice = await invoice_repo.get_by_id(invoice_id)

@@ -137,7 +137,12 @@ export default function DDSStatusPage() {
           // ignore individual failures
         }
       }
-      qc.invalidateQueries({ queryKey: ['compliance', 'records'] })
+      // Invalidate every compliance query so records list, per-record status
+      // and KPIs all refetch. The previous narrow invalidation only hit the
+      // main records list — the sidebar counts and single-record queries
+      // stayed stale until the next page nav.
+      await qc.invalidateQueries({ queryKey: ['compliance'] })
+      await qc.refetchQueries({ queryKey: ['compliance', 'records'] })
       toast.success(`Actualizadas ${submitted.length} DDS — ${changed} cambios detectados`)
     } finally {
       setRefreshing(false)

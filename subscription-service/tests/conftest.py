@@ -74,10 +74,24 @@ async def engine():
 
 @pytest_asyncio.fixture
 async def db(engine) -> AsyncGenerator[AsyncSession, None]:
+    # Tests must be isolated even when the code under test calls db.commit()
+    # (dunning_service, invoice_service and others do). SQLite in-memory via
+    # aiosqlite doesn't cooperate cleanly with the nested-transaction pattern,
+    # so instead we truncate every table after each test. Session-scoped
+    # engine stays warm; per-test data never leaks.
+    from app.db.base import Base
+
     factory = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
     async with factory() as session:
-        yield session
-        await session.rollback()
+        try:
+            yield session
+        finally:
+            await session.rollback()
+
+    async with engine.begin() as conn:
+        # Wipe in reverse dependency order so FKs don't complain.
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.exec_driver_sql(f"DELETE FROM {table.name}")
 
 
 # ─── Redis mock ───────────────────────────────────────────────────────────────

@@ -14,12 +14,12 @@ MODE="${1:-unit}"
 
 run() {
   local svc="$1"
-  local target="$2"
+  shift
   echo ""
   echo "=============================================================="
-  echo "  $svc  ::  $target"
+  echo "  $svc  ::  $*"
   echo "=============================================================="
-  (cd "$ROOT/$svc" && python -m pytest "$target" -x --tb=short)
+  (cd "$ROOT/$svc" && python -m pytest "$@" -x --tb=short)
 }
 
 case "$MODE" in
@@ -28,12 +28,14 @@ case "$MODE" in
     run subscription-service tests/unit
     run trace-service        tests/unit
     run user-service         tests/unit
+    run compliance-service   tests --ignore=tests/test_endpoints.py
     ;;
   all)
     run inventory-service    tests/unit
-    run subscription-service "tests/unit tests/integration"
+    run subscription-service tests/unit tests/integration
     run trace-service        tests/unit
     run user-service         tests/unit
+    run compliance-service   tests --ignore=tests/test_endpoints.py
     ;;
   *)
     echo "Unknown mode: $MODE (expected: unit | all)" >&2

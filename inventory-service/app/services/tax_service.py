@@ -183,6 +183,15 @@ class TaxService:
             )).scalar_one_or_none()
             if not new_cat:
                 raise NotFoundError("Categoría de impuesto no encontrada")
+            # Colombia MVP lock: the create path rejects non-IVA/Retefuente
+            # categories; the update path must do the same or a user could
+            # bypass the lock by creating a legal rate, then swapping the
+            # category to something outside the allowlist.
+            from app.core.errors import ConflictError as _ConflictError
+            if new_cat.slug not in CO_ALLOWED_TAX_SLUGS:
+                raise _ConflictError(
+                    "Impuesto no soportado en Colombia MVP: use IVA o Retefuente"
+                )
             # Keep the legacy column in sync
             tax.tax_type = new_cat.slug
 

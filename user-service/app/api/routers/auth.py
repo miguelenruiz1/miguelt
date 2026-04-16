@@ -9,7 +9,10 @@ from typing import Annotated
 import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile, status
 from jwt import PyJWTError as JWTError
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.models import UserSession
 
 from app.api.deps import (
     CurrentUser,
@@ -279,18 +282,13 @@ async def refresh_tokens(
         raise creds_exc
 
     # Block refresh if the session tied to this jti was explicitly revoked.
-    from sqlalchemy import select
-    from app.db.models import UserSession as _US
-    try:
-        async with db.begin_nested():
-            sres = await db.execute(select(_US).where(_US.refresh_jti == jti))
-            sess = sres.scalar_one_or_none()
-            if sess and sess.revoked_at is not None:
-                raise creds_exc
-    except HTTPException:
-        raise
-    except Exception:
-        pass
+    # Fail closed: if we cannot verify revocation (DB hiccup, etc.) deny the
+    # refresh — a transient error must not re-open a revoked session.
+    async with db.begin_nested():
+        sres = await db.execute(select(UserSession).where(UserSession.refresh_jti == jti))
+        sess = sres.scalar_one_or_none()
+        if sess and sess.revoked_at is not None:
+            raise creds_exc
 
     # Delete old refresh token
     await redis.delete(key)
@@ -514,8 +512,9 @@ async def reset_password(
 async def twofa_setup(
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[aioredis.Redis, Depends(get_redis)],
 ) -> TwoFASetupResponse:
-    svc = TOTPService(db)
+    svc = TOTPService(db, redis)
     data = await svc.setup(current_user.id)
     return TwoFASetupResponse(**data)
 
@@ -525,9 +524,10 @@ async def twofa_verify(
     body: TwoFAVerifyRequest,
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[aioredis.Redis, Depends(get_redis)],
     _rl: Annotated[None, Depends(twofa_rate_limit)] = None,
 ) -> TwoFAVerifyResponse:
-    svc = TOTPService(db)
+    svc = TOTPService(db, redis)
     codes = await svc.verify_and_enable(current_user.id, body.totp_code)
     return TwoFAVerifyResponse(enabled=True, recovery_codes=codes)
 

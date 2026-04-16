@@ -1,12 +1,32 @@
 """Unified Business Partner schemas."""
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.domain.schemas.base import OrmBase
+from app.utils.nit import is_valid_nit
+
+
+# Matches 6-10 digits with optional single-digit DV (e.g. "900123456" or "900123456-7").
+# Mirrors front-trace/src/pages/inventory/PartnerDetailPage.tsx:237 so frontend and
+# backend accept/reject the same inputs.
+_NIT_RE = re.compile(r"^\d{6,10}(-\d)?$")
+
+
+def _validate_tax_id(v: str | None) -> str | None:
+    if v is None or v == "":
+        return v
+    cleaned = v.replace(".", "").replace(" ", "").strip()
+    if not _NIT_RE.match(cleaned):
+        raise ValueError("NIT inválido (formato: 900123456-7)")
+    # DV check only when user provided the check digit.
+    if "-" in cleaned and not is_valid_nit(cleaned):
+        raise ValueError("Dígito verificador NIT incorrecto")
+    return cleaned
 
 
 class PartnerCreate(BaseModel):
@@ -30,6 +50,11 @@ class PartnerCreate(BaseModel):
     notes: str | None = None
     custom_attributes: dict[str, Any] = {}
 
+    @field_validator("tax_id")
+    @classmethod
+    def _check_tax_id(cls, v: str | None) -> str | None:
+        return _validate_tax_id(v)
+
 
 class PartnerUpdate(BaseModel):
     name: str | None = Field(None, max_length=255)
@@ -41,6 +66,11 @@ class PartnerUpdate(BaseModel):
     tax_id: str | None = Field(None, max_length=50)
     # DIAN: 1 = Responsable IVA, 2 = No responsable IVA
     tax_regime: int | None = None
+
+    @field_validator("tax_id")
+    @classmethod
+    def _check_tax_id(cls, v: str | None) -> str | None:
+        return _validate_tax_id(v)
     contact_name: str | None = Field(None, max_length=255)
     email: str | None = Field(None, max_length=255)
     phone: str | None = Field(None, max_length=50)
