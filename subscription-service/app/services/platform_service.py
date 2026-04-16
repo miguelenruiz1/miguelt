@@ -61,16 +61,25 @@ class PlatformService:
         expired = status_counts.get(SubscriptionStatus.expired, 0)
         total_tenants = active + trialing + past_due + canceled + expired
 
-        # MRR
-        mrr_result = await self.db.execute(
-            select(func.coalesce(func.sum(Plan.price_monthly), 0))
-            .join(Subscription, Subscription.plan_id == Plan.id)
-            .where(
-                Subscription.status == SubscriptionStatus.active,
-                Plan.price_monthly > 0,
-            )
-        )
-        mrr = float(mrr_result.scalar_one())
+        # MRR / ARR — respect each subscription's billing_cycle. Annual subs
+        # contribute price_annual/12 to MRR (falling back to price_monthly if
+        # price_annual is NULL). Monthly/custom contribute price_monthly.
+        sub_plan_rows = (await self.db.execute(
+            select(Subscription.billing_cycle, Plan.price_monthly, Plan.price_annual)
+            .join(Plan, Subscription.plan_id == Plan.id)
+            .where(Subscription.status == SubscriptionStatus.active)
+        )).all()
+        mrr = 0.0
+        arr = 0.0
+        for cycle, price_monthly, price_annual in sub_plan_rows:
+            pm = float(price_monthly or 0)
+            pa = float(price_annual) if price_annual else pm * 12
+            if cycle == BillingCycle.annual:
+                mrr += pa / 12
+                arr += pa
+            else:
+                mrr += pm
+                arr += pm * 12
 
         # Revenue this month (paid invoices)
         rev_this_month = (await self.db.execute(
@@ -174,7 +183,7 @@ class PlatformService:
             "canceled": canceled,
             "expired": expired,
             "mrr": round(mrr, 2),
-            "arr": round(mrr * 12, 2),
+            "arr": round(arr, 2),
             "revenue_this_month": round(float(rev_this_month), 2),
             "revenue_last_month": round(float(rev_last_month), 2),
             "new_this_month": new_this_month,
@@ -288,11 +297,16 @@ class PlatformService:
         if not sub:
             return None
 
-        # Modules
-        mods = (await self.db.execute(
-            select(TenantModuleActivation)
-            .where(TenantModuleActivation.tenant_id == tenant_id)
-        )).scalars().all()
+        # Modules — enrich catalog with per-tenant activation status so the
+        # UI can toggle every catalog module, not only those already touched.
+        from app.services.module_service import ModuleService as _ModSvc
+        catalog_with_status = await _ModSvc(self.db).list_tenant_modules(tenant_id)
+        activations = {
+            m.module_slug: m for m in (await self.db.execute(
+                select(TenantModuleActivation)
+                .where(TenantModuleActivation.tenant_id == tenant_id)
+            )).scalars().all()
+        }
 
         # Invoices
         invoices = (await self.db.execute(
@@ -352,12 +366,16 @@ class PlatformService:
             },
             "modules": [
                 {
-                    "slug": m.module_slug,
-                    "is_active": m.is_active,
-                    "activated_at": m.activated_at.isoformat() if m.activated_at else None,
-                    "deactivated_at": m.deactivated_at.isoformat() if m.deactivated_at else None,
+                    "slug": mod["slug"],
+                    "name": mod.get("name", mod["slug"]),
+                    "description": mod.get("description"),
+                    "is_active": mod["is_active"],
+                    "activated_at": activations[mod["slug"]].activated_at.isoformat()
+                        if activations.get(mod["slug"]) and activations[mod["slug"]].activated_at else None,
+                    "deactivated_at": activations[mod["slug"]].deactivated_at.isoformat()
+                        if activations.get(mod["slug"]) and activations[mod["slug"]].deactivated_at else None,
                 }
-                for m in mods
+                for mod in catalog_with_status
             ],
             "invoices": [
                 {
@@ -736,15 +754,20 @@ class PlatformService:
         if not sub:
             raise ValueError(f"No subscription for tenant {tenant_id!r}")
 
+        if sub.status == SubscriptionStatus.canceled:
+            raise ValueError(
+                "No se puede cambiar el plan de una suscripción cancelada. "
+                "Reactivá la suscripción primero."
+            )
+
         old_plan = sub.plan
         new_plan = await self.plan_repo.get_by_slug(plan_slug)
         if not new_plan:
             raise ValueError(f"Plan {plan_slug!r} not found")
 
-        sub = await self.sub_repo.update(sub, {
-            "plan_id": new_plan.id,
-            "status": SubscriptionStatus.active,
-        })
+        # Preserve the current status (active / trialing / past_due). Do NOT
+        # silently promote a past_due to active — that would bypass dunning.
+        sub = await self.sub_repo.update(sub, {"plan_id": new_plan.id})
 
         await self.event_repo.create(
             subscription_id=sub.id,
@@ -798,6 +821,10 @@ class PlatformService:
             ))
 
         await self.db.flush()
+        # Invalidate the module:{tenant}:{slug} cache in every consumer Redis
+        # DB so the change takes effect immediately (TTL 300s otherwise).
+        from app.services.module_service import _invalidate_module_cache
+        await _invalidate_module_cache(tenant_id, module_slug)
         return {"tenant_id": tenant_id, "module": module_slug, "is_active": active}
 
     # ── Generate invoice for tenant ───────────────────────────────────────────
@@ -812,7 +839,16 @@ class PlatformService:
             raise ValueError(f"No subscription for tenant {tenant_id!r}")
 
         invoice_number = await self.invoice_repo.next_invoice_number()
-        amount = sub.plan.price_monthly if sub.plan else 0
+
+        # Pick amount based on billing cycle: annual uses price_annual when
+        # defined, else falls back to monthly × 12. Monthly and custom bill
+        # at price_monthly. Prevents annual subscribers from being undercharged.
+        if sub.plan is None:
+            amount = 0
+        elif sub.billing_cycle == BillingCycle.annual:
+            amount = sub.plan.price_annual or (sub.plan.price_monthly * 12)
+        else:
+            amount = sub.plan.price_monthly
 
         invoice = await self.invoice_repo.create({
             "subscription_id": sub.id,
@@ -820,11 +856,11 @@ class PlatformService:
             "invoice_number": invoice_number,
             "status": InvoiceStatus.open,
             "amount": amount,
-            "currency": sub.plan.currency if sub.plan else "USD",
+            "currency": sub.plan.currency if sub.plan else "COP",
             "period_start": sub.current_period_start,
             "period_end": sub.current_period_end,
             "line_items": [{
-                "description": f"{sub.plan.name} — {sub.billing_cycle.value}",
+                "description": f"{sub.plan.name} — {sub.billing_cycle.value}" if sub.plan else "",
                 "quantity": 1,
                 "unit_price": float(amount),
                 "amount": float(amount),
@@ -914,7 +950,6 @@ class PlatformService:
 
         # Generate a unique token for this payment
         token = secrets.token_urlsafe(32)
-        amount = float(sub.plan.price_monthly) if sub.plan else 0
 
         # Generate an invoice if there isn't an open one
         open_inv = (await self.db.execute(
@@ -930,25 +965,31 @@ class PlatformService:
         if not open_inv:
             inv_result = await self.generate_tenant_invoice(tenant_id, performed_by)
             invoice_number = inv_result["invoice_number"]
+            amount = float(inv_result["amount"])
         else:
             invoice_number = open_inv.invoice_number
             amount = float(open_inv.amount)
 
-        # Persist token in Redis (24h TTL) so checkout can validate it
-        import json
-        if self.redis:
-            await self.redis.set(
-                f"payment_link:{token}",
-                json.dumps({"tenant_id": tenant_id, "invoice_number": invoice_number, "amount": amount}),
-                ex=86400,
+        # Persist token in Redis (24h TTL) so checkout can validate it.
+        # Fail loud if Redis is unavailable — otherwise we'd return a link
+        # that the checkout endpoint cannot validate.
+        if not self.redis:
+            raise RuntimeError(
+                "Redis no disponible: no se puede generar un link de pago sin persistir el token."
             )
+        import json
+        await self.redis.set(
+            f"payment_link:{token}",
+            json.dumps({"tenant_id": tenant_id, "invoice_number": invoice_number, "amount": amount}),
+            ex=86400,
+        )
 
         return {
             "tenant_id": tenant_id,
             "token": token,
             "invoice_number": invoice_number,
             "amount": amount,
-            "currency": sub.plan.currency if sub.plan else "USD",
+            "currency": sub.plan.currency if sub.plan else "COP",
             "plan_name": sub.plan.name if sub.plan else "?",
             "link": f"/checkout?token={token}&tenant={tenant_id}",
         }

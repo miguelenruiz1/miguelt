@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { Globe, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Globe, Search, ChevronLeft, ChevronRight, Users } from 'lucide-react'
 import { usePlatformUsers } from '@/hooks/usePlatform'
 import { cn } from '@/lib/utils'
+import { SkeletonTable } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 export function PlatformUsersPage() {
   const [search, setSearch] = useState('')
@@ -59,15 +61,23 @@ export function PlatformUsersPage() {
       )}
 
       {/* Table */}
+      {isLoading && !data ? (
+        <SkeletonTable columns={7} rows={8} />
+      ) : !data?.items.length ? (
+        <div className="bg-card/80 backdrop-blur-md rounded-2xl border border-white/60 overflow-hidden">
+          <EmptyState
+            icon={Users}
+            title={search || tenantFilter ? 'Sin resultados' : 'Aún no hay usuarios'}
+            description={search || tenantFilter
+              ? 'Probá ajustar los filtros de búsqueda.'
+              : 'Los usuarios aparecerán acá a medida que se registren en la plataforma.'}
+          />
+        </div>
+      ) : (
       <div className="bg-card/80 backdrop-blur-md rounded-2xl  border border-white/60 overflow-hidden">
         {/* Mobile cards */}
         <div className="space-y-3 p-4 md:hidden">
-          {isLoading ? (
-            <div className="py-12 text-center text-muted-foreground">Cargando usuarios...</div>
-          ) : !data?.items.length ? (
-            <div className="py-12 text-center text-muted-foreground">No se encontraron usuarios.</div>
-          ) : (
-            data.items.map((u) => (
+          {data.items.map((u) => (
               <div key={u.id} className="rounded-xl border border-border bg-card p-4  space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary font-semibold text-xs shrink-0">
@@ -113,8 +123,7 @@ export function PlatformUsersPage() {
                   </div>
                 )}
               </div>
-            ))
-          )}
+            ))}
         </div>
 
         {/* Desktop table */}
@@ -132,20 +141,7 @@ export function PlatformUsersPage() {
               </tr>
             </thead>
             <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
-                    Cargando usuarios...
-                  </td>
-                </tr>
-              ) : !data?.items.length ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
-                    No se encontraron usuarios.
-                  </td>
-                </tr>
-              ) : (
-                data.items.map((u) => (
+              {data.items.map((u) => (
                   <tr key={u.id} className="border-b border-slate-50 hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -189,8 +185,7 @@ export function PlatformUsersPage() {
                       {new Date(u.created_at).toLocaleDateString('es-CO')}
                     </td>
                   </tr>
-                ))
-              )}
+                ))}
             </tbody>
           </table>
         </div>
@@ -220,6 +215,7 @@ export function PlatformUsersPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   )
 }

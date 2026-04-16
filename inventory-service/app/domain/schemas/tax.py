@@ -17,7 +17,8 @@ TaxBaseKind = Literal["subtotal", "subtotal_with_other_additions"]
 
 
 class TaxCategoryCreate(BaseModel):
-    slug: str = Field(..., min_length=1, max_length=50, pattern=r"^[a-z0-9_-]+$")
+    # Colombia MVP: solo IVA y Retefuente. Cuando se expanda, cambiar a str + pattern.
+    slug: Literal["iva", "retefuente"]
     name: str = Field(..., min_length=1, max_length=100)
     behavior: TaxBehavior
     base_kind: TaxBaseKind = "subtotal"

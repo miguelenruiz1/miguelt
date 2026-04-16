@@ -5,9 +5,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import ORJSONResponse
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import ModuleUser, require_permission
+from app.core.errors import ConflictError
 from app.db.session import get_db_session
 from app.domain.schemas.category import CategoryCreate, CategoryOut, CategoryUpdate, PaginatedCategories
 from app.repositories.category_repo import CategoryRepository
@@ -66,7 +68,11 @@ async def create_category(
     audit = InventoryAuditService(db)
     data = body.model_dump()
     data["created_by"] = current_user.get("id")
-    cat = await repo.create(current_user["tenant_id"], data)
+    try:
+        async with db.begin_nested():
+            cat = await repo.create(current_user["tenant_id"], data)
+    except IntegrityError:
+        raise ConflictError(f"Ya existe una categoría con nombre '{data.get('name', '')}'")
     # Reload with parent
     cat = await repo.get_by_id(cat.id, current_user["tenant_id"])
     await audit.log(

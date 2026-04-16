@@ -22,7 +22,7 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
 
 function fmtDate(iso?: string | null) {
   if (!iso) return '--'
-  return new Date(iso).toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 // ---------------------------------------------------------------------------

@@ -5,9 +5,10 @@ import uuid
 from decimal import Decimal, ROUND_HALF_UP
 
 from sqlalchemy import select, func, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import NotFoundError, ValidationError
+from app.core.errors import ConflictError, NotFoundError, ValidationError
 from app.db.models.uom import UnitOfMeasure, UoMConversion
 
 
@@ -565,9 +566,14 @@ class UoMService:
         return list(result.scalars().all())
 
     async def create_conversion(self, tenant_id: str, data: dict) -> UoMConversion:
-        conv = UoMConversion(id=str(uuid.uuid4()), tenant_id=tenant_id, **data)
-        self.db.add(conv)
-        await self.db.flush()
+        # SAVEPOINT so a UNIQUE violation doesn't poison the outer tx (CLAUDE.md #2).
+        try:
+            async with self.db.begin_nested():
+                conv = UoMConversion(id=str(uuid.uuid4()), tenant_id=tenant_id, **data)
+                self.db.add(conv)
+                await self.db.flush()
+        except IntegrityError:
+            raise ConflictError("Ya existe una conversión entre estas unidades de medida")
         await self.db.refresh(conv)
         return conv
 

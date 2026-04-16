@@ -297,7 +297,7 @@ export function TrackingBoardPage() {
                       {asset.product_type}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {qty != null ? `${Number(qty).toLocaleString('es')} ${(meta?.weight_unit as string) ?? 'kg'}` : '—'}
+                      {qty != null ? `${Number(qty).toLocaleString('es-CO')} ${(meta?.weight_unit as string) ?? 'kg'}` : '—'}
                     </TableCell>
                     <TableCell>
                       <DynamicStateBadge state={asset.state} stateMap={stateMap} />

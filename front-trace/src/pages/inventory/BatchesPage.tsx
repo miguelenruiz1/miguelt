@@ -73,11 +73,11 @@ export function BatchesPage() {
                   <span className="text-sm font-bold text-foreground">{Number(b.quantity).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Fab: {b.manufacture_date ? new Date(b.manufacture_date).toLocaleDateString('es') : '—'}</span>
+                  <span>Fab: {b.manufacture_date ? new Date(b.manufacture_date).toLocaleDateString('es-CO') : '—'}</span>
                   <span>
                     Exp: {b.expiration_date ? (
                       <span className={cn('rounded-full px-2 py-0.5 font-semibold', expiryClass(b.expiration_date))}>
-                        {new Date(b.expiration_date).toLocaleDateString('es')}
+                        {new Date(b.expiration_date).toLocaleDateString('es-CO')}
                       </span>
                     ) : '—'}
                   </span>
@@ -110,12 +110,12 @@ export function BatchesPage() {
                   <td className="px-4 py-3 font-medium text-foreground">{productMap[b.entity_id] ?? b.entity_id.slice(0, 8)}</td>
                   <td className="px-4 py-3 font-bold text-foreground">{Number(b.quantity).toFixed(2)}</td>
                   <td className="px-4 py-3 text-muted-foreground text-xs">
-                    {b.manufacture_date ? new Date(b.manufacture_date).toLocaleDateString('es') : '—'}
+                    {b.manufacture_date ? new Date(b.manufacture_date).toLocaleDateString('es-CO') : '—'}
                   </td>
                   <td className="px-4 py-3">
                     {b.expiration_date ? (
                       <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', expiryClass(b.expiration_date))}>
-                        {new Date(b.expiration_date).toLocaleDateString('es')}
+                        {new Date(b.expiration_date).toLocaleDateString('es-CO')}
                       </span>
                     ) : <span className="text-slate-300 text-xs">—</span>}
                   </td>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   Shield, Plus, Save, Truck, Boxes, Factory, ShieldCheck, FileText, Sparkles,
-  Users, Eye, CreditCard, Settings, Webhook,
+  Users, Eye, CreditCard, Settings,
 } from 'lucide-react'
 import { useRoles, usePermissions, useSetRolePermissions, useCreateRole } from '@/hooks/useRoles'
 import type { Permission } from '@/types/auth'

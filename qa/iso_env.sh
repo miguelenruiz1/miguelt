@@ -1,0 +1,11 @@
+#!/bin/bash
+# Tenant isolation test env — 2026-04-14
+export GATEWAY="http://localhost:9000"
+
+export TENANT_A="iso-a-21f73e"
+export USER_A="f1c04cc2-aa94-413e-a0d8-67251b3ff2ee"
+export JWT_A="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmMWMwNGNjMi1hYTk0LTQxM2UtYTBkOC02NzI1MWIzZmYyZWUiLCJ0ZW5hbnRfaWQiOiJpc28tYS0yMWY3M2UiLCJ0eXBlIjoiYWNjZXNzIiwiaWF0IjoxNzc2MjE1MDQ3LCJleHAiOjE3NzYyNDM4NDd9.YC0phZWI9RZpisCj2eecIW7t94qsgGe2X_vPQWRVzMc"
+
+export TENANT_B="iso-b-8c7139"
+export USER_B="9ed32c13-bd39-4ac9-bd3e-ba3eba6b58fd"
+export JWT_B="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ZWQzMmMxMy1iZDM5LTRhYzktYmQzZS1iYTNlYmE2YjU4ZmQiLCJ0ZW5hbnRfaWQiOiJpc28tYi04YzcxMzkiLCJ0eXBlIjoiYWNjZXNzIiwiaWF0IjoxNzc2MjE1MDUwLCJleHAiOjE3NzYyNDM4NTB9.Z5exFXgAxHyDxivsSkyOYJFP6NZeMzptv_lE_bjadTk"

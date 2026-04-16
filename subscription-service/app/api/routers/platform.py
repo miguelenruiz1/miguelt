@@ -4,13 +4,14 @@ from __future__ import annotations
 from typing import Annotated
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser, get_http_client, get_redis
 from app.core.settings import get_settings
 from app.db.session import get_db_session
+from app.services.platform_audit import log_superuser_action
 from app.services.platform_service import PlatformService
 
 router = APIRouter(prefix="/api/v1/platform", tags=["platform"])
@@ -22,6 +23,14 @@ def _require_superuser(current_user: CurrentUser) -> dict:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Superuser access required",
         )
+    # FASE4: optional enforcement of 2FA-completed login.
+    settings = get_settings()
+    if getattr(settings, "REQUIRE_SUPERUSER_2FA", False):
+        if not current_user.get("2fa"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Superuser access requires 2FA-completed login",
+            )
     return current_user
 
 
@@ -127,11 +136,13 @@ async def platform_tenant_detail(
 async def onboard_tenant(
     body: OnboardTenantRequest,
     current_user: SuperUser,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
     svc: PlatformService = Depends(_svc),
     http_client: httpx.AsyncClient = Depends(get_http_client),
 ):
     try:
-        return await svc.onboard_tenant(
+        result = await svc.onboard_tenant(
             tenant_id=body.tenant_id,
             company_name=body.company_name,
             admin_email=body.admin_email,
@@ -144,6 +155,15 @@ async def onboard_tenant(
             performed_by=current_user.get("id") or current_user.get("email"),
             http_client=http_client,
         )
+        await log_superuser_action(
+            db, user=current_user, request=request,
+            action="platform.tenant.onboard",
+            target_tenant_id=body.tenant_id,
+            target_entity_type="tenant",
+            target_entity_id=body.tenant_id,
+            metadata={"plan_slug": body.plan_slug, "modules": body.modules},
+        )
+        return result
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
@@ -155,14 +175,24 @@ async def change_tenant_plan(
     tenant_id: str,
     body: ChangePlanRequest,
     current_user: SuperUser,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
     svc: PlatformService = Depends(_svc),
 ):
     try:
-        return await svc.change_tenant_plan(
+        result = await svc.change_tenant_plan(
             tenant_id=tenant_id,
             plan_slug=body.plan_slug,
             performed_by=current_user.get("id") or current_user.get("email"),
         )
+        await log_superuser_action(
+            db, user=current_user, request=request,
+            action="platform.tenant.change_plan",
+            target_tenant_id=tenant_id,
+            target_entity_type="subscription",
+            metadata={"plan_slug": body.plan_slug},
+        )
+        return result
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -173,14 +203,25 @@ async def toggle_tenant_module(
     module_slug: str,
     body: ToggleModuleRequest,
     current_user: SuperUser,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
     svc: PlatformService = Depends(_svc),
 ):
-    return await svc.toggle_tenant_module(
+    result = await svc.toggle_tenant_module(
         tenant_id=tenant_id,
         module_slug=module_slug,
         active=body.active,
         performed_by=current_user.get("id") or current_user.get("email"),
     )
+    await log_superuser_action(
+        db, user=current_user, request=request,
+        action="platform.tenant.toggle_module",
+        target_tenant_id=tenant_id,
+        target_entity_type="module",
+        target_entity_id=module_slug,
+        metadata={"active": body.active},
+    )
+    return result
 
 
 @router.post("/tenants/{tenant_id}/generate-invoice")
@@ -218,14 +259,24 @@ async def cancel_tenant_subscription(
     tenant_id: str,
     body: CancelRequest,
     current_user: SuperUser,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
     svc: PlatformService = Depends(_svc),
 ):
     try:
-        return await svc.cancel_tenant_subscription(
+        result = await svc.cancel_tenant_subscription(
             tenant_id=tenant_id,
             reason=body.reason,
             performed_by=current_user.get("id") or current_user.get("email"),
         )
+        await log_superuser_action(
+            db, user=current_user, request=request,
+            action="platform.tenant.cancel",
+            target_tenant_id=tenant_id,
+            target_entity_type="subscription",
+            metadata={"reason": body.reason},
+        )
+        return result
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -234,13 +285,22 @@ async def cancel_tenant_subscription(
 async def reactivate_tenant_subscription(
     tenant_id: str,
     current_user: SuperUser,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
     svc: PlatformService = Depends(_svc),
 ):
     try:
-        return await svc.reactivate_tenant_subscription(
+        result = await svc.reactivate_tenant_subscription(
             tenant_id=tenant_id,
             performed_by=current_user.get("id") or current_user.get("email"),
         )
+        await log_superuser_action(
+            db, user=current_user, request=request,
+            action="platform.tenant.reactivate",
+            target_tenant_id=tenant_id,
+            target_entity_type="subscription",
+        )
+        return result
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -297,3 +357,74 @@ async def check_expirations_endpoint(
     from app.services.expiration_service import check_expirations
     summary = await check_expirations(db)
     return {"status": "ok", **summary}
+
+
+# ── Platform audit log (FASE4) ───────────────────────────────────────────────
+
+@router.get("/audit")
+async def list_platform_audit(
+    _: SuperUser,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    superuser_id: str | None = Query(None),
+    action: str | None = Query(None),
+    tenant_id: str | None = Query(None),
+    date_from: str | None = Query(None, description="ISO8601 date/time"),
+    date_to: str | None = Query(None, description="ISO8601 date/time"),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+) -> dict:
+    from datetime import datetime
+    from sqlalchemy import select, func as sa_func
+    from app.db.models import PlatformAuditLog
+
+    stmt = select(PlatformAuditLog)
+    count_stmt = select(sa_func.count()).select_from(PlatformAuditLog)
+
+    conds = []
+    if superuser_id:
+        conds.append(PlatformAuditLog.superuser_id == superuser_id)
+    if action:
+        conds.append(PlatformAuditLog.action == action)
+    if tenant_id:
+        conds.append(PlatformAuditLog.target_tenant_id == tenant_id)
+    if date_from:
+        try:
+            conds.append(PlatformAuditLog.timestamp >= datetime.fromisoformat(date_from))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_from (ISO8601 required)")
+    if date_to:
+        try:
+            conds.append(PlatformAuditLog.timestamp <= datetime.fromisoformat(date_to))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_to (ISO8601 required)")
+
+    if conds:
+        stmt = stmt.where(*conds)
+        count_stmt = count_stmt.where(*conds)
+
+    stmt = stmt.order_by(PlatformAuditLog.timestamp.desc()).offset(offset).limit(limit)
+    total = (await db.execute(count_stmt)).scalar_one()
+    rows = (await db.execute(stmt)).scalars().all()
+
+    return {
+        "total": total,
+        "offset": offset,
+        "limit": limit,
+        "items": [
+            {
+                "id": r.id,
+                "timestamp": r.timestamp.isoformat() if r.timestamp else None,
+                "superuser_id": r.superuser_id,
+                "superuser_email": r.superuser_email,
+                "action": r.action,
+                "target_tenant_id": r.target_tenant_id,
+                "target_entity_type": r.target_entity_type,
+                "target_entity_id": r.target_entity_id,
+                "metadata": r.event_metadata,
+                "ip_address": r.ip_address,
+                "user_agent": r.user_agent,
+                "correlation_id": r.correlation_id,
+            }
+            for r in rows
+        ],
+    }

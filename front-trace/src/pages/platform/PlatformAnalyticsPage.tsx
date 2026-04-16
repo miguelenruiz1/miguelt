@@ -110,7 +110,7 @@ export function PlatformAnalyticsPage() {
         {/* Status pie */}
         <div className="bg-card rounded-2xl border border-border/60 p-6 ">
           <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-primary" /> Distribucion por Estado
+            <Building2 className="h-4 w-4 text-primary" /> Distribución por Estado
           </h3>
           {pieData.length > 0 ? (
             <div className="flex items-center gap-6">
@@ -142,7 +142,7 @@ export function PlatformAnalyticsPage() {
         {/* Module adoption */}
         <div className="bg-card rounded-2xl border border-border/60 p-6 ">
           <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-            <Layers className="h-4 w-4 text-orange-500" /> Adopcion de Modulos
+            <Layers className="h-4 w-4 text-orange-500" /> Adopción de Módulos
           </h3>
           {data.module_adoption.length > 0 ? (
             <div className="space-y-4">
@@ -197,7 +197,7 @@ export function PlatformAnalyticsPage() {
                     </Link>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {ev.created_at ? new Date(ev.created_at).toLocaleString('es') : ''}
+                    {ev.created_at ? new Date(ev.created_at).toLocaleString('es-CO') : ''}
                     {ev.performed_by ? ` - por ${ev.performed_by}` : ''}
                   </span>
                 </div>

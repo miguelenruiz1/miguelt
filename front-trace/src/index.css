@@ -47,14 +47,23 @@
     --chart-4: #6ee7b7;
     --chart-5: #a7f3d0;
 
-    /* Sidebar — dark premium (readable in daylight, contrasts with white app) */
-    --sidebar: #1A1F27;
-    --sidebar-foreground: #94A3B8;
+    /* Sidebar — dark premium, WCAG AA/AAA en luz ambiente fuerte + MacBook brillo 100%.
+       No usar opacity — modular contraste solo vía colores sólidos. */
+    --sidebar: #1A1F27;                        /* bg (keep) */
+    --sidebar-foreground: #CBD5E1;             /* idle text  9.8:1 (was #94A3B8 6.6:1) */
+    --sidebar-foreground-strong: #F8FAFC;      /* active text 17:1 */
+    --sidebar-muted: #94A3B8;                  /* section labels / metadata 6.6:1 — ya NO con opacity */
+    --sidebar-item-hover: #252B35;             /* hover bg sólido (was bg-white/0.04) */
+    --sidebar-item-active: #2E3744;            /* active bg sólido (was bg-white/0.06) */
+    --sidebar-icon-idle: #94A3B8;              /* sólido, sin opacity */
+    --sidebar-icon-active: #00E87A;            /* accent Trace */
+    --sidebar-border: #2A303A;                 /* sólido (was rgba/0.08) */
+    --sidebar-divider: #252B35;                /* sutil pero visible */
+
     --sidebar-primary: #00E87A;
     --sidebar-primary-foreground: #000000;
     --sidebar-accent: #252B35;
     --sidebar-accent-foreground: #F0F4F8;
-    --sidebar-border: rgba(255,255,255,0.08);
     --sidebar-ring: #00C264;
   }
 

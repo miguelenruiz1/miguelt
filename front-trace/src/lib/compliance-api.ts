@@ -194,6 +194,8 @@ export const complianceApi = {
       asset_id?: string
       status?: string
       commodity_type?: string
+      declaration_status?: string
+      has_declaration?: boolean
     }) =>
       request<ComplianceRecord[]>(`/api/v1/compliance/records/${qs(params)}`),
 
@@ -249,6 +251,9 @@ export const complianceApi = {
 
     submitTraces: (id: string) =>
       request<any>(`/api/v1/compliance/records/${id}/submit-traces`, { method: 'POST' }),
+
+    ddsStatus: (id: string) =>
+      request<any>(`/api/v1/compliance/records/${id}/dds-status`),
 
     documents: (id: string) =>
       request<DocumentLink[]>(`/api/v1/compliance/records/${id}/documents`),
@@ -317,6 +322,31 @@ export const complianceApi = {
         method: 'POST',
         body: JSON.stringify({ reason }),
       }),
+
+    /**
+     * Download the PDF. Uses authFetch so the bearer token is sent, then
+     * triggers a browser download via a temporary anchor. The backend
+     * resolves the real file location (local or S3/GCS) behind the
+     * `/certificates/{id}/download` endpoint.
+     */
+    async download(id: string, filename?: string): Promise<void> {
+      const res = await authFetch(`${BASE}/api/v1/compliance/certificates/${id}/download`, {
+        method: 'GET',
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => null)
+        throw new Error(extractErrorMessage(err, res.statusText))
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename ?? `${id}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    },
   },
 
   // ── Risk Assessments (EUDR Art. 10-11) ───────────────────────────────────

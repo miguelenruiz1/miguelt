@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>DDS validada — TRACES NT</title>
+</head>
+<body style="font-family:Arial,Helvetica,sans-serif;background:#f5f7fa;padding:0;margin:0;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;border:1px solid #e1e8ed;overflow:hidden;">
+          <tr>
+            <td style="background:#0b5d1e;color:#fff;padding:20px 24px;">
+              <h2 style="margin:0;font-size:18px;">Tracelog — Cumplimiento EUDR</h2>
+              <p style="margin:4px 0 0;font-size:13px;color:#d9efd9;">DDS validada por TRACES NT</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px;color:#1f2937;font-size:14px;line-height:1.55;">
+              <p style="margin:0 0 12px;">Hola {{recipient_name}},</p>
+
+              <p style="margin:0 0 12px;">
+                La Declaracion de Diligencia Debida (DDS) asociada al envio
+                <strong>{{commodity}}</strong> ha sido <strong>validada</strong>
+                por el sistema TRACES NT de la Comision Europea.
+              </p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;margin:16px 0;">
+                <tr>
+                  <td style="padding:12px 16px;font-size:13px;">
+                    <div style="margin-bottom:6px;"><span style="color:#64748b;">Referencia DDS:</span> <strong>{{reference_number}}</strong></div>
+                    <div style="margin-bottom:6px;"><span style="color:#64748b;">Commodity:</span> {{commodity}}</div>
+                    <div style="margin-bottom:6px;"><span style="color:#64748b;">Cantidad:</span> {{quantity}} kg</div>
+                    <div style="margin-bottom:6px;"><span style="color:#64748b;">Validado el:</span> {{validated_at}}</div>
+                    <div><span style="color:#64748b;">Pais de produccion:</span> {{country_of_production}}</div>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 12px;">
+                Puede consultar el detalle de la DDS en el portal oficial TRACES NT:
+              </p>
+              <p style="margin:0 0 20px;">
+                <a href="{{traces_url}}" style="background:#0b5d1e;color:#fff;text-decoration:none;padding:10px 20px;border-radius:4px;font-weight:600;font-size:13px;display:inline-block;">Ver DDS en TRACES NT</a>
+              </p>
+
+              <p style="margin:0 0 8px;color:#64748b;font-size:12px;">
+                La evidencia legal y los archivos GeoJSON asociados se conservan
+                en Tracelog durante 5 anos segun Art. 12 EUDR.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#f8fafc;padding:16px 24px;border-top:1px solid #e1e8ed;color:#64748b;font-size:11px;">
+              Este correo fue enviado automaticamente por Tracelog tras una verificacion
+              periodica con TRACES NT. Si usted no esperaba este mensaje, por favor ignorelo.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

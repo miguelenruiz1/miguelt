@@ -146,3 +146,9 @@ async def register_rate_limit(request: Request) -> None:
 async def password_reset_rate_limit(request: Request) -> None:
     """3 password reset requests per IP per hour."""
     await rate_limit(request, "pwreset", 3, 3600)
+
+
+async def twofa_rate_limit(request: Request) -> None:
+    """5 TOTP verify attempts per IP per minute — brute-force protection
+    (TOTP has ~1M possible codes, so 5/min is plenty for humans)."""
+    await rate_limit(request, "2fa", 5, 60)

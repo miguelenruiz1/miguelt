@@ -172,6 +172,8 @@ export function useRecords(params?: {
   asset_id?: string
   status?: string
   commodity_type?: string
+  declaration_status?: string
+  has_declaration?: boolean
 }) {
   return useQuery({
     queryKey: KEYS.recordList(params ?? {}),
@@ -359,6 +361,25 @@ export function useSubmitTraces() {
     onSuccess: (_data, recordId) => {
       qc.invalidateQueries({ queryKey: KEYS.record(recordId) })
     },
+  })
+}
+
+export function useDDSStatus(recordId: string, options?: { enabled?: boolean }) {
+  const qc = useQueryClient()
+  return useQuery({
+    queryKey: ['compliance', 'records', recordId, 'dds-status'] as const,
+    queryFn: async () => {
+      const data = await complianceApi.records.ddsStatus(recordId)
+      // If the backend flipped the declaration_status, the full record card
+      // higher in the tree is stale — invalidate it so the badge updates.
+      qc.invalidateQueries({ queryKey: KEYS.record(recordId) })
+      return data
+    },
+    enabled: Boolean(recordId) && (options?.enabled ?? true),
+    // Auto-refetch every 30s while still submitted; the hook itself doesn't
+    // know the status so we poll unconditionally when enabled. Callers can
+    // disable once status is terminal to stop the loop.
+    refetchInterval: 30_000,
   })
 }
 

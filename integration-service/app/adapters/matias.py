@@ -14,10 +14,38 @@ import httpx
 from app.adapters.base import BaseAdapter
 from app.core.errors import AdapterError
 
+import logging
+
 MATIAS_BASE_URL = "https://api-v2.matias-api.com/api/ubl2.1"
 
 # Colombia timezone (UTC-5)
 COL_TZ_OFFSET = timezone(timedelta(hours=-5))
+
+_log = logging.getLogger(__name__)
+
+# Colombia MVP — DIAN tax_id mapping por slug de categoría.
+# Solo IVA y Retefuente soportados en esta fase. Cuando se expanda el catálogo
+# (INC, ICA, ReteIVA, ReteICA), agregar slugs acá y en
+# inventory-service.tax_service.CO_ALLOWED_TAX_SLUGS.
+DIAN_TAX_ID_BY_SLUG: dict[str, int] = {
+    "iva":        1,
+    "retefuente": 6,
+}
+DEFAULT_DIAN_TAX_ID = 1  # fallback = IVA si el slug no está mapeado
+
+
+def _dian_tax_id_for_slug(slug: str | None) -> int:
+    """Map tax_category slug → DIAN tax_id. Logs warning on unknown slug."""
+    if not slug:
+        return DEFAULT_DIAN_TAX_ID
+    s = str(slug).strip().lower()
+    if s in DIAN_TAX_ID_BY_SLUG:
+        return DIAN_TAX_ID_BY_SLUG[s]
+    _log.warning(
+        "matias: slug de impuesto no mapeado '%s' — usando default DIAN tax_id=%s (IVA)",
+        s, DEFAULT_DIAN_TAX_ID,
+    )
+    return DEFAULT_DIAN_TAX_ID
 
 
 def _aggregate_tax_totals(invoice_lines: list[dict]) -> list[dict]:
@@ -36,7 +64,12 @@ def _aggregate_tax_totals(invoice_lines: list[dict]) -> list[dict]:
     for line in invoice_lines:
         for tax in line.get("tax_totals", []) or []:
             try:
-                tax_id = int(tax.get("tax_id", 1) or 1)
+                # Prefer explicit tax_id; fall back to slug→DIAN mapping.
+                raw_tax_id = tax.get("tax_id")
+                if raw_tax_id is None and tax.get("category_slug"):
+                    tax_id = _dian_tax_id_for_slug(tax.get("category_slug"))
+                else:
+                    tax_id = int(raw_tax_id or DEFAULT_DIAN_TAX_ID)
                 pct = float(tax.get("percent", "0") or 0)
                 tax_amount = float(tax.get("tax_amount", "0") or 0)
                 taxable = float(tax.get("taxable_amount", line.get("line_extension_amount", "0")) or 0)
@@ -69,7 +102,11 @@ def _aggregate_withholding_totals(invoice_lines: list[dict]) -> list[dict]:
     for line in invoice_lines:
         for w in line.get("withholding_totals", []) or []:
             try:
-                tax_id = int(w.get("tax_id", 6) or 6)
+                raw_tax_id = w.get("tax_id")
+                if raw_tax_id is None and w.get("category_slug"):
+                    tax_id = _dian_tax_id_for_slug(w.get("category_slug"))
+                else:
+                    tax_id = int(raw_tax_id or 6)
                 pct = float(w.get("percent", "0") or 0)
                 tax_amount = float(w.get("tax_amount", "0") or 0)
                 taxable = float(w.get("taxable_amount", line.get("line_extension_amount", "0")) or 0)

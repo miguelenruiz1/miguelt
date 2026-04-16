@@ -443,6 +443,8 @@ export type TaxBaseKind = 'subtotal' | 'subtotal_with_other_additions'
 export interface TaxCategory {
   id: string
   tenant_id: string
+  // Backend (Colombia MVP) solo acepta 'iva' | 'retefuente' al crear. Tipo
+  // queda como string para no romper lecturas de categorías históricas.
   slug: string
   name: string
   behavior: TaxBehavior
@@ -460,7 +462,7 @@ export interface TaxRate {
   id: string
   tenant_id: string
   name: string
-  // Legacy slug, kept for backwards compat. Prefer category info.
+  // Legacy slug, kept for backwards compat. Colombia MVP: 'iva' | 'retefuente'.
   tax_type: string
   category_id: string | null
   category: TaxCategory | null

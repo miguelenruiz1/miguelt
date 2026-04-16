@@ -10,7 +10,7 @@ function UsageKpi({ counter, label, icon: Icon, gradient }: { counter?: { curren
   if (!counter) return null
   const pct = counter.limit > 0 ? Math.min(100, (counter.current / counter.limit) * 100) : 0
   const barColor = pct >= 90 ? 'bg-red-300' : pct >= 70 ? 'bg-amber-300' : 'bg-card/40'
-  const limitLabel = counter.limit < 0 ? 'Ilimitado' : counter.limit === 0 ? '—' : counter.limit.toLocaleString('es')
+  const limitLabel = counter.limit < 0 ? 'Ilimitado' : counter.limit === 0 ? '—' : counter.limit.toLocaleString('es-CO')
 
   return (
     <div className={cn('relative rounded-2xl p-5 text-white overflow-hidden', gradient)}>
@@ -18,7 +18,7 @@ function UsageKpi({ counter, label, icon: Icon, gradient }: { counter?: { curren
         <Icon className="h-24 w-24" />
       </div>
       <p className="text-xs font-medium opacity-80 uppercase tracking-wider">{label}</p>
-      <p className="text-2xl font-extrabold mt-1">{counter.current.toLocaleString('es')}</p>
+      <p className="text-2xl font-extrabold mt-1">{counter.current.toLocaleString('es-CO')}</p>
       <p className="text-[11px] opacity-70 mt-0.5">de {limitLabel}</p>
       <div className="mt-2 h-1.5 w-full rounded-full bg-card/20 overflow-hidden">
         <div

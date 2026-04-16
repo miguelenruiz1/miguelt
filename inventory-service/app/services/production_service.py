@@ -649,12 +649,6 @@ class ProductionService:
                 "actual_end_date": now,
                 "completed_at": now,
             })
-            # Emit webhook
-            from app.clients.webhook_client import emit_event
-            await emit_event("production.run.completed", tenant_id, {
-                "run_id": run.id, "run_number": run.run_number,
-                "actual_output": float(actual_output), "total_cost": float(total_production),
-            })
 
         # ── Trace-service custody bridge (fire-and-forget) ─────────────────
         # Best-effort: notify trace-service that a production batch was
@@ -793,12 +787,6 @@ class ProductionService:
         await self.run_repo.update(run, {
             "status": "closed",
             "variance_amount": variance,
-        })
-
-        from app.clients.webhook_client import emit_event
-        await emit_event("production.run.closed", tenant_id, {
-            "run_id": run.id, "run_number": run.run_number,
-            "total_cost": float(total_cost), "variance": float(variance),
         })
 
         return await self.run_repo.get(tenant_id, run_id)

@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { Users as UserIcon, ChevronDown, UserX, UserPlus, UserCheck, X, AlertTriangle, MailPlus, RefreshCw, Plus } from 'lucide-react'
 import { useUsers, useAssignRole, useRemoveRole, useDeactivateUser, useReactivateUser, useInviteUser, useResendInvitation } from '@/hooks/useUsers'
 import { useRoles } from '@/hooks/useRoles'
@@ -70,28 +73,47 @@ function UserStatusBadge({ user }: { user: AuthUser }) {
   )
 }
 
+const inviteUserSchema = z.object({
+  email: z.string().email('Email inválido'),
+  full_name: z.string().min(1, 'Campo obligatorio').max(255),
+  role_ids: z.array(z.string()).min(1, 'Seleccioná al menos un rol'),
+})
+
+type InviteUserFormData = z.infer<typeof inviteUserSchema>
+
 function InviteUserModal({ onClose }: { onClose: () => void }) {
-  const [email, setEmail] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([])
-  const [error, setError] = useState('')
   const invite = useInviteUser()
   const { data: roles = [] } = useRoles()
+  const [serverError, setServerError] = useState('')
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isValid, isSubmitting },
+  } = useForm<InviteUserFormData>({
+    resolver: zodResolver(inviteUserSchema),
+    mode: 'onChange',
+    defaultValues: { email: '', full_name: '', role_ids: [] },
+  })
+
+  const selectedRoles = watch('role_ids') ?? []
 
   function toggleRole(roleId: string) {
-    setSelectedRoles((prev) =>
-      prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId]
-    )
+    const next = selectedRoles.includes(roleId)
+      ? selectedRoles.filter((id) => id !== roleId)
+      : [...selectedRoles, roleId]
+    setValue('role_ids', next, { shouldDirty: true, shouldValidate: true })
   }
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault()
-    setError('')
+  const onSubmit = async (data: InviteUserFormData) => {
+    setServerError('')
     try {
-      await invite.mutateAsync({ email, full_name: fullName, role_ids: selectedRoles })
+      await invite.mutateAsync({ email: data.email, full_name: data.full_name, role_ids: data.role_ids })
       onClose()
     } catch (err: any) {
-      setError(err?.message ?? 'Error al invitar usuario')
+      setServerError(err?.message ?? 'Error al invitar usuario')
     }
   }
 
@@ -104,27 +126,25 @@ function InviteUserModal({ onClose }: { onClose: () => void }) {
             <X className="h-5 w-5" />
           </button>
         </div>
-        <form onSubmit={submit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4" noValidate>
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Nombre completo</label>
             <input
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              {...register('full_name')}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="María García"
             />
+            {errors.full_name && <p className="mt-1 text-xs text-red-600">{errors.full_name.message}</p>}
           </div>
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Email</label>
             <input
-              required
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              {...register('email')}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="maria@empresa.com"
             />
+            {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
           </div>
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Roles</label>
@@ -147,6 +167,7 @@ function InviteUserModal({ onClose }: { onClose: () => void }) {
                 )
               })}
             </div>
+            {errors.role_ids && <p className="mt-1 text-xs text-red-600">{errors.role_ids.message as string}</p>}
           </div>
 
           <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-700">
@@ -154,7 +175,7 @@ function InviteUserModal({ onClose }: { onClose: () => void }) {
             Se enviará un correo de invitación con un enlace para activar la cuenta.
           </div>
 
-          {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+          {serverError && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{serverError}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
@@ -165,10 +186,10 @@ function InviteUserModal({ onClose }: { onClose: () => void }) {
             </button>
             <button
               type="submit"
-              disabled={invite.isPending}
+              disabled={!isValid || isSubmitting || invite.isPending}
               className="px-5 py-2 text-sm font-medium rounded-xl bg-primary text-white hover:bg-primary/90 disabled:opacity-50"
             >
-              {invite.isPending ? 'Enviando...' : 'Enviar invitación'}
+              {invite.isPending || isSubmitting ? 'Enviando...' : 'Enviar invitación'}
             </button>
           </div>
         </form>
@@ -285,7 +306,7 @@ export function UsersPage() {
                     ))}
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Creado: {new Date(user.created_at).toLocaleDateString('es')}</span>
+                    <span className="text-muted-foreground">Creado: {new Date(user.created_at).toLocaleDateString('es-CO')}</span>
                   </div>
                   <div className="flex items-center gap-3 pt-1 border-t border-border">
                     <RoleDropdown
@@ -365,7 +386,7 @@ export function UsersPage() {
                       <UserStatusBadge user={user} />
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">
-                      {new Date(user.created_at).toLocaleDateString('es')}
+                      {new Date(user.created_at).toLocaleDateString('es-CO')}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-3">

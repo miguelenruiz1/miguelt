@@ -13,6 +13,8 @@ import {
 import { useUserLookup } from '@/hooks/useUserLookup'
 import { VariantPicker } from '@/components/inventory/VariantPicker'
 import type { MovementType } from '@/types/inventory'
+import { SkeletonTable } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 const TYPE_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   purchase: { label: 'Entrada', icon: ArrowDownCircle, color: 'text-emerald-600 bg-emerald-50' },
@@ -383,7 +385,7 @@ function PendingTransfersSection({
                 )}
               </div>
               <span className="text-xs text-muted-foreground">
-                {new Date(mv.created_at).toLocaleDateString('es')}
+                {new Date(mv.created_at).toLocaleDateString('es-CO')}
               </span>
             </div>
             <button
@@ -464,22 +466,17 @@ export function MovementsPage() {
       <PendingTransfersSection productMap={productMap} warehouseMap={warehouseMap} />
 
       {/* Table */}
+      {isLoading && !data ? (
+        <SkeletonTable columns={6} rows={6} />
+      ) : (
       <div className="bg-card rounded-2xl border border-border  overflow-hidden">
-        {isLoading ? (
-          <div className="p-8 text-center text-muted-foreground">Cargando…</div>
-        ) : !data?.items?.length ? (
-          <div className="p-12 text-center">
-            <ArrowLeftRight className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-            <p className="text-sm font-medium text-foreground">No hay movimientos registrados</p>
-            <p className="text-xs text-muted-foreground mt-1">Registra ingresos, salidas o transferencias para llevar el control de stock.</p>
-            <button
-              type="button"
-              onClick={() => setShowCreate(true)}
-              className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              <Plus className="h-3.5 w-3.5" /> Nuevo movimiento
-            </button>
-          </div>
+        {!data?.items?.length ? (
+          <EmptyState
+            icon={ArrowLeftRight}
+            title="Aún no hay movimientos"
+            description="Registrá ingresos, salidas o traslados para llevar el control del stock en tiempo real."
+            action={{ label: 'Nuevo movimiento', onClick: () => setShowCreate(true), icon: Plus }}
+          />
         ) : (<>
           {/* Mobile cards */}
           <div className="space-y-3 p-4 md:hidden">
@@ -503,7 +500,7 @@ export function MovementsPage() {
                         {label}
                       </span>
                     )}
-                    <span className="text-xs text-muted-foreground">{new Date(mv.created_at).toLocaleDateString('es')}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(mv.created_at).toLocaleDateString('es-CO')}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-foreground">{productMap[mv.product_id] ?? mv.product_id.slice(0, 8) + '…'}</span>
@@ -595,7 +592,7 @@ export function MovementsPage() {
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">{mv.reference ?? mv.notes ?? '\u2014'}</td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">
-                      {new Date(mv.created_at).toLocaleDateString('es')}
+                      {new Date(mv.created_at).toLocaleDateString('es-CO')}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">{resolve(mv.performed_by)}</td>
                   </tr>
@@ -606,6 +603,7 @@ export function MovementsPage() {
           </div>
         </>)}
       </div>
+      )}
 
       {showCreate && <RegisterMovementModal onClose={() => setShowCreate(false)} />}
     </div>

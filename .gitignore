@@ -52,3 +52,11 @@ coverage.xml
 # Claude
 .claude/
 *.pdf
+
+# Seed artifacts (contain active JWTs and runtime dumps)
+qa/seed/token.txt
+qa/seed/_login.json
+qa/seed/*.jsonl
+qa/seed/seed_state.json
+qa/seed/seed_mega_state.json
+qa/seed/seed_mega_stdout.txt
