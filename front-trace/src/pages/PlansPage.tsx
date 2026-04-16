@@ -1,10 +1,32 @@
 import { useState } from 'react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { Package, Edit, Archive, Plus, CheckCircle2 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { usePlans, useCreatePlan, useUpdatePlan, useArchivePlan } from '@/hooks/usePlans'
 import { subscriptionApi } from '@/lib/subscription-api'
 import type { Plan, PlanCreate, PlanUpdate } from '@/types/subscription'
 import { cn } from '@/lib/utils'
+
+// ─── Zod schema ───────────────────────────────────────────────────────────────
+
+const planSchema = z.object({
+  name: z.string().min(1, 'Campo obligatorio').max(100),
+  slug: z.string().min(1, 'Campo obligatorio').regex(/^[a-z0-9-]+$/, 'Solo minúsculas, números y guiones'),
+  description: z.string().optional(),
+  price_monthly: z.coerce.number().min(0, 'No puede ser negativo'),
+  price_annual: z.union([z.coerce.number().min(0), z.literal('').transform(() => undefined), z.undefined(), z.null()]).optional(),
+  currency: z.enum(['COP', 'USD']).default('COP'),
+  max_users: z.coerce.number().int().min(1).default(3),
+  max_assets: z.coerce.number().int().min(0).default(100),
+  max_wallets: z.coerce.number().int().min(0).default(5),
+  sort_order: z.coerce.number().int().default(0),
+  modules: z.array(z.string()).default([]),
+  is_active: z.boolean().default(true),
+})
+
+type PlanFormData = z.infer<typeof planSchema>
 
 // ─── Plan Modal ───────────────────────────────────────────────────────────────
 
@@ -26,118 +48,130 @@ function PlanModal({
 
   const isEdit = !!plan
 
-  const [form, setForm] = useState({
-    name: plan?.name ?? '',
-    slug: plan?.slug ?? '',
-    description: plan?.description ?? '',
-    price_monthly: plan?.price_monthly ?? 0,
-    price_annual: plan?.price_annual ?? '',
-    max_users: plan?.max_users ?? 3,
-    max_assets: plan?.max_assets ?? 100,
-    max_wallets: plan?.max_wallets ?? 5,
-    modules: plan?.modules ?? ([] as string[]),
-    is_active: plan?.is_active ?? true,
-    sort_order: plan?.sort_order ?? 0,
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    setValue,
+    formState: { errors, isValid, isSubmitting },
+  } = useForm<PlanFormData>({
+    resolver: zodResolver(planSchema),
+    mode: 'onChange',
+    defaultValues: {
+      name: plan?.name ?? '',
+      slug: plan?.slug ?? '',
+      description: plan?.description ?? '',
+      price_monthly: plan?.price_monthly ?? 0,
+      price_annual: (plan?.price_annual ?? undefined) as number | undefined,
+      currency: 'COP',
+      max_users: plan?.max_users ?? 3,
+      max_assets: plan?.max_assets ?? 100,
+      max_wallets: plan?.max_wallets ?? 5,
+      sort_order: plan?.sort_order ?? 0,
+      modules: plan?.modules ?? [],
+      is_active: plan?.is_active ?? true,
+    },
   })
 
+  const nameValue = watch('name')
+  const slugValue = watch('slug')
+  const modulesValue = watch('modules') ?? []
+
   function toggleModule(mod: string) {
-    setForm(f => ({
-      ...f,
-      modules: f.modules.includes(mod)
-        ? f.modules.filter(m => m !== mod)
-        : [...f.modules, mod],
-    }))
+    const current = modulesValue
+    const next = current.includes(mod) ? current.filter(m => m !== mod) : [...current, mod]
+    setValue('modules', next, { shouldDirty: true, shouldValidate: true })
   }
 
-  // Auto-generate slug from name
+  // Auto-generate slug from name (only on create, if slug is empty or still matches previous slugified name)
   function handleNameChange(value: string) {
-    setForm(f => ({
-      ...f,
-      name: value,
-      ...(!isEdit && (!f.slug || f.slug === slugify(f.name)) ? { slug: slugify(value) } : {}),
-    }))
+    setValue('name', value, { shouldDirty: true, shouldValidate: true })
+    if (!isEdit && (!slugValue || slugValue === slugify(nameValue ?? ''))) {
+      setValue('slug', slugify(value), { shouldDirty: true, shouldValidate: true })
+    }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const data = {
-      ...form,
-      price_monthly: Number(form.price_monthly),
-      price_annual: form.price_annual !== '' ? Number(form.price_annual) : undefined,
-      max_users: Number(form.max_users),
-      max_assets: Number(form.max_assets),
-      max_wallets: Number(form.max_wallets),
-      sort_order: Number(form.sort_order),
+  const onSubmit = async (data: PlanFormData) => {
+    const payload = {
+      ...data,
+      price_annual: data.price_annual === undefined || data.price_annual === null
+        ? undefined
+        : Number(data.price_annual),
     }
     if (isEdit) {
-      await updateMut.mutateAsync({ id: plan!.id, data: data as PlanUpdate })
+      await updateMut.mutateAsync({ id: plan!.id, data: payload as unknown as PlanUpdate })
     } else {
-      await createMut.mutateAsync(data as PlanCreate)
+      await createMut.mutateAsync(payload as unknown as PlanCreate)
     }
     onClose()
   }
 
-  const isPending = createMut.isPending || updateMut.isPending
+  const isPending = createMut.isPending || updateMut.isPending || isSubmitting
   const inputCls = 'w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring'
+  const errCls = 'mt-1 text-xs text-red-600'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-bold text-foreground mb-4">{isEdit ? 'Editar Plan' : 'Nuevo Plan'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Nombre</label>
-              <input required value={form.name} onChange={e => handleNameChange(e.target.value)}
+              <input
+                value={nameValue ?? ''}
+                onChange={e => handleNameChange(e.target.value)}
                 placeholder="Ej: Profesional"
-                className={inputCls} />
+                className={inputCls}
+              />
+              {errors.name && <p className={errCls}>{errors.name.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Slug</label>
-              <input required value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))}
+              <input
+                {...register('slug')}
                 disabled={isEdit}
-                className={cn(inputCls, 'font-mono', isEdit && 'bg-muted text-muted-foreground')} />
+                className={cn(inputCls, 'font-mono', isEdit && 'bg-muted text-muted-foreground')}
+              />
+              {errors.slug && <p className={errCls}>{errors.slug.message}</p>}
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Descripción</label>
-            <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              placeholder="Descripción breve del plan"
-              className={inputCls} />
+            <input {...register('description')} placeholder="Descripción breve del plan" className={inputCls} />
+            {errors.description && <p className={errCls}>{errors.description.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Precio/mes ($)</label>
-              <input type="number" step="0.01" value={form.price_monthly}
-                onChange={e => setForm(f => ({ ...f, price_monthly: Number(e.target.value) }))}
-                className={inputCls} />
+              <input type="number" step="0.01" {...register('price_monthly')} className={inputCls} />
+              {errors.price_monthly && <p className={errCls}>{errors.price_monthly.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Precio/año ($)</label>
-              <input type="number" step="0.01" value={form.price_annual}
-                onChange={e => setForm(f => ({ ...f, price_annual: e.target.value }))}
-                placeholder="Opcional"
-                className={inputCls} />
+              <input type="number" step="0.01" {...register('price_annual')} placeholder="Opcional" className={inputCls} />
+              {errors.price_annual && <p className={errCls}>{errors.price_annual.message as string}</p>}
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Max usuarios</label>
-              <input type="number" value={form.max_users} onChange={e => setForm(f => ({ ...f, max_users: Number(e.target.value) }))}
-                className={inputCls} />
+              <input type="number" {...register('max_users')} className={inputCls} />
+              {errors.max_users && <p className={errCls}>{errors.max_users.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Max activos</label>
-              <input type="number" value={form.max_assets} onChange={e => setForm(f => ({ ...f, max_assets: Number(e.target.value) }))}
-                className={inputCls} />
+              <input type="number" {...register('max_assets')} className={inputCls} />
+              {errors.max_assets && <p className={errCls}>{errors.max_assets.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Max wallets</label>
-              <input type="number" value={form.max_wallets} onChange={e => setForm(f => ({ ...f, max_wallets: Number(e.target.value) }))}
-                className={inputCls} />
+              <input type="number" {...register('max_wallets')} className={inputCls} />
+              {errors.max_wallets && <p className={errCls}>{errors.max_wallets.message}</p>}
             </div>
           </div>
 
@@ -146,7 +180,7 @@ function PlanModal({
             <label className="block text-sm font-medium text-foreground mb-2">Módulos incluidos</label>
             <div className="grid grid-cols-2 gap-2">
               {catalog.map(mod => {
-                const selected = form.modules.includes(mod.slug)
+                const selected = modulesValue.includes(mod.slug)
                 return (
                   <button
                     key={mod.slug}
@@ -179,19 +213,29 @@ function PlanModal({
           </div>
 
           <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="is_active"
-              checked={form.is_active}
-              onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))}
-              className="rounded"
+            <Controller
+              control={control}
+              name="is_active"
+              render={({ field }) => (
+                <input
+                  type="checkbox"
+                  id="is_active"
+                  checked={!!field.value}
+                  onChange={e => field.onChange(e.target.checked)}
+                  className="rounded"
+                />
+              )}
             />
             <label htmlFor="is_active" className="text-sm font-medium text-foreground">Plan activo</label>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl px-4 py-2 text-sm text-muted-foreground hover:bg-secondary">Cancelar</button>
-            <button type="submit" disabled={isPending} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={!isValid || isPending}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
+            >
               {isPending ? 'Guardando...' : isEdit ? 'Guardar' : 'Crear'}
             </button>
           </div>

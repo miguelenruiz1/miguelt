@@ -59,7 +59,7 @@ const invoiceStatusLabel: Record<InvoiceStatus, string> = {
 function UsageBar({ counter, label, icon: Icon }: { counter?: UsageCounter; label: string; icon: React.ElementType }) {
   if (!counter) return null
   const pct = usagePercent(counter)
-  const limitLabel = counter.limit < 0 ? 'Ilimitado' : counter.limit.toLocaleString('es')
+  const limitLabel = counter.limit < 0 ? 'Ilimitado' : counter.limit.toLocaleString('es-CO')
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -69,7 +69,7 @@ function UsageBar({ counter, label, icon: Icon }: { counter?: UsageCounter; labe
           <span>{counter.label ?? label}</span>
         </div>
         <span className={cn('text-sm font-semibold', usageTextColor(pct))}>
-          {counter.current.toLocaleString('es')} / {limitLabel}
+          {counter.current.toLocaleString('es-CO')} / {limitLabel}
         </span>
       </div>
       <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
@@ -218,7 +218,7 @@ function PlanCard({
         </li>
         <li className="flex items-center gap-2">
           <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-          {plan.max_assets < 0 ? 'Assets ilimitados' : `Hasta ${plan.max_assets.toLocaleString('es')} assets/mes`}
+          {plan.max_assets < 0 ? 'Assets ilimitados' : `Hasta ${plan.max_assets.toLocaleString('es-CO')} assets/mes`}
         </li>
         <li className="flex items-center gap-2">
           <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />

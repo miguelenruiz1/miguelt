@@ -295,7 +295,7 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-muted rounded-xl p-3">
               <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Fecha del evento</p>
-              <p className="text-sm font-medium text-foreground">{new Date(event.occurred_at).toLocaleString('es')}</p>
+              <p className="text-sm font-medium text-foreground">{new Date(event.occurred_at).toLocaleString('es-CO')}</p>
             </div>
             <div className="bg-muted rounded-xl p-3">
               <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Reportado por</p>
@@ -304,7 +304,7 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
             {event.resolved_at && (
               <div className="bg-emerald-50 rounded-xl p-3 col-span-2">
                 <p className="text-[10px] font-bold text-emerald-500 uppercase mb-1">Resuelto</p>
-                <p className="text-sm font-medium text-emerald-700">{new Date(event.resolved_at).toLocaleString('es')}</p>
+                <p className="text-sm font-medium text-emerald-700">{new Date(event.resolved_at).toLocaleString('es-CO')}</p>
               </div>
             )}
           </div>
@@ -434,7 +434,7 @@ function EventDrawer({ eventId, onClose }: { eventId: string; onClose: () => voi
                           <div className="flex items-center gap-3 mt-1.5 text-[10px] text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {new Date(log.created_at).toLocaleString('es')}
+                              {new Date(log.created_at).toLocaleString('es-CO')}
                             </span>
                             {log.changed_by && (
                               <span className="flex items-center gap-1">
@@ -573,7 +573,7 @@ export function EventsPage() {
                     {st && <span className="rounded-full px-2 py-0.5 text-xs font-semibold text-white" style={{ backgroundColor: st.color ?? '#6366f1' }}>{st.name}</span>}
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{new Date(ev.occurred_at).toLocaleDateString('es')}</span>
+                    <span>{new Date(ev.occurred_at).toLocaleDateString('es-CO')}</span>
                     <span>{resolve(ev.reported_by)}</span>
                   </div>
                 </div>
@@ -607,7 +607,7 @@ export function EventsPage() {
                       {st && <span className="rounded-full px-2 py-0.5 text-xs font-semibold text-white" style={{ backgroundColor: st.color ?? '#6366f1' }}>{st.name}</span>}
                     </td>
                     <td className="px-4 py-3 font-medium text-foreground">{ev.title}</td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(ev.occurred_at).toLocaleDateString('es')}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(ev.occurred_at).toLocaleDateString('es-CO')}</td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">{resolve(ev.reported_by)}</td>
                     <td className="px-4 py-3">
                       <Eye className="h-4 w-4 text-muted-foreground hover:text-primary" />

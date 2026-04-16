@@ -51,14 +51,38 @@ async def process_successful_payment(
     sub_repo = SubscriptionRepository(db)
     event_repo = EventRepository(db)
 
-    invoice = await invoice_repo.get_by_id(invoice_id)
+    invoice = None
+    if invoice_id:
+        invoice = await invoice_repo.get_by_id(invoice_id)
+
     if not invoice:
-        log.warning("webhook_invoice_not_found", invoice_id=invoice_id, gateway=gateway_slug)
+        # Try match by gateway_tx_id (idempotent replay against existing paid invoice)
+        from sqlalchemy import select
+        from app.db.models import Invoice
+        res = await db.execute(
+            select(Invoice).where(Invoice.gateway_tx_id == gateway_tx_id)
+        )
+        invoice = res.scalar_one_or_none()
+
+    if not invoice:
+        # Record in unmatched ledger for manual reconciliation
+        from app.repositories.unmatched_payment_repo import UnmatchedPaymentRepository
+        um_repo = UnmatchedPaymentRepository(db)
+        await um_repo.record(
+            gateway_slug=gateway_slug,
+            gateway_tx_id=gateway_tx_id,
+            reference=invoice_id,
+            amount=None,
+            currency=None,
+            raw_payload=None,
+            notes="Webhook received but no matching invoice",
+        )
+        log.warning("webhook_invoice_not_found", invoice_id=invoice_id, gateway=gateway_slug, tx_id=gateway_tx_id)
         return
 
     # Idempotency: already paid with same gateway_tx_id
     if invoice.status == InvoiceStatus.paid:
-        log.info("webhook_invoice_already_paid", invoice_id=invoice_id, gateway_tx_id=gateway_tx_id)
+        log.info("webhook_invoice_already_paid", invoice_id=invoice.id, gateway_tx_id=gateway_tx_id)
         return
 
     # Mark invoice paid
@@ -73,6 +97,7 @@ async def process_successful_payment(
 
     # Activate / renew subscription
     sub = await sub_repo.get_by_id(invoice.subscription_id)
+    was_past_due = bool(sub and sub.status == SubscriptionStatus.past_due)
     if sub:
         new_period_start = now
         new_period_end = now + timedelta(days=30)
@@ -81,6 +106,8 @@ async def process_successful_payment(
             "current_period_start": new_period_start,
             "current_period_end": new_period_end,
         })
+        if was_past_due:
+            log.info("subscription_reactivated_from_past_due", tenant_id=sub.tenant_id)
 
         await event_repo.create(
             subscription_id=sub.id,
@@ -130,6 +157,62 @@ async def process_successful_payment(
             )
         except httpx.RequestError as exc:
             log.warning("email_notification_failed", tenant_id=sub.tenant_id, error=str(exc))
+
+        # FASE2: Send receipt PDF via Resend (best effort)
+        try:
+            from decimal import Decimal as _Dec
+            from app.services.email_client import get_email_client
+            from app.services.invoice_pdf_service import (
+                _fmt_money,
+                render_invoice_pdf,
+                render_jinja,
+            )
+
+            # Resolve owner email via user-service S2S
+            owner_email = None
+            owner_name = None
+            try:
+                resp = await http_client.get(
+                    f"{settings.USER_SERVICE_URL}/api/v1/internal/tenant-owner-email/{sub.tenant_id}",
+                    headers={"X-Service-Token": settings.S2S_SERVICE_TOKEN},
+                    timeout=5.0,
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    owner_email = data.get("email")
+                    owner_name = data.get("full_name") or owner_email
+            except httpx.RequestError:
+                pass
+
+            if owner_email:
+                try:
+                    pdf_bytes = await render_invoice_pdf(db, invoice.id, app_url=settings.APP_URL)
+                except Exception:
+                    pdf_bytes = None
+                total_fmt = _fmt_money(_Dec(str(invoice.amount or 0)), invoice.currency or "COP")
+                html = render_jinja(
+                    "receipt.html",
+                    customer_name=owner_name or owner_email,
+                    invoice={
+                        "invoice_number": invoice.invoice_number,
+                        "total_fmt": total_fmt,
+                        "currency": invoice.currency or "COP",
+                    },
+                    gateway_tx_id=gateway_tx_id,
+                )
+                client = get_email_client()
+                await client.send(
+                    tenant_id=sub.tenant_id,
+                    to=owner_email,
+                    subject=f"Recibo de pago — {invoice.invoice_number}",
+                    html_body=html,
+                    attachments=(
+                        [{"filename": f"{invoice.invoice_number}.pdf", "content": pdf_bytes}]
+                        if pdf_bytes else []
+                    ),
+                )
+        except Exception:
+            log.exception("receipt_email_failed", invoice_id=invoice.id)
 
     log.info(
         "payment_processed",

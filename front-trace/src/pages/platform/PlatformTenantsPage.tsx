@@ -1,17 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Building2, Search, ChevronRight, Layers, CreditCard, Calendar,
+  Building2, Search, ChevronRight, Layers, CreditCard, Calendar, UserPlus,
 } from 'lucide-react'
 import { usePlatformTenants } from '@/hooks/usePlatform'
-
-const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> = {
-  active:   { bg: 'bg-green-100', text: 'text-green-700', label: 'Activa' },
-  trialing: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Prueba' },
-  past_due: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Mora' },
-  canceled: { bg: 'bg-red-100', text: 'text-red-700', label: 'Cancelada' },
-  expired:  { bg: 'bg-secondary', text: 'text-muted-foreground', label: 'Expirada' },
-}
+import { SUBSCRIPTION_STATUS_BADGE as STATUS_BADGE } from '@/lib/status-badges'
+import { SkeletonTable } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 const MODULE_COLORS: Record<string, string> = {
   logistics: 'bg-primary/15 text-primary',
@@ -35,11 +30,19 @@ export function PlatformTenantsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Empresas Registradas</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Todas las empresas inscritas en la plataforma con sus suscripciones y modulos.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Empresas Registradas</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Todas las empresas inscritas en la plataforma con sus suscripciones y módulos.
+          </p>
+        </div>
+        <Link
+          to="/platform/onboard"
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-xl transition shrink-0"
+        >
+          <UserPlus className="h-4 w-4" /> Nueva empresa
+        </Link>
       </div>
 
       {/* Filters */}
@@ -72,16 +75,19 @@ export function PlatformTenantsPage() {
       </div>
 
       {/* Table */}
+      {isLoading && !data ? (
+        <SkeletonTable columns={6} rows={6} />
+      ) : (
       <div className="bg-card rounded-2xl border border-border/60  overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-40">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-          </div>
-        ) : !data?.items.length ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Building2 className="h-10 w-10 mx-auto mb-3 opacity-40" />
-            <p className="text-sm">No se encontraron empresas</p>
-          </div>
+        {!data?.items.length ? (
+          <EmptyState
+            icon={Building2}
+            title={search || statusFilter ? 'Sin resultados' : 'Aún no hay empresas registradas'}
+            description={search || statusFilter
+              ? 'Probá ajustar los filtros de búsqueda o el estado.'
+              : 'Cuando registres una empresa, aparecerá acá con su plan, módulos e ingresos.'}
+            action={!search && !statusFilter ? { label: 'Nueva empresa', to: '/platform/onboard', icon: UserPlus } : undefined}
+          />
         ) : (
           <>
           {/* Mobile cards */}
@@ -111,7 +117,7 @@ export function PlatformTenantsPage() {
                     <span className="font-medium text-foreground">{t.plan.name} <span className="text-muted-foreground">${t.plan.price_monthly}/mes</span></span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Modulos</span>
+                    <span className="text-muted-foreground">Módulos</span>
                     <div className="flex flex-wrap gap-1 justify-end">
                       {t.active_modules.length > 0 ? t.active_modules.map(m => (
                         <span key={m} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${MODULE_COLORS[m] ?? 'bg-secondary text-muted-foreground'}`}>
@@ -134,7 +140,7 @@ export function PlatformTenantsPage() {
                       <span className="text-muted-foreground">Registro</span>
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Calendar className="h-3 w-3" />
-                        {new Date(t.created_at).toLocaleDateString('es')}
+                        {new Date(t.created_at).toLocaleDateString('es-CO')}
                       </div>
                     </div>
                   )}
@@ -151,7 +157,7 @@ export function PlatformTenantsPage() {
                   <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Tenant</th>
                   <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Plan</th>
                   <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Estado</th>
-                  <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Modulos</th>
+                  <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Módulos</th>
                   <th className="text-right px-5 py-3 font-semibold text-muted-foreground">Ingresos</th>
                   <th className="text-left px-5 py-3 font-semibold text-muted-foreground">Registro</th>
                   <th className="px-3 py-3" />
@@ -203,7 +209,7 @@ export function PlatformTenantsPage() {
                         {t.created_at && (
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3" />
-                            {new Date(t.created_at).toLocaleDateString('es')}
+                            {new Date(t.created_at).toLocaleDateString('es-CO')}
                           </div>
                         )}
                       </td>
@@ -224,6 +230,7 @@ export function PlatformTenantsPage() {
           </>
         )}
       </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -236,7 +243,7 @@ export function PlatformTenantsPage() {
             Anterior
           </button>
           <span className="text-sm text-muted-foreground">
-            Pagina {page + 1} de {totalPages}
+            Página {page + 1} de {totalPages}
           </span>
           <button
             onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}

@@ -18,9 +18,13 @@ from app.api.deps import (
     login_rate_limit,
     password_reset_rate_limit,
     register_rate_limit,
+    twofa_rate_limit,
 )
+from app.core.password_policy import validate_password
 from app.core.security import (
+    create_2fa_challenge_token,
     create_access_token,
+    create_access_token_2fa,
     create_refresh_token,
     decode_token,
 )
@@ -34,13 +38,21 @@ from app.domain.schemas import (
     LoginResponse,
     RegisterRequest,
     ResetPasswordRequest,
+    SessionResponse,
     TokenRefreshRequest,
+    TwoFAChallengeResponse,
+    TwoFADisableRequest,
+    TwoFALoginRequest,
+    TwoFASetupResponse,
+    TwoFAVerifyRequest,
+    TwoFAVerifyResponse,
     UpdateProfileRequest,
     UserResponse,
     RoleSlim,
 )
 from app.repositories.user_repo import UserRepository
 from app.services.auth_service import AuthService
+from app.services.totp_service import TOTPService
 from app.services.user_service import UserService
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -98,6 +110,9 @@ async def register(
     suffix = secrets.token_hex(3)
     tenant_id = f"{slug}-{suffix}"
 
+    # Password policy (FASE4): enforce strong password on register.
+    validate_password(body.password)
+
     svc = AuthService(db)
     user = await svc.register(
         email=body.email,
@@ -112,43 +127,57 @@ async def register(
     return await _build_user_response(user, db)
 
 
-@router.post("/login", response_model=LoginResponse)
-async def login(
-    body: LoginRequest,
+async def _finish_login(
+    user,
+    db: AsyncSession,
+    redis: aioredis.Redis,
     request: Request,
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-    redis: Annotated[aioredis.Redis, Depends(get_redis)],
-    tenant_id: Annotated[str, Depends(get_tenant_id)],
-    _rl: Annotated[None, Depends(login_rate_limit)] = None,
+    *,
+    twofa_completed: bool = False,
 ) -> LoginResponse:
-    svc = AuthService(db)
-    # Pass tenant_id from X-Tenant-Id header so users with the same email
-    # in different tenants can both log in correctly. If no header is given
-    # (legacy clients), authenticate falls back to the legacy single-match lookup.
-    scope_tid = tenant_id if tenant_id and tenant_id != "default" else None
-    user = await svc.authenticate(body.email, body.password, tenant_id=scope_tid)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    """Shared helper: issue tokens + register session + audit."""
+    from app.db.models import UserSession
+    import hashlib
 
-    # Sync permissions/roles for this tenant (picks up newly added permissions)
+    svc = AuthService(db)
     await svc._ensure_seeded(user.tenant_id)
     await db.flush()
 
-    access_token = create_access_token(user.id, user.tenant_id)
+    access_token = (
+        create_access_token_2fa(user.id, user.tenant_id)
+        if twofa_completed
+        else create_access_token(user.id, user.tenant_id)
+    )
     refresh_token, jti = create_refresh_token(user.id, user.tenant_id)
 
     settings = get_settings()
     ttl = settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
     await redis.setex(f"refresh:{user.id}:{jti}", ttl, "1")
 
+    # Session tracking
+    ua = request.headers.get("User-Agent", "")
+    fp = hashlib.sha256(ua.encode("utf-8")).hexdigest()[:32] if ua else None
+    try:
+        async with db.begin_nested():
+            db.add(UserSession(
+                user_id=user.id,
+                tenant_id=user.tenant_id,
+                refresh_jti=jti,
+                device_fingerprint=fp,
+                user_agent=ua[:500] if ua else None,
+                ip_address=_ip(request),
+            ))
+    except Exception:
+        pass  # session tracking is best-effort
+
     await svc.audit(
-        action="user.login",
+        action="user.login_2fa" if twofa_completed else "user.login",
         tenant_id=user.tenant_id,
         user=user,
         resource_type="user",
         resource_id=user.id,
         ip_address=_ip(request),
-        user_agent=request.headers.get("User-Agent"),
+        user_agent=ua,
     )
 
     user_resp = await _build_user_response(user, db)
@@ -158,6 +187,69 @@ async def login(
         user=user_resp,
         permissions=user_resp.permissions,
     )
+
+
+@router.post("/login")
+async def login(
+    body: LoginRequest,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[aioredis.Redis, Depends(get_redis)],
+    tenant_id: Annotated[str, Depends(get_tenant_id)],
+    _rl: Annotated[None, Depends(login_rate_limit)] = None,
+):
+    """Login returns either:
+      - LoginResponse (access+refresh) when 2FA is off
+      - TwoFAChallengeResponse {requires_2fa: true, challenge_token} when 2FA is on
+    Frontend must check `requires_2fa` flag in response.
+    """
+    svc = AuthService(db)
+    scope_tid = tenant_id if tenant_id and tenant_id != "default" else None
+    user = await svc.authenticate(body.email, body.password, tenant_id=scope_tid)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+    # 2FA branch: if enabled, issue a short-lived challenge token instead of access.
+    if user.totp_enabled:
+        challenge = create_2fa_challenge_token(user.id, user.tenant_id)
+        return TwoFAChallengeResponse(challenge_token=challenge)
+
+    return await _finish_login(user, db, redis, request, twofa_completed=False)
+
+
+@router.post("/login/2fa", response_model=LoginResponse)
+async def login_2fa(
+    body: TwoFALoginRequest,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[aioredis.Redis, Depends(get_redis)],
+    _rl: Annotated[None, Depends(login_rate_limit)] = None,
+    _rl2: Annotated[None, Depends(twofa_rate_limit)] = None,
+) -> LoginResponse:
+    """Complete the 2FA login flow by submitting the TOTP (or recovery) code."""
+    from app.repositories.user_repo import UserRepository as _UR
+    try:
+        payload = decode_token(body.challenge_token)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired challenge token")
+
+    if payload.get("type") != "2fa_challenge":
+        raise HTTPException(status_code=401, detail="Invalid challenge token")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid challenge token")
+
+    repo = _UR(db)
+    user = await repo.get_by_id(user_id)
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+
+    totp_svc = TOTPService(db)
+    if not await totp_svc.verify_code(user, body.totp_code):
+        raise HTTPException(status_code=401, detail="Código TOTP inválido")
+
+    return await _finish_login(user, db, redis, request, twofa_completed=True)
 
 
 @router.post("/refresh", response_model=LoginResponse)
@@ -185,6 +277,20 @@ async def refresh_tokens(
     key = f"refresh:{user_id}:{jti}"
     if not await redis.exists(key):
         raise creds_exc
+
+    # Block refresh if the session tied to this jti was explicitly revoked.
+    from sqlalchemy import select
+    from app.db.models import UserSession as _US
+    try:
+        async with db.begin_nested():
+            sres = await db.execute(select(_US).where(_US.refresh_jti == jti))
+            sess = sres.scalar_one_or_none()
+            if sess and sess.revoked_at is not None:
+                raise creds_exc
+    except HTTPException:
+        raise
+    except Exception:
+        pass
 
     # Delete old refresh token
     await redis.delete(key)
@@ -357,6 +463,8 @@ async def change_password(
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> Response:
+    # Password policy (FASE4).
+    validate_password(body.new_password)
     svc = UserService(db)
     await svc.change_password(current_user, body.current_password, body.new_password)
     return Response(status_code=204)
@@ -367,6 +475,8 @@ async def accept_invitation(
     body: AcceptInvitationRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> UserResponse:
+    # Password policy (FASE4).
+    validate_password(body.password)
     svc = AuthService(db)
     user = await svc.accept_invitation(body.token, body.password)
     return await _build_user_response(user, db)
@@ -391,6 +501,139 @@ async def reset_password(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     redis: Annotated[aioredis.Redis, Depends(get_redis)],
 ) -> UserResponse:
+    # Password policy (FASE4).
+    validate_password(body.new_password)
     svc = AuthService(db)
     user = await svc.reset_password(body.token, body.new_password, redis)
     return await _build_user_response(user, db)
+
+
+# ── 2FA (TOTP) endpoints ──────────────────────────────────────────────────────
+
+@router.post("/2fa/setup", response_model=TwoFASetupResponse)
+async def twofa_setup(
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> TwoFASetupResponse:
+    svc = TOTPService(db)
+    data = await svc.setup(current_user.id)
+    return TwoFASetupResponse(**data)
+
+
+@router.post("/2fa/verify", response_model=TwoFAVerifyResponse)
+async def twofa_verify(
+    body: TwoFAVerifyRequest,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    _rl: Annotated[None, Depends(twofa_rate_limit)] = None,
+) -> TwoFAVerifyResponse:
+    svc = TOTPService(db)
+    codes = await svc.verify_and_enable(current_user.id, body.totp_code)
+    return TwoFAVerifyResponse(enabled=True, recovery_codes=codes)
+
+
+@router.post("/2fa/disable", status_code=204, response_class=Response)
+async def twofa_disable(
+    body: TwoFADisableRequest,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    svc = TOTPService(db)
+    await svc.disable(current_user.id, body.password, body.totp_code)
+    return Response(status_code=204)
+
+
+# ── Active sessions ──────────────────────────────────────────────────────────
+
+@router.get("/sessions", response_model=list[SessionResponse])
+async def list_sessions(
+    current_user: CurrentUser,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[SessionResponse]:
+    """List active sessions for the current user."""
+    from sqlalchemy import select
+    from app.db.models import UserSession
+    import hashlib
+
+    res = await db.execute(
+        select(UserSession)
+        .where(UserSession.user_id == current_user.id, UserSession.revoked_at.is_(None))
+        .order_by(UserSession.last_used_at.desc())
+    )
+    sessions = res.scalars().all()
+
+    # Flag current session by matching device fingerprint from User-Agent
+    ua = request.headers.get("User-Agent", "")
+    current_fp = hashlib.sha256(ua.encode("utf-8")).hexdigest()[:32] if ua else None
+
+    return [
+        SessionResponse(
+            id=s.id,
+            device_fingerprint=s.device_fingerprint,
+            user_agent=s.user_agent,
+            ip_address=s.ip_address,
+            created_at=s.created_at,
+            last_used_at=s.last_used_at,
+            is_current=(current_fp is not None and s.device_fingerprint == current_fp),
+        )
+        for s in sessions
+    ]
+
+
+@router.delete("/sessions/{session_id}", status_code=204, response_class=Response)
+async def revoke_session(
+    session_id: str,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[aioredis.Redis, Depends(get_redis)],
+) -> Response:
+    from sqlalchemy import select
+    from app.db.models import UserSession
+
+    res = await db.execute(
+        select(UserSession).where(
+            UserSession.id == session_id,
+            UserSession.user_id == current_user.id,
+        )
+    )
+    session = res.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    session.revoked_at = datetime.now(timezone.utc)
+    # Blacklist refresh jti in Redis
+    await redis.delete(f"refresh:{current_user.id}:{session.refresh_jti}")
+    await db.flush()
+    return Response(status_code=204)
+
+
+@router.post("/sessions/revoke-others", status_code=204, response_class=Response)
+async def revoke_other_sessions(
+    current_user: CurrentUser,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[aioredis.Redis, Depends(get_redis)],
+) -> Response:
+    from sqlalchemy import select
+    from app.db.models import UserSession
+    import hashlib
+
+    ua = request.headers.get("User-Agent", "")
+    current_fp = hashlib.sha256(ua.encode("utf-8")).hexdigest()[:32] if ua else None
+
+    res = await db.execute(
+        select(UserSession).where(
+            UserSession.user_id == current_user.id,
+            UserSession.revoked_at.is_(None),
+        )
+    )
+    sessions = res.scalars().all()
+    now = datetime.now(timezone.utc)
+    for s in sessions:
+        if current_fp and s.device_fingerprint == current_fp:
+            continue  # keep current session
+        s.revoked_at = now
+        await redis.delete(f"refresh:{current_user.id}:{s.refresh_jti}")
+    await db.flush()
+    return Response(status_code=204)

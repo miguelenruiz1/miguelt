@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     # ─── S2S shared secret (for bootstrap / inter-service auth) ───────────────
     S2S_SERVICE_TOKEN: str = "s2s-change-me-in-production"
 
+    # ─── Security (FASE4) ────────────────────────────────────────────────────
+    # If true, /platform/* endpoints reject tokens not issued through a
+    # 2FA-completed login (i.e. missing `2fa: true` claim in JWT).
+    REQUIRE_SUPERUSER_2FA: bool = False
+
     @field_validator("LOG_LEVEL")
     @classmethod
     def validate_log_level(cls, v: str) -> str:

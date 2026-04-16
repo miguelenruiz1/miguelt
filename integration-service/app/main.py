@@ -87,14 +87,12 @@ def create_app() -> FastAPI:
     from app.api.routers.internal import router as internal_router
     from app.api.routers.resolutions import router as resolutions_router
     from app.api.routers.webhooks import router as webhooks_router
-    from app.api.routers.subscriptions import router as subscriptions_router
 
     app.include_router(health_router)
     app.include_router(integrations_router)
     app.include_router(internal_router)
     app.include_router(resolutions_router)
     app.include_router(webhooks_router)
-    app.include_router(subscriptions_router)
 
     # ─── Prometheus metrics (optional) ────────────────────────────────────────
     try:

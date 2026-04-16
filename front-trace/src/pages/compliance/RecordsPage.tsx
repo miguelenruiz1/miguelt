@@ -9,6 +9,8 @@ import {
 } from '@/hooks/useCompliance'
 import { useAssetList } from '@/hooks/useAssets'
 import type { ComplianceRecord, CreateRecordInput, ComplianceStatus } from '@/types/compliance'
+import { SkeletonTable } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 // ─── Status badge ────────────────────────────────────────────────────────────
 
@@ -304,18 +306,15 @@ export default function RecordsPage() {
       </div>
 
       {/* Table */}
-      {isLoading ? (
-        <div className="text-sm text-muted-foreground py-12 text-center">Cargando...</div>
+      {isLoading && records.length === 0 ? (
+        <SkeletonTable columns={8} rows={6} />
       ) : records.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-border p-14 text-center">
-          <FileText className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-          <p className="text-sm font-medium text-muted-foreground mb-1">Sin registros</p>
-          <p className="text-xs text-muted-foreground mb-5">Crea un registro de cumplimiento para una carga.</p>
-          <button onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90">
-            <Plus className="h-3.5 w-3.5" /> Nuevo Registro
-          </button>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="Sin registros de cumplimiento"
+          description="Creá tu primer registro para documentar la trazabilidad y cumplimiento de una carga."
+          action={{ label: 'Nuevo registro', onClick: () => setShowCreate(true), icon: Plus }}
+        />
       ) : (
         <div className="bg-card rounded-2xl border border-border  overflow-hidden">
           <table className="w-full text-sm">

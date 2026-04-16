@@ -24,6 +24,8 @@ export type DeclarationStatus =
   | 'submitted'
   | 'accepted'
   | 'rejected'
+  | 'validated'
+  | 'amended'
   | string
 
 export type CertificateStatus = 'active' | 'revoked' | 'superseded' | 'expired' | string
@@ -176,6 +178,9 @@ export interface ComplianceRecord {
   declaration_submission_date: string | null
   declaration_status: DeclarationStatus
   declaration_url: string | null
+  declaration_validated_at?: string | null
+  declaration_rejection_reason?: string | null
+  declaration_last_polled_at?: string | null
   compliance_status: ComplianceStatus
   last_validated_at: string | null
   validation_result: Record<string, unknown> | null

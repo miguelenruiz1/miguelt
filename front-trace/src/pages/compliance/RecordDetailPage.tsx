@@ -13,7 +13,7 @@ import {
   useRecord, useUpdateRecord, useRecordPlots, usePlots, useLinkPlot,
   useUnlinkPlot, useValidateRecord, useUpdateDeclaration,
   useRecordCertificate, useGenerateCertificate, useRegenerateCertificate,
-  useFramework, useExportDds, useSubmitTraces,
+  useFramework, useExportDds, useSubmitTraces, useDDSStatus,
   useRecordDocuments, useAttachRecordDocument, useDetachRecordDocument,
   useRiskAssessment, useSupplyChain,
 } from '@/hooks/useCompliance'
@@ -50,9 +50,26 @@ const STATUS_LABELS: Record<string, string> = {
 const DECL_STATUS_LABELS: Record<string, string> = {
   not_required: 'No requerido',
   pending: 'Pendiente',
-  submitted: 'Enviada',
+  submitted: 'Enviada (en validacion)',
   accepted: 'Aceptada',
   rejected: 'Rechazada',
+  validated: 'Validada',
+  amended: 'Enmendada',
+  draft: 'Borrador',
+  ready: 'Lista',
+}
+
+// Badge styling for TRACES NT declaration states. Tailwind classes.
+const DDS_STATUS_BADGE: Record<string, string> = {
+  draft: 'bg-muted text-muted-foreground border-border',
+  ready: 'bg-blue-50 text-blue-700 border-blue-200',
+  submitted: 'bg-amber-50 text-amber-700 border-amber-200',
+  pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  validated: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  rejected: 'bg-red-50 text-red-700 border-red-200',
+  amended: 'bg-purple-50 text-purple-700 border-purple-200',
+  not_required: 'bg-muted text-muted-foreground border-border',
 }
 
 const FRAMEWORK_FLAGS: Record<string, string> = {
@@ -765,9 +782,11 @@ function DeclarationTab({ record }: { record: ComplianceRecord }) {
             Exporta o envia la Declaracion de Diligencia Debida (DDS) al sistema TRACES de la Comision Europea.
           </p>
         </div>
-        <div className="flex gap-3">
-          <DdsExportButton recordId={record.id} />
-          <DdsSubmitButton recordId={record.id} status={record.compliance_status} />
+
+        <DdsTracesStatusBlock record={record} />
+
+        <div className="flex gap-3 flex-wrap">
+          <DdsActionButtons record={record} />
         </div>
       </div>
     </form>
@@ -840,6 +859,151 @@ function DdsSubmitButton({ recordId, status }: { recordId: string; status: strin
     >
       {submitTraces.isPending ? 'Enviando...' : 'Enviar a TRACES NT'}
     </button>
+  )
+}
+
+// ─── TRACES NT status block (badge + polling) ────────────────────────────────
+
+function DdsTracesStatusBlock({ record }: { record: ComplianceRecord }) {
+  const status = record.declaration_status || 'not_required'
+  // Poll automatically while submitted — stop once we reach a terminal state.
+  const pollable = status === 'submitted' || status === 'pending'
+  const { data: liveStatus, refetch, isFetching } = useDDSStatus(record.id, {
+    enabled: pollable,
+  })
+  const toast = useToast()
+
+  const badgeClass = DDS_STATUS_BADGE[status] || 'bg-muted text-muted-foreground border-border'
+  const label = DECL_STATUS_LABELS[status] || status
+
+  return (
+    <div className="rounded-lg bg-card border border-blue-200 p-3 space-y-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-medium text-muted-foreground">Estado TRACES NT:</span>
+        <span
+          className={cn(
+            'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border',
+            badgeClass,
+          )}
+        >
+          {status === 'submitted' && <Loader2 className="h-3 w-3 animate-spin" />}
+          {(status === 'validated' || status === 'accepted') && <CheckCircle2 className="h-3 w-3" />}
+          {status === 'rejected' && <XCircle className="h-3 w-3" />}
+          {label}
+        </span>
+        {record.declaration_reference && (
+          <span className="text-[11px] font-mono text-muted-foreground">
+            Ref: {record.declaration_reference}
+          </span>
+        )}
+        {pollable && (
+          <button
+            type="button"
+            onClick={async () => {
+              await refetch()
+              toast.success('Estado actualizado')
+            }}
+            disabled={isFetching}
+            className="ml-auto inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 hover:text-blue-900"
+          >
+            <RefreshCw className={cn('h-3 w-3', isFetching && 'animate-spin')} />
+            Verificar ahora
+          </button>
+        )}
+      </div>
+
+      {/* Validated state — show validated_at */}
+      {(status === 'validated' || status === 'accepted') && record.declaration_validated_at && (
+        <div className="text-[11px] text-emerald-700">
+          Validado el {new Date(record.declaration_validated_at).toLocaleString('es-CO')}
+        </div>
+      )}
+
+      {/* Rejected state — show rejection_reason */}
+      {status === 'rejected' && record.declaration_rejection_reason && (
+        <div className="flex items-start gap-2 rounded-md bg-red-50 border border-red-200 p-2">
+          <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-red-800">
+            <div className="font-semibold mb-0.5">Motivo de rechazo</div>
+            <div>{record.declaration_rejection_reason}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Amended state — show prior DDS references */}
+      {status === 'amended' && record.prior_dds_references && record.prior_dds_references.length > 0 && (
+        <div className="rounded-md bg-purple-50 border border-purple-200 p-2 text-xs">
+          <div className="font-semibold text-purple-900 mb-1">Historial de enmiendas</div>
+          <ul className="list-disc list-inside text-purple-800">
+            {(record.prior_dds_references as string[]).map((r, i) => (
+              <li key={i} className="font-mono">{r}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Last polled timestamp */}
+      {record.declaration_last_polled_at && (
+        <div className="text-[10px] text-muted-foreground">
+          Ultima verificacion: {new Date(record.declaration_last_polled_at).toLocaleString('es-CO')}
+          {liveStatus?.polled ? ' (actualizado)' : ''}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DdsActionButtons({ record }: { record: ComplianceRecord }) {
+  const status = record.declaration_status || 'not_required'
+  const complianceReady = ['ready', 'declared', 'compliant'].includes(record.compliance_status)
+
+  // ready → Descargar JSON preview + Enviar a TRACES NT
+  // submitted → (ya hay boton "Verificar ahora" en el bloque de estado)
+  // validated → Descargar JSON + Ver certificado DDS
+  // rejected → Re-enviar DDS (mismo submit button)
+  // default → export + submit
+
+  if (status === 'validated' || status === 'accepted') {
+    return (
+      <>
+        <DdsExportButton recordId={record.id} />
+        {record.declaration_reference && (
+          <a
+            href={`https://webgate.ec.europa.eu/tracesnt/directory/dds/${record.declaration_reference}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-card px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50 transition-colors"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Ver certificado DDS
+          </a>
+        )}
+      </>
+    )
+  }
+
+  if (status === 'rejected') {
+    return (
+      <>
+        <DdsExportButton recordId={record.id} />
+        <DdsSubmitButton recordId={record.id} status={record.compliance_status} />
+      </>
+    )
+  }
+
+  if (status === 'submitted' || status === 'pending') {
+    // Bloqueado — no tiene sentido re-enviar mientras TRACES NT procesa.
+    return (
+      <DdsExportButton recordId={record.id} />
+    )
+  }
+
+  // Default (draft/ready/amended/not_required): exportar + enviar.
+  return (
+    <>
+      <DdsExportButton recordId={record.id} />
+      <DdsSubmitButton recordId={record.id} status={complianceReady ? 'ready' : record.compliance_status} />
+    </>
   )
 }
 

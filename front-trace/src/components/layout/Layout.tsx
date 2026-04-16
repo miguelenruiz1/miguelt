@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar'
 import { Toaster } from '@/components/ui/sonner'
 import { ConfirmDialog } from '@/components/ui/confirmdialog'
 import { useConfirmStore } from '@/store/confirm'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export function Layout() {
   const { pathname } = useLocation()
@@ -57,7 +58,9 @@ export function Layout() {
         </div>
 
         <div className="p-5 mx-auto w-full max-w-screen-2xl md:p-8">
-          <Outlet />
+          <ErrorBoundary key={pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </div>
       <Toaster richColors position="bottom-right" />

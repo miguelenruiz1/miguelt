@@ -76,7 +76,15 @@ class DynamicConfigService:
     async def create_warehouse_type(self, tenant_id: str, data: dict):
         if not data.get("slug"):
             data["slug"] = _slugify(data["name"])
-        return await self.wt_repo.create(tenant_id, data)
+        existing = await self.wt_repo.get_by_slug(tenant_id, data["slug"]) if hasattr(self.wt_repo, "get_by_slug") else None
+        if existing:
+            raise ConflictError(f"Ya existe un tipo de bodega con slug '{data['slug']}'")
+        from sqlalchemy.exc import IntegrityError
+        try:
+            async with self.db.begin_nested():
+                return await self.wt_repo.create(tenant_id, data)
+        except IntegrityError:
+            raise ConflictError(f"Ya existe un tipo de bodega con slug '{data['slug']}'")
 
     async def update_warehouse_type(self, tenant_id: str, type_id: str, data: dict):
         obj = await self.wt_repo.get(tenant_id, type_id)

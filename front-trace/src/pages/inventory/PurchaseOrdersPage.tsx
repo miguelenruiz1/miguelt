@@ -4,6 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, ShoppingCart, GitMerge, X, Check, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { SkeletonTable } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 import {
   usePurchaseOrders,
   useCreatePO,
@@ -274,7 +276,7 @@ function ConsolidatePreviewModal({
                     <td className="px-3 py-2 font-mono text-xs text-primary font-semibold">{po.po_number}</td>
                     <td className="px-3 py-2 text-foreground">{supplierMap[po.supplier_id] ?? po.supplier_id.slice(0, 8)}</td>
                     <td className="px-3 py-2 text-right text-muted-foreground">{po.lines?.length ?? 0}</td>
-                    <td className="px-3 py-2 text-right font-mono text-muted-foreground">${poTotal.toLocaleString('es', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-3 py-2 text-right font-mono text-muted-foreground">${poTotal.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</td>
                   </tr>
                 )
               })}
@@ -283,7 +285,7 @@ function ConsolidatePreviewModal({
               <tr className="bg-secondary font-semibold text-xs">
                 <td colSpan={2} className="px-3 py-2 text-muted-foreground">Total</td>
                 <td className="px-3 py-2 text-right text-foreground">{totalLines}</td>
-                <td className="px-3 py-2 text-right font-mono text-foreground">${totalValue.toLocaleString('es', { minimumFractionDigits: 2 })}</td>
+                <td className="px-3 py-2 text-right font-mono text-foreground">${totalValue.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</td>
               </tr>
             </tfoot>
           </table>
@@ -410,7 +412,7 @@ function CandidatesModal({
                 <div className="bg-muted px-4 py-3 flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-foreground">{candidate.supplier_name}</p>
-                    <p className="text-xs text-muted-foreground">{candidate.po_count} OC &middot; Total: ${candidate.total_amount.toLocaleString('es', { minimumFractionDigits: 2 })}</p>
+                    <p className="text-xs text-muted-foreground">{candidate.po_count} OC &middot; Total: ${candidate.total_amount.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</p>
                   </div>
                   <button
                     onClick={() => {
@@ -436,7 +438,7 @@ function CandidatesModal({
                         />
                         <span className="font-mono text-xs text-primary font-semibold">{po.po_number}</span>
                         <span className="text-sm text-muted-foreground flex-1">{po.lines?.length ?? 0} lineas</span>
-                        <span className="text-sm font-mono text-muted-foreground">${poTotal.toLocaleString('es', { minimumFractionDigits: 2 })}</span>
+                        <span className="text-sm font-mono text-muted-foreground">${poTotal.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</span>
                       </label>
                     )
                   })}
@@ -542,13 +544,14 @@ export function PurchaseOrdersPage() {
       )}
 
       <div className="bg-card rounded-2xl border border-border  overflow-hidden">
-        {isLoading ? (
-          <div className="p-8 text-center text-muted-foreground">Cargando...</div>
+        {isLoading && !items.length ? (
+          <SkeletonTable columns={5} rows={6} className="border-0 rounded-none" />
         ) : !items.length ? (
-          <div className="p-8 text-center">
-            <ShoppingCart className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">Sin ordenes de compra</p>
-          </div>
+          <EmptyState
+            icon={ShoppingCart}
+            title="Sin órdenes de compra"
+            description="Creá tu primera orden de compra para empezar a recibir mercadería de tus proveedores."
+          />
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-muted border-b border-border">
@@ -599,7 +602,7 @@ export function PurchaseOrdersPage() {
                         <span className="ml-1 text-[10px] text-muted-foreground">(fusionada)</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs cursor-pointer" onClick={() => navigate(`/inventario/compras/${po.id}`)}>{new Date(po.created_at).toLocaleDateString('es')}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs cursor-pointer" onClick={() => navigate(`/inventario/compras/${po.id}`)}>{new Date(po.created_at).toLocaleDateString('es-CO')}</td>
                     <td className="px-4 py-3 text-muted-foreground text-xs cursor-pointer" onClick={() => navigate(`/inventario/compras/${po.id}`)}>{resolve(po.created_by)}</td>
                   </tr>
                 )

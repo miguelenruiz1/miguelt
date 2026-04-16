@@ -76,7 +76,7 @@ const del = <T>(path: string) => request<T>('DELETE', path, undefined)
 export const subscriptionApi = {
   plans: {
     list: (includeArchived = false) =>
-      get<Plan[]>(`/api/v1/plans?include_archived=${includeArchived}`),
+      get<Plan[]>(`/api/v1/plans/?include_archived=${includeArchived}`),
     get: (id: string) => get<Plan>(`/api/v1/plans/${id}`),
     create: (data: PlanCreate) => post<Plan>('/api/v1/plans/', data),
     update: (id: string, data: PlanUpdate) => patch<Plan>(`/api/v1/plans/${id}`, data),

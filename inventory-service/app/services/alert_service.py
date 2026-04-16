@@ -242,8 +242,11 @@ class AlertService:
             .all()
         )
         # Bulk-load all referenced batches in a single query (was N+1 in loop)
+        # NOTE: EntityBatch is imported at module level — do NOT re-import here,
+        # it creates a local-scope rebind that shadows the module-level name,
+        # triggering UnboundLocalError at line 183 because Python pre-marks the
+        # name as local for the entire function.
         if unresolved:
-            from app.db.models.tracking import EntityBatch
             batch_ids = list({a.batch_id for a in unresolved if a.batch_id})
             batches_q = await self.db.execute(
                 select(EntityBatch).where(

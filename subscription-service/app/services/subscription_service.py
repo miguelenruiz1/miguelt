@@ -156,7 +156,15 @@ class SubscriptionService:
     ) -> Invoice:
         sub = await self.get(tenant_id)
         invoice_number = await self.invoice_repo.next_invoice_number()
-        amount = sub.plan.price_monthly if sub.plan else Decimal("0")
+        # Pick amount based on billing cycle: annual uses price_annual when
+        # defined, else falls back to monthly × 12. Monthly and custom bill
+        # at price_monthly. Prevents annual subscribers from being undercharged.
+        if sub.plan is None:
+            amount = Decimal("0")
+        elif sub.billing_cycle == BillingCycle.annual:
+            amount = sub.plan.price_annual or (sub.plan.price_monthly * 12)
+        else:
+            amount = sub.plan.price_monthly
 
         invoice = await self.invoice_repo.create({
             "subscription_id": sub.id,
@@ -164,7 +172,7 @@ class SubscriptionService:
             "invoice_number": invoice_number,
             "status": InvoiceStatus.open,
             "amount": amount,
-            "currency": sub.plan.currency if sub.plan else "USD",
+            "currency": sub.plan.currency if sub.plan else "COP",
             "period_start": sub.current_period_start,
             "period_end": sub.current_period_end,
             "line_items": [

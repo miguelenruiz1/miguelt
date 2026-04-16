@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { FileCheck, Download, Copy, RefreshCw, Search } from 'lucide-react'
 import { useCertificates, useRegenerateCertificate } from '@/hooks/useCompliance'
+import { complianceApi } from '@/lib/compliance-api'
 import { useToast } from '@/store/toast'
 import { DataTable, type Column } from '@/components/ui/datatable'
+import { SkeletonTable } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { ComplianceCertificate, CertificateStatus } from '@/types/compliance'
@@ -24,8 +27,6 @@ const statusLabel: Record<string, string> = {
   revoked: 'Revocado',
   expired: 'Expirado',
 }
-
-const COMPLIANCE_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:9000'
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
@@ -69,13 +70,16 @@ export default function CertificatesPage() {
     toast.success('URL de verificacion copiada')
   }
 
-  function handleDownload(cert: ComplianceCertificate) {
+  async function handleDownload(cert: ComplianceCertificate) {
     if (!cert.pdf_url) {
-      toast.warning('PDF no disponible aun')
+      toast.warning('PDF no disponible aún')
       return
     }
-    const url = cert.pdf_url.startsWith('http') ? cert.pdf_url : `${COMPLIANCE_BASE}${cert.pdf_url}`
-    window.open(url, '_blank')
+    try {
+      await complianceApi.certificates.download(cert.id, `${cert.certificate_number}.pdf`)
+    } catch (e: any) {
+      toast.error(e?.message ?? 'No se pudo descargar el PDF')
+    }
   }
 
   const columns: Column<ComplianceCertificate>[] = [
@@ -246,6 +250,14 @@ export default function CertificatesPage() {
         data={certificates}
         rowKey={(row) => row.id}
         isLoading={isLoading}
+        loadingState={<SkeletonTable columns={6} rows={8} />}
+        emptyState={
+          <EmptyState
+            icon={FileCheck}
+            title="Sin certificados emitidos"
+            description="Genera un certificado desde un registro de cumplimiento para verlo acá."
+          />
+        }
         emptyMessage="No hay certificados emitidos. Genera uno desde un registro de cumplimiento."
         pagination={total > pageSize ? {
           page,

@@ -57,3 +57,35 @@ def decode_token(token: str) -> dict:
     """Decode and verify JWT. Raises JWTError on failure."""
     settings = get_settings()
     return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+
+
+def create_2fa_challenge_token(user_id: str, tenant_id: str) -> str:
+    """Short-lived (5min) token issued after password-verified but before TOTP."""
+    settings = get_settings()
+    now = datetime.now(timezone.utc)
+    payload = {
+        "sub": user_id,
+        "tenant_id": tenant_id,
+        "type": "2fa_challenge",
+        "iat": now,
+        "exp": now + timedelta(minutes=5),
+    }
+    return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+
+def create_access_token_2fa(user_id: str, tenant_id: str) -> str:
+    """Access token with `2fa: true` claim — used by endpoints that require
+    that the user completed a full 2FA login in this session.
+    """
+    settings = get_settings()
+    now = datetime.now(timezone.utc)
+    exp = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    payload = {
+        "sub": user_id,
+        "tenant_id": tenant_id,
+        "type": "access",
+        "2fa": True,
+        "iat": now,
+        "exp": exp,
+    }
+    return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)

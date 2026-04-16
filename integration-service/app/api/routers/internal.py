@@ -15,7 +15,6 @@ from app.core.settings import get_settings
 from app.db.session import get_db_session
 from app.domain.schemas.integration import InvoiceResolutionOut
 from app.services.resolution_service import ResolutionService
-from app.services.webhook_service import WebhookService
 
 
 async def _verify_service_token(
@@ -206,30 +205,3 @@ async def get_resolution_internal(
     return await svc.get_active_resolution(x_tenant_id, provider)
 
 
-@router.post("/events")
-async def receive_event(
-    body: dict,
-    x_tenant_id: str = Header(...),
-    db: AsyncSession = Depends(get_db_session),
-):
-    """Receive an event from another microservice and dispatch to webhook subscribers.
-
-    Called by inventory-api, trace-api, compliance-api, media-api when something happens.
-    """
-    event_type = body.get("event_type")
-    payload = body.get("payload", {})
-    source_service = body.get("source_service", "unknown")
-
-    if not event_type:
-        raise HTTPException(status_code=400, detail="event_type is required")
-
-    svc = WebhookService(db)
-    results = await svc.dispatch_event(x_tenant_id, event_type, payload, source_service)
-    await db.commit()
-
-    return {
-        "event_type": event_type,
-        "tenant_id": x_tenant_id,
-        "dispatched_to": len(results),
-        "results": results,
-    }
