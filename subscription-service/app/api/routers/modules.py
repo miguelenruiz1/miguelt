@@ -1,12 +1,14 @@
 """Modules router — activate/deactivate tenant modules."""
 from __future__ import annotations
 
+import secrets as _secrets
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import require_permission
+from app.api.deps import get_current_user_optional, require_permission
+from app.core.settings import get_settings
 from app.db.session import get_db_session
 from app.services.module_service import ModuleService
 
@@ -17,23 +19,50 @@ def _svc(db: Annotated[AsyncSession, Depends(get_db_session)]) -> ModuleService:
     return ModuleService(db)
 
 
+async def _verify_user_or_service(
+    tenant_id: str,
+    request: Request,
+    current_user: Annotated[dict | None, Depends(get_current_user_optional)] = None,
+) -> None:
+    """Gate used by tenant-scoped read endpoints.
+
+    Accepts EITHER a valid S2S token (inter-service backends check module
+    status via this path) OR an authenticated JWT whose tenant_id matches
+    the path tenant_id. Superusers bypass the tenant check. Anonymous or
+    cross-tenant calls are rejected — a mild info-leak fix since the
+    endpoint previously let anyone enumerate which modules a tenant ran.
+    """
+    svc_token = request.headers.get("X-Service-Token")
+    if svc_token and _secrets.compare_digest(svc_token, get_settings().S2S_SERVICE_TOKEN):
+        return
+
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    if current_user.get("is_superuser"):
+        return
+    if str(current_user.get("tenant_id", "")) != str(tenant_id):
+        raise HTTPException(status_code=403, detail="Access denied to other tenant's modules")
+
+
 @router.get("/", summary="Module catalogue (public)")
 async def list_catalog(svc: ModuleService = Depends(_svc)):
     return svc.get_catalog()
 
 
-@router.get("/{tenant_id}", summary="Module status for tenant (public)")
+@router.get("/{tenant_id}", summary="Module status for tenant (S2S token or tenant-scoped JWT)")
 async def list_tenant_modules(
     tenant_id: str,
+    _gate: Annotated[None, Depends(_verify_user_or_service)],
     svc: ModuleService = Depends(_svc),
 ):
     return await svc.list_tenant_modules(tenant_id)
 
 
-@router.get("/{tenant_id}/{slug}", summary="Single module status (inter-service, no auth)")
+@router.get("/{tenant_id}/{slug}", summary="Single module status (S2S token or tenant-scoped JWT)")
 async def get_module_status(
     tenant_id: str,
     slug: str,
+    _gate: Annotated[None, Depends(_verify_user_or_service)],
     svc: ModuleService = Depends(_svc),
 ):
     is_active = await svc.is_active(tenant_id, slug)

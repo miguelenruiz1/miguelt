@@ -147,7 +147,7 @@ async def get_sync_job_logs(
     limit: int = Query(100, ge=1, le=500),
 ):
     svc = IntegrationService(db)
-    return await svc.get_sync_job_logs(job_id, offset, limit)
+    return await svc.get_sync_job_logs(job_id, user["tenant_id"], offset, limit)
 
 
 # ── Invoicing ───────────────────────────────────────────────────────

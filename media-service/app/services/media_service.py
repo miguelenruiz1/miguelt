@@ -48,6 +48,28 @@ def _sanitize_filename(filename: str | None) -> str:
     return name
 
 
+def _strip_pii_from_filename(filename: str) -> str:
+    """Scrub obvious PII from user-supplied filenames before persisting them.
+
+    People routinely upload files called `factura_JuanPerez_NIT900123456.pdf`.
+    Storing that verbatim puts PII in every media listing and log line. We
+    mask emails, NITs and long digit runs; harmless tokens (product names,
+    descriptions) are kept so the filename remains recognisable.
+    """
+    import re as _re
+    name = filename
+    # Email first (greedy) so the NIT regex below doesn't chew up the local-
+    # part domain digits.
+    name = _re.sub(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", "[email]", name)
+    # Colombian NIT `NNNNNNNNN-D`. Lookarounds so identifiers where digits
+    # are glued to letters (`NIT900123456-8`) still get masked — `\b`
+    # wouldn't fire because `_` / letters are word chars.
+    name = _re.sub(r"(?<!\d)\d{6,10}\s*-\s*\d(?!\d)", "[nit]", name)
+    # Long digit runs (>= 8) that aren't obviously a year/date.
+    name = _re.sub(r"(?<!\d)\d{8,}(?!\d)", "[id]", name)
+    return name
+
+
 def _validate_content_type(content_type: str) -> str:
     """Reject MIME types not in the allowlist."""
     settings = get_settings()
@@ -57,6 +79,40 @@ def _validate_content_type(content_type: str) -> str:
             f"Content type '{ct}' not allowed. Allowed: {', '.join(settings.ALLOWED_MIME_TYPES)}"
         )
     return ct
+
+
+# Magic-byte signatures mapped to the MIME types that must match on upload.
+# The allowlist is intentionally narrow: only the file types the platform
+# actually serves. Types NOT in here (e.g. application/json, text/csv) are
+# accepted on content-type alone because they have no stable binary signature.
+_MAGIC_SIGNATURES: tuple[tuple[str, tuple[bytes, ...]], ...] = (
+    ("image/jpeg", (b"\xff\xd8\xff",)),
+    ("image/png", (b"\x89PNG\r\n\x1a\n",)),
+    ("image/gif", (b"GIF87a", b"GIF89a")),
+    ("image/webp", (b"RIFF",)),  # RIFF....WEBP — first 4 bytes suffice for screen
+    ("application/pdf", (b"%PDF-",)),
+    ("application/zip", (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08")),
+    # Office docs are zip containers too
+    ("application/vnd.openxmlformats-officedocument.wordprocessingml.document", (b"PK\x03\x04",)),
+    ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", (b"PK\x03\x04",)),
+)
+
+
+def _verify_magic_bytes(content: bytes, declared_mime: str) -> None:
+    """Confirm the file's leading bytes match its declared MIME type.
+
+    Without this, a client can upload an `.exe` with Content-Type:
+    image/jpeg and the allowlist check passes. Only checked for the binary
+    types we know the signature of; unknown types pass through unchanged.
+    """
+    for mime, signatures in _MAGIC_SIGNATURES:
+        if mime == declared_mime:
+            if not any(content.startswith(sig) for sig in signatures):
+                raise ValueError(
+                    f"File content does not match declared type '{declared_mime}' "
+                    "(magic byte mismatch)"
+                )
+            return
 
 
 class MediaService:
@@ -79,7 +135,7 @@ class MediaService:
         settings = get_settings()
         # Sanitize first so a malicious request fails before reading bytes
         category = _sanitize_category(category)
-        original_filename = _sanitize_filename(file.filename)
+        original_filename = _strip_pii_from_filename(_sanitize_filename(file.filename))
         content_type = _validate_content_type(file.content_type or "application/octet-stream")
 
         content = await file.read()
@@ -87,6 +143,8 @@ class MediaService:
         max_bytes = settings.DOCUMENT_MAX_SIZE_MB * 1024 * 1024
         if len(content) > max_bytes:
             raise ValueError(f"File exceeds {settings.DOCUMENT_MAX_SIZE_MB}MB limit")
+
+        _verify_magic_bytes(content, content_type)
 
         file_hash = hashlib.sha256(content).hexdigest()
 
@@ -133,11 +191,12 @@ class MediaService:
         """Upload from raw bytes (used by S2S internal endpoint)."""
         settings = get_settings()
         category = _sanitize_category(category)
-        filename = _sanitize_filename(filename)
+        filename = _strip_pii_from_filename(_sanitize_filename(filename))
         content_type = _validate_content_type(content_type)
         max_bytes = settings.DOCUMENT_MAX_SIZE_MB * 1024 * 1024
         if len(data) > max_bytes:
             raise ValueError(f"File exceeds {settings.DOCUMENT_MAX_SIZE_MB}MB limit")
+        _verify_magic_bytes(data, content_type)
 
         file_hash = hashlib.sha256(data).hexdigest()
         storage_key, url = await self._storage.upload(

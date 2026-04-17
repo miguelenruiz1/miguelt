@@ -15,13 +15,13 @@ async function request<T>(path: string, options: RequestInit = {}, auth = true):
 export const modulesApi = {
   catalog: () => request<ModuleDefinition[]>('/api/v1/modules/', {}, false),
   forTenant: (tenantId: string) =>
-    request<TenantModuleStatus[]>(`/api/v1/modules/${tenantId}`, {}, false),
-  /** Public — no auth required. Used for sidebar module gate checks. */
+    request<TenantModuleStatus[]>(`/api/v1/modules/${tenantId}`, {}, true),
+  /** Tenant-scoped — backend checks JWT.tenant_id matches path. */
   checkModule: (tenantId: string, slug: string) =>
     request<{ tenant_id: string; slug: string; is_active: boolean }>(
       `/api/v1/modules/${tenantId}/${slug}`,
       {},
-      false,
+      true,
     ),
   activate: (tenantId: string, slug: string) =>
     request<{ tenant_id: string; slug: string; is_active: boolean }>(

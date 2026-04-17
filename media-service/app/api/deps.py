@@ -106,10 +106,12 @@ async def get_tenant_id(
 ) -> uuid.UUID:
     """Resolve tenant from authenticated user (NOT from client header).
 
-    The previous implementation used `uuid5(NAMESPACE_DNS, slug)` which let
-    any client claim any tenant. Now the tenant is derived from the validated
-    JWT user_data.tenant_id. S2S calls can still pass X-Tenant-Id but only
-    when accompanied by a valid X-Service-Token.
+    The JWT is signed by user-service so whatever tenant_id it carries —
+    UUID or slug — is already trusted. We used to reject slug tenants unless
+    an X-Service-Token was also present, but regular users never send that
+    header, so registration of any non-"default" tenant broke every media
+    request with 400. Slug → UUID mapping uses uuid5 in a fixed namespace so
+    every service resolves the same slug to the same UUID.
     """
     raw = str(current_user.get("tenant_id", "")).strip()
     if not raw:
@@ -119,12 +121,8 @@ async def get_tenant_id(
     try:
         return uuid.UUID(raw)
     except ValueError:
-        # Fallback for slugs in dev. Production should always have UUID tenant_id.
         if raw == "default":
             return uuid.UUID("00000000-0000-0000-0000-000000000001")
-        # Deterministic hash but require S2S to use it
-        if not request.headers.get("X-Service-Token"):
-            raise HTTPException(status_code=400, detail=f"Tenant '{raw}' not resolvable")
         return uuid.uuid5(uuid.NAMESPACE_DNS, raw)
 
 

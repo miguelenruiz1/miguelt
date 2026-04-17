@@ -13,4 +13,7 @@ RUN groupadd -r subsvc && useradd -r -g subsvc -d /app -s /sbin/nologin subsvc
 COPY --chown=subsvc:subsvc . .
 USER subsvc
 EXPOSE 8002
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8002 --workers 2"]
+# Single uvicorn worker per container. Workers=2 forked the lifespan twice,
+# which in turn spawned the dunning loop twice per container; Cloud Run
+# already fans out instances for us.
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8002"]
