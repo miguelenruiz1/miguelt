@@ -174,7 +174,11 @@ class ShipmentDocument(Base):
     __tablename__ = "shipment_documents"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     document_type: Mapped[str] = mapped_column(Text, nullable=False)
     document_number: Mapped[str] = mapped_column(Text, nullable=False)
     carrier_name: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -235,7 +239,11 @@ class TradeDocument(Base):
     __tablename__ = "trade_documents"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     document_type: Mapped[str] = mapped_column(Text, nullable=False)
     document_number: Mapped[str | None] = mapped_column(Text, nullable=True)
     shipment_document_id: Mapped[uuid.UUID | None] = mapped_column(

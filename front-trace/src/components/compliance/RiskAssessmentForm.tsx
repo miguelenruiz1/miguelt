@@ -61,7 +61,16 @@ export default function RiskAssessmentForm({ recordId }: Props) {
   const toast = useToast()
 
   const [form, setForm] = useState<UpdateRiskAssessmentInput>({})
-  const [measures, setMeasures] = useState<MitigationMeasure[]>([])
+  // Each row carries a client-side `__key` so React can keep DOM nodes and
+  // input focus stable across additions/removals. Using the array index
+  // would re-key every row after a deletion, causing the wrong <input> to
+  // hold focus when the user removes a measure from the middle.
+  type MeasureRow = MitigationMeasure & { __key: string }
+  const _mkKey = () =>
+    (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+      ? crypto.randomUUID()
+      : `m-${Math.random().toString(36).slice(2)}-${Date.now()}`
+  const [measures, setMeasures] = useState<MeasureRow[]>([])
 
   useEffect(() => {
     if (assessment) {
@@ -83,7 +92,7 @@ export default function RiskAssessmentForm({ recordId }: Props) {
         additional_info_requested: assessment.additional_info_requested,
         independent_audit_required: assessment.independent_audit_required,
       })
-      setMeasures(assessment.mitigation_measures ?? [])
+      setMeasures((assessment.mitigation_measures ?? []).map(m => ({ ...m, __key: _mkKey() })))
     }
   }, [assessment])
 
@@ -95,7 +104,7 @@ export default function RiskAssessmentForm({ recordId }: Props) {
 
   async function handleSave() {
     if (!assessment) return
-    await updateRA.mutateAsync({ ...form, mitigation_measures: measures })
+    await updateRA.mutateAsync({ ...form, mitigation_measures: measures.map(({ __key, ...m }) => m) })
     toast.success('Evaluacion guardada')
   }
 
@@ -103,7 +112,7 @@ export default function RiskAssessmentForm({ recordId }: Props) {
     if (!assessment) return
     try {
       // Save first
-      await updateRA.mutateAsync({ ...form, mitigation_measures: measures })
+      await updateRA.mutateAsync({ ...form, mitigation_measures: measures.map(({ __key, ...m }) => m) })
       await completeRA.mutateAsync(assessment.id)
       toast.success('Evaluacion completada')
     } catch (e: any) {
@@ -291,26 +300,24 @@ export default function RiskAssessmentForm({ recordId }: Props) {
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-foreground">Medidas de mitigacion (Art. 11)</h3>
           {!isCompleted && (
-            <button type="button" onClick={() => setMeasures(m => [...m, { measure: '', status: 'pending' }])}
+            <button type="button" onClick={() => setMeasures(m => [...m, { measure: '', status: 'pending', __key: _mkKey() }])}
               className="flex items-center gap-1 text-xs text-primary font-semibold hover:text-primary/80">
               <Plus className="h-3.5 w-3.5" /> Agregar medida
             </button>
           )}
         </div>
         <div className="space-y-2">
-          {measures.map((m, i) => (
-            <div key={i} className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+          {measures.map((m) => (
+            <div key={m.__key} className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
               <input disabled={isCompleted} value={m.measure} onChange={e => {
-                const next = [...measures]
-                next[i] = { ...next[i], measure: e.target.value }
-                setMeasures(next)
+                const val = e.target.value
+                setMeasures(rows => rows.map(r => r.__key === m.__key ? { ...r, measure: val } : r))
               }}
                 placeholder="Descripcion de la medida..."
                 className="flex-1 text-sm border-none bg-transparent focus:outline-none disabled:bg-transparent" />
               <select disabled={isCompleted} value={m.status} onChange={e => {
-                const next = [...measures]
-                next[i] = { ...next[i], status: e.target.value }
-                setMeasures(next)
+                const val = e.target.value
+                setMeasures(rows => rows.map(r => r.__key === m.__key ? { ...r, status: val } : r))
               }}
                 className="rounded-lg border border-border px-2 py-1 text-xs focus:outline-none disabled:bg-muted">
                 <option value="pending">Pendiente</option>
@@ -318,7 +325,7 @@ export default function RiskAssessmentForm({ recordId }: Props) {
                 <option value="completed">Completada</option>
               </select>
               {!isCompleted && (
-                <button type="button" onClick={() => setMeasures(m => m.filter((_, j) => j !== i))}
+                <button type="button" onClick={() => setMeasures(rows => rows.filter(r => r.__key !== m.__key))}
                   className="p-1 text-muted-foreground hover:text-red-500">
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

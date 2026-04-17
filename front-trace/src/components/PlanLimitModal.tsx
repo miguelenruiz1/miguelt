@@ -6,6 +6,11 @@ import { usePlanLimitStore } from '@/store/planLimit'
 export function PlanLimitModal() {
   const { show, resource, current, limit, message, close } = usePlanLimitStore()
 
+  // This modal is mounted as a global overlay outside RouterProvider (see
+  // App.tsx), so useNavigate() throws "may be used only in the context of
+  // a Router". window.location.href works without that context; the hard
+  // reload is fine because the user is crossing into the billing flow
+  // and we want a fresh query cache anyway.
   const handleViewPlans = () => {
     close()
     window.location.href = '/settings/billing'

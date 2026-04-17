@@ -13,6 +13,8 @@ RUN groupadd -r subsvc && useradd -r -g subsvc -d /app -s /sbin/nologin subsvc
 COPY --chown=subsvc:subsvc . .
 USER subsvc
 EXPOSE 8002
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8002/health', timeout=3).read()" || exit 1
 # Single uvicorn worker per container. Workers=2 forked the lifespan twice,
 # which in turn spawned the dunning loop twice per container; Cloud Run
 # already fans out instances for us.

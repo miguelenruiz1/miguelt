@@ -69,21 +69,26 @@ def create_refresh_token(user_id: str, tenant_id: str) -> tuple[str, str]:
 def decode_token(token: str) -> dict:
     """Decode and verify JWT. Raises JWTError on failure.
 
-    During the rollout window we decode without audience/issuer checks so
-    legacy tokens stay valid. When an older token (missing `aud`) is seen,
-    PyJWT would normally reject it; by passing `options={'verify_aud':
-    False}` we accept both legacy and new tokens. Tighten by removing the
-    override once all active refresh tokens have rotated.
+    We validate the audience and issuer **when the token carries them**.
+    Legacy tokens minted before the aud/iss rollout (missing those claims)
+    are still accepted, so we don't log everyone out on deploy; but a token
+    that claims `aud=something-else` is rejected — which is what closes the
+    cross-service JWT reuse hole.
     """
     settings = get_settings()
-    return jwt.decode(
+    payload = jwt.decode(
         token,
         settings.JWT_SECRET,
         algorithms=[settings.JWT_ALGORITHM],
-        audience=JWT_AUDIENCE,
-        issuer=JWT_ISSUER,
         options={"verify_aud": False, "verify_iss": False},
     )
+    aud = payload.get("aud")
+    iss = payload.get("iss")
+    if aud is not None and aud != JWT_AUDIENCE:
+        raise jwt.InvalidAudienceError(f"unexpected aud={aud!r}")
+    if iss is not None and iss != JWT_ISSUER:
+        raise jwt.InvalidIssuerError(f"unexpected iss={iss!r}")
+    return payload
 
 
 def create_2fa_challenge_token(user_id: str, tenant_id: str) -> str:
