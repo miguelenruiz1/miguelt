@@ -139,9 +139,19 @@ for _ in {1..30}; do
   sleep 10
 done
 
-# ─── 6. Smoke test ──────────────────────────────────────────────────────────
+# ─── 6. Reabrir ingress externo ─────────────────────────────────────────────
 echo ""
-echo "[6/6] Smoke test del gateway ..."
+echo "[6/7] Reabriendo ingress=all en los Cloud Run services ..."
+for svc in "${!REDIS_DB_BY_SVC[@]}" front-trace gateway; do
+  gcloud run services update "$svc" \
+    --region="$REGION" --project="$PROJECT" \
+    --ingress=all --quiet 2>&1 | tail -1 &
+done
+wait
+
+# ─── 7. Smoke test ──────────────────────────────────────────────────────────
+echo ""
+echo "[7/7] Smoke test del gateway ..."
 sleep 20  # dar unos segundos extra para cold-start Cloud Run
 for path in "/api/v1/auth/me" "/api/v1/plans/" "/api/v1/compliance/frameworks"; do
   code=$(curl -s -o /dev/null -w "%{http_code}" "$GATEWAY_URL$path" || echo "000")
