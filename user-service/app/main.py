@@ -48,7 +48,7 @@ def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
 
-    app = FastAPI(redirect_slashes=False, 
+    app = FastAPI(redirect_slashes=True,
         title="Trace — User Service",
         description="Authentication, RBAC, and audit for the Trace platform.",
         version=settings.APP_VERSION,
@@ -130,11 +130,12 @@ def create_app() -> FastAPI:
 
         Instrumentator().instrument(app)
         expected_token = settings.S2S_SERVICE_TOKEN
+        import secrets as _secrets_mod
 
         @app.get("/metrics", include_in_schema=False)
         async def metrics(request: Request) -> Response:
             token = request.headers.get("X-Service-Token") or request.query_params.get("token")
-            if not token or token != expected_token:
+            if not token or not _secrets_mod.compare_digest(token, expected_token):
                 return Response(status_code=401, content="unauthorized")
             return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
     except ImportError:

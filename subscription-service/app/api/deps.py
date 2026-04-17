@@ -14,6 +14,7 @@ from app.core.security import decode_token
 from app.core.settings import get_settings
 
 _bearer = HTTPBearer(auto_error=True)
+_bearer_optional = HTTPBearer(auto_error=False)
 
 _redis_client: aioredis.Redis | None = None
 _http_client: httpx.AsyncClient | None = None
@@ -103,6 +104,25 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[dict, Depends(get_current_user)]
+
+
+async def get_current_user_optional(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer_optional)],
+    redis: Annotated[aioredis.Redis, Depends(get_redis)],
+    http_client: Annotated[httpx.AsyncClient, Depends(get_http_client)],
+) -> dict | None:
+    """Same as get_current_user but returns None when no Authorization header.
+
+    Used by endpoints that accept EITHER authenticated users OR alternate
+    credentials (e.g. an inter-service X-Service-Token). Returning None lets
+    the caller decide how to handle anonymous requests.
+    """
+    if credentials is None:
+        return None
+    try:
+        return await get_current_user(credentials, redis, http_client)
+    except HTTPException:
+        return None
 
 
 def require_permission(slug: str):

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from email.message import EmailMessage
+from html import escape as _html_escape
 from string import Template
 
 import aiosmtplib
@@ -13,6 +14,23 @@ from app.core.settings import get_settings
 from app.db.models import EmailConfig, EmailTemplate
 
 logger = logging.getLogger(__name__)
+
+
+def _html_escape_context(context: dict) -> dict:
+    """Escape every string value so `$var` substitution can't inject HTML.
+
+    The EmailTemplate bodies are author-trusted HTML but `context` carries
+    user-provided data (full_name, company, invitation reason, etc.). Without
+    this a user who registers with `full_name="<script>…</script>"` plants a
+    stored XSS that executes in any webmail that renders HTML.
+    """
+    safe: dict = {}
+    for k, v in context.items():
+        if isinstance(v, str):
+            safe[k] = _html_escape(v, quote=True)
+        else:
+            safe[k] = v
+    return safe
 
 
 def _env_smtp_config(settings) -> dict:
@@ -134,8 +152,13 @@ class EmailService:
 
     @staticmethod
     def render_template(html_body: str, context: dict) -> str:
-        """Render template variables ($var_name) using safe_substitute."""
-        return Template(html_body).safe_substitute(context)
+        """Render template variables ($var_name) using safe_substitute.
+
+        Context values are HTML-escaped so user-controlled strings (names,
+        companies, free-form notes) can't inject `<script>` into the body.
+        The template author is trusted; the data feeding it is not.
+        """
+        return Template(html_body).safe_substitute(_html_escape_context(context))
 
     async def send_from_template(
         self,

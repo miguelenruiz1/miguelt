@@ -185,15 +185,19 @@ class SolanaClient:
             fake_sk = "sim_sk_" + str(uuid.uuid4()).replace("-", "")
             return fake_pk, fake_sk
 
-    async def try_airdrop(self, pubkey: str, lamports: int = 100_000_000) -> bool:
+    async def try_airdrop(self, pubkey: str, lamports: int = 100_000_000) -> tuple[bool, str | None]:
         """
         Request a devnet airdrop for the given pubkey (0.1 SOL by default).
-        Returns True on success, False on failure. Never raises.
-        In simulation mode always returns True immediately.
+        Returns ``(ok, error)``: ``(True, None)`` on success, ``(False, msg)``
+        on failure. Never raises. In simulation mode returns ``(True, None)``.
+
+        The paired-return replaces the previous ``bool``-only shape: callers
+        used to log "airdrop failed" with ``error=null`` because the failure
+        cause was swallowed inside this method.
         """
         if self._simulation:
             log.info("airdrop_simulated", pubkey=pubkey, lamports=lamports)
-            return True
+            return True, None
         try:
             async def _call():
                 result = await self._rpc(
@@ -201,10 +205,12 @@ class SolanaClient:
                     [pubkey, lamports],
                 )
                 return bool(result)
-            return await self._cb.call(_call)
+            ok = await self._cb.call(_call)
+            return (bool(ok), None if ok else "airdrop RPC returned empty result")
         except Exception as exc:
-            log.warning("airdrop_failed", pubkey=pubkey, exc=str(exc))
-            return False
+            err = str(exc)[:200]
+            log.warning("airdrop_failed", pubkey=pubkey, exc=err)
+            return False, err
 
     async def mint_logistics_asset(
         self, collection_wallet_pubkey: str, collection_private_key: str, metadata: dict

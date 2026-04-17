@@ -55,7 +55,7 @@ def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
 
-    app = FastAPI(redirect_slashes=False, 
+    app = FastAPI(redirect_slashes=True,
         title="Trace — Integration Service",
         description="External integrations: electronic invoicing, product sync, webhooks.",
         version=settings.APP_VERSION,

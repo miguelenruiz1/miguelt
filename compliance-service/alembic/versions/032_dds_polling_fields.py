@@ -68,6 +68,15 @@ def downgrade() -> None:
         "compliance_records",
         type_="check",
     )
+    # Re-bucket any records whose status was introduced in this migration
+    # back to one the old CHECK accepts. Without this step Postgres rejects
+    # the constraint creation below because the existing row set violates
+    # the narrower allowlist, leaving downgrade in a half-applied state.
+    op.execute(
+        "UPDATE compliance_records "
+        "SET declaration_status = 'submitted' "
+        "WHERE declaration_status IN ('validated', 'amended')"
+    )
     op.create_check_constraint(
         "ck_records_declaration_status",
         "compliance_records",

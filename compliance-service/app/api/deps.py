@@ -206,6 +206,7 @@ async def require_compliance_module(
     try:
         resp = await http.get(
             f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/modules/{tenant_id}/{module_slug}",
+            headers={"X-Service-Token": settings.S2S_SERVICE_TOKEN},
         )
         active = resp.status_code == 200 and resp.json().get("is_active", False)
     except Exception:

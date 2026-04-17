@@ -1163,7 +1163,8 @@ async def _is_compliance_active(tenant_id: uuid.UUID) -> bool:
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(
-                f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/modules/{tenant_id}/compliance"
+                f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/modules/{tenant_id}/compliance",
+                headers={"X-Service-Token": settings.S2S_SERVICE_TOKEN},
             )
             if resp.status_code == 200:
                 is_active = resp.json().get("is_active", False)

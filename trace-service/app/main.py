@@ -76,7 +76,7 @@ def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
 
-    app = FastAPI(redirect_slashes=False, 
+    app = FastAPI(redirect_slashes=True,
         title="Trace — Chain of Custody API",
         description=(
             "Immutable chain-of-custody tracking for assets/NFTs "
