@@ -102,12 +102,13 @@ class RegistryService:
         airdrop_status = "skipped"
         airdrop_error: str | None = None
         try:
-            airdropped = await client.try_airdrop(pubkey)
+            airdropped, airdrop_error = await client.try_airdrop(pubkey)
             if airdropped:
                 airdrop_status = "success"
                 log.info("wallet_airdrop_success", pubkey=pubkey)
             else:
                 airdrop_status = "failed"
+                log.warning("wallet_airdrop_failed", pubkey=pubkey, exc=airdrop_error)
         except Exception as exc:
             airdrop_status = "failed"
             airdrop_error = str(exc)[:200]

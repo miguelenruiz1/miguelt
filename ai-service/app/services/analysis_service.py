@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from datetime import datetime, timezone
 
@@ -19,6 +20,70 @@ log = structlog.get_logger(__name__)
 
 MEMORY_TTL = 90 * 24 * 3600
 LAST_ANALYSIS_TTL = 24 * 3600
+
+# ─── Prompt hardening ────────────────────────────────────────────────────────
+#
+# Every string that flows into the LLM prompt goes through _sanitize. It
+# caps per-field length (blocks someone stuffing 10k chars of "ignore prior
+# instructions" into a product description) and masks the common PII classes
+# (emails, NITs, phone numbers) so we don't pipe customer PII to Anthropic
+# for a report the LLM doesn't need it for. Worth noting: masking is "good
+# enough" not legally airtight — if a tenant embeds raw PII inside a free-
+# form note we might still leak. The real fix is a narrower schema for what
+# the AI is allowed to see, but this closes the obvious hole today.
+
+_PII_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    # Emails
+    (re.compile(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b"), "[email]"),
+    # Colombian NIT: 6-10 digits + mandatory `-dv` (never mask bare numbers
+    # or we nuke SKUs / order numbers / product IDs). The dash is what
+    # distinguishes a NIT from any other numeric identifier.
+    (re.compile(r"\b\d{6,10}\s*-\s*\d\b"), "[nit]"),
+    # Phone numbers — require an explicit marker so pure-numeric SKUs like
+    # 12345678 aren't masked. Match either an international prefix (+57…)
+    # or a Colombian mobile-cell pattern (10 digits starting with 3).
+    (re.compile(r"\+\d{7,15}\b"), "[phone]"),
+    (re.compile(r"\b3\d{9}\b"), "[phone]"),
+)
+
+# Common prompt-injection phrases we scrub from user-supplied context before
+# concatenating into the prompt. Not exhaustive — a determined attacker can
+# evade this — but it catches the low-effort attacks that copy-paste a
+# published jailbreak into a business profile field.
+_INJECTION_MARKERS = (
+    "ignore previous", "ignore prior", "ignore the above",
+    "disregard previous", "disregard all", "forget everything",
+    "you are now", "act as", "pretend to be",
+    "system:", "system prompt", "new instructions",
+    "</system>", "<|im_start|>", "<|im_end|>",
+)
+
+_MAX_FIELD_CHARS = 2000
+
+
+def _sanitize(value):
+    """Recursively scrub PII + prompt-injection markers from any value.
+
+    Returns a structure-identical copy safe to serialize into the LLM prompt.
+    """
+    if isinstance(value, str):
+        s = value
+        for pattern, replacement in _PII_PATTERNS:
+            s = pattern.sub(replacement, s)
+        lower = s.lower()
+        for marker in _INJECTION_MARKERS:
+            if marker in lower:
+                idx = lower.find(marker)
+                s = s[:idx] + "[…]" + s[idx + len(marker):]
+                lower = s.lower()
+        if len(s) > _MAX_FIELD_CHARS:
+            s = s[:_MAX_FIELD_CHARS] + "… [truncated]"
+        return s
+    if isinstance(value, dict):
+        return {k: _sanitize(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_sanitize(v) for v in value]
+    return value
 
 SYSTEM_PROMPT = """\
 Eres el asistente de inteligencia de inventario de TraceLog, una plataforma de inventario y trazabilidad para PYMEs colombianas.
@@ -89,10 +154,11 @@ class AnalysisService:
         cache_ttl = config.get("cache_ttl_minutes", 60) * 60
         cache_key = f"ai:pnl:{tenant_id}:{date_from}:{date_to}"
 
-        # 1. Session cache
-        if force:
-            await self.redis.delete(cache_key)
-        elif config.get("cache_enabled", True):
+        # 1. Session cache (only when not forced). The rate-limit check is
+        # deliberately moved ABOVE the force=True branch: previously a user
+        # could call with force=True repeatedly and skip the counter because
+        # we only incremented on the uncached path, burning Anthropic quota.
+        if not force and config.get("cache_enabled", True):
             cached = await self.redis.get(cache_key)
             if cached:
                 result = PnLAnalysis.model_validate_json(cached)
@@ -108,6 +174,11 @@ class AnalysisService:
             if last:
                 return last
             raise
+
+        # Force-refresh comes after rate-limit check so the counter always
+        # ticks for paid LLM calls.
+        if force:
+            await self.redis.delete(cache_key)
 
         # 3. Validate
         products = pnl_data.get("products", [])
@@ -262,9 +333,14 @@ class AnalysisService:
     # ─── Prompt ────────────────────────────────────────────────────────────────
 
     def _build_prompt(self, pnl_data: dict, tenant_id: str, date_from: str, date_to: str, memory: dict, biz: dict | None = None) -> str:
+        # Anything the caller feeds in is considered untrusted from a prompt
+        # safety point of view — scrub PII and known injection markers before
+        # it reaches the LLM context.
+        pnl_data = _sanitize(pnl_data)
+        biz = _sanitize(biz or {})
+        memory = _sanitize(memory)
         totals = pnl_data.get("totals", {})
         products = pnl_data.get("products", [])
-        biz = biz or {}
 
         margins = [p.get("summary", {}).get("gross_margin_pct", 0) for p in products if p.get("summary", {}).get("gross_margin_pct") is not None]
         avg_margin = sum(margins) / len(margins) if margins else 0

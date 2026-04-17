@@ -96,6 +96,7 @@ function WalletRow({
           </Link>
           <button
             onClick={handleCopy}
+            aria-label={copied ? 'Clave copiada' : 'Copiar clave pública'}
             className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
           >
             {copied
@@ -140,7 +141,14 @@ function WalletRow({
       {/* Actions */}
       <td className="px-4 py-3">
         <div className="relative">
-          <Button variant="ghost" size="icon" onClick={() => setMenuOpen((o) => !o)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="Menú de acciones de wallet"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+          >
             <MoreHorizontal className="h-4 w-4" />
           </Button>
 
@@ -210,7 +218,14 @@ function WalletCard({
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">{fmtDateShort(w.created_at)}</span>
         <div className="relative">
-          <Button variant="ghost" size="icon" onClick={() => setMenuOpen((o) => !o)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="Menú de acciones de wallet"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+          >
             <MoreHorizontal className="h-4 w-4" />
           </Button>
           {menuOpen && (

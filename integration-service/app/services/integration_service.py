@@ -166,17 +166,38 @@ class IntegrationService:
         credentials = await self._get_credentials(config)
         result = await adapter.create_invoice(credentials, invoice_data)
 
-        # Log
-        await self.log_repo.create({
-            "sync_job_id": "manual",
-            "tenant_id": tenant_id,
-            "entity_type": "invoice",
-            "local_id": invoice_data.get("order_number"),
-            "remote_id": result.get("remote_id"),
-            "action": "create_invoice",
-            "status": "success",
-            "response_data": result,
-        })
+        # Atomic log: the adapter call already hit DIAN/Matías so the remote
+        # side is committed. If we crash between the external write and this
+        # log insert we lose the CUFE permanently and can't reconcile. Wrap
+        # in a nested transaction and, on failure, emit a structured warning
+        # with the raw result so the operator can re-create the log from
+        # log lines — better than silent data loss.
+        try:
+            async with self.db.begin_nested():
+                await self.log_repo.create({
+                    "sync_job_id": "manual",
+                    "tenant_id": tenant_id,
+                    "entity_type": "invoice",
+                    "local_id": invoice_data.get("order_number"),
+                    "remote_id": result.get("remote_id"),
+                    "action": "create_invoice",
+                    "status": "success",
+                    "response_data": result,
+                })
+            await self.db.flush()
+        except Exception:
+            import structlog as _structlog
+            _structlog.get_logger(__name__).exception(
+                "invoice_log_persist_failed",
+                tenant_id=tenant_id,
+                provider_slug=provider_slug,
+                remote_id=result.get("remote_id"),
+                cufe=result.get("cufe"),
+                invoice_number=invoice_data.get("invoice_number"),
+            )
+            # Surface the disaster to the caller — the invoice WAS created at
+            # DIAN and has a CUFE; the record is now in the log line only.
+            raise
 
         return result
 
@@ -209,5 +230,13 @@ class IntegrationService:
     async def list_sync_jobs(self, tenant_id: str, **kwargs):
         return await self.job_repo.list(tenant_id, **kwargs)
 
-    async def get_sync_job_logs(self, job_id: str, offset: int = 0, limit: int = 100):
+    async def get_sync_job_logs(self, job_id: str, tenant_id: str, offset: int = 0, limit: int = 100):
+        """Fetch a sync job's log entries, scoped to the caller's tenant.
+
+        Without the tenant check an authenticated user from tenant A could
+        read logs of tenant B just by guessing job UUIDs — classic IDOR.
+        """
+        job = await self.job_repo.get_by_id(job_id)
+        if not job or str(job.tenant_id) != str(tenant_id):
+            raise NotFoundError(f"Sync job '{job_id}' not found")
         return await self.log_repo.list_by_job(job_id, offset, limit)

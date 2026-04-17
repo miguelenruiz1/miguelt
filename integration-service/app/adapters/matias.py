@@ -233,7 +233,43 @@ class MatiasAdapter(BaseAdapter):
             "status": "issued",
         }
 
-    async def process_webhook(self, payload: dict, headers: dict) -> dict:
+    async def process_webhook(self, payload: dict, headers: dict, *, webhook_secret: str | None = None) -> dict:
+        """Verify HMAC signature + timestamp window before trusting a webhook.
+
+        Matías signs each webhook with `X-Matias-Signature: hex(HMAC-SHA256(secret, timestamp + '.' + raw_body))`
+        and sends `X-Matias-Timestamp: <unix_seconds>`. We recompute locally
+        and reject if:
+          - secret is missing (caller forgot to pass it)
+          - signature header absent or does not constant-time match
+          - timestamp is older than 5 min or > 1 min in the future (replay /
+            clock-skew guard)
+        """
+        import hmac as _hmac
+        import hashlib as _hashlib
+        import json as _json
+        from time import time as _now
+
+        if not webhook_secret:
+            raise ValueError("Matias webhook secret missing")
+
+        sig = headers.get("X-Matias-Signature") or headers.get("x-matias-signature")
+        ts = headers.get("X-Matias-Timestamp") or headers.get("x-matias-timestamp")
+        if not sig or not ts:
+            raise ValueError("Matias webhook missing signature or timestamp header")
+        try:
+            ts_int = int(ts)
+        except ValueError as exc:
+            raise ValueError(f"invalid timestamp header: {ts}") from exc
+        drift = _now() - ts_int
+        if drift > 300 or drift < -60:
+            raise ValueError(f"timestamp outside tolerance window (drift={int(drift)}s)")
+
+        body = _json.dumps(payload, separators=(",", ":"), sort_keys=True)
+        message = f"{ts}.{body}".encode()
+        expected = _hmac.new(webhook_secret.encode(), message, _hashlib.sha256).hexdigest()
+        if not _hmac.compare_digest(expected, sig):
+            raise ValueError("Matias webhook signature mismatch")
+
         event_type = payload.get("event", "unknown")
         return {"status": "processed", "event_type": event_type, "invoice_id": payload.get("invoice_id")}
 

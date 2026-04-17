@@ -164,7 +164,8 @@ async def require_inventory_module(
 
     try:
         resp = await http_client.get(
-            f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/modules/{tenant_id}/{settings.MODULE_SLUG}"
+            f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/modules/{tenant_id}/{settings.MODULE_SLUG}",
+            headers={"X-Service-Token": settings.S2S_SERVICE_TOKEN},
         )
     except httpx.RequestError:
         raise HTTPException(
@@ -212,7 +213,8 @@ async def require_production_module(
         # Fallback to subscription-service
         try:
             resp = await http_client.get(
-                f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/modules/{tenant_id}/{slug}"
+                f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/modules/{tenant_id}/{slug}",
+                headers={"X-Service-Token": settings.S2S_SERVICE_TOKEN},
             )
         except httpx.RequestError:
             raise HTTPException(
@@ -256,7 +258,8 @@ async def is_einvoicing_active(
 
     try:
         resp = await http_client.get(
-            f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/modules/{tenant_id}/electronic-invoicing"
+            f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/modules/{tenant_id}/electronic-invoicing",
+            headers={"X-Service-Token": settings.S2S_SERVICE_TOKEN},
         )
     except httpx.RequestError:
         return False
@@ -287,7 +290,8 @@ async def is_einvoicing_sandbox_active(
 
     try:
         resp = await http_client.get(
-            f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/modules/{tenant_id}/electronic-invoicing-sandbox"
+            f"{settings.SUBSCRIPTION_SERVICE_URL}/api/v1/modules/{tenant_id}/electronic-invoicing-sandbox",
+            headers={"X-Service-Token": settings.S2S_SERVICE_TOKEN},
         )
     except httpx.RequestError:
         return False

@@ -157,7 +157,9 @@ class EmailProviderService:
 # ─── Provider-specific send implementations ──────────────────────────────────
 
 async def _send_via_resend(creds: dict, to: str, subject: str, html_body: str) -> None:
-    async with httpx.AsyncClient() as client:
+    # Timeout prevents a hung Resend API from blocking a request path forever
+    # (email sends run inline on webhook/register endpoints).
+    async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.post(
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {creds['api_key']}", "Content-Type": "application/json"},

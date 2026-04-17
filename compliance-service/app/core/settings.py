@@ -82,8 +82,13 @@ class Settings(BaseSettings):
     def validate_jwt_secret(cls, v: str) -> str:
         import os
         env = os.environ.get("ENV", "dev").lower()
+        # Blocklist covers both shapes of placeholder secrets this repo has
+        # shipped with. Previously only `change-me` was checked, which let
+        # `super-secret-dev-key-change-in-prod` (the compose default here)
+        # sneak through a production deploy silently.
+        insecure_prefixes = ("change-me", "super-secret-dev", "dev-secret", "test-secret")
         if env in ("prod", "production"):
-            if not v or len(v) < 32 or v.startswith("change-me"):
+            if not v or len(v) < 32 or v.startswith(insecure_prefixes):
                 raise ValueError("JWT_SECRET must be set to >=32 char strong value in production.")
         return v
 

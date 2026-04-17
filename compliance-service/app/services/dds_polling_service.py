@@ -177,6 +177,12 @@ async def poll_once(db) -> dict[str, Any]:
 
     # Cache one TracesNTService per tenant (they load creds per tenant).
     svc_cache: dict[str, TracesNTService] = {}
+    # Collect records that transitioned to VALIDATED so we can email AFTER
+    # the DB commit succeeds. Sending email inside the loop (before commit)
+    # risks the operator getting a "validated" notice while the row rolls
+    # back and stays "submitted", so we'd re-notify on the next pass.
+    newly_validated: list[ComplianceRecord] = []
+
     for rec in records:
         try:
             tenant_key = str(rec.tenant_id)
@@ -203,11 +209,7 @@ async def poll_once(db) -> dict[str, Any]:
                 rec.declaration_validated_at = now
                 rec.declaration_rejection_reason = None
                 summary["validated"] += 1
-                # Notify the operator — don't fail the whole loop if email throws.
-                try:
-                    await _notify_validated(rec)
-                except Exception:
-                    log.exception("dds_validated_notify_error", record_id=str(rec.id))
+                newly_validated.append(rec)
             elif new_status == "rejected" and rec.declaration_status != "rejected":
                 rec.declaration_status = "rejected"
                 rec.declaration_rejection_reason = (
@@ -224,6 +226,15 @@ async def poll_once(db) -> dict[str, Any]:
             summary["errors"] += 1
 
     await db.commit()
+
+    # Post-commit: now it's safe to notify. Any email failure is logged but
+    # does not roll back the DB state (which is already durable).
+    for rec in newly_validated:
+        try:
+            await _notify_validated(rec)
+        except Exception:
+            log.exception("dds_validated_notify_error", record_id=str(rec.id))
+
     log.info("dds_poll_complete", **summary)
     return summary
 

@@ -1,5 +1,13 @@
 version: "3.9"
 
+# Default logging policy for every long-running container. Without this a
+# weekend of `docker compose up` fills the laptop disk with unbounded logs.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   api:
     build:
@@ -7,6 +15,7 @@ services:
       dockerfile: Dockerfile
       target: runtime
     image: trace-service:latest
+    logging: *default-logging
     container_name: trace-api
     env_file: .env
     environment:
@@ -44,6 +53,7 @@ services:
       dockerfile: Dockerfile
       target: runtime
     image: trace-service:latest
+    logging: *default-logging
     container_name: trace-worker
     env_file: .env
     depends_on:
@@ -143,6 +153,7 @@ services:
       dockerfile: Dockerfile
     image: user-service:latest
     container_name: user-api
+    logging: *default-logging
     environment:
       DATABASE_URL: postgresql+asyncpg://user_svc:userpass@user-postgres:5432/userdb
       REDIS_URL: redis://redis:6379/2
@@ -215,6 +226,7 @@ services:
       target: runtime
     image: subscription-service:latest
     container_name: subscription-api
+    logging: *default-logging
     environment:
       DATABASE_URL: postgresql+asyncpg://sub_svc:subpass@subscription-postgres:5432/subdb
       REDIS_URL: redis://redis:6379/3
@@ -273,6 +285,7 @@ services:
       dockerfile: Dockerfile
     image: inventory-service:latest
     container_name: inventory-api
+    logging: *default-logging
     environment:
       DATABASE_URL: postgresql+asyncpg://inv_svc:invpass@inventory-postgres:5432/inventorydb
       REDIS_URL: redis://redis:6379/4
@@ -336,6 +349,7 @@ services:
       dockerfile: Dockerfile
     image: integration-service:latest
     container_name: integration-api
+    logging: *default-logging
     environment:
       DATABASE_URL: postgresql+asyncpg://int_svc:intpass@integration-postgres:5432/integrationdb
       REDIS_URL: redis://redis:6379/5
@@ -396,6 +410,7 @@ services:
       dockerfile: Dockerfile
     image: compliance-service:latest
     container_name: compliance-api
+    logging: *default-logging
     environment:
       DATABASE_URL: postgresql+asyncpg://cmp_svc:cmppass@compliance-postgres:5432/compliancedb
       REDIS_URL: redis://redis:6379/6
@@ -475,6 +490,7 @@ services:
       dockerfile: Dockerfile
     image: ai-service:latest
     container_name: ai-api
+    logging: *default-logging
     environment:
       DATABASE_URL: postgresql+asyncpg://ai_svc:aipass@ai-postgres:5432/aidb
       REDIS_URL: redis://redis:6379/7
@@ -530,6 +546,7 @@ services:
       dockerfile: Dockerfile
     image: media-service:latest
     container_name: media-api
+    logging: *default-logging
     environment:
       DATABASE_URL: postgresql+asyncpg://media_svc:mediapass@media-postgres:5432/mediadb
       REDIS_URL: redis://redis:6379/8
@@ -570,6 +587,7 @@ services:
     build: ./gateway
     image: trace-gateway:latest
     container_name: trace-gateway
+    logging: *default-logging
     # Override the Cloud Run entrypoint: in compose we use the static
     # nginx.conf baked into the image (upstreams point to compose hostnames).
     command: ["nginx", "-g", "daemon off;"]

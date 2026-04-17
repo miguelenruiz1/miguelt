@@ -54,7 +54,9 @@ def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
 
-    app = FastAPI(redirect_slashes=False, 
+    # redirect_slashes=True so /foo and /foo/ both resolve; compliance-service
+    # already uses this and the gateway preserves Authorization across 307s.
+    app = FastAPI(redirect_slashes=True,
         title="Trace - AI Service",
         description="Centralized AI analysis, memory, and configuration for all Trace modules.",
         version=settings.APP_VERSION,

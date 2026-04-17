@@ -24,8 +24,13 @@ router = APIRouter(prefix="/api/v1/internal", tags=["internal"])
 
 
 def require_s2s(x_service_token: Annotated[str | None, Header()] = None) -> None:
+    # Constant-time comparison so an attacker can't recover the token
+    # byte-by-byte via response-time measurements. The other backends
+    # already use compare_digest; this one was the odd one out.
+    import secrets as _secrets
     settings = get_settings()
-    if not x_service_token or x_service_token != settings.S2S_SERVICE_TOKEN:
+    expected = settings.S2S_SERVICE_TOKEN
+    if not x_service_token or not _secrets.compare_digest(x_service_token, expected):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing service token",

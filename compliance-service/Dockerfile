@@ -18,4 +18,7 @@ COPY --chown=cmpsvc:cmpsvc . .
 RUN mkdir -p /app/uploads/certificates && chown -R cmpsvc:cmpsvc /app/uploads
 USER cmpsvc
 EXPOSE 8005
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8005 --workers 2"]
+# Single uvicorn worker per container. Workers=2 forked the lifespan twice,
+# which in turn spawned the dds polling loop twice per container; Cloud Run
+# already fans out instances for us.
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8005"]

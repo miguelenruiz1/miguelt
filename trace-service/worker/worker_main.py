@@ -191,9 +191,55 @@ async def anchor_generic(ctx: dict[str, Any], anchor_request_id: str) -> dict[st
             raise
 
 
+def _callback_url_allowed(url: str) -> tuple[bool, str]:
+    """Reject callback URLs that would let a tenant turn the worker into
+    an SSRF relay (e.g. http://127.0.0.1:5432, http://10.x metadata, etc.).
+
+    Accept only https:// URLs resolving to non-private, non-link-local
+    addresses. Returns (ok, reason).
+    """
+    from ipaddress import ip_address
+    from socket import gethostbyname_ex
+    from urllib.parse import urlparse
+
+    try:
+        parsed = urlparse(url)
+    except Exception as exc:
+        return False, f"unparseable: {exc}"
+    if parsed.scheme != "https":
+        return False, f"scheme={parsed.scheme!r} (only https allowed)"
+    host = (parsed.hostname or "").strip().lower()
+    if not host:
+        return False, "missing host"
+    if host in {"localhost", "metadata.google.internal"} or host.endswith(".local"):
+        return False, f"blocked host {host!r}"
+    try:
+        _, _, addrs = gethostbyname_ex(host)
+    except Exception as exc:
+        return False, f"dns lookup failed: {exc}"
+    for addr in addrs:
+        try:
+            ip = ip_address(addr)
+        except ValueError:
+            continue
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved:
+            return False, f"resolves to {ip} ({host})"
+    return True, "ok"
+
+
 async def _fire_callback(url: str, payload_hash: str, tx_sig: str) -> None:
-    """Best-effort POST to the callback URL when anchoring completes."""
+    """Best-effort POST to the callback URL when anchoring completes.
+
+    Tenants register the callback URL and the worker fires it out-of-band.
+    We validate the URL up-front to block SSRF attempts: only public https
+    endpoints are reached; any host resolving to a private / link-local /
+    loopback IP is rejected before the request goes out.
+    """
     import httpx
+    ok, reason = _callback_url_allowed(url)
+    if not ok:
+        log.warning("anchor_callback_blocked", url=url, reason=reason)
+        return
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             await client.post(url, json={
