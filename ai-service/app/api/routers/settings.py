@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Annotated
 
 import redis.asyncio as aioredis
@@ -32,8 +33,11 @@ class UpdateSettingsRequest(BaseModel):
     global_daily_limit_enterprise: int | None = None
     cache_ttl_minutes: int | None = None
     cache_enabled: bool | None = None
-    estimated_cost_per_analysis_usd: float | None = None
-    alert_monthly_cost_usd: float | None = None
+    # Money-shaped fields use Decimal so Pydantic doesn't collapse to float
+    # and lose the trailing precision that matters when accumulating monthly
+    # costs across hundreds of analyses. The DB stores these as Numeric.
+    estimated_cost_per_analysis_usd: Decimal | None = None
+    alert_monthly_cost_usd: Decimal | None = None
     pnl_analysis_enabled: bool | None = None
 
 

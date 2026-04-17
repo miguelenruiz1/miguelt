@@ -276,7 +276,8 @@ async def wompi_webhook(
         log.warning("wompi_webhook_no_config", tenant_id=tenant_id)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Wompi not configured")
 
-    events_secret = gateway_config.credentials.get("events_secret", "")
+    from app.core.crypto import decrypt_credentials
+    events_secret = decrypt_credentials(gateway_config.credentials).get("events_secret", "")
 
     # Wompi signature: SHA256(concat of tx properties + timestamp + events_secret)
     timestamp = str(body.get("timestamp", ""))

@@ -6,7 +6,14 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.crypto import decrypt_credentials, encrypt_credentials
 from app.repositories.payment_repo import PaymentGatewayRepository
+
+
+def _read_credentials(config) -> dict:
+    """Return plaintext credentials for a config row, handling both the new
+    encrypted shape and legacy plaintext rows."""
+    return decrypt_credentials(config.credentials if config else None)
 
 
 # ─── Gateway catalogue (hardcoded) ────────────────────────────────────────────
@@ -55,7 +62,7 @@ class PaymentService:
                 "is_active": config.is_active if config else False,
                 "is_test_mode": config.is_test_mode if config else True,
                 "configured": config is not None,
-                "credentials_masked": _mask_credentials(config.credentials) if config else {},
+                "credentials_masked": _mask_credentials(_read_credentials(config)),
                 "updated_at": config.updated_at.isoformat() if config else None,
                 # catalogue metadata
                 "name": gw["name"],
@@ -80,7 +87,7 @@ class PaymentService:
             tenant_id=tenant_id,
             slug=slug,
             display_name=gw["name"],
-            credentials=credentials,
+            credentials=encrypt_credentials(credentials),
             is_test_mode=is_test_mode,
         )
         return {
@@ -89,7 +96,7 @@ class PaymentService:
             "is_active": config.is_active,
             "is_test_mode": config.is_test_mode,
             "configured": True,
-            "credentials_masked": _mask_credentials(config.credentials),
+            "credentials_masked": _mask_credentials(credentials),
             "updated_at": config.updated_at.isoformat() if config.updated_at else None,
         }
 
@@ -103,7 +110,7 @@ class PaymentService:
             "is_active": config.is_active,
             "is_test_mode": config.is_test_mode,
             "configured": True,
-            "credentials_masked": _mask_credentials(config.credentials),
+            "credentials_masked": _mask_credentials(_read_credentials(config)),
             "updated_at": config.updated_at.isoformat() if config.updated_at else None,
         }
 
