@@ -102,9 +102,27 @@ class AISettingsService:
                     "global_daily_limit_professional", "global_daily_limit_enterprise",
                     "cache_ttl_minutes", "cache_enabled", "estimated_cost_per_analysis_usd",
                     "alert_monthly_cost_usd", "pnl_analysis_enabled"}
+        # Model whitelist. Without this a compromised superuser could set the
+        # model to `claude-opus-4-1` (or any future premium tier) and burn
+        # six-figure LLM bills quietly. Keep in sync with pricing tiers.
+        allowed_models = {
+            "claude-haiku-4-5-20251001",
+            "claude-haiku-4-5",
+            "claude-sonnet-4-6",
+            "claude-sonnet-4-7",
+            "claude-opus-4-7",
+        }
         for k, v in data.items():
-            if k in allowed:
-                setattr(s, k, v)
+            if k not in allowed:
+                continue
+            if k in {"anthropic_model_analysis", "anthropic_model_premium"} and v is not None:
+                if v not in allowed_models:
+                    from fastapi import HTTPException
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Model '{v}' not in allowlist: {sorted(allowed_models)}",
+                    )
+            setattr(s, k, v)
         s.updated_at = datetime.now(timezone.utc)
         await self.db.flush()
         if self.redis:
@@ -137,7 +155,27 @@ class AISettingsService:
         except anthropic.AuthenticationError:
             return {"ok": False, "error": "API key invalida"}
         except Exception as exc:
-            return {"ok": False, "error": str(exc)}
+            # The Anthropic SDK sometimes echoes the bearer token back in the
+            # exception message on transport errors. Scrub the key + any
+            # recognisable prefix before returning it to the caller.
+            return {"ok": False, "error": _scrub_secrets(str(exc), api_key)}
+
+
+def _scrub_secrets(msg: str, api_key: str) -> str:
+    """Remove the API key + any `sk-…` / `Bearer …` pattern from a message.
+
+    Called on exception strings so a malformed key or network error doesn't
+    leak the real key into logs or HTTP responses.
+    """
+    import re as _re
+    if api_key and len(api_key) >= 8:
+        msg = msg.replace(api_key, "[redacted]")
+    msg = _re.sub(r"sk-[A-Za-z0-9_\-]{10,}", "[redacted]", msg)
+    msg = _re.sub(r"(?i)(Bearer|Authorization)[:=\s]+\S+", r"\1 [redacted]", msg)
+    # Also cap message length to avoid megabyte-size stack traces leaking.
+    if len(msg) > 500:
+        msg = msg[:500] + "…"
+    return msg
 
     async def get_metrics(self) -> dict:
         s = await self.get_settings()

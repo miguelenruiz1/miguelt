@@ -7,6 +7,10 @@ interface AuthState {
   accessToken: string | null
   refreshToken: string | null
   permissions: string[]
+  // True once Zustand has finished reading localStorage. ProtectedRoute
+  // waits on this so the first render doesn't flash `/login` before the
+  // persisted token is available.
+  _hasHydrated: boolean
   setAuth: (user: AuthUser, accessToken: string, refreshToken: string, permissions: string[]) => void
   clearAuth: () => void
   hasPermission: (slug: string) => boolean
@@ -19,6 +23,7 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       permissions: [],
+      _hasHydrated: false,
       setAuth: (user, accessToken, refreshToken, permissions) =>
         set({ user, accessToken, refreshToken, permissions }),
       clearAuth: () =>
@@ -52,6 +57,11 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         permissions: state.permissions,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Fires after storage read (even if persisted state was empty).
+        state?.setAuth  // no-op reference to keep TS happy
+        useAuthStore.setState({ _hasHydrated: true })
+      },
     },
   ),
 )

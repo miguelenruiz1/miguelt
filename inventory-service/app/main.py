@@ -45,52 +45,84 @@ async def lifespan(app: FastAPI):
     from app.core.settings import get_settings as _gs
 
     async def _expiry_scan_loop():
-        """Run expiry alert check every 24 hours for all tenants."""
+        """Run expiry alert check every 24 hours for all tenants.
+
+        Leader-gated via Redis SETNX so multiple replicas don't duplicate
+        the scan. The sleep sits at the end of the loop so the first pass
+        runs on startup instead of after a full 24h silence.
+        """
         _log = get_logger("expiry_scanner")
+        from app.api.deps import get_redis
+        lock_key = "inventory:expiry_scan:leader"
+        lock_ttl = 82800  # 23h — re-elect just before the next scheduled run
         while True:
             try:
-                await asyncio.sleep(86400)  # 24 hours
-                from app.db.session import get_db
-                from app.services.alert_service import AlertService
-                from sqlalchemy import text as _text
+                leader = False
+                try:
+                    rd = get_redis()
+                    leader = bool(await rd.set(lock_key, "1", nx=True, ex=lock_ttl))
+                except Exception as exc:
+                    _log.warning("expiry_scan_lock_error", error=str(exc))
+                    leader = True  # fall open — single-replica dev always wins
+                if leader:
+                    from app.db.session import get_db
+                    from app.services.alert_service import AlertService
+                    from sqlalchemy import text as _text
 
-                async with get_db() as session:
-                    rows = (await session.execute(_text("SELECT DISTINCT tenant_id FROM entities"))).all()
-                    for (tid,) in rows:
-                        svc = AlertService(session)
-                        created = await svc.check_expiry_alerts(tid)
-                        if created:
-                            _log.info("expiry_alerts_created", tenant_id=tid, count=len(created))
+                    async with get_db() as session:
+                        rows = (await session.execute(_text("SELECT DISTINCT tenant_id FROM entities"))).all()
+                        for (tid,) in rows:
+                            svc = AlertService(session)
+                            created = await svc.check_expiry_alerts(tid)
+                            if created:
+                                _log.info("expiry_alerts_created", tenant_id=tid, count=len(created))
+                await asyncio.sleep(86400)
             except asyncio.CancelledError:
                 break
             except Exception as exc:
                 _log.error("expiry_scan_error", error=str(exc))
+                await asyncio.sleep(86400)
 
     expiry_task = asyncio.create_task(_expiry_scan_loop())
 
     # Start background auto-reorder scanner (daily)
     async def _reorder_scan_loop():
-        """Check auto-reorder for all tenants every 24 hours."""
+        """Check auto-reorder for all tenants every 24 hours.
+
+        Leader-gated via Redis SETNX, same rationale as _expiry_scan_loop.
+        """
         _log = get_logger("reorder_scanner")
+        from app.api.deps import get_redis
+        lock_key = "inventory:reorder_scan:leader"
+        lock_ttl = 82800
         while True:
             try:
-                await asyncio.sleep(86400)  # 24 hours
-                from app.db.session import get_db
-                from app.services.reorder_service import ReorderService
-                from sqlalchemy import text as _text
+                leader = False
+                try:
+                    rd = get_redis()
+                    leader = bool(await rd.set(lock_key, "1", nx=True, ex=lock_ttl))
+                except Exception as exc:
+                    _log.warning("reorder_scan_lock_error", error=str(exc))
+                    leader = True
+                if leader:
+                    from app.db.session import get_db
+                    from app.services.reorder_service import ReorderService
+                    from sqlalchemy import text as _text
 
-                async with get_db() as session:
-                    rows = (await session.execute(_text("SELECT DISTINCT tenant_id FROM entities"))).all()
-                    for (tid,) in rows:
-                        svc = ReorderService(session)
-                        created = await svc.check_all_products_reorder(tid)
-                        if created:
-                            _log.info("auto_reorder_scan_created", tenant_id=tid, count=len(created))
-                    await session.commit()
+                    async with get_db() as session:
+                        rows = (await session.execute(_text("SELECT DISTINCT tenant_id FROM entities"))).all()
+                        for (tid,) in rows:
+                            svc = ReorderService(session)
+                            created = await svc.check_all_products_reorder(tid)
+                            if created:
+                                _log.info("auto_reorder_scan_created", tenant_id=tid, count=len(created))
+                        await session.commit()
+                await asyncio.sleep(86400)
             except asyncio.CancelledError:
                 break
             except Exception as exc:
                 _log.error("reorder_scan_error", error=str(exc))
+                await asyncio.sleep(86400)
 
     reorder_task = asyncio.create_task(_reorder_scan_loop())
 
@@ -116,7 +148,7 @@ def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
 
-    app = FastAPI(redirect_slashes=False, 
+    app = FastAPI(redirect_slashes=True,
         title="Trace — Inventory Service",
         description="Inventory management: products, warehouses, stock movements and purchase orders.",
         version=settings.APP_VERSION,

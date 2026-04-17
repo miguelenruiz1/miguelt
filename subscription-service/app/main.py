@@ -84,7 +84,7 @@ def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
 
-    app = FastAPI(redirect_slashes=False, 
+    app = FastAPI(redirect_slashes=True,
         title="Trace — Subscription Service",
         description="SaaS subscription plans, billing, and license management.",
         version=settings.APP_VERSION,

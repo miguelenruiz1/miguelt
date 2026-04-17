@@ -3,19 +3,48 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+import redis.asyncio as aioredis
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import require_permission
+from app.api.deps import get_redis, require_permission
 from app.db.session import get_db_session
 from app.domain.schemas import IssueKeyRequest, LicenseKeyResponse
 from app.services.license_service import LicenseService
 
 router = APIRouter(prefix="/api/v1/licenses", tags=["licenses"])
 
+# Public validate endpoint needs a brute-force brake. Sliding window: N hits
+# per IP per WINDOW seconds. Lives in Redis so it survives pod restarts and
+# is shared across replicas. slowapi isn't wired in this service and the
+# counter is trivial enough to inline.
+_RATE_LIMIT_MAX = 20
+_RATE_LIMIT_WINDOW_SECONDS = 60
+
 
 def _svc(db: Annotated[AsyncSession, Depends(get_db_session)]) -> LicenseService:
     return LicenseService(db)
+
+
+async def _rate_limit_validate(request: Request, redis: aioredis.Redis) -> None:
+    ip = (
+        (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+        or (request.client.host if request.client else "unknown")
+    )
+    key = f"ratelimit:license-validate:{ip}"
+    try:
+        count = await redis.incr(key)
+        if count == 1:
+            await redis.expire(key, _RATE_LIMIT_WINDOW_SECONDS)
+    except Exception:
+        # Redis hiccup → fail open. Rate limit is defense-in-depth; the real
+        # brake is that keys have 128 bits of entropy.
+        return
+    if count > _RATE_LIMIT_MAX:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Rate limit exceeded ({_RATE_LIMIT_MAX}/{_RATE_LIMIT_WINDOW_SECONDS}s)",
+        )
 
 
 @router.get("/", response_model=list[LicenseKeyResponse])
@@ -45,9 +74,12 @@ async def issue_license(
 @router.get("/validate/{key}")
 async def validate_license(
     key: str,
+    request: Request,
+    redis: Annotated[aioredis.Redis, Depends(get_redis)],
     svc: LicenseService = Depends(_svc),
 ):
-    """Public endpoint — no authentication required."""
+    """Public endpoint — no authentication required. Rate-limited per IP."""
+    await _rate_limit_validate(request, redis)
     return await svc.validate(key)
 
 

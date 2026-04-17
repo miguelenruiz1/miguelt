@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import io
 from datetime import datetime
+from decimal import Decimal, ROUND_HALF_UP
+from zoneinfo import ZoneInfo
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -11,16 +13,28 @@ from reportlab.lib.units import inch, cm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, HRFlowable
 from reportlab.lib.enums import TA_RIGHT
 
+# Colombia reports render to Bogota civil time and keep full Decimal precision
+# for money. Earlier version forced float(value) which loses cents on large
+# revenue (>2^53 COP) and drops decimal precision during accumulation.
+_REPORT_TZ = ZoneInfo("America/Bogota")
+
 
 def _cop(value) -> str:
-    v = float(value) if value else 0
-    if v < 0:
-        return f"-${abs(v):,.0f}".replace(",", ".")
-    return f"${v:,.0f}".replace(",", ".")
+    if value is None or value == "":
+        return "$0"
+    d = value if isinstance(value, Decimal) else Decimal(str(value))
+    rounded = d.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    sign = "-" if rounded < 0 else ""
+    # `,` as thousand separator → swap to `.` (Colombia convention).
+    formatted = f"{abs(rounded):,}".replace(",", ".")
+    return f"{sign}${formatted}"
 
 
 def _pct(value) -> str:
-    return f"{float(value) if value else 0:.1f}%"
+    if value is None or value == "":
+        return "0.0%"
+    d = value if isinstance(value, Decimal) else Decimal(str(value))
+    return f"{d:.1f}%"
 
 
 DARK = colors.HexColor("#1f2937")
@@ -47,7 +61,7 @@ def generate_pnl_pdf(pnl_data: dict, tenant_name: str = "TraceLog") -> bytes:
     elements.append(Paragraph(tenant_name, styles["Title2"]))
     elements.append(Paragraph("Reporte de Inventario y Rentabilidad", styles["Subtitle"]))
     elements.append(Spacer(1, 0.3*inch))
-    elements.append(Paragraph(f"Generado el {datetime.now().strftime('%d/%m/%Y a las %H:%M')}", styles["SmallRight"]))
+    elements.append(Paragraph(f"Generado el {datetime.now(tz=_REPORT_TZ).strftime('%d/%m/%Y a las %H:%M')}", styles["SmallRight"]))
     elements.append(Spacer(1, 0.3*inch))
     elements.append(HRFlowable(width="100%", thickness=1, color=GRAY))
     elements.append(Spacer(1, 0.2*inch))

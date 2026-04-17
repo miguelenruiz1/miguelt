@@ -92,15 +92,13 @@ async def create_invoice_internal(
             from app.core.security import decrypt_credentials
             import json as _json
             repo = IntegrationConfigRepository(db)
-            # 1. Try tenant-specific config
+            # Tenant-specific config only. The previous code fell back to
+            # "platform" / "default" entries, meaning tenant B could emit
+            # invoices to DIAN signed with tenant A's shared credentials —
+            # a cross-tenant billing fraud risk. If a tenant has no config,
+            # fail the request explicitly so the onboarding flow completes
+            # the setup instead of silently using someone else's keys.
             config = await repo.get_by_provider(x_tenant_id, provider_slug)
-            # 2. Fallback to global/platform configs
-            if not config or not config.credentials_enc:
-                for fallback_tenant in ("platform", "default"):
-                    config = await repo.get_by_provider(fallback_tenant, provider_slug)
-                    if config and config.credentials_enc:
-                        _log.info("credentials_fallback tenant=%s fallback=%s provider=%s", x_tenant_id, fallback_tenant, provider_slug)
-                        break
             if config and config.credentials_enc:
                 credentials = _json.loads(decrypt_credentials(config.credentials_enc))
                 # Inherit simulation_mode from config if not in credentials
@@ -178,12 +176,8 @@ async def create_credit_note_internal(
         from app.core.security import decrypt_credentials
         import json as _json
         repo = IntegrationConfigRepository(db)
+        # No cross-tenant fallback — see note in create_invoice_internal.
         config = await repo.get_by_provider(x_tenant_id, provider_slug)
-        if not config or not config.credentials_enc:
-            for fallback_tenant in ("platform", "default"):
-                config = await repo.get_by_provider(fallback_tenant, provider_slug)
-                if config and config.credentials_enc:
-                    break
         if config and config.credentials_enc:
             credentials = _json.loads(decrypt_credentials(config.credentials_enc))
     result = await adapter.create_credit_note(credentials, body)
