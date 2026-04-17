@@ -36,12 +36,15 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'trace-auth',
-      // Bump whenever AuthUser shape or persisted fields change. Rehydration
-      // from a lower version triggers `migrate`; an unrecognized shape is
-      // wiped so the user re-logs in instead of crashing ProtectedRoute.
+      // `version` lets us invalidate stored state if the persisted schema
+      // changes incompatibly. We intentionally do NOT wipe everything just
+      // because the stored version is lower — an earlier bug did that and
+      // logged every existing user out on deploy. The migration accepts
+      // any shape that has the known field names; truly bogus shapes fall
+      // back to a clean empty state.
       version: 1,
-      migrate: (persisted, version) => {
-        if (version < 1 || !persisted || typeof persisted !== 'object') {
+      migrate: (persisted) => {
+        if (!persisted || typeof persisted !== 'object') {
           return {
             user: null,
             accessToken: null,
@@ -49,7 +52,13 @@ export const useAuthStore = create<AuthState>()(
             permissions: [],
           } as Partial<AuthState>
         }
-        return persisted as Partial<AuthState>
+        const p = persisted as Record<string, unknown>
+        return {
+          user: (p.user as AuthUser | null) ?? null,
+          accessToken: (p.accessToken as string | null) ?? null,
+          refreshToken: (p.refreshToken as string | null) ?? null,
+          permissions: Array.isArray(p.permissions) ? (p.permissions as string[]) : [],
+        } as Partial<AuthState>
       },
       partialize: (state) => ({
         user: state.user,
@@ -57,9 +66,10 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         permissions: state.permissions,
       }),
-      onRehydrateStorage: () => (state) => {
-        // Fires after storage read (even if persisted state was empty).
-        state?.setAuth  // no-op reference to keep TS happy
+      // Always flip `_hasHydrated` after a rehydrate attempt — even on error
+      // — so ProtectedRoute never hangs waiting for a hydration that won't
+      // come. The callback fires once, right after the storage read.
+      onRehydrateStorage: () => () => {
         useAuthStore.setState({ _hasHydrated: true })
       },
     },
