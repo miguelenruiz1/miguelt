@@ -52,7 +52,8 @@ async def get_email_config(
     cfg = result.scalar_one_or_none()
     if cfg is None:
         raise HTTPException(status_code=404, detail="No active email provider")
-    creds = cfg.credentials or {}
+    from app.core.crypto import decrypt_credentials
+    creds = decrypt_credentials(cfg.credentials)
     return {
         "slug": cfg.provider_slug,
         "api_key": creds.get("api_key", ""),

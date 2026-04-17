@@ -14,4 +14,8 @@ COPY --chown=invsvc:invsvc . .
 RUN mkdir -p /app/uploads/products && chown -R invsvc:invsvc /app/uploads
 USER invsvc
 EXPOSE 8003
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8003 --workers 2"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8003/health', timeout=3).read()" || exit 1
+# workers=1 because lifespan hosts daily expiry + reorder scanners. Multiple
+# workers = duplicate scheduler (Redis leader lock mitigates but wastes CPU).
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8003"]

@@ -13,4 +13,6 @@ RUN groupadd -r aisvc && useradd -r -g aisvc -d /app -s /sbin/nologin aisvc
 COPY --chown=aisvc:aisvc . .
 USER aisvc
 EXPOSE 8006
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8006/health', timeout=3).read()" || exit 1
 CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8006 --workers 2"]

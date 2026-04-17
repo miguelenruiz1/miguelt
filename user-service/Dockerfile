@@ -14,4 +14,8 @@ COPY --chown=usersvc:usersvc . .
 RUN mkdir -p /app/uploads/avatars && chown -R usersvc:usersvc /app/uploads
 USER usersvc
 EXPOSE 8001
+# Liveness probe for standalone docker / swarm / k8s. Cloud Run ignores this
+# and uses its own startup/readiness probes. Python-only (no curl dep).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=3).read()" || exit 1
 CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 2"]

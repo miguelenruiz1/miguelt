@@ -114,7 +114,8 @@ async def create_checkout(
         )
 
     # 5. Build Wompi checkout URL with integrity signature
-    creds = gateway_config.credentials or {}
+    from app.core.crypto import decrypt_credentials
+    creds = decrypt_credentials(gateway_config.credentials)
     is_test = gateway_config.is_test_mode
     public_key = creds.get("public_key", "")
     integrity_key = creds.get("integrity_key", "")

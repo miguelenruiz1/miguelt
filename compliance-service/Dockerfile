@@ -18,6 +18,8 @@ COPY --chown=cmpsvc:cmpsvc . .
 RUN mkdir -p /app/uploads/certificates && chown -R cmpsvc:cmpsvc /app/uploads
 USER cmpsvc
 EXPOSE 8005
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8005/health', timeout=3).read()" || exit 1
 # Single uvicorn worker per container. Workers=2 forked the lifespan twice,
 # which in turn spawned the dds polling loop twice per container; Cloud Run
 # already fans out instances for us.
