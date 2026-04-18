@@ -6,7 +6,8 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
+from typing_extensions import Annotated
 
 
 # Tenure types reconocidos (debe coincidir con la CHECK constraint del modelo)
@@ -34,7 +35,32 @@ CaptureMethod = Literal[
 
 ProducerScale = Literal["smallholder", "medium", "industrial"]
 
-CommodityType = Literal["coffee", "cacao", "palm", "other"]
+_COMMODITY_CANONICAL = Literal[
+    "coffee", "cacao", "palm", "wood", "rubber", "soy", "cattle", "other",
+]
+
+# Spanish framework labels mapped to canonical English values so users who
+# follow the framework doc (which exposes `applicable_commodities` in ES)
+# can POST those values and have them accepted.
+_COMMODITY_ALIASES: dict[str, str] = {
+    "cafe": "coffee",
+    "palma_aceitera": "palm",
+    "palm_oil": "palm",
+    "madera": "wood",
+    "caucho": "rubber",
+    "soja": "soy",
+    "ganado_bovino": "cattle",
+}
+
+
+def _normalize_commodity(v: object) -> object:
+    if isinstance(v, str):
+        low = v.strip().lower()
+        return _COMMODITY_ALIASES.get(low, low)
+    return v
+
+
+CommodityType = Annotated[_COMMODITY_CANONICAL, BeforeValidator(_normalize_commodity)]
 
 # Tipos de identificacion legal de personas/empresas. Cubre Colombia (CC, CE,
 # NIT, RUT, PASAPORTE) + cross-LATAM mas comunes (RUC Peru/Ecuador, CURP/RFC

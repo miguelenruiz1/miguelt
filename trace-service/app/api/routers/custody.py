@@ -29,7 +29,7 @@ from app.domain.schemas import (
     ReleaseRequest,
     BurnRequest,
 )
-from app.api.deps import get_tenant_id_enforced, get_tenant_id, CurrentUser
+from app.api.deps import get_tenant_id_enforced, get_tenant_id, CurrentUser, require_permission
 from app.services.anchor_service import enqueue_anchor
 from app.services.custody_service import CustodyService
 
@@ -218,8 +218,7 @@ async def asset_metadata_json(
 @router.post(
     "",
     status_code=status.HTTP_201_CREATED,
-    summary="Create a new asset and genesis custody event",
-)
+    summary="Create a new asset and genesis custody event", dependencies=[require_permission("logistics.manage")])
 async def create_asset(
     request: Request,
     body: AssetCreate,
@@ -257,8 +256,7 @@ async def create_asset(
 @router.post(
     "/mint",
     status_code=status.HTTP_201_CREATED,
-    summary="Mint a new NFT representing a logistics load",
-)
+    summary="Mint a new NFT representing a logistics load", dependencies=[require_permission("logistics.manage")])
 async def mint_asset(
     request: Request,
     body: AssetMintRequest,
@@ -428,7 +426,7 @@ async def get_events(
 
 # ─── Custody Events ───────────────────────────────────────────────────────────
 
-@router.post("/{asset_id}/events/handoff", status_code=status.HTTP_201_CREATED, summary="Handoff asset to another wallet")
+@router.post("/{asset_id}/events/handoff", status_code=status.HTTP_201_CREATED, summary="Handoff asset to another wallet", dependencies=[require_permission("logistics.manage")])
 async def handoff(
     request: Request,
     asset_id: uuid.UUID,
@@ -461,7 +459,7 @@ async def handoff(
     return ORJSONResponse(status_code=code, content=result)
 
 
-@router.post("/{asset_id}/events/arrived", status_code=status.HTTP_201_CREATED, summary="Mark asset as arrived")
+@router.post("/{asset_id}/events/arrived", status_code=status.HTTP_201_CREATED, summary="Mark asset as arrived", dependencies=[require_permission("logistics.manage")])
 async def arrived(
     asset_id: uuid.UUID,
     body: ArrivedRequest,
@@ -488,7 +486,7 @@ async def arrived(
     )
 
 
-@router.post("/{asset_id}/events/loaded", status_code=status.HTTP_201_CREATED, summary="Mark asset as loaded")
+@router.post("/{asset_id}/events/loaded", status_code=status.HTTP_201_CREATED, summary="Mark asset as loaded", dependencies=[require_permission("logistics.manage")])
 async def loaded(
     asset_id: uuid.UUID,
     body: LoadedRequest,
@@ -515,7 +513,7 @@ async def loaded(
     )
 
 
-@router.post("/{asset_id}/events/qc", status_code=status.HTTP_201_CREATED, summary="Record QC result")
+@router.post("/{asset_id}/events/qc", status_code=status.HTTP_201_CREATED, summary="Record QC result", dependencies=[require_permission("logistics.manage")])
 async def qc(
     asset_id: uuid.UUID,
     body: QCRequest,
@@ -545,8 +543,7 @@ async def qc(
 @router.post(
     "/{asset_id}/events/release",
     status_code=status.HTTP_201_CREATED,
-    summary="Release asset to external wallet (admin only)",
-)
+    summary="Release asset to external wallet (admin only)", dependencies=[require_permission("logistics.manage")])
 async def release(
     request: Request,
     asset_id: uuid.UUID,
@@ -594,8 +591,7 @@ async def release(
 @router.post(
     "/{asset_id}/events/burn",
     status_code=status.HTTP_201_CREATED,
-    summary="Burn asset (mark as consumed/final destination)",
-)
+    summary="Burn asset (mark as consumed/final destination)", dependencies=[require_permission("logistics.manage")])
 async def burn(
     request: Request,
     asset_id: uuid.UUID,
@@ -713,8 +709,7 @@ async def _try_auto_certificate(asset_id: uuid.UUID, tenant_id: uuid.UUID) -> No
 @router.post(
     "/{asset_id}/events",
     status_code=status.HTTP_201_CREATED,
-    summary="Record any custody event (generic endpoint for all event types)",
-)
+    summary="Record any custody event (generic endpoint for all event types)", dependencies=[require_permission("logistics.manage")])
 async def record_event(
     request: Request,
     asset_id: uuid.UUID,
@@ -766,8 +761,7 @@ async def record_event(
 @router.post(
     "/{asset_id}/events/{event_id}/quantity",
     status_code=status.HTTP_201_CREATED,
-    summary="Record a quantity change on a custody event (cereza/pergamino/verde + merma)",
-)
+    summary="Record a quantity change on a custody event (cereza/pergamino/verde + merma)", dependencies=[require_permission("logistics.manage")])
 async def record_event_quantity(
     asset_id: uuid.UUID,
     event_id: uuid.UUID,
@@ -795,8 +789,7 @@ async def record_event_quantity(
 
 @router.post(
     "/{asset_id}/events/{event_id}/anchor",
-    summary="Manually trigger Solana anchoring for a specific event",
-)
+    summary="Manually trigger Solana anchoring for a specific event", dependencies=[require_permission("logistics.manage")])
 async def anchor_event(
     asset_id: uuid.UUID,
     event_id: uuid.UUID,
@@ -810,8 +803,7 @@ async def anchor_event(
 
 @router.post(
     "/{asset_id}/remint",
-    summary="Re-mint blockchain cNFT for an asset stuck in pending_* state",
-)
+    summary="Re-mint blockchain cNFT for an asset stuck in pending_* state", dependencies=[require_permission("logistics.manage")])
 async def remint_asset(
     asset_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
@@ -853,7 +845,7 @@ async def remint_asset(
     return ORJSONResponse(content=_asset_resp(asset))
 
 
-@router.post("/assets/{asset_id}/events/{event_id}/evidence")
+@router.post("/assets/{asset_id}/events/{event_id}/evidence", dependencies=[require_permission("logistics.manage")])
 async def upload_evidence(
     asset_id: uuid.UUID,
     event_id: uuid.UUID,
@@ -914,8 +906,7 @@ async def upload_evidence(
 
 @router.post(
     "/assets/{asset_id}/events/{event_id}/documents",
-    status_code=status.HTTP_201_CREATED,
-)
+    status_code=status.HTTP_201_CREATED, dependencies=[require_permission("logistics.manage")])
 async def upload_and_link_documents(
     asset_id: uuid.UUID,
     event_id: uuid.UUID,
@@ -958,8 +949,7 @@ async def upload_and_link_documents(
 
 @router.post(
     "/assets/{asset_id}/events/{event_id}/documents/link",
-    status_code=status.HTTP_201_CREATED,
-)
+    status_code=status.HTTP_201_CREATED, dependencies=[require_permission("logistics.manage")])
 async def link_existing_media(
     asset_id: uuid.UUID,
     event_id: uuid.UUID,
@@ -1022,8 +1012,7 @@ async def list_event_documents(
     "/{asset_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     response_class=Response,
-    summary="Delete an asset (only if in terminal state)",
-)
+    summary="Delete an asset (only if in terminal state)", dependencies=[require_permission("logistics.manage")])
 async def delete_asset(
     asset_id: uuid.UUID,
     current_user: CurrentUser,
@@ -1076,8 +1065,7 @@ async def delete_asset(
 @router.delete(
     "/assets/{asset_id}/events/{event_id}/documents/{link_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    response_class=Response,
-)
+    response_class=Response, dependencies=[require_permission("logistics.manage")])
 async def unlink_event_document(
     asset_id: uuid.UUID,
     event_id: uuid.UUID,

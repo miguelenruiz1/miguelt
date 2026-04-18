@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import verify_service_token
 from app.core.logging import get_logger
 from app.db.session import get_db_session
 from app.repositories.anchor_repo import AnchorRequestRepository
@@ -19,7 +20,15 @@ from app.services.anchor_service import enqueue_anchor
 
 log = get_logger(__name__)
 
-router = APIRouter(prefix="/anchoring", tags=["anchoring"])
+# S2S-only: only other Trace microservices call these. The middleware's
+# EXCLUDED_PREFIX bypasses JWT for /anchoring/, so without this explicit
+# service-token guard the routes were fully public (anyone could anchor
+# arbitrary hashes on Solana on our dime).
+router = APIRouter(
+    prefix="/anchoring",
+    tags=["anchoring"],
+    dependencies=[Depends(verify_service_token)],
+)
 
 
 # ─── Schemas ─────────────────────────────────────────────────────────────────

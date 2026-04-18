@@ -7,7 +7,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_tenant_id
+from app.api.deps import get_tenant_id, get_tenant_id_enforced
 from app.db.session import get_db_session
 from app.services.transport_analytics_service import TransportAnalyticsService
 
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 @router.get("/transport")
 async def transport_kpis(
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
     period: str = Query("month", pattern="^(day|week|month)$"),
     date_from: str | None = None,
