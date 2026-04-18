@@ -155,7 +155,7 @@ services:
     container_name: user-api
     logging: *default-logging
     environment:
-      DATABASE_URL: postgresql+asyncpg://user_svc:userpass@user-postgres:5432/userdb
+      DATABASE_URL: postgresql+asyncpg://user_svc:${USER_DB_PASSWORD:-userpass}@user-postgres:5432/userdb
       REDIS_URL: redis://redis:6379/2
       JWT_SECRET: ${JWT_SECRET:-super-secret-dev-key-change-in-prod}
       ACCESS_TOKEN_EXPIRE_MINUTES: 480
@@ -228,7 +228,7 @@ services:
     container_name: subscription-api
     logging: *default-logging
     environment:
-      DATABASE_URL: postgresql+asyncpg://sub_svc:subpass@subscription-postgres:5432/subdb
+      DATABASE_URL: postgresql+asyncpg://sub_svc:${SUB_DB_PASSWORD:-subpass}@subscription-postgres:5432/subdb
       REDIS_URL: redis://redis:6379/3
       USER_SERVICE_URL: http://user-api:8001
       INTEGRATION_SERVICE_URL: http://integration-api:8004
@@ -287,7 +287,7 @@ services:
     container_name: inventory-api
     logging: *default-logging
     environment:
-      DATABASE_URL: postgresql+asyncpg://inv_svc:invpass@inventory-postgres:5432/inventorydb
+      DATABASE_URL: postgresql+asyncpg://inv_svc:${INV_DB_PASSWORD:-invpass}@inventory-postgres:5432/inventorydb
       REDIS_URL: redis://redis:6379/4
       USER_SERVICE_URL: http://user-api:8001
       SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
@@ -351,7 +351,7 @@ services:
     container_name: integration-api
     logging: *default-logging
     environment:
-      DATABASE_URL: postgresql+asyncpg://int_svc:intpass@integration-postgres:5432/integrationdb
+      DATABASE_URL: postgresql+asyncpg://int_svc:${INT_DB_PASSWORD:-intpass}@integration-postgres:5432/integrationdb
       REDIS_URL: redis://redis:6379/5
       USER_SERVICE_URL: http://user-api:8001
       SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
@@ -412,7 +412,7 @@ services:
     container_name: compliance-api
     logging: *default-logging
     environment:
-      DATABASE_URL: postgresql+asyncpg://cmp_svc:cmppass@compliance-postgres:5432/compliancedb
+      DATABASE_URL: postgresql+asyncpg://cmp_svc:${CMP_DB_PASSWORD:-cmppass}@compliance-postgres:5432/compliancedb
       REDIS_URL: redis://redis:6379/6
       USER_SERVICE_URL: http://user-api:8001
       SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
@@ -492,7 +492,7 @@ services:
     container_name: ai-api
     logging: *default-logging
     environment:
-      DATABASE_URL: postgresql+asyncpg://ai_svc:aipass@ai-postgres:5432/aidb
+      DATABASE_URL: postgresql+asyncpg://ai_svc:${AI_DB_PASSWORD:-aipass}@ai-postgres:5432/aidb
       REDIS_URL: redis://redis:6379/7
       USER_SERVICE_URL: http://user-api:8001
       INVENTORY_SERVICE_URL: http://inventory-api:8003
@@ -548,7 +548,7 @@ services:
     container_name: media-api
     logging: *default-logging
     environment:
-      DATABASE_URL: postgresql+asyncpg://media_svc:mediapass@media-postgres:5432/mediadb
+      DATABASE_URL: postgresql+asyncpg://media_svc:${MEDIA_DB_PASSWORD:-mediapass}@media-postgres:5432/mediadb
       REDIS_URL: redis://redis:6379/8
       JWT_SECRET: ${JWT_SECRET:-super-secret-dev-key-change-in-prod}
       S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN:-s2s-change-me-in-production}
