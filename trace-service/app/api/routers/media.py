@@ -8,7 +8,7 @@ from fastapi.responses import ORJSONResponse
 from starlette.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_tenant_id
+from app.api.deps import get_tenant_id, get_tenant_id_enforced
 from app.db.session import get_db_session
 
 router = APIRouter(prefix="/media", tags=["media"])
@@ -49,7 +49,7 @@ async def upload_file(
     description: str | None = Query(None, max_length=500),
     tags: str | None = Query(None, description="Comma-separated tags"),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     x_user_id: str = Header("1", alias="X-User-Id"),
 ) -> ORJSONResponse:
     """Upload a file to the media library."""
@@ -84,7 +84,7 @@ async def upload_files_batch(
     category: str = Query("general", max_length=50),
     document_type: str | None = Query(None, max_length=100),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     x_user_id: str = Header("1", alias="X-User-Id"),
 ) -> ORJSONResponse:
     """Upload multiple files to the media library."""
@@ -115,7 +115,7 @@ async def list_files(
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     """List media files with optional filtering."""
     from app.services.document_service import MediaService
@@ -137,7 +137,7 @@ async def list_files(
 async def get_file(
     file_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     """Get a single media file."""
     from app.services.document_service import MediaService
@@ -161,7 +161,7 @@ async def update_file(
     document_type: str | None = Query(None, max_length=100),
     tags: str | None = Query(None, description="Comma-separated tags"),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     """Update media file metadata."""
     from app.services.document_service import MediaService
@@ -182,7 +182,7 @@ async def update_file(
 async def media_reference_counts(
     file_ids: list[str],
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     """Given a list of media file IDs, return how many event_document_links reference each."""
     from sqlalchemy import func, select
@@ -212,7 +212,7 @@ async def media_reference_counts(
 async def delete_file(
     file_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ):
     """Delete a media file and its storage."""
     from app.services.document_service import MediaService

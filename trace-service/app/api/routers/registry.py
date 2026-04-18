@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import ORJSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_tenant_id_enforced, get_tenant_id
+from app.api.deps import get_tenant_id_enforced, get_tenant_id, require_permission
 from app.core.errors import ConflictError, IdempotencyConflictError
 from app.core.logging import get_logger
 from app.db.session import get_db_session
@@ -27,8 +27,7 @@ def _wallet_response(wallet) -> dict:
     "/wallets",
     response_model=WalletResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Register a wallet in the allowlist",
-)
+    summary="Register a wallet in the allowlist", dependencies=[require_permission("logistics.manage")])
 async def register_wallet(
     request: Request,
     body: WalletCreate,
@@ -88,8 +87,7 @@ async def register_wallet(
     "/wallets/generate",
     response_model=WalletResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Generate a new wallet and register it",
-)
+    summary="Generate a new wallet and register it", dependencies=[require_permission("logistics.manage")])
 async def generate_wallet(
     body: WalletGenerateRequest,
     db: AsyncSession = Depends(get_db_session),
@@ -147,8 +145,7 @@ async def get_wallet(
 @router.patch(
     "/wallets/{wallet_id}",
     response_model=WalletResponse,
-    summary="Update wallet tags or status",
-)
+    summary="Update wallet tags or status", dependencies=[require_permission("logistics.manage")])
 async def update_wallet(
     wallet_id: uuid.UUID,
     body: WalletUpdate,

@@ -65,10 +65,22 @@ async def list_licenses(
 @router.post("/", response_model=LicenseKeyResponse, status_code=201)
 async def issue_license(
     body: IssueKeyRequest,
-    _: Annotated[dict, Depends(require_permission("subscription.manage"))],
+    current_user: Annotated[dict, Depends(require_permission("subscription.manage"))],
     svc: LicenseService = Depends(_svc),
 ):
-    return await svc.issue(body.model_dump())
+    # Non-superusers can only issue licenses for their own tenant. Without
+    # this check, an attacker with subscription.manage on their tenant could
+    # issue arbitrary license keys for OTHER tenants by passing a foreign
+    # tenant_id in the body.
+    payload = body.model_dump()
+    if not current_user.get("is_superuser"):
+        caller_tid = str(current_user.get("tenant_id"))
+        if str(payload.get("tenant_id")) != caller_tid:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot issue license for a different tenant",
+            )
+    return await svc.issue(payload)
 
 
 @router.get("/validate/{key}")

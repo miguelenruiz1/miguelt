@@ -139,6 +139,7 @@ async def generate_invoice(
     current_user: Annotated[dict, Depends(require_permission("subscription.manage"))],
     svc: SubscriptionService = Depends(_svc),
 ):
+    _enforce_tenant_match(current_user, tenant_id)
     performed_by = current_user.get("id") or current_user.get("email")
     return await svc.generate_invoice(tenant_id, performed_by=performed_by)
 
@@ -151,6 +152,7 @@ async def mark_invoice_paid(
     current_user: Annotated[dict, Depends(require_permission("subscription.manage"))],
     svc: SubscriptionService = Depends(_svc),
 ):
+    _enforce_tenant_match(current_user, tenant_id)
     performed_by = current_user.get("id") or current_user.get("email")
     return await svc.mark_invoice_paid(tenant_id, inv_id, performed_by=performed_by)
 
@@ -158,9 +160,10 @@ async def mark_invoice_paid(
 @router.get("/{tenant_id}/events", response_model=list[SubscriptionEventResponse])
 async def list_events(
     tenant_id: str,
-    _: Annotated[dict, Depends(require_permission("subscription.view"))],
+    current_user: Annotated[dict, Depends(require_permission("subscription.view"))],
     svc: SubscriptionService = Depends(_svc),
 ):
+    _enforce_tenant_match(current_user, tenant_id)
     return await svc.get_events(tenant_id)
 
 
