@@ -140,7 +140,7 @@ async def _validate_record(
 
 # ─── CRUD ────────────────────────────────────────────────────────────────────
 
-@router.post("/", response_model=RecordResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permission("compliance.manage"))])
+@router.post("/", response_model=RecordResponse, status_code=status.HTTP_201_CREATED, dependencies=[require_permission("compliance.manage")])
 async def create_record(
     body: RecordCreate,
     user: ModuleUser,
@@ -282,7 +282,7 @@ async def get_record(
     return record
 
 
-@router.patch("/{record_id}", response_model=RecordResponse, dependencies=[Depends(require_permission("compliance.manage"))])
+@router.patch("/{record_id}", response_model=RecordResponse, dependencies=[require_permission("compliance.manage")])
 async def update_record(
     record_id: uuid.UUID,
     body: RecordUpdate,
@@ -325,7 +325,7 @@ async def update_record(
     return record
 
 
-@router.delete("/{record_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_permission("compliance.manage"))])
+@router.delete("/{record_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[require_permission("compliance.manage")])
 async def delete_record(
     record_id: uuid.UUID,
     user: ModuleUser,
@@ -385,7 +385,7 @@ async def delete_record(
 
 # ─── Plot links ──────────────────────────────────────────────────────────────
 
-@router.post("/{record_id}/plots", response_model=PlotLinkResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permission("compliance.manage"))])
+@router.post("/{record_id}/plots", response_model=PlotLinkResponse, status_code=status.HTTP_201_CREATED, dependencies=[require_permission("compliance.manage")])
 async def link_plot(
     record_id: uuid.UUID,
     body: PlotLinkCreate,
@@ -474,7 +474,7 @@ async def list_record_plots(
     return links
 
 
-@router.delete("/{record_id}/plots/{plot_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_permission("compliance.manage"))])
+@router.delete("/{record_id}/plots/{plot_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[require_permission("compliance.manage")])
 async def unlink_plot(
     record_id: uuid.UUID,
     plot_id: uuid.UUID,
@@ -513,7 +513,7 @@ class DeclarationUpdate(_BaseModel):
     declaration_url: str | None = None
 
 
-@router.patch("/{record_id}/declaration", response_model=RecordResponse, dependencies=[Depends(require_permission("compliance.manage"))])
+@router.patch("/{record_id}/declaration", response_model=RecordResponse, dependencies=[require_permission("compliance.manage")])
 async def update_declaration(
     record_id: uuid.UUID,
     body: DeclarationUpdate,
@@ -588,7 +588,7 @@ class CadmiumTestIn(_BaseModel):
 CADMIUM_EU_THRESHOLD_MG_PER_KG = 0.60
 
 
-@router.post("/{record_id}/cadmium-test", response_model=RecordResponse, dependencies=[Depends(require_permission("compliance.manage"))])
+@router.post("/{record_id}/cadmium-test", response_model=RecordResponse, dependencies=[require_permission("compliance.manage")])
 async def register_cadmium_test(
     record_id: uuid.UUID,
     body: CadmiumTestIn,
@@ -670,7 +670,7 @@ async def validate_record(
 
 # ─── TRACES NT — DDS Export & Submission ───────────────────────────────────────
 
-@router.post("/{record_id}/export-dds", dependencies=[Depends(require_permission("compliance.manage"))])
+@router.post("/{record_id}/export-dds", dependencies=[require_permission("compliance.manage")])
 async def export_dds(
     record_id: uuid.UUID,
     user: ModuleUser,
@@ -849,7 +849,7 @@ async def export_dds(
     }
 
 
-@router.post("/{record_id}/submit-traces", dependencies=[Depends(require_permission("compliance.manage"))])
+@router.post("/{record_id}/submit-traces", dependencies=[require_permission("compliance.manage")])
 async def submit_to_traces(
     record_id: uuid.UUID,
     user: ModuleUser,
@@ -1135,7 +1135,7 @@ async def get_dds_status(
 from app.models.document_link import ComplianceRecordDocument
 
 
-@router.post("/{record_id}/documents", response_model=DocumentLinkResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permission("compliance.manage"))])
+@router.post("/{record_id}/documents", response_model=DocumentLinkResponse, status_code=status.HTTP_201_CREATED, dependencies=[require_permission("compliance.manage")])
 async def attach_document(
     record_id: uuid.UUID,
     body: DocumentLinkCreate,
@@ -1246,7 +1246,7 @@ async def list_record_documents(
     return results
 
 
-@router.delete("/{record_id}/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_permission("compliance.manage"))])
+@router.delete("/{record_id}/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[require_permission("compliance.manage")])
 async def detach_document(
     record_id: uuid.UUID,
     doc_id: uuid.UUID,
@@ -1273,7 +1273,7 @@ async def detach_document(
 
 # ─── Media reference counts (shared across records + plots) ──────────────────
 
-@router.post("/media-reference-counts", dependencies=[Depends(require_permission("compliance.manage"))])
+@router.post("/media-reference-counts", dependencies=[require_permission("compliance.manage")])
 async def media_reference_counts(
     file_ids: list[str],
     user: ModuleUser,

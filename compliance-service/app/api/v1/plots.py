@@ -229,7 +229,7 @@ def _tenant_id(user: dict) -> uuid.UUID:
         return uuid.UUID("00000000-0000-0000-0000-000000000001")
 
 
-@router.post("/", response_model=PlotResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permission("compliance.manage"))])
+@router.post("/", response_model=PlotResponse, status_code=status.HTTP_201_CREATED, dependencies=[require_permission("compliance.manage")])
 async def create_plot(
     body: PlotCreate,
     request: Request,
@@ -336,7 +336,7 @@ async def get_plot(
     return plot
 
 
-@router.patch("/{plot_id}", response_model=PlotResponse, dependencies=[Depends(require_permission("compliance.manage"))])
+@router.patch("/{plot_id}", response_model=PlotResponse, dependencies=[require_permission("compliance.manage")])
 async def update_plot(
     plot_id: uuid.UUID,
     body: PlotUpdate,
@@ -480,7 +480,7 @@ async def update_plot(
     return plot
 
 
-@router.delete("/{plot_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_permission("compliance.manage"))])
+@router.delete("/{plot_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[require_permission("compliance.manage")])
 async def delete_plot(
     plot_id: uuid.UUID,
     user: ModuleUser,
@@ -516,7 +516,7 @@ async def delete_plot(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/{plot_id}/screen-deforestation", dependencies=[Depends(require_permission("compliance.manage"))])
+@router.post("/{plot_id}/screen-deforestation", dependencies=[require_permission("compliance.manage")])
 async def screen_deforestation(
     plot_id: uuid.UUID,
     user: ModuleUser,
@@ -595,7 +595,7 @@ async def screen_deforestation(
     }
 
 
-@router.post("/{plot_id}/screen-deforestation-full", dependencies=[Depends(require_permission("compliance.manage"))])
+@router.post("/{plot_id}/screen-deforestation-full", dependencies=[require_permission("compliance.manage")])
 async def screen_deforestation_full(
     plot_id: uuid.UUID,
     user: ModuleUser,
@@ -896,7 +896,7 @@ async def asset_registry_export(
 
 # ─── Composite risk decision (Fase B — G9/G10/G11) ───────────────────────────
 
-@router.post("/{plot_id}/risk-decision", dependencies=[Depends(require_permission("compliance.manage"))])
+@router.post("/{plot_id}/risk-decision", dependencies=[require_permission("compliance.manage")])
 async def risk_decision(
     plot_id: uuid.UUID,
     user: ModuleUser,
@@ -997,7 +997,7 @@ from app.api.deps import get_http_client
 from app.core.settings import get_settings
 
 
-@router.post("/{plot_id}/documents", response_model=DocumentLinkResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permission("compliance.manage"))])
+@router.post("/{plot_id}/documents", response_model=DocumentLinkResponse, status_code=status.HTTP_201_CREATED, dependencies=[require_permission("compliance.manage")])
 async def attach_plot_document(
     plot_id: uuid.UUID,
     body: DocumentLinkCreate,
@@ -1105,7 +1105,7 @@ async def list_plot_documents(
     return results
 
 
-@router.delete("/{plot_id}/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_permission("compliance.manage"))])
+@router.delete("/{plot_id}/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[require_permission("compliance.manage")])
 async def detach_plot_document(
     plot_id: uuid.UUID,
     doc_id: uuid.UUID,
