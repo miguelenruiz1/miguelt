@@ -169,7 +169,7 @@ services:
       S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN:-s2s-change-me-in-production}
       SMTP_FROM: onboarding@resend.dev
       SMTP_USE_TLS: "false"
-      FRONTEND_URL: http://localhost:5173
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
       TRACE_SERVICE_URL: http://api:8000
     ports:

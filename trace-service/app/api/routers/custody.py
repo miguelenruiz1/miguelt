@@ -29,7 +29,7 @@ from app.domain.schemas import (
     ReleaseRequest,
     BurnRequest,
 )
-from app.api.deps import get_tenant_id, CurrentUser
+from app.api.deps import get_tenant_id_enforced, get_tenant_id, CurrentUser
 from app.services.anchor_service import enqueue_anchor
 from app.services.custody_service import CustodyService
 
@@ -224,7 +224,7 @@ async def create_asset(
     request: Request,
     body: AssetCreate,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     idempotency_key = getattr(request.state, "idempotency_key", None)
     svc = CustodyService(db, tenant_id=tenant_id)
@@ -263,7 +263,7 @@ async def mint_asset(
     request: Request,
     body: AssetMintRequest,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     idempotency_key = getattr(request.state, "idempotency_key", None)
     svc = CustodyService(db, tenant_id=tenant_id)
@@ -391,7 +391,7 @@ async def list_assets(
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = CustodyService(db, tenant_id=tenant_id)
     assets, total = await svc.list_assets(
@@ -405,7 +405,7 @@ async def list_assets(
 async def get_asset(
     asset_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = CustodyService(db, tenant_id=tenant_id)
     asset = await svc.get_asset(asset_id)
@@ -418,7 +418,7 @@ async def get_events(
     offset: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = CustodyService(db, tenant_id=tenant_id)
     events, total = await svc.get_asset_events(asset_id, offset=offset, limit=limit)
@@ -435,7 +435,7 @@ async def handoff(
     body: HandoffRequest,
     x_user_id: str = Header(..., alias="X-User-Id", description="User ID"),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     idempotency_key = getattr(request.state, "idempotency_key", None)
     svc = CustodyService(db, tenant_id=tenant_id)
@@ -467,7 +467,7 @@ async def arrived(
     body: ArrivedRequest,
     x_user_id: str = Header(..., alias="X-User-Id", description="User ID"),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     # Auth: any authenticated user can perform custody events
 
@@ -494,7 +494,7 @@ async def loaded(
     body: LoadedRequest,
     x_user_id: str = Header(..., alias="X-User-Id", description="User ID"),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     # Auth: any authenticated user can perform custody events
 
@@ -521,7 +521,7 @@ async def qc(
     body: QCRequest,
     x_user_id: str = Header(..., alias="X-User-Id", description="User ID"),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     # Auth: any authenticated user can perform custody events
 
@@ -555,7 +555,7 @@ async def release(
     x_user_id: str = Header(..., alias="X-User-Id", description="User ID"),
     x_admin_key: str | None = Header(None, alias="X-Admin-Key", description="Admin secret key"),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     import secrets as _secrets
     from app.core.errors import ForbiddenError
@@ -602,7 +602,7 @@ async def burn(
     body: BurnRequest,
     x_user_id: str = Header(..., alias="X-User-Id", description="User ID"),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
 
     idempotency_key = getattr(request.state, "idempotency_key", None)
@@ -723,7 +723,7 @@ async def record_event(
     x_user_id: str = Header(..., alias="X-User-Id", description="User ID"),
     x_admin_key: str | None = Header(None, alias="X-Admin-Key", description="Admin key for sensitive events"),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     idempotency_key = getattr(request.state, "idempotency_key", None)
     svc = CustodyService(db, tenant_id=tenant_id, current_user=current_user)
@@ -773,7 +773,7 @@ async def record_event_quantity(
     event_id: uuid.UUID,
     payload: CustodyEventQuantityCreate,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     from decimal import Decimal as _D
     svc = CustodyService(db, tenant_id=tenant_id)
@@ -801,7 +801,7 @@ async def anchor_event(
     asset_id: uuid.UUID,
     event_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = CustodyService(db, tenant_id=tenant_id)
     event = await svc.trigger_anchor(asset_id, event_id)
@@ -815,7 +815,7 @@ async def anchor_event(
 async def remint_asset(
     asset_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     """Re-trigger blockchain minting for assets that failed or are stuck."""
     svc = CustodyService(db, tenant_id=tenant_id)
@@ -860,7 +860,7 @@ async def upload_evidence(
     file: UploadFile = File(...),
     evidence_type: str = Query("photo", pattern="^(photo|signature|document)$"),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     """Upload proof-of-delivery evidence via media-service and store reference."""
     import hashlib
@@ -923,7 +923,7 @@ async def upload_and_link_documents(
     document_type: str = Query(..., min_length=1, max_length=100),
     title: str | None = Query(None, max_length=200),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     x_user_id: str = Header("1", alias="X-User-Id"),
 ) -> ORJSONResponse:
     """Upload files to media library AND link them to a custody event."""
@@ -966,7 +966,7 @@ async def link_existing_media(
     media_file_id: uuid.UUID = Query(...),
     document_type: str = Query(..., min_length=1, max_length=100),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     x_user_id: str = Header("1", alias="X-User-Id"),
 ) -> ORJSONResponse:
     """Link an existing media file to a custody event (no upload needed)."""
@@ -998,7 +998,7 @@ async def list_event_documents(
     asset_id: uuid.UUID,
     event_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     """List all documents linked to a custody event with completeness status."""
     from app.services.document_service import DocumentLinkService
@@ -1028,7 +1028,7 @@ async def delete_asset(
     asset_id: uuid.UUID,
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     admin_key: str | None = Header(None, alias="X-Admin-Key"),
 ):
     """Delete an asset and its events. Only allowed for terminal states (released, burned, delivered)."""
@@ -1083,7 +1083,7 @@ async def unlink_event_document(
     event_id: uuid.UUID,
     link_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ):
     """Unlink a document from a custody event (does NOT delete the media file)."""
     from app.services.document_service import DocumentLinkService
@@ -1102,7 +1102,7 @@ async def get_document_requirements(
     asset_id: uuid.UUID,
     event_type: str = Query(..., min_length=1),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     """Get merged document requirements for an event type (base + compliance if active)."""
     from app.services.document_service import DocumentLinkService
