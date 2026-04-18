@@ -30,9 +30,15 @@ def _enforcer(
 )
 async def get_usage(
     tenant_id: str,
-    _: Annotated[dict, Depends(require_permission("subscription.view"))],
+    current_user: Annotated[dict, Depends(require_permission("subscription.view"))],
     enforcer: PlanEnforcer = Depends(_enforcer),
 ) -> UsageSummary:
+    if not current_user.get("is_superuser"):
+        if str(current_user.get("tenant_id")) != str(tenant_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to other tenant's usage",
+            )
     return await enforcer.get_usage_summary(tenant_id)
 
 

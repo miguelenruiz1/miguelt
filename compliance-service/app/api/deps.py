@@ -221,3 +221,20 @@ async def require_compliance_module(
 
 ModuleUser = Annotated[dict, Depends(require_compliance_module)]
 SuperUser = Annotated[dict, Depends(get_current_user)]
+
+
+async def verify_service_token_only(
+    request: Request,
+) -> None:
+    """Accept ONLY a valid X-Service-Token (no JWT fallback).
+
+    Used on S2S-only webhook endpoints (e.g. anchor-callback) so end users
+    can't forge updates by guessing a plot id.
+    """
+    import secrets as _secrets
+    token = request.headers.get("X-Service-Token")
+    if not token:
+        raise UnauthorizedError("Service token required")
+    settings = get_settings()
+    if not _secrets.compare_digest(token, settings.S2S_SERVICE_TOKEN):
+        raise UnauthorizedError("Invalid service token")

@@ -2,6 +2,7 @@
 from typing import Any
 
 from fastapi import FastAPI, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 
@@ -63,7 +64,10 @@ def _error_response(
     correlation_id = getattr(request.state, "correlation_id", None)
     if correlation_id:
         body["error"]["correlation_id"] = correlation_id
-    return ORJSONResponse(status_code=status_code, content=body)
+    # Coerce non-JSON-serializable values (notably bytes in exc.errors()
+    # when Content-Type != application/json or a bad query param is parsed)
+    # so the error handler never itself raises a 500 TypeError.
+    return ORJSONResponse(status_code=status_code, content=jsonable_encoder(body))
 
 
 # ─── Exception Handlers ───────────────────────────────────────────────────────

@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_tenant_id_enforced, get_tenant_id
+from app.api.deps import get_tenant_id_enforced, get_tenant_id, require_permission
 from app.core.logging import get_logger
 from app.db.models import ShipmentDocument, TradeDocument, AnchorRule
 from app.db.session import get_db_session
@@ -169,7 +169,7 @@ async def list_shipments(
     return [_shipment_out(s) for s in result.scalars().all()]
 
 
-@router.post("/shipments", status_code=201)
+@router.post("/shipments", status_code=201, dependencies=[require_permission("logistics.manage")])
 async def create_shipment(
     body: ShipmentCreate,
     tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
@@ -201,7 +201,7 @@ async def get_shipment(
     return _shipment_out(doc)
 
 
-@router.patch("/shipments/{doc_id}")
+@router.patch("/shipments/{doc_id}", dependencies=[require_permission("logistics.manage")])
 async def update_shipment(
     doc_id: uuid.UUID, body: ShipmentUpdate,
     tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
@@ -215,7 +215,7 @@ async def update_shipment(
     return _shipment_out(doc)
 
 
-@router.post("/shipments/{doc_id}/status")
+@router.post("/shipments/{doc_id}/status", dependencies=[require_permission("logistics.manage")])
 async def update_shipment_status(
     doc_id: uuid.UUID, body: StatusBody,
     tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
@@ -232,7 +232,7 @@ async def update_shipment_status(
     return _shipment_out(doc)
 
 
-@router.delete("/shipments/{doc_id}", status_code=204)
+@router.delete("/shipments/{doc_id}", status_code=204, dependencies=[require_permission("logistics.manage")])
 async def delete_shipment(
     doc_id: uuid.UUID,
     tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
@@ -270,7 +270,7 @@ async def list_trade_docs(
     return [_trade_doc_out(d) for d in result.scalars().all()]
 
 
-@router.post("/trade-documents", status_code=201)
+@router.post("/trade-documents", status_code=201, dependencies=[require_permission("logistics.manage")])
 async def create_trade_doc(
     body: TradeDocCreate,
     tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
@@ -305,7 +305,7 @@ async def get_trade_doc(
     return _trade_doc_out(doc)
 
 
-@router.patch("/trade-documents/{doc_id}")
+@router.patch("/trade-documents/{doc_id}", dependencies=[require_permission("logistics.manage")])
 async def update_trade_doc(
     doc_id: uuid.UUID, body: TradeDocUpdate,
     tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
@@ -319,7 +319,7 @@ async def update_trade_doc(
     return _trade_doc_out(doc)
 
 
-@router.post("/trade-documents/{doc_id}/approve")
+@router.post("/trade-documents/{doc_id}/approve", dependencies=[require_permission("logistics.manage")])
 async def approve_trade_doc(
     doc_id: uuid.UUID,
     tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
@@ -337,7 +337,7 @@ async def approve_trade_doc(
     return _trade_doc_out(doc)
 
 
-@router.post("/trade-documents/{doc_id}/reject")
+@router.post("/trade-documents/{doc_id}/reject", dependencies=[require_permission("logistics.manage")])
 async def reject_trade_doc(
     doc_id: uuid.UUID,
     reason: str | None = None,
@@ -352,7 +352,7 @@ async def reject_trade_doc(
     return _trade_doc_out(doc)
 
 
-@router.delete("/trade-documents/{doc_id}", status_code=204)
+@router.delete("/trade-documents/{doc_id}", status_code=204, dependencies=[require_permission("logistics.manage")])
 async def delete_trade_doc(
     doc_id: uuid.UUID,
     tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
@@ -381,7 +381,7 @@ async def list_anchor_rules(
     return [_rule_out(r) for r in result.scalars().all()]
 
 
-@router.post("/anchor-rules", status_code=201)
+@router.post("/anchor-rules", status_code=201, dependencies=[require_permission("logistics.manage")])
 async def create_anchor_rule(
     body: AnchorRuleCreate,
     tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
@@ -393,7 +393,7 @@ async def create_anchor_rule(
     return _rule_out(rule)
 
 
-@router.patch("/anchor-rules/{rule_id}")
+@router.patch("/anchor-rules/{rule_id}", dependencies=[require_permission("logistics.manage")])
 async def update_anchor_rule(
     rule_id: uuid.UUID, body: AnchorRuleUpdate,
     tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
@@ -407,7 +407,7 @@ async def update_anchor_rule(
     return _rule_out(rule)
 
 
-@router.delete("/anchor-rules/{rule_id}", status_code=204)
+@router.delete("/anchor-rules/{rule_id}", status_code=204, dependencies=[require_permission("logistics.manage")])
 async def delete_anchor_rule(
     rule_id: uuid.UUID,
     tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
@@ -418,7 +418,7 @@ async def delete_anchor_rule(
     await db.commit()
 
 
-@router.post("/anchor-rules/seed-defaults", status_code=201)
+@router.post("/anchor-rules/seed-defaults", status_code=201, dependencies=[require_permission("logistics.manage")])
 async def seed_defaults(
     tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
