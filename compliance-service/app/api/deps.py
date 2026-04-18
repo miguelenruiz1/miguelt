@@ -132,7 +132,7 @@ async def get_current_user(
     from jwt import PyJWTError as JWTError
 
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM], audience="trace", issuer="trace.user-service")
     except JWTError:
         raise UnauthorizedError("Invalid or expired token")
 

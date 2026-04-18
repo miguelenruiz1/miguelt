@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import ORJSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_tenant_id
+from app.api.deps import get_tenant_id_enforced, get_tenant_id
 from app.core.errors import ConflictError, IdempotencyConflictError
 from app.core.logging import get_logger
 from app.db.session import get_db_session
@@ -33,7 +33,7 @@ async def register_wallet(
     request: Request,
     body: WalletCreate,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     idempotency_key = getattr(request.state, "idempotency_key", None)
 
@@ -93,7 +93,7 @@ async def register_wallet(
 async def generate_wallet(
     body: WalletGenerateRequest,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = RegistryService(db, tenant_id=tenant_id)
     wallet, airdrop_info = await svc.generate_wallet(
@@ -121,7 +121,7 @@ async def list_wallets(
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = RegistryService(db, tenant_id=tenant_id)
     wallets, total = await svc.list_wallets(tag=tag, status=status, organization_id=organization_id, offset=offset, limit=limit)
@@ -137,7 +137,7 @@ async def list_wallets(
 async def get_wallet(
     wallet_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = RegistryService(db, tenant_id=tenant_id)
     wallet = await svc.get_wallet(wallet_id)
@@ -153,7 +153,7 @@ async def update_wallet(
     wallet_id: uuid.UUID,
     body: WalletUpdate,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = RegistryService(db, tenant_id=tenant_id)
     wallet = await svc.update_wallet(

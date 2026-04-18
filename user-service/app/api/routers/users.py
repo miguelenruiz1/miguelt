@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser, get_redis, get_tenant_id, require_permission
+from app.db.models import User
 from app.core.settings import get_settings
 from app.db.session import get_db_session
 from app.domain.schemas import AdminUpdateUser, InviteUserRequest, PaginatedResponse, RoleSlim, UserResponse
@@ -144,13 +145,13 @@ async def list_users(
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: str,
-    current_user: Annotated[dict, require_permission("admin.users")],
+    current_user: Annotated[User, require_permission("admin.users")],
     db: Annotated[AsyncSession, Depends(get_db_session)],
     tenant_id: Annotated[str, Depends(get_tenant_id)],
 ) -> UserResponse:
     svc = UserService(db)
     # Superusers may bypass tenant scoping
-    scope_tid = None if current_user.get("is_superuser") else tenant_id
+    scope_tid = None if getattr(current_user, "is_superuser", None) else tenant_id
     user = await svc.get(user_id, tenant_id=scope_tid)
     return await _user_response(user, db)
 
@@ -159,25 +160,25 @@ async def get_user(
 async def update_user(
     user_id: str,
     body: AdminUpdateUser,
-    current_user: Annotated[dict, require_permission("admin.users")],
+    current_user: Annotated[User, require_permission("admin.users")],
     db: Annotated[AsyncSession, Depends(get_db_session)],
     tenant_id: Annotated[str, Depends(get_tenant_id)],
 ) -> UserResponse:
     data = body.model_dump(exclude_unset=True)
-    if "is_superuser" in data and not current_user.get("is_superuser"):
+    if "is_superuser" in data and not getattr(current_user, "is_superuser", None):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Solo un superusuario puede modificar is_superuser",
         )
     svc = UserService(db)
-    scope_tid = None if current_user.get("is_superuser") else tenant_id
+    scope_tid = None if getattr(current_user, "is_superuser", None) else tenant_id
     user = await svc.update(user_id, tenant_id=scope_tid, **data)
     # Audit trail: admin mutation on a user — record who did what.
     await AuditRepository(db).create(
         action="user.update",
         tenant_id=user.tenant_id,
-        user_id=str(current_user.get("id")) if current_user.get("id") else None,
-        user_email=current_user.get("email"),
+        user_id=str(getattr(current_user, "id", None)) if getattr(current_user, "id", None) else None,
+        user_email=getattr(current_user, "email", None),
         resource_type="user",
         resource_id=user_id,
         metadata={"fields": sorted(data.keys())},
@@ -226,18 +227,18 @@ async def reactivate_user(
 async def assign_role(
     user_id: str,
     role_id: str,
-    current_user: Annotated[dict, require_permission("admin.roles")],
+    current_user: Annotated[User, require_permission("admin.roles")],
     db: Annotated[AsyncSession, Depends(get_db_session)],
     tenant_id: Annotated[str, Depends(get_tenant_id)],
 ) -> Response:
     svc = UserService(db)
-    scope_tid = None if current_user.get("is_superuser") else tenant_id
+    scope_tid = None if getattr(current_user, "is_superuser", None) else tenant_id
     await svc.assign_role(user_id, role_id, tenant_id=scope_tid)
     await AuditRepository(db).create(
         action="user.role_assigned",
         tenant_id=scope_tid or tenant_id,
-        user_id=str(current_user.get("id")) if current_user.get("id") else None,
-        user_email=current_user.get("email"),
+        user_id=str(getattr(current_user, "id", None)) if getattr(current_user, "id", None) else None,
+        user_email=getattr(current_user, "email", None),
         resource_type="user",
         resource_id=user_id,
         metadata={"role_id": role_id},
@@ -249,18 +250,18 @@ async def assign_role(
 async def remove_role(
     user_id: str,
     role_id: str,
-    current_user: Annotated[dict, require_permission("admin.roles")],
+    current_user: Annotated[User, require_permission("admin.roles")],
     db: Annotated[AsyncSession, Depends(get_db_session)],
     tenant_id: Annotated[str, Depends(get_tenant_id)],
 ) -> Response:
     svc = UserService(db)
-    scope_tid = None if current_user.get("is_superuser") else tenant_id
+    scope_tid = None if getattr(current_user, "is_superuser", None) else tenant_id
     await svc.remove_role(user_id, role_id, tenant_id=scope_tid)
     await AuditRepository(db).create(
         action="user.role_removed",
         tenant_id=scope_tid or tenant_id,
-        user_id=str(current_user.get("id")) if current_user.get("id") else None,
-        user_email=current_user.get("email"),
+        user_id=str(getattr(current_user, "id", None)) if getattr(current_user, "id", None) else None,
+        user_email=getattr(current_user, "email", None),
         resource_type="user",
         resource_id=user_id,
         metadata={"role_id": role_id},
