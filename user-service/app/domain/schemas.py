@@ -238,6 +238,7 @@ class UserResponse(BaseModel):
     must_change_password: bool = False
     onboarding_completed: bool = False
     onboarding_step: str = "welcome"
+    totp_enabled: bool = False
     created_at: datetime
     updated_at: datetime
     roles: list[RoleSlim] = []

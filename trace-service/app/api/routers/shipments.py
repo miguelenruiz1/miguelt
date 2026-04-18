@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_tenant_id
+from app.api.deps import get_tenant_id_enforced, get_tenant_id
 from app.core.logging import get_logger
 from app.db.models import ShipmentDocument, TradeDocument, AnchorRule
 from app.db.session import get_db_session
@@ -151,7 +151,7 @@ class AnchorRuleUpdate(BaseModel):
 
 @router.get("/shipments")
 async def list_shipments(
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     document_type: str | None = None,
     reference_type: str | None = None,
     reference_id: str | None = None,
@@ -172,7 +172,7 @@ async def list_shipments(
 @router.post("/shipments", status_code=201)
 async def create_shipment(
     body: ShipmentCreate,
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     doc = ShipmentDocument(tenant_id=tenant_id)
@@ -194,7 +194,7 @@ async def create_shipment(
 @router.get("/shipments/{doc_id}")
 async def get_shipment(
     doc_id: uuid.UUID,
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     doc = await _get_shipment(db, doc_id, tenant_id)
@@ -204,7 +204,7 @@ async def get_shipment(
 @router.patch("/shipments/{doc_id}")
 async def update_shipment(
     doc_id: uuid.UUID, body: ShipmentUpdate,
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     doc = await _get_shipment(db, doc_id, tenant_id)
@@ -218,7 +218,7 @@ async def update_shipment(
 @router.post("/shipments/{doc_id}/status")
 async def update_shipment_status(
     doc_id: uuid.UUID, body: StatusBody,
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     valid = {"draft", "issued", "in_transit", "delivered", "canceled"}
@@ -235,7 +235,7 @@ async def update_shipment_status(
 @router.delete("/shipments/{doc_id}", status_code=204)
 async def delete_shipment(
     doc_id: uuid.UUID,
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     doc = await _get_shipment(db, doc_id, tenant_id)
@@ -249,7 +249,7 @@ async def delete_shipment(
 
 @router.get("/trade-documents")
 async def list_trade_docs(
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     document_type: str | None = None,
     reference_type: str | None = None,
     reference_id: str | None = None,
@@ -273,7 +273,7 @@ async def list_trade_docs(
 @router.post("/trade-documents", status_code=201)
 async def create_trade_doc(
     body: TradeDocCreate,
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     doc = TradeDocument(tenant_id=tenant_id)
@@ -298,7 +298,7 @@ async def create_trade_doc(
 @router.get("/trade-documents/{doc_id}")
 async def get_trade_doc(
     doc_id: uuid.UUID,
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     doc = await _get_trade_doc(db, doc_id, tenant_id)
@@ -308,7 +308,7 @@ async def get_trade_doc(
 @router.patch("/trade-documents/{doc_id}")
 async def update_trade_doc(
     doc_id: uuid.UUID, body: TradeDocUpdate,
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     doc = await _get_trade_doc(db, doc_id, tenant_id)
@@ -322,7 +322,7 @@ async def update_trade_doc(
 @router.post("/trade-documents/{doc_id}/approve")
 async def approve_trade_doc(
     doc_id: uuid.UUID,
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     doc = await _get_trade_doc(db, doc_id, tenant_id)
@@ -341,7 +341,7 @@ async def approve_trade_doc(
 async def reject_trade_doc(
     doc_id: uuid.UUID,
     reason: str | None = None,
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     doc = await _get_trade_doc(db, doc_id, tenant_id)
@@ -355,7 +355,7 @@ async def reject_trade_doc(
 @router.delete("/trade-documents/{doc_id}", status_code=204)
 async def delete_trade_doc(
     doc_id: uuid.UUID,
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     doc = await _get_trade_doc(db, doc_id, tenant_id)
@@ -369,7 +369,7 @@ async def delete_trade_doc(
 
 @router.get("/anchor-rules")
 async def list_anchor_rules(
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     entity_type: str | None = None,
     db: AsyncSession = Depends(get_db_session),
 ):
@@ -384,7 +384,7 @@ async def list_anchor_rules(
 @router.post("/anchor-rules", status_code=201)
 async def create_anchor_rule(
     body: AnchorRuleCreate,
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     rule = AnchorRule(tenant_id=tenant_id, **body.model_dump())
@@ -396,7 +396,7 @@ async def create_anchor_rule(
 @router.patch("/anchor-rules/{rule_id}")
 async def update_anchor_rule(
     rule_id: uuid.UUID, body: AnchorRuleUpdate,
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     rule = await _get_rule(db, rule_id, tenant_id)
@@ -410,7 +410,7 @@ async def update_anchor_rule(
 @router.delete("/anchor-rules/{rule_id}", status_code=204)
 async def delete_anchor_rule(
     rule_id: uuid.UUID,
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     rule = await _get_rule(db, rule_id, tenant_id)
@@ -420,7 +420,7 @@ async def delete_anchor_rule(
 
 @router.post("/anchor-rules/seed-defaults", status_code=201)
 async def seed_defaults(
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
     db: AsyncSession = Depends(get_db_session),
 ):
     existing = (await db.execute(select(AnchorRule).where(AnchorRule.tenant_id == tenant_id))).scalars().all()

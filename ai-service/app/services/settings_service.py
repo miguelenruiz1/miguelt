@@ -160,23 +160,6 @@ class AISettingsService:
             # recognisable prefix before returning it to the caller.
             return {"ok": False, "error": _scrub_secrets(str(exc), api_key)}
 
-
-def _scrub_secrets(msg: str, api_key: str) -> str:
-    """Remove the API key + any `sk-…` / `Bearer …` pattern from a message.
-
-    Called on exception strings so a malformed key or network error doesn't
-    leak the real key into logs or HTTP responses.
-    """
-    import re as _re
-    if api_key and len(api_key) >= 8:
-        msg = msg.replace(api_key, "[redacted]")
-    msg = _re.sub(r"sk-[A-Za-z0-9_\-]{10,}", "[redacted]", msg)
-    msg = _re.sub(r"(?i)(Bearer|Authorization)[:=\s]+\S+", r"\1 [redacted]", msg)
-    # Also cap message length to avoid megabyte-size stack traces leaking.
-    if len(msg) > 500:
-        msg = msg[:500] + "…"
-    return msg
-
     async def get_metrics(self) -> dict:
         s = await self.get_settings()
         calls_by_tenant: list[dict] = []
@@ -244,3 +227,22 @@ def _scrub_secrets(msg: str, api_key: str) -> str:
             "global_daily_limit_professional": s.global_daily_limit_professional,
             "global_daily_limit_enterprise": s.global_daily_limit_enterprise,
         }
+
+
+
+def _scrub_secrets(msg: str, api_key: str) -> str:
+    """Remove the API key + any `sk-…` / `Bearer …` pattern from a message.
+
+    Called on exception strings so a malformed key or network error doesn't
+    leak the real key into logs or HTTP responses.
+    """
+    import re as _re
+    if api_key and len(api_key) >= 8:
+        msg = msg.replace(api_key, "[redacted]")
+    msg = _re.sub(r"sk-[A-Za-z0-9_\-]{10,}", "[redacted]", msg)
+    msg = _re.sub(r"(?i)(Bearer|Authorization)[:=\s]+\S+", r"\1 [redacted]", msg)
+    # Also cap message length to avoid megabyte-size stack traces leaking.
+    if len(msg) > 500:
+        msg = msg[:500] + "…"
+    return msg
+
