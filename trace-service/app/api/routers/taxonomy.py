@@ -8,7 +8,7 @@ from fastapi.responses import ORJSONResponse
 from starlette.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_tenant_id
+from app.api.deps import get_tenant_id, get_tenant_id_enforced
 from app.core.logging import get_logger
 from app.db.session import get_db_session
 from app.domain.schemas import (
@@ -52,7 +52,7 @@ async def _org_dict(svc: TaxonomyService, org) -> dict:
 )
 async def list_custodian_types(
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = TaxonomyService(db, tenant_id=tenant_id)
     types = await svc.list_types()
@@ -68,7 +68,7 @@ async def list_custodian_types(
 async def create_custodian_type(
     body: CustodianTypeCreate,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = TaxonomyService(db, tenant_id=tenant_id)
     ct = await svc.create_type(
@@ -91,7 +91,7 @@ async def create_custodian_type(
 async def get_custodian_type(
     type_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = TaxonomyService(db, tenant_id=tenant_id)
     ct = await svc.get_type(type_id)
@@ -107,7 +107,7 @@ async def update_custodian_type(
     type_id: uuid.UUID,
     body: CustodianTypeUpdate,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = TaxonomyService(db, tenant_id=tenant_id)
     values = body.model_dump(exclude_none=True)
@@ -125,7 +125,7 @@ async def update_custodian_type(
 async def delete_custodian_type(
     type_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ):
     svc = TaxonomyService(db, tenant_id=tenant_id)
     await svc.delete_type(type_id)
@@ -146,7 +146,7 @@ async def list_organizations(
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = TaxonomyService(db, tenant_id=tenant_id)
     orgs, total = await svc.list_orgs(
@@ -168,7 +168,7 @@ async def list_organizations(
 async def create_organization(
     body: OrganizationCreate,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = TaxonomyService(db, tenant_id=tenant_id)
     org = await svc.create_org(
@@ -192,7 +192,7 @@ async def create_organization(
 async def get_organization(
     org_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = TaxonomyService(db, tenant_id=tenant_id)
     org = await svc.get_org(org_id)
@@ -208,7 +208,7 @@ async def update_organization(
     org_id: uuid.UUID,
     body: OrganizationUpdate,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = TaxonomyService(db, tenant_id=tenant_id)
     values = body.model_dump(exclude_none=True)
@@ -226,7 +226,7 @@ async def update_organization(
 async def delete_organization(
     org_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ):
     svc = TaxonomyService(db, tenant_id=tenant_id)
     await svc.delete_org(org_id)
@@ -244,7 +244,7 @@ async def get_org_wallets(
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = TaxonomyService(db, tenant_id=tenant_id)
     wallets, total = await svc.get_org_wallets(org_id, offset=offset, limit=limit)
@@ -262,7 +262,7 @@ async def get_org_assets(
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db_session),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    tenant_id: uuid.UUID = Depends(get_tenant_id_enforced),
 ) -> ORJSONResponse:
     svc = TaxonomyService(db, tenant_id=tenant_id)
     assets, total = await svc.get_org_assets(org_id, offset=offset, limit=limit)

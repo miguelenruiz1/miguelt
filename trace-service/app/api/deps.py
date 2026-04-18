@@ -252,7 +252,7 @@ async def get_current_user(
     from jwt import PyJWTError as JWTError
     token = credentials.credentials
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM], audience="trace", issuer="trace.user-service")
     except JWTError:
         raise UnauthorizedError("Invalid or expired token")
 
@@ -285,6 +285,50 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[dict, Depends(get_current_user)]
+
+
+async def get_tenant_id_enforced(
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+) -> uuid.UUID:
+    """Tenant resolver that rejects cross-tenant access for non-superusers.
+
+    Fixes a security bug where taxonomy routes trusted X-Tenant-Id blindly
+    and let user B edit/delete resources of user A's tenant by just flipping
+    the header value. Superusers still bypass (intended for platform ops).
+    """
+    if current_user.get("is_superuser"):
+        return tenant_id
+
+    user_tid = current_user.get("tenant_id")
+    if user_tid is None:
+        raise ForbiddenError("User has no tenant context")
+
+    user_tid_str = str(user_tid)
+    if user_tid_str == str(tenant_id):
+        return tenant_id
+
+    # User tenant_id may be a slug; resolve to UUID and compare.
+    from app.db.models import Tenant
+    from sqlalchemy import select, or_
+    try:
+        as_uuid = uuid.UUID(user_tid_str)
+    except (ValueError, TypeError):
+        as_uuid = None
+    stmt = select(Tenant).where(
+        or_(Tenant.slug == user_tid_str, Tenant.id == as_uuid)
+        if as_uuid
+        else (Tenant.slug == user_tid_str)
+    )
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if row is not None and row.id == tenant_id:
+        return tenant_id
+
+    raise ForbiddenError("Access denied to other tenant's data")
+
+
+EnforcedTenantId = Annotated[uuid.UUID, Depends(get_tenant_id_enforced)]
 
 
 def require_permission(slug: str):
