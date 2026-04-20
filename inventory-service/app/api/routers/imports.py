@@ -50,7 +50,22 @@ async def import_products_csv(
             )
         chunks.append(chunk)
     content = b"".join(chunks)
-    csv_text = content.decode("utf-8-sig")  # handles BOM from Excel
+    # Excel CSVs exported from es_CO often come as latin-1/cp1252, not
+    # UTF-8. Try utf-8 (with BOM) first, then latin-1. If both fail return
+    # 400 instead of letting the decode error bubble up as 500.
+    try:
+        csv_text = content.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        try:
+            csv_text = content.decode("latin-1")
+        except UnicodeDecodeError:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "CSV encoding no soportado. Usá UTF-8 o exportá desde "
+                    "Excel como 'CSV UTF-8'."
+                ),
+            )
 
     if csv_text.count("\n") > _MAX_CSV_ROWS:
         raise HTTPException(

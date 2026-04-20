@@ -78,8 +78,10 @@ class PORepository:
             pol = PurchaseOrderLine(id=str(uuid.uuid4()), tenant_id=po.tenant_id, po_id=po.id, **line)
             self.db.add(pol)
         await self.db.flush()
-        await self.db.refresh(po)
-        return po
+        # Re-fetch with joinedload so serializers (reorder auto-PO, API
+        # responses) can access `.lines` without triggering MissingGreenlet
+        # outside the async context.
+        return await self.get_by_id(po.id, po.tenant_id) or po
 
     async def update(self, po: PurchaseOrder, data: dict) -> PurchaseOrder:
         for k, v in data.items():
