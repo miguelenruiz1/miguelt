@@ -60,6 +60,62 @@ async def mark_alert_read(
     return a
 
 
+@router.post("/alerts/{alert_id}/acknowledge", response_model=StockAlertOut)
+async def acknowledge_alert(
+    alert_id: str,
+    _module: ModuleUser,
+    user: Viewer,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Alias of `/read` — common UX expectation (`acknowledge`)."""
+    svc = AlertService(db)
+    a = await svc.mark_read(alert_id, user["tenant_id"])
+    if not a:
+        from fastapi import HTTPException
+        raise HTTPException(404, "Alert not found")
+    return a
+
+
+@router.get("/alerts/rules")
+async def list_alert_rules(
+    _module: ModuleUser,
+    user: Viewer,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """List the active reorder/min-stock rules derived from product config.
+
+    Rules aren't a separate entity today — they live as `min_stock_level`
+    and `reorder_point` on each product. This endpoint exposes them as a
+    flat list so the UI can show 'active rules' without re-deriving.
+    """
+    from sqlalchemy import select, or_
+    from app.db.models.entity import Product
+    rows = (await db.execute(
+        select(
+            Product.id, Product.sku, Product.name,
+            Product.min_stock_level, Product.reorder_point,
+            Product.reorder_quantity, Product.auto_reorder,
+        ).where(
+            Product.tenant_id == user["tenant_id"],
+            Product.is_active.is_(True),
+            or_(
+                Product.min_stock_level > 0,
+                Product.reorder_point > 0,
+            ),
+        )
+    )).all()
+    return [
+        {
+            "product_id": r.id, "sku": r.sku, "name": r.name,
+            "min_stock_level": r.min_stock_level,
+            "reorder_point": r.reorder_point,
+            "reorder_quantity": r.reorder_quantity,
+            "auto_reorder": r.auto_reorder,
+        }
+        for r in rows
+    ]
+
+
 @router.post("/alerts/{alert_id}/resolve", response_model=StockAlertOut)
 async def resolve_alert(
     alert_id: str,

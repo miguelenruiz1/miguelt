@@ -173,6 +173,13 @@ class StockService:
                 movement_id=movement.id,
                 batch_id=batch_id,
             )
+            # Keep `product.last_purchase_cost` in sync so the product
+            # detail view + pricing endpoint reflect the most recent cost.
+            # A full ProductCostHistory row requires PO context (not
+            # available for ad-hoc receives), so we only update the
+            # denormalized field here.
+            product.last_purchase_cost = Decimal(str(unit_cost))
+            await self.db.flush()
 
         return movement
 
