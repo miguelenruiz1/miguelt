@@ -71,6 +71,11 @@ class ProductUpdate(BaseModel):
     origin_plot_code: str | None = Field(default=None, max_length=64)
     commodity_type: str | None = Field(default=None, max_length=20)
 
+    # Reject unknown fields so typos like `tax_category_id` (Product links
+    # via tax_rate_id, not the category) return 422 instead of being
+    # silently ignored, which masked schema misunderstandings in QA.
+    model_config = {"extra": "forbid"}
+
 
 class ProductOut(OrmBase):
     id: str

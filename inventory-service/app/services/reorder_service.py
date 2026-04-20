@@ -137,7 +137,7 @@ class ReorderService:
         OPEN_STATUSES = (POStatus.draft, POStatus.sent, POStatus.confirmed, POStatus.partial)
         open_po_q = (
             select(PurchaseOrderLine.product_id)
-            .join(PurchaseOrder, PurchaseOrder.id == PurchaseOrderLine.purchase_order_id)
+            .join(PurchaseOrder, PurchaseOrder.id == PurchaseOrderLine.po_id)
             .where(
                 PurchaseOrder.tenant_id == tenant_id,
                 PurchaseOrder.status.in_(OPEN_STATUSES),

@@ -55,10 +55,10 @@ class BatchVerifyOut(BaseModel):
 
 # ─── Endpoint ────────────────────────────────────────────────────────────────
 
-@router.get("/batch/{batch_number}/verify", response_model=BatchVerifyOut)
+@router.get("/batch/{tenant_id}/{batch_number}/verify", response_model=BatchVerifyOut)
 async def verify_batch(
+    tenant_id: str,
     batch_number: str,
-    tenant_id: str = "default",
     db: AsyncSession = Depends(get_db_session),
 ) -> BatchVerifyOut:
     """

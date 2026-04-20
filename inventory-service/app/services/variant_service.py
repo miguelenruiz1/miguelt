@@ -23,15 +23,26 @@ class VariantService:
         return await self.attr_repo.list(tenant_id)
 
     async def create_attribute(self, tenant_id: str, data: dict, options: list[dict] | None = None):
+        from sqlalchemy.exc import IntegrityError
+        from app.core.errors import ConflictError
         data["tenant_id"] = tenant_id
-        attr = await self.attr_repo.create(data)
-        if options:
-            for opt in options:
-                opt["attribute_id"] = attr.id
-                opt["tenant_id"] = tenant_id
-                await self.option_repo.create(opt)
-            attr = await self.attr_repo._reload(attr.id, tenant_id)
-        return attr
+        try:
+            attr = await self.attr_repo.create(data)
+            if options:
+                for opt in options:
+                    opt["attribute_id"] = attr.id
+                    opt["tenant_id"] = tenant_id
+                    await self.option_repo.create(opt)
+                # Force identity-map refresh so the response carries the
+                # newly inserted options (the initial _reload inside
+                # attr_repo.create captured an empty collection).
+                await self.db.refresh(attr, attribute_names=["options"])
+            return attr
+        except IntegrityError as exc:
+            await self.db.rollback()
+            raise ConflictError(
+                "Variant attribute or option already exists for this tenant"
+            ) from exc
 
     async def update_attribute(self, attr_id: str, tenant_id: str, data: dict):
         obj = await self.attr_repo.get_by_id(attr_id, tenant_id)
