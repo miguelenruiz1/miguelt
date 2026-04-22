@@ -205,12 +205,6 @@ export const userApi = {
       post<{ sent: boolean; recipient: string }>(`/api/v1/email-templates/${id}/test`, { to: to || null }),
   },
 
-  onboarding: {
-    status: () => get<{ completed: boolean; step: string }>('/api/v1/onboarding/status'),
-    updateStep: (step: string) => patch<{ completed: boolean; step: string }>('/api/v1/onboarding/step', { step }),
-    complete: () => patch<{ completed: boolean; step: string }>('/api/v1/onboarding/complete', {}),
-  },
-
   emailConfig: {
     get: () => get<EmailConfig>('/api/v1/email-config'),
     update: (data: Partial<EmailConfig>) => put<EmailConfig>('/api/v1/email-config', data),

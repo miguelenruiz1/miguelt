@@ -21,20 +21,7 @@ export function ProtectedRoute({ children, permission, superuserOnly }: Protecte
   }, [])
 
   if (!accessToken) {
-    // Show landing page at root, login for any other protected route
-    if (location.pathname === '/') {
-      return <Navigate to="/home" replace />
-    }
     return <Navigate to="/login" replace />
-  }
-
-  // Redirect to onboarding if not completed (skip for /onboarding itself)
-  if (
-    user &&
-    user.onboarding_completed === false &&
-    location.pathname !== '/onboarding'
-  ) {
-    return <Navigate to="/onboarding" replace />
   }
 
   if (superuserOnly && !user?.is_superuser) {

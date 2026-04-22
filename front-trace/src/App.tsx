@@ -15,7 +15,6 @@ const AcceptInvitationPage = named(() => import('@/pages/AcceptInvitationPage'),
 const ForgotPasswordPage = named(() => import('@/pages/ForgotPasswordPage'), 'ForgotPasswordPage')
 const ResetPasswordPage = named(() => import('@/pages/ResetPasswordPage'), 'ResetPasswordPage')
 const ProfilePage = named(() => import('@/pages/ProfilePage'), 'ProfilePage')
-const OnboardingPage = named(() => import('@/pages/OnboardingPage'), 'OnboardingPage')
 
 // ── Logistics pages (lazy) ──────────────────────────────────────────────────
 const DashboardPage = named(() => import('@/pages/DashboardPage'), 'DashboardPage')
@@ -142,18 +141,17 @@ const PlatformAiSettingsPage = named(() => import('@/pages/platform/PlatformAiSe
 // ── Other pages (lazy) ─────────────────────────────────────────────────────
 const SettingsPage = named(() => import('@/pages/SettingsPage'), 'SettingsPage')
 const BillingPage = named(() => import('@/pages/settings/BillingPage'), 'BillingPage')
-const LandingPage = named(() => import('@/pages/LandingPage'), 'LandingPage')
-const EudrLandingPage = named(() => import('@/pages/EudrLandingPage'), 'EudrLandingPage')
 
 // Critical synchronous imports (small + always needed at root)
 import { PlanLimitModal } from '@/components/PlanLimitModal'
 
 // Show landing if not logged in, dashboard if logged in
 const router = createBrowserRouter([
-  // ─── Landing (public) ───────────────────────────────────────────────────────
-  { path: '/home',               element: <LandingPage /> },
-  { path: '/eudr',               element: <EudrLandingPage /> },
-  { path: '/landing',            element: <LandingPage /> },
+  // ─── Landing routes retired — marketing lives in Drupal externally.
+  //     Redirect old paths to /login so stale links don't 404. ──────────────
+  { path: '/home',               element: <Navigate to="/login" replace /> },
+  { path: '/eudr',               element: <Navigate to="/login" replace /> },
+  { path: '/landing',            element: <Navigate to="/login" replace /> },
 
   // ─── Public routes (no layout) ──────────────────────────────────────────────
   { path: '/login',              element: <LoginPage /> },
@@ -165,8 +163,8 @@ const router = createBrowserRouter([
   { path: '/verificar', element: <PublicVerifyPage /> },
   { path: '/verificar/:batchNumber', element: <PublicVerifyPage /> },
 
-  // ─── Onboarding (protected, no layout) ──────────────────────────────────────
-  { path: '/onboarding', element: <ProtectedRoute><OnboardingPage /></ProtectedRoute> },
+  // ─── Onboarding retired — new users land directly on the dashboard. ──────
+  { path: '/onboarding', element: <Navigate to="/" replace /> },
 
   // ─── Protected routes (with layout) ─────────────────────────────────────────
   {

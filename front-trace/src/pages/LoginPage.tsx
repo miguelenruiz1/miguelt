@@ -26,12 +26,12 @@ export function LoginPage() {
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[400px] rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, rgba(0,232,122,0.15), transparent)' }} />
 
         <div className="relative z-10">
-          <Link to="/home" className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#00E87A' }}>
               <span className="text-black font-extrabold text-sm">T</span>
             </div>
             <span className="font-bold text-white text-xl">Trace<span style={{ color: '#00E87A' }}>Log</span></span>
-          </Link>
+          </div>
         </div>
 
         <div className="relative z-10 max-w-md">
@@ -132,9 +132,6 @@ export function LoginPage() {
             <Link to="/register" className="font-semibold" style={{ color: '#00E87A' }}>Regístrate</Link>
           </p>
 
-          <div className="mt-8 pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            <Link to="/home" className="text-xs font-medium" style={{ color: '#6B7A8D' }}>← Volver al inicio</Link>
-          </div>
         </div>
       </div>
     </div>
