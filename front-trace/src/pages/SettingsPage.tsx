@@ -22,11 +22,12 @@ const GENERATED_KEYPAIR = {
   secretB58:   '5LNxySiHfiMQMxAhJn8TjZumUbwRkuYNVvhMdMXiA3j2cVGBJU1SDRTCsqpFFFX6KZHqRjZpcNixUWzX7xysotxN',
 }
 
-const ENV_SNIPPET = `# ─── Solana (producción con keypair real) ────────────────────────────────────
+const ENV_SNIPPET = `# ─── Solana (devnet real, via Helius) ────────────────────────────────────────
+SOLANA_NETWORK=devnet
 SOLANA_RPC_URL=https://api.devnet.solana.com
 SOLANA_KEYPAIR=${GENERATED_KEYPAIR.secretB58}
-SOLANA_SIMULATION=false
-SOLANA_COMMITMENT=confirmed`
+SOLANA_COMMITMENT=confirmed
+HELIUS_API_KEY=<tu-api-key-de-helius>`
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -290,7 +291,8 @@ function BackendStatusSection() {
     staleTime: 10_000,
   })
 
-  const simMode = ready?.checks?.solana_simulation === 'true' || ready?.checks?.solana_simulation === true
+  const mode = String(ready?.checks?.blockchain_mode ?? 'helius')
+  const network = String(ready?.checks?.solana_network ?? 'devnet')
 
   return (
     <Section icon={<Server className="h-4 w-4" />} title="Estado del Backend">
@@ -309,21 +311,12 @@ function BackendStatusSection() {
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {/* Simulation mode highlight */}
-          <div className={`rounded-xl border px-4 py-3 flex items-center gap-3 ${
-            simMode
-              ? 'border-amber-200 bg-amber-50'
-              : 'border-emerald-200 bg-emerald-50'
-          }`}>
-            <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${simMode ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 flex items-center gap-3">
+            <span className="h-2.5 w-2.5 rounded-full shrink-0 bg-emerald-500" />
             <div>
-              <p className={`text-sm font-bold ${simMode ? 'text-amber-800' : 'text-emerald-800'}`}>
-                {simMode ? 'Modo Simulación activo' : 'Modo Producción activo'}
-              </p>
-              <p className={`text-xs ${simMode ? 'text-amber-600' : 'text-emerald-600'}`}>
-                {simMode
-                  ? 'SOLANA_SIMULATION=true — los NFTs no están en blockchain real'
-                  : 'SOLANA_SIMULATION=false — los NFTs se anclan en Solana real'}
+              <p className="text-sm font-bold text-emerald-800">Blockchain real — {mode} / {network}</p>
+              <p className="text-xs text-emerald-600">
+                Los NFTs y eventos se anclan en Solana {network} vía {mode}.
               </p>
             </div>
           </div>
@@ -360,7 +353,7 @@ function SolanaStatusWidget() {
     staleTime: 15_000,
   })
 
-  const simMode = ready?.checks?.solana_simulation === 'true' || ready?.checks?.solana_simulation === true
+  const mode = String(ready?.checks?.blockchain_mode ?? 'helius')
   const network = ready?.checks?.solana_cluster ?? ready?.checks?.solana_network ?? 'unknown'
 
   return (
@@ -375,10 +368,8 @@ function SolanaStatusWidget() {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-border bg-muted p-3">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Modo</p>
-              <Badge variant={simMode ? 'warning' : 'success'} dot>
-                {simMode ? 'Simulacion' : 'Produccion'}
-              </Badge>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Proveedor</p>
+              <Badge variant="success" dot>{mode}</Badge>
             </div>
             <div className="rounded-xl border border-border bg-muted p-3">
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Red</p>

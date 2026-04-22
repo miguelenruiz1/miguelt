@@ -277,7 +277,7 @@ async def retry_blockchain_mint(ctx: dict[str, Any], asset_id_str: str) -> None:
             log.warning("blockchain_retry_asset_not_found", asset_id=asset_id_str)
             return
 
-        if asset.blockchain_status in ("CONFIRMED", "SIMULATED"):
+        if asset.blockchain_status == "CONFIRMED":
             log.info("blockchain_retry_already_done", asset_id=asset_id_str, status=asset.blockchain_status)
             return
 
@@ -436,7 +436,7 @@ async def startup(ctx: dict[str, Any]) -> None:
     db_num = int(parsed.path.lstrip("/") or "1")
     ctx["arq_pool"] = await create_pool(RedisSettings(host=host, port=port, database=db_num))
 
-    log.info("worker_started", simulation=settings.SOLANA_SIMULATION)
+    log.info("worker_started", blockchain_mode=settings.blockchain_mode, network=settings.SOLANA_NETWORK)
 
 
 async def shutdown(ctx: dict[str, Any]) -> None:

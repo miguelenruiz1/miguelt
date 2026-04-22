@@ -51,6 +51,73 @@ GCP) contradice esta, **gana la #0**. Esas reglas quedaron obsoletas con la
 migración pero las dejo como historial de errores pasados.
 
 
+## 0.bis. Blockchain SIEMPRE real. Simulación eliminada del código.
+
+La plataforma **no puede** correr con provider simulado en ningún ambiente
+que el usuario vea — local, staging, producción. Todo wallet, todo mint,
+todo evento de custodia se firma contra **Solana real (devnet via Helius
+por defecto)**.
+
+Motivo histórico: una wallet simulada producía pubkeys tipo `sim1c632e09...`
+que no existen en Solana, no son verificables en Solscan, y rompen la
+narrativa fundamental de Trace ("trazabilidad anclada en blockchain"). **Un
+demo con datos simulados es un demo que miente** — incompatible con lo que
+se le vende al BID, a clientes o a cualquier evaluador técnico.
+
+**Estado actual del código (lo que ya está hecho):**
+
+- `trace-service/app/clients/simulation_provider.py` — **eliminado**.
+- `SOLANA_SIMULATION` — removido de `settings.py`, `.env.example`,
+  `deploy/env.production.template`, `deploy/docker-compose.production.yml`.
+- `SolanaClient.generate_wallet()`, `try_airdrop()`, `send_memo()`,
+  `get_account_info()`, `get_signature_status()` — sin ramas `if _simulation`.
+- `SolanaClient.mint_logistics_asset()` — borrado (era sólo stub simulado).
+- `provider_factory.get_blockchain_provider()` — retorna **siempre**
+  `HeliusProvider`. Si falta `HELIUS_API_KEY` o `SOLANA_KEYPAIR`,
+  **`BlockchainConfigError` al arrancar** (no hay fallback).
+
+**Reglas firmes (lo que debo respetar a futuro):**
+
+- Nunca reintroducir una env var tipo `SOLANA_SIMULATION` o un
+  `SimulationProvider`, aunque sea para "dev rápido". Si hace falta un
+  mock para tests, va como fixture pytest que monkeypatch-ea el provider,
+  no como flag global de la app.
+- `HELIUS_API_KEY` y `SOLANA_KEYPAIR` son **requeridos** en cualquier
+  ambiente (incluido local de dev). Valores de ejemplo en
+  `.env.example` apuntan al flujo real.
+- `SOLANA_NETWORK=devnet` por default (cambiar a `mainnet-beta` solo con
+  decisión explícita del usuario en la misma sesión).
+- Si en la DB veo `registry_wallets.wallet_pubkey LIKE 'sim%'`, son
+  residuos de un bug anterior. Borrarlos con
+  `DELETE FROM registry_wallets WHERE wallet_pubkey LIKE 'sim%';` antes
+  de demoear.
+
+**Cómo verificar rápido en cualquier ambiente:**
+
+```bash
+# 1. Env del trace-api debe tener keys seteadas (la var SOLANA_SIMULATION ya
+#    no existe — si aparece en algún lado, es un remanente a limpiar).
+docker exec trace-api bash -c \
+  'echo HELIUS=${#HELIUS_API_KEY} KP=${#SOLANA_KEYPAIR}'
+# Esperado: HELIUS=36 KP=88 (aproximado, según el keypair/key usados).
+
+# 2. Provider activo tiene que ser HeliusProvider (única opción posible
+#    tras el refactor).
+docker exec trace-api python -c \
+  'from app.clients.provider_factory import get_blockchain_provider;
+   p = get_blockchain_provider(); assert type(p).__name__ == "HeliusProvider",
+   f"P0: provider activo es {type(p).__name__}"'
+
+# 3. Sanity: wallets en DB no deben empezar con "sim".
+docker exec trace-postgres psql -U trace -d tracedb -At -c \
+  "SELECT COUNT(*) FROM registry_wallets WHERE wallet_pubkey LIKE 'sim%'"
+# Esperado: 0.
+```
+
+Si cualquiera de los tres falla, es bug P0 y se arregla antes de continuar
+con otra cosa.
+
+
 ## 1. Antes de escribir SQL crudo: leer el esquema
 
 Si voy a usar `text("SELECT ...")`, `db.execute(text(...))` o cualquier SQL

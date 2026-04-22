@@ -1,17 +1,16 @@
 """
-Solana RPC client with circuit breaker and simulation fallback.
+Solana RPC client with circuit breaker.
 
 Uses solders (Rust bindings) for keypair/transaction building and
-the solana Python library for RPC communication.
+JSON-RPC directly over httpx for RPC communication.
 
-Simulation mode: SOLANA_SIMULATION=true generates fake signatures.
-This lets the full pipeline run without a real Solana connection.
+CLAUDE.md regla #0.bis: la lógica de simulación fue eliminada. Todo lo que
+este cliente haga va contra Solana real (devnet via Helius por defecto).
+Faltante de keypair o de API key → RuntimeError al arrancar, no fallback.
 """
 from __future__ import annotations
 
-import asyncio
 import base64
-import hashlib
 import time
 import uuid
 from enum import StrEnum
@@ -106,17 +105,11 @@ class CircuitBreaker:
 # ─── Solana Client ────────────────────────────────────────────────────────────
 
 class SolanaClient:
-    """
-    Async Solana RPC client.
-
-    In simulation mode every operation returns fake but structurally valid data.
-    In production mode it communicates with the configured RPC URL.
-    """
+    """Async Solana JSON-RPC client against real network (devnet/mainnet)."""
 
     def __init__(self) -> None:
         settings = get_settings()
-        self._rpc_url = settings.SOLANA_RPC_URL
-        self._simulation = settings.SOLANA_SIMULATION
+        self._rpc_url = settings.effective_solana_rpc_url
         self._timeout = settings.SOLANA_TIMEOUT
         self._keypair_raw = settings.SOLANA_KEYPAIR
         self._commitment = settings.SOLANA_COMMITMENT
@@ -167,37 +160,18 @@ class SolanaClient:
         Generate a new Solana Keypair.
         Returns: (pubkey_base58, secret_key_base58)
         """
-        if self._simulation:
-            # Generate a fake one for sim
-            fake_pk = "sim" + str(uuid.uuid4()).replace("-", "")[:40]
-            fake_sk = "sim_sk_" + str(uuid.uuid4()).replace("-", "")
-            return fake_pk, fake_sk
-            
-        try:
-            from solders.keypair import Keypair  # type: ignore
-            kp = Keypair()
-            pubkey = str(kp.pubkey())
-            secret = _b58encode(bytes(kp))
-            return pubkey, secret
-        except ImportError as exc:
-            log.warning("solders_not_available_for_generation", exc=str(exc))
-            fake_pk = "sim" + str(uuid.uuid4()).replace("-", "")[:40]
-            fake_sk = "sim_sk_" + str(uuid.uuid4()).replace("-", "")
-            return fake_pk, fake_sk
+        from solders.keypair import Keypair  # type: ignore
+        kp = Keypair()
+        pubkey = str(kp.pubkey())
+        secret = _b58encode(bytes(kp))
+        return pubkey, secret
 
     async def try_airdrop(self, pubkey: str, lamports: int = 100_000_000) -> tuple[bool, str | None]:
         """
         Request a devnet airdrop for the given pubkey (0.1 SOL by default).
         Returns ``(ok, error)``: ``(True, None)`` on success, ``(False, msg)``
-        on failure. Never raises. In simulation mode returns ``(True, None)``.
-
-        The paired-return replaces the previous ``bool``-only shape: callers
-        used to log "airdrop failed" with ``error=null`` because the failure
-        cause was swallowed inside this method.
+        on failure. Never raises.
         """
-        if self._simulation:
-            log.info("airdrop_simulated", pubkey=pubkey, lamports=lamports)
-            return True, None
         try:
             async def _call():
                 result = await self._rpc(
@@ -211,30 +185,6 @@ class SolanaClient:
             err = str(exc)[:200]
             log.warning("airdrop_failed", pubkey=pubkey, exc=err)
             return False, err
-
-    async def mint_logistics_asset(
-        self, collection_wallet_pubkey: str, collection_private_key: str, metadata: dict
-    ) -> str:
-        """
-        Mint a new Metaplex NFT representing a logistics load.
-        Returns the mint address (base58 pubkey string).
-        # TODO: Implement full Pyth/Metaplex Python integration. 
-        # Using a simulated mint address for now as Python Metaplex bindings require specific setup.
-        """
-        if self._simulation:
-            return "sim_mint_" + str(uuid.uuid4()).replace("-", "")[:35]
-
-        # Note: True Metaplex minting in Python requires building complex instructions.
-        # For the MVP, we simulate the minting action and return a valid format string.
-        log.info("minting_asset_simulated_for_now", collection=collection_wallet_pubkey)
-        await asyncio.sleep(0.5) # Simulate network delay
-        return "mint_" + str(uuid.uuid4()).replace("-", "")[:32]
-
-    # ─── Simulation helpers ───────────────────────────────────────────────────
-
-    def _sim_signature(self, memo: str) -> str:
-        digest = hashlib.sha256(memo.encode()).hexdigest()
-        return f"SIM_{digest[:44]}"
 
     # ─── RPC JSON helpers ─────────────────────────────────────────────────────
 
@@ -256,15 +206,6 @@ class SolanaClient:
     # ─── Public API ───────────────────────────────────────────────────────────
 
     async def get_account_info(self, pubkey: str) -> dict[str, Any]:
-        if self._simulation:
-            return {
-                "pubkey": pubkey,
-                "lamports": 1_000_000,
-                "owner": "11111111111111111111111111111111",
-                "executable": False,
-                "data": None,
-                "simulated": True,
-            }
         async def _call():
             result = await self._rpc(
                 "getAccountInfo",
@@ -272,14 +213,13 @@ class SolanaClient:
             )
             value = result.get("value") if result else None
             if value is None:
-                return {"pubkey": pubkey, "lamports": None, "owner": None, "executable": None, "data": None, "simulated": False}
+                return {"pubkey": pubkey, "lamports": None, "owner": None, "executable": None, "data": None}
             return {
                 "pubkey": pubkey,
                 "lamports": value.get("lamports"),
                 "owner": value.get("owner"),
                 "executable": value.get("executable"),
                 "data": value.get("data"),
-                "simulated": False,
             }
         return await self._cb.call(_call)
 
@@ -289,8 +229,8 @@ class SolanaClient:
         Used by anchor recovery to avoid double-spending memo fees when a
         previous attempt persisted the sig but failed to mark anchored.
         """
-        if not signature or signature.startswith("SIM_"):
-            return self._simulation
+        if not signature:
+            return False
         try:
             status = await self.get_signature_status(signature)
             return status.get("slot") is not None and status.get("err") is None
@@ -298,19 +238,16 @@ class SolanaClient:
             return False
 
     async def get_signature_status(self, signature: str) -> dict[str, Any]:
-        if self._simulation or signature.startswith("SIM_"):
-            return {"signature": signature, "slot": 1, "confirmations": 32, "err": None, "simulated": True}
         async def _call():
             result = await self._rpc("getSignatureStatuses", [[signature]])
             value = result.get("value", [None])[0] if result else None
             if value is None:
-                return {"signature": signature, "slot": None, "confirmations": None, "err": None, "simulated": False}
+                return {"signature": signature, "slot": None, "confirmations": None, "err": None}
             return {
                 "signature": signature,
                 "slot": value.get("slot"),
                 "confirmations": value.get("confirmations"),
                 "err": value.get("err"),
-                "simulated": False,
             }
         return await self._cb.call(_call)
 
@@ -318,66 +255,55 @@ class SolanaClient:
         """
         Send a Memo Program transaction anchoring `memo` on Solana.
         Returns the transaction signature string.
-        """
-        if self._simulation:
-            sig = self._sim_signature(memo)
-            log.info("solana_memo_simulated", sig=sig, memo_prefix=memo[:16])
-            return sig
 
+        Raises RuntimeError if SOLANA_KEYPAIR is missing — per CLAUDE.md
+        regla #0.bis, no fallback a simulación.
+        """
         keypair = self._load_keypair()
         if keypair is None:
-            log.warning("solana_keypair_missing_falling_back_to_simulation")
-            return self._sim_signature(memo)
+            raise RuntimeError(
+                "SOLANA_KEYPAIR no seteado — memo anchor requiere keypair real "
+                "(CLAUDE.md #0.bis: simulación prohibida)."
+            )
 
         async def _send():
-            try:
-                from solders.keypair import Keypair  # type: ignore
-                from solders.pubkey import Pubkey  # type: ignore
-                from solders.instruction import Instruction, AccountMeta  # type: ignore
-                from solders.message import Message  # type: ignore
-                from solders.transaction import Transaction  # type: ignore
-                from solders.hash import Hash  # type: ignore
+            from solders.pubkey import Pubkey  # type: ignore
+            from solders.instruction import Instruction, AccountMeta  # type: ignore
+            from solders.message import Message  # type: ignore
+            from solders.transaction import Transaction  # type: ignore
+            from solders.hash import Hash  # type: ignore
 
-                memo_prog = Pubkey.from_string(MEMO_PROGRAM_ID)
+            memo_prog = Pubkey.from_string(MEMO_PROGRAM_ID)
 
-                # Build instruction
-                ix = Instruction(
-                    program_id=memo_prog,
-                    data=memo.encode("utf-8"),
-                    accounts=[
-                        AccountMeta(
-                            pubkey=keypair.pubkey(),
-                            is_signer=True,
-                            is_writable=False,
-                        )
-                    ],
-                )
+            ix = Instruction(
+                program_id=memo_prog,
+                data=memo.encode("utf-8"),
+                accounts=[
+                    AccountMeta(
+                        pubkey=keypair.pubkey(),
+                        is_signer=True,
+                        is_writable=False,
+                    )
+                ],
+            )
 
-                # Get latest blockhash via our HTTP RPC
-                bh_result = await self._rpc("getLatestBlockhash", [{"commitment": self._commitment}])
-                blockhash_str = bh_result["value"]["blockhash"]
-                recent_blockhash = Hash.from_string(blockhash_str)
+            bh_result = await self._rpc("getLatestBlockhash", [{"commitment": self._commitment}])
+            blockhash_str = bh_result["value"]["blockhash"]
+            recent_blockhash = Hash.from_string(blockhash_str)
 
-                # Build + sign legacy transaction
-                msg = Message.new_with_blockhash([ix], keypair.pubkey(), recent_blockhash)
-                tx = Transaction([keypair], msg, recent_blockhash)
+            msg = Message.new_with_blockhash([ix], keypair.pubkey(), recent_blockhash)
+            tx = Transaction([keypair], msg, recent_blockhash)
 
-                # Serialize
-                tx_bytes = bytes(tx)
-                tx_b64 = base64.b64encode(tx_bytes).decode()
+            tx_bytes = bytes(tx)
+            tx_b64 = base64.b64encode(tx_bytes).decode()
 
-                # Send
-                result = await self._rpc(
-                    "sendTransaction",
-                    [tx_b64, {"encoding": "base64", "skipPreflight": True, "preflightCommitment": "confirmed"}],
-                )
-                sig = str(result)
-                log.info("solana_memo_anchored", sig=sig)
-                return sig
-
-            except ImportError as exc:
-                log.warning("solders_not_available", exc=str(exc))
-                return self._sim_signature(memo)
+            result = await self._rpc(
+                "sendTransaction",
+                [tx_b64, {"encoding": "base64", "skipPreflight": True, "preflightCommitment": "confirmed"}],
+            )
+            sig = str(result)
+            log.info("solana_memo_anchored", sig=sig)
+            return sig
 
         return await self._cb.call(_send)
 

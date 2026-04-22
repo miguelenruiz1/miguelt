@@ -433,19 +433,21 @@ class WorkerSettings:
 
 ## Cliente Solana
 
-### Simulación vs producción
+### Config blockchain (CLAUDE.md #0.bis)
 
-```python
-# .env
-SOLANA_SIMULATION=true   # devuelve SIM_<sha256_del_memo> — no necesita keypair
-SOLANA_SIMULATION=false  # usa RPC real + keypair
+La simulación fue eliminada — todo va contra Solana real (devnet por defecto)
+vía Helius. Config mínima en `.env`:
 
+```bash
+SOLANA_NETWORK=devnet
 SOLANA_KEYPAIR=<base58 64 bytes>  # o path a archivo JSON
+HELIUS_API_KEY=<key de https://dev.helius.xyz>
 ```
 
-En modo simulación, `send_memo()` devuelve `SIM_<hex[:44]>` sin tocar la red. Structuralmente idéntico a un tx_sig real para el resto del sistema.
+Si falta `SOLANA_KEYPAIR` o `HELIUS_API_KEY`, `trace-api` **falla al
+arrancar** con `BlockchainConfigError` — no hay fallback silencioso.
 
-### Envío de memo (producción)
+### Envío de memo
 
 ```python
 # Programa de Memo en Solana
@@ -461,9 +463,11 @@ Instruction(
 
 El contenido del memo es el `event_hash` del evento (64 bytes hex). Cualquiera puede leerlo en Solana Explorer buscando el `solana_tx_sig`.
 
-### Fallback automático
+### Sin fallback
 
-Si `SOLANA_KEYPAIR` no está configurado pero `SOLANA_SIMULATION=false`, el cliente loguea un warning y cae automáticamente a modo simulación para esa llamada.
+Si falta `SOLANA_KEYPAIR` o `HELIUS_API_KEY`, el servicio lanza
+`BlockchainConfigError` al construir el provider — no se degrada a
+simulación (CLAUDE.md #0.bis).
 
 ---
 
@@ -511,7 +515,6 @@ IDEMPOTENCY_TTL=86400               # TTL en segundos (24h)
 # ─── Solana ──────────────────────────────────────────────────
 SOLANA_RPC_URL=https://api.devnet.solana.com
 SOLANA_KEYPAIR=                     # base58 o path a JSON
-SOLANA_SIMULATION=true              # false en producción
 SOLANA_COMMITMENT=confirmed         # processed|confirmed|finalized
 SOLANA_TIMEOUT=30.0
 SOLANA_CIRCUIT_BREAKER_THRESHOLD=5
@@ -561,7 +564,6 @@ poetry install
 export DATABASE_URL="postgresql+asyncpg://trace:tracepass@localhost:5432/tracedb"
 export REDIS_URL="redis://localhost:6379/0"
 export ARQ_REDIS_URL="redis://localhost:6379/1"
-export SOLANA_SIMULATION=true
 export TRACE_ADMIN_KEY=dev-admin-key
 
 # Correr migraciones

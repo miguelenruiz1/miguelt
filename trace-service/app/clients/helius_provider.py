@@ -117,8 +117,7 @@ class HeliusProvider(IBlockchainProvider):
         keypair = self._load_keypair()
         if keypair is None:
             raise RuntimeError(
-                "SOLANA_KEYPAIR required for tree creation. "
-                "Set it in .env or use SOLANA_SIMULATION=true."
+                "SOLANA_KEYPAIR required for tree creation. Set it in .env."
             )
 
         try:

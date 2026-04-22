@@ -32,21 +32,19 @@ class Settings(BaseSettings):
     ARQ_REDIS_URL: str = "redis://redis:6379/1"
     IDEMPOTENCY_TTL: int = 86400  # 24h in seconds
 
-    # ─── Solana ───────────────────────────────────────────────────────────────
-    # Switch: SOLANA_SIMULATION=true  → SimulationProvider (sin red, dev rápido)
-    #         SOLANA_SIMULATION=false → conexión real (Helius si hay API key, RPC directo si no)
+    # ─── Solana / Helius ──────────────────────────────────────────────────────
+    # CLAUDE.md regla #0.bis: blockchain SIEMPRE real contra devnet/mainnet
+    # via Helius. HELIUS_API_KEY y SOLANA_KEYPAIR son OBLIGATORIOS — sin ellos
+    # trace-api no arranca (ver provider_factory.get_blockchain_provider).
     SOLANA_NETWORK: Literal["devnet", "mainnet-beta"] = "devnet"
     SOLANA_RPC_URL: str = "https://api.devnet.solana.com"
-    SOLANA_KEYPAIR: str = Field(default="", description="base58 keypair or file path")
-    SOLANA_SIMULATION: bool = True
+    SOLANA_KEYPAIR: str = Field(default="", description="base58 keypair (64 bytes) — fee payer")
     SOLANA_COMMITMENT: Literal["processed", "confirmed", "finalized"] = "confirmed"
     SOLANA_TIMEOUT: float = 30.0
     SOLANA_CIRCUIT_BREAKER_THRESHOLD: int = 5
     SOLANA_CIRCUIT_BREAKER_RECOVERY: int = 60  # seconds
-
-    # ─── Helius ───────────────────────────────────────────────────────────────
-    HELIUS_API_KEY: str = ""           # empty + SIMULATION=false → RPC directo
-    HELIUS_RPC_URL: str = ""           # auto-resolved from SOLANA_NETWORK if empty
+    HELIUS_API_KEY: str = ""
+    HELIUS_RPC_URL: str = ""  # auto-resolved from SOLANA_NETWORK if empty
 
     @property
     def effective_helius_rpc_url(self) -> str:
@@ -66,9 +64,7 @@ class Settings(BaseSettings):
 
     @property
     def blockchain_mode(self) -> str:
-        """Current mode: simulation | helius | rpc-direct."""
-        if self.SOLANA_SIMULATION:
-            return "simulation"
+        """Current mode: helius | rpc-direct. Simulation removed (CLAUDE.md #0.bis)."""
         if self.HELIUS_API_KEY:
             return "helius"
         return "rpc-direct"

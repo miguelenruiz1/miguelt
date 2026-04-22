@@ -47,8 +47,8 @@ async def ready() -> ORJSONResponse:
     # Check Solana / Blockchain
     try:
         settings = get_settings()
-        checks["solana_simulation"] = str(settings.SOLANA_SIMULATION).lower()
         checks["solana_network"] = getattr(settings, "SOLANA_NETWORK", "devnet")
+        checks["blockchain_mode"] = settings.blockchain_mode
         from app.clients.solana_client import get_solana_client
         client = get_solana_client()
         try:

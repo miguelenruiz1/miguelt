@@ -38,7 +38,11 @@ TEST_DB_URL = os.environ.get(
 os.environ["DATABASE_URL"] = TEST_DB_URL
 os.environ.setdefault("REDIS_URL", "redis://localhost:6380/15")
 os.environ.setdefault("ARQ_REDIS_URL", "redis://localhost:6380/14")
-os.environ.setdefault("SOLANA_SIMULATION", "true")
+# CLAUDE.md #0.bis: simulación eliminada. Tests que tocan blockchain deben
+# mockear HeliusProvider directamente (fixture en tests/fixtures/mock_blockchain.py).
+# Estas env vars solo permiten que get_settings() valide al arranque sin errores.
+os.environ.setdefault("HELIUS_API_KEY", "test-helius-key-unused-mock-the-provider")
+os.environ.setdefault("SOLANA_KEYPAIR", "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
 os.environ.setdefault("TRACE_ADMIN_KEY", "test-admin-key")
 os.environ.setdefault("SOLANA_RPC_URL", "https://api.devnet.solana.com")
 

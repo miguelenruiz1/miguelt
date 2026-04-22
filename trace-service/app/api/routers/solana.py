@@ -16,14 +16,10 @@ router = APIRouter(prefix="/solana", tags=["solana"])
     summary="Current blockchain connection mode and config",
 )
 async def blockchain_status() -> ORJSONResponse:
-    """
-    Returns the active blockchain mode and connection details.
-    Useful for debugging and verifying the switch between simulation/real.
-    """
+    """Blockchain mode + Helius health + fee payer balance (real devnet)."""
     settings = get_settings()
     client = get_solana_client()
 
-    # Helius health check (only if in helius mode)
     helius_healthy = None
     if settings.blockchain_mode == "helius":
         from app.clients.provider_factory import get_blockchain_provider
@@ -31,10 +27,9 @@ async def blockchain_status() -> ORJSONResponse:
         provider = get_blockchain_provider()
         helius_healthy = await provider.health_check()
 
-    # Fee payer balance (only if keypair configured and not simulation)
     fee_payer_balance = None
     fee_payer_pubkey = None
-    if not settings.SOLANA_SIMULATION and settings.SOLANA_KEYPAIR:
+    if settings.SOLANA_KEYPAIR:
         kp = client._load_keypair()
         if kp:
             fee_payer_pubkey = str(kp.pubkey())
@@ -49,7 +44,6 @@ async def blockchain_status() -> ORJSONResponse:
     return ORJSONResponse(content={
         "mode": settings.blockchain_mode,
         "network": settings.SOLANA_NETWORK,
-        "simulation": settings.SOLANA_SIMULATION,
         "rpc_url": settings.SOLANA_RPC_URL,
         "helius_configured": bool(settings.HELIUS_API_KEY),
         "helius_healthy": helius_healthy,

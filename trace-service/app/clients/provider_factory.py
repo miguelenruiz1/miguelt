@@ -1,40 +1,42 @@
 """
-Factory that returns the active IBlockchainProvider based on settings.
+Factory del IBlockchainProvider activo.
 
-Switch logic (controlled by env vars):
-  SOLANA_SIMULATION=true  → SimulationProvider  (default, sin red)
-  SOLANA_SIMULATION=false + HELIUS_API_KEY set  → HeliusProvider  (Helius RPC + DAS)
-  SOLANA_SIMULATION=false + HELIUS_API_KEY empty → SimulationProvider con warning
+CLAUDE.md regla #0.bis: el único provider soportado es HeliusProvider contra
+Solana real (devnet por defecto). La simulación fue eliminada del código —
+no hay fallback silencioso posible. Faltante de HELIUS_API_KEY o
+SOLANA_KEYPAIR => RuntimeError al arrancar.
 """
 from __future__ import annotations
 
 from app.clients.blockchain_provider import IBlockchainProvider
-from app.core.logging import get_logger
 
-log = get_logger(__name__)
+
+class BlockchainConfigError(RuntimeError):
+    """Falta configuración real de Solana (HELIUS_API_KEY o SOLANA_KEYPAIR)."""
 
 
 def get_blockchain_provider() -> IBlockchainProvider:
-    """Return the blockchain provider based on current settings."""
+    """Return the Helius blockchain provider.
+
+    Raises:
+        BlockchainConfigError: Si falta HELIUS_API_KEY o SOLANA_KEYPAIR.
+    """
     from app.core.settings import get_settings
 
     settings = get_settings()
 
-    # ── Simulation mode ───────────────────────────────────────────────────
-    if settings.SOLANA_SIMULATION:
-        from app.clients.simulation_provider import SimulationProvider
-
-        return SimulationProvider()
-
-    # ── Real mode: requires Helius API key ────────────────────────────────
-    if not settings.HELIUS_API_KEY:
-        log.warning(
-            "solana_simulation_off_but_no_helius_key",
-            hint="Set HELIUS_API_KEY or use SOLANA_SIMULATION=true",
+    missing = [
+        name for name, val in (
+            ("HELIUS_API_KEY", settings.HELIUS_API_KEY),
+            ("SOLANA_KEYPAIR", settings.SOLANA_KEYPAIR),
         )
-        from app.clients.simulation_provider import SimulationProvider
-
-        return SimulationProvider()
+        if not val
+    ]
+    if missing:
+        raise BlockchainConfigError(
+            f"Blockchain real requiere {missing}. Setealos en el .env "
+            "(CLAUDE.md #0.bis: simulacion eliminada, no hay fallback)."
+        )
 
     from app.clients.helius_provider import HeliusProvider
     import httpx
