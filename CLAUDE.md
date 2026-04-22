@@ -4,6 +4,53 @@ Estas reglas existen porque ya cometí errores concretos en este proyecto y el
 usuario perdió tiempo. Son obligatorias, no sugerencias. Si alguna no aplica a
 una tarea puntual, lo digo explícitamente antes de saltármela.
 
+## 0. Regla #0 — NUNCA tocar GCP. Producción vive en Hetzner.
+
+**Prohibido** ejecutar cualquier comando `gcloud ...`, `gsutil ...`,
+`gke ...`, abrir `console.cloud.google.com`, o inspeccionar recursos en el
+proyecto `trace-log`. La migración GCP → Hetzner terminó en abril 2026 y GCP
+quedó apagado. Si veo código, scripts o docs que todavía apunten a GCP, los
+señalo al usuario pero no los resucito.
+
+**Toda referencia a deploy apunta a Hetzner Cloud:**
+
+- **Consola**: https://console.hetzner.com/
+- **Host de producción**: `root@62.238.5.1` (Hetzner CAX11 ARM64, Helsinki)
+- **URL pública actual**: http://62.238.5.1 (gateway en puerto 80 → 9000)
+- **Compose de producción**: `deploy/docker-compose.production.yml`
+
+**Flujo de deploy (reemplaza todo lo que decía "gcloud" en reglas viejas):**
+
+```bash
+# 1. Push local → origin/main (tras seguir el flow #11 de branches)
+git push origin main
+
+# 2. SSH al VM y actualizar código
+ssh root@62.238.5.1 'cd /opt/trace && git pull'
+
+# 3. Rebuild solo los servicios afectados (deducir de archivos modificados)
+ssh root@62.238.5.1 \
+  'cd /opt/trace && docker compose -f deploy/docker-compose.production.yml build <service> && \
+   docker compose -f deploy/docker-compose.production.yml up -d <service>'
+
+# 4. Si cambió cualquier backend detrás del gateway nginx, reiniciar el gateway
+ssh root@62.238.5.1 \
+  'cd /opt/trace && docker compose -f deploy/docker-compose.production.yml restart gateway'
+
+# 5. Smoke test (regla #14, adaptada): curl + logs
+ssh root@62.238.5.1 'docker compose -f /opt/trace/deploy/docker-compose.production.yml \
+  logs --since=5m <service> | grep -iE "error|exception|traceback"'
+curl -sI http://62.238.5.1/
+```
+
+**Deploys de solo-docs o solo-scripts-de-QA** (ej: `*.md`, `qa/*.py`) **NO
+requieren rebuild**. Basta con `git pull` en el VM — no afecta runtime.
+
+Si una regla más abajo (ej. #13 sobre `gcloud builds submit`, #16 sobre APIs
+GCP) contradice esta, **gana la #0**. Esas reglas quedaron obsoletas con la
+migración pero las dejo como historial de errores pasados.
+
+
 ## 1. Antes de escribir SQL crudo: leer el esquema
 
 Si voy a usar `text("SELECT ...")`, `db.execute(text(...))` o cualquier SQL
