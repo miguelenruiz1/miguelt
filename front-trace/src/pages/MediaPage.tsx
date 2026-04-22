@@ -8,7 +8,7 @@ import { useMediaFiles, useUploadMedia, useUpdateMedia, useDeleteMedia, useMedia
 import { mediaFileUrl } from '@/lib/media-api'
 import { useToast } from '@/store/toast'
 import { useConfirm } from '@/store/confirm'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import type { MediaFile } from '@/types/api'
 
 // ── Categories ──────────────────────────────────────────────────────────────

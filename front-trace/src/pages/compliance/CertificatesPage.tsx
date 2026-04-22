@@ -6,8 +6,8 @@ import { useToast } from '@/store/toast'
 import { DataTable, type Column } from '@/components/ui/datatable'
 import { SkeletonTable } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 import type { ComplianceCertificate, CertificateStatus } from '@/types/compliance'
 
 // ─── Status badge mapping ────────────────────────────────────────────────────

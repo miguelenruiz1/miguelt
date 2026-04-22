@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Package, ArrowRight } from 'lucide-react'
 import { StateBadge } from '@/components/domain-badges'
-import { HashChip } from '@/components/ui/misc'
+import { HashChip } from '@/components/ui/Misc'
 import { shortPubkey, fmtDateShort } from '@/lib/utils'
 import type { Asset } from '@/types/api'
 

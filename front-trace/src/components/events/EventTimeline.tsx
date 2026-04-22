@@ -7,8 +7,8 @@ import { useSettingsStore, explorerTxUrl, xrayAssetUrl, xrayTxUrl } from '@/stor
 
 const isSimSig = (s: string) => s.startsWith('SIM_') || s.startsWith('sim')
 import { EventTypeBadge } from '@/components/domain-badges'
-import { HashChip } from '@/components/ui/misc'
-import { Button } from '@/components/ui/button'
+import { HashChip } from '@/components/ui/Misc'
+import { Button } from '@/components/ui/Button'
 import { useAnchorEvent } from '@/hooks/useAssets'
 import { useEventDocuments } from '@/hooks/useDocuments'
 import { useWalletList } from '@/hooks/useWallets'

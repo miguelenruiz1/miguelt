@@ -7,8 +7,8 @@ import { usePlots } from '@/hooks/useCompliance'
 import { useToast } from '@/store/toast'
 import { tryParseJson } from '@/lib/utils'
 import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
-import { Button } from '@/components/ui/button'
-import { Input, Textarea } from '@/components/ui/input'
+import { Button } from '@/components/ui/Button'
+import { Input, Textarea } from '@/components/ui/Input'
 
 const schema = z.object({
   asset_mint:               z.string().min(1, 'Requerido').max(64),

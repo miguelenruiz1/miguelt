@@ -1,6 +1,6 @@
 import { AlertTriangle } from 'lucide-react'
 import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { usePlanLimitStore } from '@/store/planLimit'
 
 export function PlanLimitModal() {

@@ -6,8 +6,8 @@ import {
 import { useConfirm } from '@/store/confirm'
 import { useToast } from '@/store/toast'
 import { DataTable, type Column } from '@/components/ui/datatable'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
 import type { TenantFrameworkActivation } from '@/types/compliance'
 

@@ -25,7 +25,7 @@ import { usePnL, useDownloadPnLPdf, usePnLAnalysis } from '@/hooks/useInventory'
 import { inventoryPnLApi } from '@/lib/inventory-api'
 import { useQueryClient } from '@tanstack/react-query'
 import { SegmentedControl } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
 import type { PnLReport, PnLProduct, StockByWarehouse, PnLAnalysis } from '@/types/inventory'
 

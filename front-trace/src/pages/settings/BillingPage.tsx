@@ -4,8 +4,8 @@ import {
   Receipt, ArrowRight, Zap, Star, Building2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuthStore } from '@/store/auth'
 import { useUsageSummary, useCheckout, useTenantInvoices } from '@/hooks/useBilling'

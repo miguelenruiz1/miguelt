@@ -2,7 +2,7 @@
  * Domain-specific badge components built on top of shadcn Badge.
  * 100% workflow-driven — no hardcoded state/event data.
  */
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@/components/ui/Badge'
 import { useWorkflowStates, useWorkflowEventTypes } from '@/hooks/useWorkflow'
 import type { AssetState, EventType, WalletStatus } from '@/types/api'
 

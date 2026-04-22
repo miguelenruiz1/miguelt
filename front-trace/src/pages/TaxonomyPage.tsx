@@ -5,9 +5,9 @@ import {
 import * as LucideIcons from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Topbar } from '@/components/layout/Topbar'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
-import { Spinner, EmptyState } from '@/components/ui/misc'
+import { Spinner, EmptyState } from '@/components/ui/Misc'
 import { useToast } from '@/store/toast'
 import { useConfirm } from '@/store/confirm'
 import {

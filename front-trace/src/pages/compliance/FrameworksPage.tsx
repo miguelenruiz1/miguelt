@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Shield, Check, X, Eye, Zap } from 'lucide-react'
 import { useFrameworks, useActivations, useActivateFramework } from '@/hooks/useCompliance'
 import { useToast } from '@/store/toast'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 import type { ComplianceFramework } from '@/types/compliance'
 
 // ─── Flag emoji mapping ──────────────────────────────────────────────────────

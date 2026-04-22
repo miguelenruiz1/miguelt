@@ -5,7 +5,7 @@ import { useToast } from '@/store/toast'
 import { copyToClipboard, fmtDateShort, shortPubkey } from '@/lib/utils'
 import { Link } from 'react-router-dom'
 import { WalletStatusBadge } from '@/components/domain-badges'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import type { Organization, Wallet, WalletStatus } from '@/types/api'
 
 export function WalletTable({ wallets, orgs = [] }: { wallets: Wallet[]; orgs?: Organization[] }) {

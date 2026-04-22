@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useCreatePlot } from '@/hooks/useCompliance'
 import { useOrganizations } from '@/hooks/useTaxonomy'
 import { useToast } from '@/store/toast'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { PlotPolygonEditor } from '@/components/compliance/PlotPolygonEditor'
 
 // ─── Colombia-specific constants ────────────────────────────────────────────
