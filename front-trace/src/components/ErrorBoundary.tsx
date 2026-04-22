@@ -1,6 +1,6 @@
 import * as React from "react"
 import { AlertTriangle, RotateCcw, Mail } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/Button"
 
 interface ErrorBoundaryProps {
   children: React.ReactNode
