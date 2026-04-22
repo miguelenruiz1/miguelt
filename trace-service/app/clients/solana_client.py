@@ -10,6 +10,7 @@ Faltante de keypair o de API key → RuntimeError al arrancar, no fallback.
 """
 from __future__ import annotations
 
+import asyncio
 import base64
 import time
 import uuid
