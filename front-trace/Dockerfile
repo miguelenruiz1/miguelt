@@ -1,7 +1,11 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm install --no-audit --no-fund && npm i @rollup/rollup-linux-x64-gnu
+RUN npm install --no-audit --no-fund && \
+    ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then npm i @rollup/rollup-linux-x64-gnu; \
+    elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then npm i @rollup/rollup-linux-arm64-gnu; \
+    fi
 COPY . .
 # The old lowercase-bridge step was removed — both shadcn (badge.tsx) and
 # custom components (EmptyState.tsx) coexist now and must keep their own
