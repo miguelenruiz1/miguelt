@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Pencil, Building2, Mail, Phone, MapPin, Truck, ShoppingBag,
-  X, CreditCard, Clock, DollarSign, FileText, ShoppingCart,
+  X, CreditCard, Clock, DollarSign, FileText, ShoppingCart, ExternalLink,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -84,9 +84,20 @@ export function PartnerDetailPage() {
               <div className="mt-2">{roleBadges}</div>
             </div>
           </div>
-          <button onClick={() => setShowEdit(true)} className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg">
-            <Pencil className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {partner.is_customer && (
+              <button
+                onClick={() => navigate(`/inventario/portal/${partner.id}`)}
+                className="flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15 transition-colors"
+                title="Ver el portal de autogestión de este cliente"
+              >
+                <ExternalLink className="h-3.5 w-3.5" /> Ver Portal
+              </button>
+            )}
+            <button onClick={() => setShowEdit(true)} className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg">
+              <Pencil className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
