@@ -239,14 +239,12 @@ class GatewayCatalogItem(BaseModel):
 
 class GatewayConfigSave(BaseModel):
     credentials: dict[str, str] = Field(default_factory=dict)
-    is_test_mode: bool = True
 
 
 class GatewayConfigOut(BaseModel):
     slug: str
     display_name: str
     is_active: bool
-    is_test_mode: bool
     configured: bool
     credentials_masked: dict[str, str]
     updated_at: datetime | None

@@ -416,7 +416,6 @@ class PlatformService:
             "active_gateway": {
                 "slug": gateway.gateway_slug,
                 "display_name": gateway.display_name,
-                "is_test_mode": gateway.is_test_mode,
             } if gateway else None,
         }
 

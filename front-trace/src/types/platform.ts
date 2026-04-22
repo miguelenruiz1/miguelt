@@ -119,7 +119,7 @@ export interface TenantDetail {
   invoices: TenantInvoice[]
   licenses: TenantLicense[]
   events: TenantEvent[]
-  active_gateway: { slug: string; display_name: string; is_test_mode: boolean } | null
+  active_gateway: { slug: string; display_name: string } | null
 }
 
 export interface MonthPoint {

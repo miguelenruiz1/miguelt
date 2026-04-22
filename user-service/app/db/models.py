@@ -200,7 +200,6 @@ class EmailProviderConfig(Base):
     provider_slug: Mapped[str] = mapped_column(String(50), nullable=False)
     display_name: Mapped[str] = mapped_column(String(100), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
-    is_test_mode: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
     credentials: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}")
     extra_config: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}")
     created_at: Mapped[datetime] = mapped_column(

@@ -59,7 +59,6 @@ class EmailProviderService:
                 "slug": slug,
                 "display_name": prov["name"],
                 "is_active": config.is_active if config else False,
-                "is_test_mode": config.is_test_mode if config else True,
                 "configured": config is not None,
                 "credentials_masked": _mask_credentials(_read_credentials(config)),
                 "updated_at": config.updated_at.isoformat() if config else None,
@@ -76,7 +75,6 @@ class EmailProviderService:
         tenant_id: str,
         slug: str,
         credentials: dict[str, str],
-        is_test_mode: bool,
     ) -> dict:
         if slug not in _CATALOG_BY_SLUG:
             raise ValueError(f"Provider '{slug}' not in catalogue")
@@ -86,13 +84,11 @@ class EmailProviderService:
             slug=slug,
             display_name=prov["name"],
             credentials=encrypt_credentials(credentials),
-            is_test_mode=is_test_mode,
         )
         return {
             "slug": config.provider_slug,
             "display_name": config.display_name,
             "is_active": config.is_active,
-            "is_test_mode": config.is_test_mode,
             "configured": True,
             "credentials_masked": _mask_credentials(credentials),
             "updated_at": config.updated_at.isoformat() if config.updated_at else None,
@@ -106,7 +102,6 @@ class EmailProviderService:
             "slug": config.provider_slug,
             "display_name": config.display_name,
             "is_active": config.is_active,
-            "is_test_mode": config.is_test_mode,
             "configured": True,
             "credentials_masked": _mask_credentials(_read_credentials(config)),
             "updated_at": config.updated_at.isoformat() if config.updated_at else None,
@@ -124,7 +119,6 @@ class EmailProviderService:
         return {
             "slug": active.provider_slug,
             "display_name": active.display_name,
-            "is_test_mode": active.is_test_mode,
             "description": prov.get("description", ""),
             "color": prov.get("color", "#666"),
         }

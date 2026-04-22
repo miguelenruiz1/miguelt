@@ -30,7 +30,6 @@ export function EInvoicingPage() {
   const [showUpdateKey, setShowUpdateKey] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
   const [apiKey, setApiKey] = useState('')
-  const [simMode, setSimMode] = useState(true)
 
   const { data: matiasRes, error: resError } = useResolution('matias')
   const hasMatiasRes = !!matiasRes && !resError
@@ -44,16 +43,14 @@ export function EInvoicingPage() {
 
   // Stats
   const totalIssued = invoicedOrders.filter(o => o.invoice_status === 'issued').length
-  const totalSimulated = invoicedOrders.filter(o => o.invoice_status === 'simulated').length
   const totalFailed = invoicedOrders.filter(o => o.invoice_status === 'failed').length
 
   async function handleSetup(e: React.FormEvent) {
     e.preventDefault()
     await createMut.mutateAsync({
       provider_slug: 'matias',
-      credentials: { api_key: apiKey, simulation_mode: simMode },
+      credentials: { api_key: apiKey },
       is_active: true,
-      simulation_mode: simMode,
     })
     setShowSetup(false)
     setApiKey('')
@@ -134,16 +131,9 @@ export function EInvoicingPage() {
               <h2 className="text-base font-semibold text-foreground">Configuración MATIAS API</h2>
               <div className="flex items-center gap-2 mt-0.5">
                 {isConnected ? (
-                  <>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
-                      <CheckCircle2 className="h-3 w-3" /> Conectado
-                    </span>
-                    {matiasConfig?.simulation_mode && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
-                        <AlertTriangle className="h-3 w-3" /> Simulación activa
-                      </span>
-                    )}
-                  </>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+                    <CheckCircle2 className="h-3 w-3" /> Conectado a MATIAS (producción DIAN)
+                  </span>
                 ) : (
                   <span className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                     No configurado
@@ -190,38 +180,6 @@ export function EInvoicingPage() {
           </div>
         </div>
       </div>
-
-      {/* Simulation toggle (when connected) */}
-      {isConnected && matiasConfig && (
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-1">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Modo Simulación (Sandbox)</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {matiasConfig.simulation_mode
-                  ? 'Las facturas se generan como prueba, sin enviar a la DIAN.'
-                  : 'Las facturas se envían a la DIAN en modo producción.'}
-              </p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={matiasConfig.simulation_mode}
-              disabled={updateMut.isPending}
-              onClick={() => updateMut.mutate({ id: matiasConfig.id, data: { simulation_mode: !matiasConfig.simulation_mode } })}
-              className={cn(
-                'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition duration-150 ease-linear disabled:opacity-50',
-                matiasConfig.simulation_mode ? 'bg-amber-500' : 'bg-emerald-500',
-              )}
-            >
-              <span className={cn(
-                'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transform transition duration-150 ease-linear',
-                matiasConfig.simulation_mode ? 'translate-x-5' : 'translate-x-0',
-              )} />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Section C: Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -325,27 +283,9 @@ export function EInvoicingPage() {
                   placeholder="Ingresa tu API Key de MATIAS"
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-foreground">Modo Simulación</p>
-                  <p className="text-xs text-muted-foreground">Genera facturas de prueba sin enviar a la DIAN</p>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={simMode}
-                  onClick={() => setSimMode(!simMode)}
-                  className={cn(
-                    'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition duration-150 ease-linear',
-                    simMode ? 'bg-amber-500' : 'bg-gray-200',
-                  )}
-                >
-                  <span className={cn(
-                    'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-card  transform transition duration-150 ease-linear',
-                    simMode ? 'translate-x-full' : 'translate-x-0',
-                  )} />
-                </button>
-              </div>
+              <p className="text-xs text-emerald-600 font-medium">
+                Las facturas se emiten directo a la DIAN vía MATIAS (producción).
+              </p>
             </div>
 
             <div className="flex justify-end gap-3 pt-1">

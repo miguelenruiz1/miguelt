@@ -11,12 +11,12 @@ class OrmBase(BaseModel):
 
 
 # ── Config ──────────────────────────────────────────────────────────
+# CLAUDE.md #0.bis: no hay modo sandbox/simulacion. Toda integracion corre
+# contra el endpoint productivo del proveedor (MATIAS, DIAN, etc).
 class IntegrationConfigCreate(BaseModel):
     provider_slug: str
     display_name: str | None = None
     is_active: bool = False
-    is_test_mode: bool = True
-    simulation_mode: bool = True
     credentials: dict = {}
     extra_config: dict = {}
     sync_products: bool = False
@@ -27,8 +27,6 @@ class IntegrationConfigCreate(BaseModel):
 class IntegrationConfigUpdate(BaseModel):
     display_name: str | None = None
     is_active: bool | None = None
-    is_test_mode: bool | None = None
-    simulation_mode: bool | None = None
     credentials: dict | None = None
     extra_config: dict | None = None
     sync_products: bool | None = None
@@ -42,8 +40,6 @@ class IntegrationConfigOut(OrmBase):
     provider_slug: str
     display_name: str
     is_active: bool
-    is_test_mode: bool
-    simulation_mode: bool = True
     extra_config: dict
     sync_products: bool
     sync_customers: bool
@@ -197,4 +193,3 @@ class CreditNoteResponse(BaseModel):
     cufe: str = ""
     pdf_url: str | None = None
     status: str = ""
-    simulated: bool = False

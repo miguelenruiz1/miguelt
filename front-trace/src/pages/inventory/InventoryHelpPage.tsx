@@ -3063,13 +3063,6 @@ function FacturacionSection() {
         </table>
       </div>
 
-      <H2>Sandbox de facturacion</H2>
-      <InfoBox type="info">
-        La pagina <strong>Facturacion Electronica &gt; Sandbox</strong> permite generar facturas de prueba
-        en formato PDF sin enviar a la DIAN. Es util para verificar que los datos son correctos antes de
-        emitir facturas reales. Genera un PDF local usando <code className="bg-blue-100 rounded px-1">jsPDF</code>.
-      </InfoBox>
-
       <H2>Resolución de facturación</H2>
       <p className="text-xs text-muted-foreground mb-3">
         La DIAN asigna resoluciones de facturacion a cada empresa. La pagina de <strong>Resolución</strong> permite
@@ -3092,7 +3085,6 @@ Frontend: generateRemissionPDF() → Genera PDF local con jsPDF`}
       <div className="space-y-2">
         {[
           { name: 'Facturación Electrónica', path: '/facturacion-electronica', desc: 'Lista de facturas emitidas, reintentos y estados' },
-          { name: 'Sandbox', path: '/facturacion-electronica-sandbox', desc: 'Generador de facturas de prueba en PDF' },
           { name: 'Resolución', path: '/facturacion-electronica/resolucion', desc: 'Configuracion de resoluciones DIAN por tenant' },
         ].map(({ name, path, desc }) => (
           <div key={name} className="rounded-xl border border-border p-3">

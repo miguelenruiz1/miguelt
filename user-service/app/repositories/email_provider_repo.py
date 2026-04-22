@@ -37,13 +37,11 @@ class EmailProviderRepository:
         slug: str,
         display_name: str,
         credentials: dict,
-        is_test_mode: bool,
     ) -> EmailProviderConfig:
         existing = await self.get(tenant_id, slug)
         now = datetime.now(timezone.utc)
         if existing:
             existing.credentials = credentials
-            existing.is_test_mode = is_test_mode
             existing.display_name = display_name
             existing.updated_at = now
             await self.db.flush()
@@ -55,7 +53,6 @@ class EmailProviderRepository:
             provider_slug=slug,
             display_name=display_name,
             credentials=credentials,
-            is_test_mode=is_test_mode,
             is_active=False,
         )
         self.db.add(config)

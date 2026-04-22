@@ -16,7 +16,6 @@ import {
 } from '@/hooks/useInventory'
 import { useAuthStore } from '@/store/auth'
 import { useToast } from '@/store/toast'
-import { generateSandboxInvoicePDF } from '@/utils/generateSandboxInvoicePDF'
 import type { SalesOrderStatus, ShippingInfo, StockCheckResult, ConfirmWithBackorderOut, StockReservation } from '@/types/inventory'
 
 const STATUS_CONFIG: Record<SalesOrderStatus, { label: string; color: string }> = {
@@ -775,41 +774,6 @@ export function SalesOrderDetailPage() {
               >
                 <ExternalLink className="h-4 w-4" /> Descargar PDF
               </a>
-            )}
-            {order.invoice_provider === 'sandbox' && order.cufe && (
-              <button
-                onClick={() => generateSandboxInvoicePDF({
-                  company_name: authUser?.company ?? 'Mi Empresa',
-                  company_nit: authUser?.tenant_id ?? '000000000',
-                  company_email: authUser?.email,
-                  customer_name: order.customer_name ?? 'Cliente',
-                  customer_nit: '222222222',
-                  invoice_number: order.order_number,
-                  invoice_date: order.confirmed_at
-                    ? new Date(order.confirmed_at).toLocaleDateString('es-CO')
-                    : new Date().toLocaleDateString('es-CO'),
-                  cufe: order.cufe,
-                  items: order.lines.map(l => ({
-                    description: l.product_name ?? l.product_id.slice(0, 8),
-                    quantity: l.qty_shipped,
-                    unit_price: l.unit_price,
-                    discount_pct: l.discount_pct,
-                    tax_rate: l.tax_rate ? l.tax_rate / 100 : 0.19,
-                    total: l.line_total,
-                  })),
-                  subtotal: order.subtotal,
-                  discount_pct: order.discount_pct,
-                  discount_amount: order.discount_amount,
-                  tax_amount: order.tax_amount,
-                  total: order.total,
-                })}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100 transition"
-              >
-                <FileDown className="h-4 w-4" /> Descargar vista previa PDF
-              </button>
-            )}
-            {order.invoice_status === 'simulated' && (
-              <p className="text-xs text-muted-foreground italic">Sin validez ante la DIAN</p>
             )}
           </div>
         </div>

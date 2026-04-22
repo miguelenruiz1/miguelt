@@ -17,7 +17,6 @@ export interface GatewayConfigOut {
   slug: string
   display_name: string
   is_active: boolean
-  is_test_mode: boolean
   configured: boolean
   credentials_masked: Record<string, string>
   updated_at: string | null
@@ -30,13 +29,11 @@ export interface GatewayConfigOut {
 
 export interface GatewayConfigSave {
   credentials: Record<string, string>
-  is_test_mode: boolean
 }
 
 export interface ActiveGateway {
   slug: string
   display_name: string
-  is_test_mode: boolean
   description: string
   color: string
 }

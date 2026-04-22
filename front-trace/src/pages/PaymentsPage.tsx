@@ -30,7 +30,6 @@ export function PaymentsPage() {
   const [credentials, setCredentials] = useState<Record<string, string>>(() =>
     Object.fromEntries(FIELDS.map(f => [f.key, ''])),
   )
-  const [isTestMode, setIsTestMode] = useState(true)
   const [showFields, setShowFields] = useState<Record<string, boolean>>({})
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -61,7 +60,7 @@ export function PaymentsPage() {
     }
 
     try {
-      await saveMut.mutateAsync({ slug: 'wompi', body: { credentials: creds, is_test_mode: isTestMode } })
+      await saveMut.mutateAsync({ slug: 'wompi', body: { credentials: creds } })
       await activateMut.mutateAsync('wompi')
       setSaved(true)
       setCredentials(Object.fromEntries(FIELDS.map(f => [f.key, ''])))
@@ -124,33 +123,8 @@ export function PaymentsPage() {
         <div className="h-64 rounded-2xl border border-border bg-muted animate-pulse" />
       ) : (
         <div className="rounded-2xl border border-border bg-card p-6  space-y-5">
-          {/* Mode toggle */}
-          <div className="flex items-center justify-between rounded-xl bg-muted px-4 py-3">
-            <div>
-              <p className="text-sm font-medium text-foreground">Modo</p>
-              <p className="text-xs text-muted-foreground">
-                {isTestMode ? 'Sandbox — no se cobran transacciones reales' : 'Producción — cobros reales activos'}
-              </p>
-            </div>
-            <button
-              onClick={() => setIsTestMode(v => !v)}
-              className={cn(
-                'relative h-6 w-11 rounded-full transition-colors',
-                isTestMode ? 'bg-amber-400' : 'bg-emerald-500',
-              )}
-            >
-              <span className={cn(
-                'absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-card shadow transition-transform',
-                isTestMode ? 'translate-x-0' : 'translate-x-5',
-              )} />
-            </button>
-          </div>
-          <p className="text-xs text-center font-semibold" style={{ color: isTestMode ? '#d97706' : '#10b981' }}>
-            {isTestMode ? (
-              <span className="inline-flex items-center gap-1"><TestTube className="h-3.5 w-3.5" /> Modo Sandbox</span>
-            ) : (
-              <span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5" /> Modo Producción</span>
-            )}
+          <p className="text-xs text-center font-semibold text-emerald-600">
+            <span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5" /> Modo Producción (checkout.wompi.co)</span>
           </p>
 
           {/* Fields */}

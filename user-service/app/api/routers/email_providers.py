@@ -20,7 +20,6 @@ def _svc(db: Annotated[AsyncSession, Depends(get_db_session)]) -> EmailProviderS
 
 class EmailProviderConfigSave(BaseModel):
     credentials: dict[str, str]
-    is_test_mode: bool = True
 
 
 class TestEmailRequest(BaseModel):
@@ -54,7 +53,6 @@ async def save_provider_config(
             tenant_id=tenant_id,
             slug=slug,
             credentials=body.credentials,
-            is_test_mode=body.is_test_mode,
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))

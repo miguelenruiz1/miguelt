@@ -143,9 +143,6 @@ class MatiasAdapter(BaseAdapter):
             "Accept": "application/json",
         }
 
-    def _is_simulation(self, credentials: dict) -> bool:
-        return credentials.get("simulation_mode", False)
-
     async def _request(self, method: str, path: str, credentials: dict, **kwargs) -> dict:
         headers = self._headers(credentials)
         try:
@@ -163,8 +160,6 @@ class MatiasAdapter(BaseAdapter):
     # ── Interface Implementation ────────────────────────────────────
 
     async def test_connection(self, credentials: dict) -> dict:
-        if self._is_simulation(credentials):
-            return {"ok": True, "provider": "matias", "message": "Simulation mode — no real connection", "simulation": True}
         # Use a simple GET to verify auth
         try:
             headers = self._headers(credentials)
@@ -184,9 +179,6 @@ class MatiasAdapter(BaseAdapter):
         return []
 
     async def create_invoice(self, credentials: dict, invoice_data: dict) -> dict:
-        if self._is_simulation(credentials):
-            return self._simulated_invoice(invoice_data)
-
         payload = self._build_invoice_payload(invoice_data)
         resp = await self._request("POST", "/invoice", credentials, json=payload)
         inv_number = invoice_data.get("invoice_number") or resp.get("number", "")
@@ -201,13 +193,9 @@ class MatiasAdapter(BaseAdapter):
         }
 
     async def get_invoice(self, credentials: dict, remote_id: str) -> dict:
-        if self._is_simulation(credentials):
-            return {"remote_id": remote_id, "status": "simulated"}
         return await self._request("GET", f"/invoice/{remote_id}", credentials)
 
     async def list_invoices(self, credentials: dict, params: dict | None = None) -> list[dict]:
-        if self._is_simulation(credentials):
-            return []
         query = {"page": 1, "per_page": 25}
         if params:
             query.update(params)
@@ -215,14 +203,6 @@ class MatiasAdapter(BaseAdapter):
         return resp.get("results", resp.get("data", []))
 
     async def create_credit_note(self, credentials: dict, data: dict) -> dict:
-        if self._is_simulation(credentials):
-            return {
-                "remote_id": f"SIM-CN-{uuid.uuid4().hex[:8]}",
-                "credit_note_number": data.get("credit_note_number", ""),
-                "cufe": f"SIMULATED-CUFE-{uuid.uuid4().hex}",
-                "status": "simulated",
-                "simulated": True,
-            }
         payload = self._build_credit_note_payload(data)
         resp = await self._request("POST", "/credit-note", credentials, json=payload)
         return {
@@ -274,17 +254,6 @@ class MatiasAdapter(BaseAdapter):
         return {"status": "processed", "event_type": event_type, "invoice_id": payload.get("invoice_id")}
 
     # ── Helpers ─────────────────────────────────────────────────────
-
-    def _simulated_invoice(self, invoice_data: dict) -> dict:
-        sim_id = uuid.uuid4().hex[:12]
-        return {
-            "remote_id": f"SIM-{sim_id}",
-            "invoice_number": invoice_data.get("invoice_number", ""),
-            "cufe": f"SIMULATED-CUFE-{uuid.uuid4().hex}",
-            "pdf_url": "",
-            "qr_code": "",
-            "status": "simulated",
-        }
 
     @staticmethod
     def _clean_dni(value: str) -> str:

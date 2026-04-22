@@ -58,7 +58,6 @@ async def get_email_config(
         "slug": cfg.provider_slug,
         "api_key": creds.get("api_key", ""),
         "from_email": creds.get("from_email", "onboarding@resend.dev"),
-        "is_test_mode": cfg.is_test_mode,
     }
 
 

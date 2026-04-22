@@ -45,7 +45,6 @@ const PaymentsPage = named(() => import('@/pages/PaymentsPage'), 'PaymentsPage')
 const CheckoutPage = named(() => import('@/pages/CheckoutPage'), 'CheckoutPage')
 const CheckoutResultPage = named(() => import('@/pages/CheckoutResultPage'), 'CheckoutResultPage')
 const EInvoicingPage = named(() => import('@/pages/EInvoicingPage'), 'EInvoicingPage')
-const EInvoicingSandboxPage = named(() => import('@/pages/EInvoicingSandboxPage'), 'EInvoicingSandboxPage')
 const EInvoicingResolutionPage = named(() => import('@/pages/EInvoicingResolutionPage'), 'EInvoicingResolutionPage')
 
 // ── Inventory pages (lazy) ──────────────────────────────────────────────────
@@ -272,11 +271,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'facturacion-electronica-sandbox',
-        element: (
-          <ProtectedRoute permission="inventory.view">
-            <ModuleGuard><EInvoicingSandboxPage /></ModuleGuard>
-          </ProtectedRoute>
-        ),
+        element: <Navigate to="/facturacion-electronica" replace />,
       },
       {
         path: 'facturacion-electronica/resolucion',

@@ -114,9 +114,11 @@ async def create_checkout(
         )
 
     # 5. Build Wompi checkout URL with integrity signature
+    # CLAUDE.md #0.bis: siempre contra el checkout productivo de Wompi.
+    # Para probar, usar credenciales de Wompi de sandbox en el mismo campo;
+    # el sandbox de Wompi se elige por API key, no por URL nuestra.
     from app.core.crypto import decrypt_credentials
     creds = decrypt_credentials(gateway_config.credentials)
-    is_test = gateway_config.is_test_mode
     public_key = creds.get("public_key", "")
     integrity_key = creds.get("integrity_key", "")
 
@@ -130,7 +132,7 @@ async def create_checkout(
     signature_payload = f"{reference}{amount_cents}{plan.currency}{integrity_key}"
     integrity_signature = hashlib.sha256(signature_payload.encode("utf-8")).hexdigest()
 
-    base = "https://checkout.wompi.co/p/" if not is_test else "https://sandbox.wompi.co/p/"
+    base = "https://checkout.wompi.co/p/"
     params = {
         "public-key": public_key,
         "currency": plan.currency,

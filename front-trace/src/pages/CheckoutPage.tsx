@@ -264,9 +264,7 @@ export function CheckoutPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-foreground">{activeGateway.display_name}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {activeGateway.is_test_mode ? '⚡ Modo test' : '✅ Producción'}
-                        </p>
+                        <p className="text-[10px] text-muted-foreground">✅ Producción</p>
                       </div>
                     </div>
                   ) : (

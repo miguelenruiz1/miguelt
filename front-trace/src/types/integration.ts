@@ -17,7 +17,6 @@ export interface IntegrationConfig {
   provider_slug: string
   display_name: string
   is_active: boolean
-  is_test_mode: boolean
   extra_config: Record<string, unknown>
   sync_products: boolean
   sync_customers: boolean

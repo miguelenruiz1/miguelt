@@ -53,7 +53,7 @@ MODULE_CATALOG: list[dict] = [
     {
         "slug": "electronic-invoicing",
         "name": "Facturación Electrónica",
-        "description": "Emite facturas, notas credito y notas debito ante la DIAN. Soporta modo produccion y modo sandbox (pruebas).",
+        "description": "Emite facturas, notas credito y notas debito ante la DIAN via MATIAS.",
         "category": "compliance",
         "requires": "inventory",
     },

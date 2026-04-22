@@ -115,7 +115,7 @@ function ResendConfigTab() {
     if (fromEmail.trim()) credentials.from_email = fromEmail.trim()
 
     try {
-      await saveMut.mutateAsync({ slug: 'resend', body: { credentials, is_test_mode: false } })
+      await saveMut.mutateAsync({ slug: 'resend', body: { credentials } })
       await activateMut.mutateAsync('resend')
       setSaved(true)
       setApiKey('')

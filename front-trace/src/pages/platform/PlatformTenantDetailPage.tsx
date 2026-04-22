@@ -190,11 +190,6 @@ export function PlatformTenantDetailPage() {
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Pasarela</h4>
                 <div className="bg-muted rounded-xl p-3">
                   <span className="text-sm font-medium text-foreground">{data.active_gateway.display_name}</span>
-                  <span className={cn('ml-2 text-xs px-2 py-0.5 rounded-md font-medium',
-                    data.active_gateway.is_test_mode ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700',
-                  )}>
-                    {data.active_gateway.is_test_mode ? 'Test' : 'Produccion'}
-                  </span>
                 </div>
               </div>
             )}

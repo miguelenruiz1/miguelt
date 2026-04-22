@@ -205,7 +205,7 @@ class SubscriptionService:
         try:
             from app.core.settings import get_settings
             settings = get_settings()
-            provider_slug = "matias"  # MATIAS handles both production and sandbox mode
+            provider_slug = "matias"  # MATIAS emision productiva a DIAN
 
             invoice.einvoice_status = "pending"
             await self.db.flush()
