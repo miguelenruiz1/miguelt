@@ -25,6 +25,7 @@ import { authFetch } from '@/lib/auth-fetch'
 import { useIsModuleActive } from '@/hooks/useModules'
 import { resolveIcon, colorStyle } from '@/lib/icon-map'
 import { useToast } from '@/store/toast'
+import { generateTraceabilityPDF } from '@/utils/generateTraceabilityPDF'
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,7 @@ export function AssetDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const deleteAsset = useDeleteAsset()
   const toast = useToast()
+  const [downloadingTrace, setDownloadingTrace] = useState(false)
 
   const { data: asset, isLoading, refetch, isFetching } = useAsset(id)
   const { data: eventsData, isLoading: eventsLoading } = useAssetEvents(id)
@@ -116,6 +118,28 @@ export function AssetDetailPage() {
     || `https://api.dicebear.com/9.x/shapes/svg?seed=${asset.id}&backgroundColor=6366f1,3b82f6,22c55e,f59e0b,ef4444`
   const custodianName = walletMap.get(asset.current_custodian_wallet) || shortPubkey(asset.current_custodian_wallet, 4)
 
+  async function handleDownloadTraceability() {
+    if (downloadingTrace) return
+    setDownloadingTrace(true)
+    try {
+      const batchRef = (meta?.batch_number as string | undefined)
+        || (meta?.lot_number as string | undefined)
+        || asset.id
+      const publicVerifyUrl = `${window.location.origin}/verificar/${encodeURIComponent(batchRef)}`
+      await generateTraceabilityPDF({
+        asset,
+        events,
+        organization: custodianName ? { name: custodianName } : null,
+        publicVerifyUrl,
+        solanaCluster,
+      })
+    } catch (err) {
+      toast.error(`Error generando PDF: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setDownloadingTrace(false)
+    }
+  }
+
   // Progress step: find current state index in non-terminal states
   const currentStepIndex = progressSteps.findIndex(s => s.slug === effectiveStateSlug)
   const progressStep = isInactive
@@ -132,7 +156,18 @@ export function AssetDetailPage() {
         actions={
           <div className="flex gap-2">
             {events.length > 0 && (
-              <CertificateDownloadButton assetId={id} />
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleDownloadTraceability}
+                  disabled={downloadingTrace}
+                  title="PDF con toda la trazabilidad — sirve para USA y cualquier mercado no-EUDR"
+                >
+                  <FileDown className="h-4 w-4" /> {downloadingTrace ? 'Generando...' : 'Trazabilidad (PDF)'}
+                </Button>
+                <CertificateDownloadButton assetId={id} />
+              </>
             )}
             <Button variant="ghost" size="icon" onClick={() => refetch()} title="Actualizar">
               <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
