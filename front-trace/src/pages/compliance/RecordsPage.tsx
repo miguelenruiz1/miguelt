@@ -70,6 +70,7 @@ const COMMODITY_LABELS: Record<string, string> = {
 const FRAMEWORK_FLAGS: Record<string, string> = {
   eudr: '🇪🇺',
   'usda-organic': '🇺🇸',
+  fsma_204: '🇺🇸',
   fssai: '🇮🇳',
   'jfs-2200': '🇯🇵',
 }

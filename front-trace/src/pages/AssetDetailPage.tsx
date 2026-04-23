@@ -698,7 +698,7 @@ const COMPLIANCE_STATUS_LABELS: Record<string, string> = {
 }
 
 const FRAMEWORK_FLAGS: Record<string, string> = {
-  eudr: '🇪🇺', 'usda-organic': '🇺🇸', fssai: '🇮🇳', 'jfs-2200': '🇯🇵',
+  eudr: '🇪🇺', 'usda-organic': '🇺🇸', fsma_204: '🇺🇸', fssai: '🇮🇳', 'jfs-2200': '🇯🇵',
 }
 
 function ComplianceSection({ assetId }: { assetId: string }) {
