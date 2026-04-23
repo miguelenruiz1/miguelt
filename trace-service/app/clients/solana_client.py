@@ -252,20 +252,51 @@ class SolanaClient:
             }
         return await self._cb.call(_call)
 
-    async def send_memo(self, memo: str) -> str:
-        """
-        Send a Memo Program transaction anchoring `memo` on Solana.
-        Returns the transaction signature string.
+    def _keypair_from_b58(self, secret_b58: str):
+        """Build a solders Keypair from a base58-encoded 64-byte secret."""
+        from solders.keypair import Keypair  # type: ignore
+        return Keypair.from_bytes(_b58decode(secret_b58))
 
-        Raises RuntimeError if SOLANA_KEYPAIR is missing — per CLAUDE.md
-        regla #0.bis, no fallback a simulación.
+    async def send_memo(
+        self,
+        memo: str,
+        custodian_secret_b58: str | None = None,
+    ) -> str:
+        """Send a Memo Program transaction anchoring `memo` on Solana.
+
+        Modelos de firma soportados:
+          - **Sponsored + delegated** (preferido, CLAUDE.md modelo C): si se
+            pasa `custodian_secret_b58`, la tx lleva DOS firmas:
+              1. El custodio firma la autorización del evento.
+              2. La plataforma firma como `fee_payer` (paga el gas).
+            Asi la cadena de custodia on-chain queda atribuida
+            criptográficamente al custodio real sin pedirle SOL al cliente.
+
+          - **Platform-only** (fallback, primer evento CREATED sin custodio
+            anterior o airdrops tecnicos): si `custodian_secret_b58` es None,
+            firma solo la plataforma.
+
+        Raises RuntimeError si falta el keypair de plataforma (CLAUDE.md
+        regla #0.bis: sin fallback a simulacion).
         """
-        keypair = self._load_keypair()
-        if keypair is None:
+        platform_kp = self._load_keypair()
+        if platform_kp is None:
             raise RuntimeError(
                 "SOLANA_KEYPAIR no seteado — memo anchor requiere keypair real "
                 "(CLAUDE.md #0.bis: simulación prohibida)."
             )
+
+        custodian_kp = None
+        if custodian_secret_b58:
+            try:
+                custodian_kp = self._keypair_from_b58(custodian_secret_b58)
+            except Exception as exc:
+                # No degradamos a sim. Si el secret está mal, es bug — propagar.
+                log.error("custodian_keypair_invalid", error=str(exc)[:200])
+                raise RuntimeError(
+                    f"custodian_secret_b58 inválido: {exc!s}. "
+                    "No se degrada a firma plataforma-only en silencio."
+                )
 
         async def _send():
             from solders.pubkey import Pubkey  # type: ignore
@@ -276,12 +307,16 @@ class SolanaClient:
 
             memo_prog = Pubkey.from_string(MEMO_PROGRAM_ID)
 
+            # Accounts: firmante del evento. Si hay custodio, es él; sino el
+            # fee payer (modo platform-only legacy).
+            event_signer_pubkey = (custodian_kp or platform_kp).pubkey()
+
             ix = Instruction(
                 program_id=memo_prog,
                 data=memo.encode("utf-8"),
                 accounts=[
                     AccountMeta(
-                        pubkey=keypair.pubkey(),
+                        pubkey=event_signer_pubkey,
                         is_signer=True,
                         is_writable=False,
                     )
@@ -292,8 +327,18 @@ class SolanaClient:
             blockhash_str = bh_result["value"]["blockhash"]
             recent_blockhash = Hash.from_string(blockhash_str)
 
-            msg = Message.new_with_blockhash([ix], keypair.pubkey(), recent_blockhash)
-            tx = Transaction([keypair], msg, recent_blockhash)
+            # Fee payer SIEMPRE es la plataforma — el custodio no paga gas.
+            # En Solana, la primera pubkey del Message es el fee payer.
+            msg = Message.new_with_blockhash(
+                [ix], platform_kp.pubkey(), recent_blockhash,
+            )
+
+            # Orden de firmantes debe matchear las AccountMeta.is_signer=True.
+            # platform_kp (fee payer, primero); custodian_kp si existe.
+            signers = [platform_kp]
+            if custodian_kp is not None:
+                signers.append(custodian_kp)
+            tx = Transaction(signers, msg, recent_blockhash)
 
             tx_bytes = bytes(tx)
             tx_b64 = base64.b64encode(tx_bytes).decode()
@@ -303,7 +348,12 @@ class SolanaClient:
                 [tx_b64, {"encoding": "base64", "skipPreflight": True, "preflightCommitment": "confirmed"}],
             )
             sig = str(result)
-            log.info("solana_memo_anchored", sig=sig)
+            log.info(
+                "solana_memo_anchored",
+                sig=sig,
+                signing_mode=("sponsored_delegated" if custodian_kp else "platform_only"),
+                custodian=(str(custodian_kp.pubkey()) if custodian_kp else None),
+            )
             return sig
 
         return await self._cb.call(_send)

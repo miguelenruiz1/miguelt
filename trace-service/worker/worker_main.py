@@ -93,8 +93,52 @@ async def anchor_event(ctx: dict[str, Any], event_id: str) -> dict[str, Any]:
                 )
                 return {"status": "anchored", "sig": event.solana_tx_sig}
 
+        # Modelo C (sponsored + delegated): el custodio que tenía la carga
+        # justo antes del evento es el firmante autorizador. Si existe, cargo
+        # su secret encriptado y lo paso al send_memo para que la tx en
+        # Solana tenga DOS firmas: platform fee payer (gas) + custodian
+        # (autorización). Para el primer evento CREATED no hay from_wallet
+        # (la carga recién se introduce) → se usa to_wallet. Si tampoco hay
+        # (caso raro: mint sin custodio) cae a firma platform-only.
+        custodian_secret_b58 = None
+        custodian_pubkey = event.from_wallet or event.to_wallet
+        if custodian_pubkey:
+            from sqlalchemy import select as _select
+            from app.db.models import RegistryWallet
+            from app.core.crypto import decrypt_secret
+
+            result = await session.execute(
+                _select(RegistryWallet).where(
+                    RegistryWallet.wallet_pubkey == custodian_pubkey
+                )
+            )
+            wallet = result.scalar_one_or_none()
+            if wallet and wallet.encrypted_private_key:
+                try:
+                    custodian_secret_b58 = decrypt_secret(wallet.encrypted_private_key)
+                except Exception as exc:
+                    log.warning(
+                        "custodian_secret_decrypt_failed",
+                        event_id=event_id,
+                        custodian=custodian_pubkey,
+                        error=str(exc)[:200],
+                    )
+                    # No degradamos silenciosamente a platform-only: lanzamos
+                    # para que la tarea reintente o el admin arregle la key.
+                    raise
+            else:
+                log.info(
+                    "custodian_wallet_no_secret",
+                    event_id=event_id,
+                    custodian=custodian_pubkey,
+                    reason="externa o secret ausente — tx firmará solo plataforma",
+                )
+
         try:
-            tx_sig = await solana_client.send_memo(event.event_hash)
+            tx_sig = await solana_client.send_memo(
+                event.event_hash,
+                custodian_secret_b58=custodian_secret_b58,
+            )
             await repo.mark_anchored(eid, tx_sig)
             await session.commit()
             log.info(
@@ -102,6 +146,7 @@ async def anchor_event(ctx: dict[str, Any], event_id: str) -> dict[str, Any]:
                 event_id=event_id,
                 tx_sig=tx_sig,
                 attempts=event.anchor_attempts + 1,
+                signing_mode=("sponsored_delegated" if custodian_secret_b58 else "platform_only"),
             )
             return {"status": "anchored", "sig": tx_sig}
 
