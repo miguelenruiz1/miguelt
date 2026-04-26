@@ -117,6 +117,7 @@ server {
 
     # Media Service
     location /api/v1/media           { proxy_pass https://${MEDIA_UPSTREAM}; proxy_set_header Host ${MEDIA_UPSTREAM}; }
+    location /uploads/               { proxy_pass https://${MEDIA_UPSTREAM}; proxy_set_header Host ${MEDIA_UPSTREAM}; }
 
     # Trace Service (catch-all)
     location /api/v1/                { proxy_pass https://${TRACE_UPSTREAM}; proxy_set_header Host ${TRACE_UPSTREAM}; }
