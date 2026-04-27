@@ -14,7 +14,7 @@ Cada paso trae: **ruta URL**, **acción exacta**, **campos con los valores a pon
 | Productor | `Fabián Moreno Ortiz` — CC `88123456` |
 | Finca | `La Esperanza` — Teorama, Norte de Santander |
 | Área parcela | `3.2 ha` |
-| Coordenada centroide | `8.4387, -73.2891` |
+| Coordenada centroide | `8.438712, -73.289143` (≥6 decimales — EUDR Art. 2(28)) |
 | Lote cacao | `CACAO-NS-2026-001` — 500 kg cacao seco fermentado |
 | Custodios logísticos | Finca / Camión Asocacao / Bodega Cartagena / Operador Aduana |
 | Cliente UE | `Luker Chocolate Zwolle B.V.` — Países Bajos |
@@ -158,8 +158,8 @@ Para cada una:
 
 **Sección GEOLOCALIZACIÓN:**
 - Radio → `Punto GPS` (más simple para demo; el polígono se puede agregar después).
-- `Latitud` → `8.4387`
-- `Longitud` → `-73.2891`
+- `Latitud` → `8.438712`  ← **mínimo 6 decimales (EUDR Art. 2(28)). Si tu valor real tiene menos, padea con ceros: `8.438700`.**
+- `Longitud` → `-73.289143`
 - `Metodo de captura` → `GPS de mano / celular`
 - `Fecha de captura` → hoy
 - `Exactitud GPS (metros)` → `5`
