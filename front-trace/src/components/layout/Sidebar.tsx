@@ -59,6 +59,7 @@ const invGroups = [
       { to: '/inventario/socios', icon: Users2, label: 'Socios', permission: 'inventory.view' },
       { to: '/inventario/compras', icon: ShoppingCart, label: 'Compras', permission: 'inventory.view' },
       { to: '/inventario/ventas', icon: ShoppingBag, label: 'Ventas', permission: 'inventory.view' },
+      { to: '/inventario/portal', icon: Globe, label: 'Portal Clientes', permission: 'inventory.view' },
       { to: '/inventario/precios-clientes', icon: Tag, label: 'Precios', permission: 'inventory.view', feature: 'precios' },
       { to: '/inventario/aprobaciones', icon: ShieldCheck, label: 'Aprobaciones', permission: 'inventory.view', feature: 'aprobaciones' },
     ],

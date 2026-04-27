@@ -61,6 +61,12 @@ export interface TraceabilityPDFInput {
   publicVerifyUrl: string        // ej: https://trace.app/verificar/CACAO-NS-2026-001
   solanaCluster?: 'devnet' | 'mainnet-beta'
   generatedAt?: Date
+  /**
+   * Mapa pubkey → nombre legible. Si se provee, las columnas "De" y "A" del
+   * PDF muestran el nombre real (ej. "Asocafé Huila") en lugar del hash
+   * truncado.
+   */
+  walletNames?: Record<string, string>
 }
 
 /* ── Helpers ──────────────────────────────────────────────────────────────── */
@@ -97,15 +103,44 @@ function explorerAddr(addr: string, cluster: string): string {
 function eventTypeLabel(t: string): string {
   const map: Record<string, string> = {
     CREATED: 'Creación (Mint)',
-    HANDOFF: 'Entrega (Handoff)',
-    ARRIVED: 'Llegada',
-    LOADED: 'Cargado',
-    QC_PASSED: 'QC Aprobado',
-    QC_FAILED: 'QC Rechazado',
-    RELEASED: 'Liberado',
+    HANDOFF: 'Cambio de custodia',
+    ARRIVED: 'Llegada a destino',
+    LOADED: 'Cargada en vehículo',
+    PICKUP: 'Recogida',
+    DELIVERED: 'Entregada',
+    DEPARTED: 'Salida',
+    GATE_IN: 'Ingreso a terminal',
+    GATE_OUT: 'Salida de terminal',
+    SEALED: 'Sellada',
+    UNSEALED: 'Desellada',
+    QC: 'Inspección de calidad',
+    QC_PASSED: 'QC aprobado',
+    QC_FAILED: 'QC rechazado',
+    INSPECTION: 'Inspección',
+    TEMPERATURE_CHECK: 'Control de temperatura',
+    DAMAGED: 'Daño reportado',
+    CUSTOMS_HOLD: 'Retención aduanera',
+    CUSTOMS_CLEARED: 'Aduana liberada',
+    RELEASED: 'Liberada',
     BURN: 'Destrucción',
+    RETURN: 'Devolución',
+    CONSOLIDATED: 'Consolidada',
+    DECONSOLIDATED: 'Desconsolidada',
+    ANCHORED: 'Anclado en blockchain',
+    NOTE: 'Nota interna',
+    EVIDENCE: 'Evidencia adjunta',
   }
-  return map[t.toUpperCase()] ?? t
+  // Manejar prefijo MOVE_TO_<STATE> que el backend genera para transiciones libres.
+  const u = t.toUpperCase()
+  const stripped = u.startsWith('MOVE_TO_') ? u.slice(8) : u
+  return map[stripped] ?? stripped.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+}
+
+function partyName(pubkey: string | null | undefined, walletNames?: Record<string, string>): string {
+  if (!pubkey) return '—'
+  const name = walletNames?.[pubkey]
+  if (name && name.trim()) return name
+  return shortHash(pubkey, 6)
 }
 
 function reportNumber(asset: TraceabilityAsset, when: Date): string {
@@ -117,7 +152,7 @@ function reportNumber(asset: TraceabilityAsset, when: Date): string {
 /* ── Main ─────────────────────────────────────────────────────────────────── */
 
 export async function generateTraceabilityPDF(input: TraceabilityPDFInput): Promise<void> {
-  const { asset, events, organization, publicVerifyUrl } = input
+  const { asset, events, organization, publicVerifyUrl, walletNames } = input
   const cluster = input.solanaCluster ?? 'devnet'
   const when = input.generatedAt ?? new Date()
 
@@ -208,7 +243,7 @@ export async function generateTraceabilityPDF(input: TraceabilityPDFInput): Prom
   ly = y + 12
   addRow('Estado:', asset.state || '--', rightX); ly += 5
   addRow('Organización:', organization?.name ?? '--', rightX); ly += 5
-  addRow('Custodio actual:', shortHash(asset.current_custodian_wallet, 8), rightX); ly += 5
+  addRow('Custodio actual:', partyName(asset.current_custodian_wallet, walletNames), rightX); ly += 5
   addRow('Creado:', fmtDateTime(asset.created_at), rightX); ly += 5
   addRow('Última actualización:', fmtDateTime(asset.updated_at), rightX); ly += 5
 
@@ -276,11 +311,89 @@ export async function generateTraceabilityPDF(input: TraceabilityPDFInput): Prom
 
   y += bchH + 6
 
-  /* ── 4. CUSTODY CHAIN TABLE ────────────────────────────────────────────── */
+  /* ── 4. NARRATIVA CRONOLÓGICA ───────────────────────────────────────────── */
+  // Eventos ordenados ascendentes para narrar el recorrido como historia.
+  const eventsAsc = [...events].sort(
+    (a, b) => +new Date(a.timestamp) - +new Date(b.timestamp),
+  )
+
   doc.setFontSize(11)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(15, 23, 42)
-  doc.text('CADENA DE CUSTODIA', margin, y + 4)
+  doc.text('RECORRIDO DE LA CARGA', margin, y + 4)
+
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(100, 116, 139)
+  doc.text(
+    'Resumen narrativo de los movimientos y eventos registrados, en orden cronológico.',
+    margin, y + 8.5,
+  )
+
+  y += 12
+
+  const narrativeText = (e: TraceabilityEvent): string => {
+    const t = e.event_type.toUpperCase().replace(/^MOVE_TO_/, '')
+    const from = partyName(e.from_wallet, walletNames)
+    const to = partyName(e.to_wallet, walletNames)
+    const place = e.location?.label || e.location?.city
+    const placeStr = place ? ` en ${place}` : ''
+    const note = e.notes ? ` — ${e.notes}` : ''
+    switch (t) {
+      case 'CREATED': return `${from} registró la carga en el sistema${placeStr}.${note}`
+      case 'HANDOFF': return `${from} entregó la carga a ${to}${placeStr}.${note}`
+      case 'PICKUP':  return `${to !== '—' ? to : from} recogió la carga${placeStr}.${note}`
+      case 'LOADED':  return `${from} cargó la mercancía en el vehículo${placeStr}.${note}`
+      case 'ARRIVED': return `La carga llegó a destino${placeStr} bajo custodia de ${from}.${note}`
+      case 'DELIVERED': return `${from} entregó la carga al receptor final${placeStr}.${note}`
+      case 'GATE_IN': return `Ingreso a terminal${placeStr} por ${from}.${note}`
+      case 'GATE_OUT': return `Salida de terminal${placeStr} por ${from}.${note}`
+      case 'SEALED': return `${from} selló la carga${placeStr}.${note}`
+      case 'UNSEALED': return `${from} abrió el sello${placeStr}.${note}`
+      case 'QC':
+      case 'QC_PASSED': return `${from} realizó inspección de calidad y aprobó${placeStr}.${note}`
+      case 'QC_FAILED': return `${from} realizó inspección y rechazó la carga${placeStr}.${note}`
+      case 'INSPECTION': return `${from} inspeccionó la carga${placeStr}.${note}`
+      case 'DAMAGED': return `Se reportó daño en la carga${placeStr} por ${from}.${note}`
+      case 'CUSTOMS_HOLD': return `Aduana retuvo la carga${placeStr}.${note}`
+      case 'CUSTOMS_CLEARED': return `Aduana liberó la carga${placeStr}.${note}`
+      case 'TEMPERATURE_CHECK': return `Control de temperatura por ${from}${placeStr}.${note}`
+      case 'RELEASED': return `${from} liberó la carga${placeStr}.${note}`
+      case 'RETURN': return `Devolución de la carga${placeStr}.${note}`
+      case 'BURN': return `Destrucción registrada${placeStr} por ${from}.${note}`
+      case 'NOTE': return `Nota de ${from}${placeStr}: ${e.notes ?? '(sin texto)'}`
+      case 'EVIDENCE': return `${from} adjuntó evidencia${placeStr}.${note}`
+      case 'ANCHORED': return `Evento anclado en blockchain.`
+      default: return `${eventTypeLabel(e.event_type)} por ${from}${placeStr}.${note}`
+    }
+  }
+
+  doc.setFontSize(8.5)
+  doc.setTextColor(15, 23, 42)
+  for (let i = 0; i < eventsAsc.length; i++) {
+    if (y > pageH - 25) { doc.addPage(); y = margin }
+    const e = eventsAsc[i]
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(37, 99, 235)
+    doc.text(`${i + 1}.`, margin, y)
+    doc.setTextColor(71, 85, 105)
+    doc.text(fmtDateTime(e.timestamp), margin + 6, y)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(15, 23, 42)
+    const text = narrativeText(e)
+    const wrapped = doc.splitTextToSize(text, contentW - 36)
+    doc.text(wrapped, margin + 36, y)
+    y += Math.max(5, wrapped.length * 4)
+  }
+
+  y += 4
+
+  /* ── 5. TABLA TÉCNICA DE LA CADENA ──────────────────────────────────────── */
+  if (y > pageH - 50) { doc.addPage(); y = margin }
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(15, 23, 42)
+  doc.text('CADENA DE CUSTODIA — DETALLE TÉCNICO', margin, y + 4)
 
   doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
@@ -293,29 +406,31 @@ export async function generateTraceabilityPDF(input: TraceabilityPDFInput): Prom
   const tableRows = events.map((e) => [
     fmtDateTime(e.timestamp),
     eventTypeLabel(e.event_type),
-    shortHash(e.from_wallet, 6),
-    shortHash(e.to_wallet, 6),
-    e.location?.label ?? e.location?.city ?? '--',
+    partyName(e.from_wallet, walletNames),
+    partyName(e.to_wallet, walletNames),
+    e.location?.label ?? e.location?.city ?? '—',
+    e.notes ?? '—',
     shortHash(e.event_hash, 6),
-    e.anchored ? `✓ ${shortHash(e.solana_tx_sig, 6)}` : 'pendiente',
+    e.anchored ? '✓ anclado' : 'pendiente',
   ])
 
   autoTable(doc, {
     startY: y,
-    head: [['Fecha', 'Evento', 'De', 'A', 'Ubicación', 'Hash', 'Tx Solana']],
+    head: [['Fecha', 'Evento', 'De', 'A', 'Ubicación', 'Notas', 'Hash', 'Anclaje']],
     body: tableRows,
     theme: 'striped',
-    styles: { fontSize: 7, cellPadding: 1.5, textColor: [15, 23, 42] },
+    styles: { fontSize: 7, cellPadding: 1.5, textColor: [15, 23, 42], overflow: 'linebreak' },
     headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontSize: 7.5, fontStyle: 'bold' },
     alternateRowStyles: { fillColor: [248, 250, 252] },
     columnStyles: {
-      0: { cellWidth: 24 },
-      1: { cellWidth: 26 },
-      2: { cellWidth: 22 },
-      3: { cellWidth: 22 },
-      4: { cellWidth: 28 },
-      5: { cellWidth: 22, font: 'courier' },
-      6: { cellWidth: 'auto', font: 'courier' },
+      0: { cellWidth: 22 },
+      1: { cellWidth: 24 },
+      2: { cellWidth: 26 },
+      3: { cellWidth: 26 },
+      4: { cellWidth: 22 },
+      5: { cellWidth: 'auto' },
+      6: { cellWidth: 18, font: 'courier' },
+      7: { cellWidth: 16 },
     },
     didDrawPage: (data) => {
       // Footer on every page
@@ -356,9 +471,10 @@ export async function generateTraceabilityPDF(input: TraceabilityPDFInput): Prom
   doc.setTextColor(22, 101, 52)
   const lines = [
     '1. Escanear el código QR de este documento — no requiere cuenta ni login.',
-    '2. Para cada evento de la cadena, abrir el link a Solscan y confirmar que la firma del custodio es válida.',
-    '3. Recalcular localmente SHA-256(JSON canónico del evento + prev_hash) y comparar con la columna "Hash".',
-    'La plataforma Trace paga los fees de Solana; los custodios firman con sus llaves privadas registradas.',
+    '2. Para cada evento, abrir el link a Solscan del cNFT y confirmar la firma del custodio.',
+    '3. Recalcular SHA-256(JSON canónico del evento + prev_hash) y comparar con la columna "Hash".',
+    'Los nombres mostrados ("Asocafé Huila", etc.) corresponden a wallets registradas en Trace; la',
+    'pubkey real está siempre en blockchain. Trace paga los fees; los custodios firman con su llave.',
   ]
   let vly = vy + 11
   for (const ln of lines) {

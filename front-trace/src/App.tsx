@@ -85,6 +85,7 @@ const ScannerPage = named(() => import('@/pages/inventory/ScannerPage'), 'Scanne
 const PickingPage = named(() => import('@/pages/inventory/PickingPage'), 'PickingPage')
 const CustomerDetailPage = named(() => import('@/pages/inventory/CustomerDetailPage'), 'CustomerDetailPage')
 const CustomerPortalPage = named(() => import('@/pages/inventory/CustomerPortalPage'), 'CustomerPortalPage')
+const PortalListPage = named(() => import('@/pages/inventory/PortalListPage'), 'PortalListPage')
 const CategoriesPage = named(() => import('@/pages/inventory/CategoriesPage'), 'CategoriesPage')
 const TaxRatesPage = named(() => import('@/pages/inventory/TaxRatesPage'), 'TaxRatesPage')
 const TaxCategoriesPage = named(() => import('@/pages/inventory/TaxCategoriesPage'), 'TaxCategoriesPage')
@@ -705,6 +706,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute permission="inventory.view">
             <ModuleGuard><CustomerDetailPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inventario/portal',
+        element: (
+          <ProtectedRoute permission="inventory.view">
+            <ModuleGuard><PortalListPage /></ModuleGuard>
           </ProtectedRoute>
         ),
       },

@@ -327,9 +327,11 @@ export function MintNFTModal({ open, onClose, preSelectedOrgId }: Props) {
             open={showImagePicker}
             onClose={() => setShowImagePicker(false)}
             onSelect={async (mediaFileId, _docType, _desc) => {
-              const { mediaApi } = await import('@/lib/media-api')
+              const { mediaApi, mediaFileUrl } = await import('@/lib/media-api')
               const file = await mediaApi.get(mediaFileId)
-              setImageUrl(file.url)
+              // El cNFT se publica on-chain y lo leen Helius/Solscan/XRAY:
+              // necesitan una URL absoluta, no un path relativo `/uploads/...`.
+              setImageUrl(mediaFileUrl(file.url))
               setShowImagePicker(false)
             }}
           />
