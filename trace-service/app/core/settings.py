@@ -83,7 +83,10 @@ class Settings(BaseSettings):
     REQUIRE_AUTH: bool = True
 
     # ─── Subscription / Module gating ──────────────────────────────────────────
-    PUBLIC_BASE_URL: str = "http://localhost:8000"  # public-facing URL for metadata URIs
+    # Public-facing gateway URL — used to build absolute URLs for cNFT metadata
+    # (image, external_url) and uploads. Must point to the gateway, not trace-api
+    # directly, since the gateway is the one that proxies /uploads/ to media-api.
+    PUBLIC_BASE_URL: str = "http://localhost:9000"
     SUBSCRIPTION_SERVICE_URL: str = "http://subscription-api:8002"
     COMPLIANCE_SERVICE_URL: str = "http://compliance-api:8005"
     MEDIA_SERVICE_URL: str = "http://media-api:8007"

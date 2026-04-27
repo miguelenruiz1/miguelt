@@ -326,18 +326,41 @@ class CustodyService:
 
     # ─── Handoff ──────────────────────────────────────────────────────────────
 
+    # Aliases en español/portugués que distintos presets usan para "transferencia
+    # de custodia". Si HANDOFF no existe, probamos estos en orden.
+    _HANDOFF_ALIASES = ("HANDOFF", "DESPACHO", "REPARTO", "ENTREGA", "PICKUP", "TRANSFER")
+
+    async def _resolve_handoff_event_type(self, asset: Asset) -> str:
+        """Devuelve el slug de event_type a usar para handoff, según el preset
+        activo del tenant. Intenta HANDOFF primero (legacy/default); si el preset
+        no lo define, busca aliases comunes (DESPACHO/REPARTO/ENTREGA/etc.).
+        Retorna el primero cuya transición desde el estado actual sea válida.
+        """
+        effective_slug = await self._get_effective_state_slug(asset)
+        for alias in self._HANDOFF_ALIASES:
+            result = await self._workflow_svc.find_transition_for_event(
+                effective_slug, alias
+            )
+            if result:
+                return alias
+        raise AssetStateError(
+            f"No handoff-equivalent event_type defined in workflow for state "
+            f"'{effective_slug}'. Tried: {', '.join(self._HANDOFF_ALIASES)}."
+        )
+
     async def handoff(
         self, asset_id: uuid.UUID, req: HandoffRequest
     ) -> tuple[Asset, CustodyEvent]:
         asset = await self._get_asset_locked(asset_id)
         await self._assert_current_wallet_active(asset)
-        target_state = await self._assert_valid_transition(asset, "HANDOFF")
+        event_type_slug = await self._resolve_handoff_event_type(asset)
+        target_state = await self._assert_valid_transition(asset, event_type_slug)
         await self._assert_active_wallet(req.to_wallet)
 
         location = req.location.model_dump() if req.location else None
         event = await self._create_event(
             asset=asset,
-            event_type="HANDOFF",
+            event_type=event_type_slug,
             from_wallet=asset.current_custodian_wallet,
             to_wallet=req.to_wallet,
             location=location,
@@ -352,6 +375,7 @@ class CustodyService:
             asset_id=str(asset_id),
             from_wallet=asset.current_custodian_wallet,
             to_wallet=req.to_wallet,
+            event_type=event_type_slug,
             event_hash=event.event_hash,
         )
         return updated_asset, event  # type: ignore

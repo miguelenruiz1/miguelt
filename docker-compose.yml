@@ -56,6 +56,15 @@ services:
     logging: *default-logging
     container_name: trace-worker
     env_file: .env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # CRÍTICO: JWT_SECRET y FERNET_KEY DEBEN coincidir con trace-api,
+      # porque la API encripta el secret de la wallet con Fernet derivado de
+      # JWT_SECRET (cuando FERNET_KEY no está seteado). Si difieren, el worker
+      # no puede desencriptar y el anclaje custodial falla con
+      # "custodian_secret_b58 inválido".
+      JWT_SECRET: ${JWT_SECRET:-super-secret-dev-key-change-in-prod}
+      FERNET_KEY: ${FERNET_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -437,6 +446,8 @@ services:
     networks:
       - trace-net
     restart: unless-stopped
+    volumes:
+      - compliance-uploads:/app/uploads
     command: >
       sh -c "
         alembic upgrade head &&
@@ -626,6 +637,7 @@ volumes:
   inventory-postgres-data:
   integration-postgres-data:
   compliance-postgres-data:
+  compliance-uploads:
   ai-postgres-data:
   media-postgres-data:
   media-uploads:

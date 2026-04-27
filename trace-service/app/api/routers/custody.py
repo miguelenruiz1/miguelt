@@ -67,6 +67,10 @@ async def get_nft_metadata(
         f"https://api.dicebear.com/9.x/shapes/svg"
         f"?seed={asset_id}&backgroundColor=6366f1,3b82f6,22c55e,f59e0b,ef4444"
     )
+    # Defensa: assets viejos minteados con paths relativos en DB. Helius/explorers
+    # leen este JSON y necesitan URL absoluta.
+    if image and not image.startswith(("http://", "https://", "data:", "ipfs://")):
+        image = f"{base_url}{image if image.startswith('/') else '/' + image}"
 
     # Attributes in Metaplex format
     skip = {"name", "description", "symbol", "image_url", "external_url"}
@@ -186,6 +190,12 @@ async def asset_metadata_json(
         f"https://api.dicebear.com/9.x/shapes/svg"
         f"?seed={asset_id}&backgroundColor=6366f1,3b82f6,22c55e,f59e0b,ef4444"
     )
+    # Defensa: assets viejos minteados con path relativo en DB. Solana
+    # explorers leen este URI y necesitan URL absoluta.
+    if image and not image.startswith(("http://", "https://", "data:", "ipfs://")):
+        from app.core.settings import get_settings
+        base_url = get_settings().PUBLIC_BASE_URL.rstrip("/")
+        image = f"{base_url}{image if image.startswith('/') else '/' + image}"
 
     # Build Metaplex-standard attributes
     attrs = []

@@ -116,16 +116,32 @@ async def anchor_event(ctx: dict[str, Any], event_id: str) -> dict[str, Any]:
             if wallet and wallet.encrypted_private_key:
                 try:
                     custodian_secret_b58 = decrypt_secret(wallet.encrypted_private_key)
+                    # Smoke check: si el plaintext no es base58 válido, fall back
+                    # a platform-only en lugar de explotar después en _b58decode.
+                    # Esto cubre secrets corruptos / keys rotadas.
+                    from app.clients.solana_client import _B58_MAP
+                    if not all(c in _B58_MAP for c in custodian_secret_b58):
+                        log.error(
+                            "custodian_secret_not_base58_falling_back",
+                            event_id=event_id,
+                            custodian=custodian_pubkey,
+                            secret_len=len(custodian_secret_b58),
+                            mode="platform_only_fallback",
+                        )
+                        custodian_secret_b58 = None
                 except Exception as exc:
-                    log.warning(
-                        "custodian_secret_decrypt_failed",
+                    log.error(
+                        "custodian_secret_decrypt_failed_falling_back",
                         event_id=event_id,
                         custodian=custodian_pubkey,
                         error=str(exc)[:200],
+                        mode="platform_only_fallback",
                     )
-                    # No degradamos silenciosamente a platform-only: lanzamos
-                    # para que la tarea reintente o el admin arregle la key.
-                    raise
+                    # Degradación CONTROLADA y EXPLÍCITA: si la decryption falla
+                    # (FERNET_KEY desincronizada, ciphertext corrupto, etc.) seguimos
+                    # con firma platform-only en lugar de bloquear el anclaje
+                    # indefinidamente. Queda registro en logs para auditoría.
+                    custodian_secret_b58 = None
             else:
                 log.info(
                     "custodian_wallet_no_secret",

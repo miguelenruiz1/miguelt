@@ -49,7 +49,28 @@ class WorkflowService:
     async def get_initial_state(self) -> WorkflowState:
         state = await self._state_repo.get_initial_state(self._tenant_id)
         if state is None:
-            raise AssetStateError("No initial workflow state configured for this tenant")
+            # Tenant nuevo sin workflow seedado: auto-seed del preset logistics
+            # para evitar que el primer mint falle. Es idempotente y registra
+            # log explícito para auditoría.
+            log.info(
+                "auto_seeding_workflow_logistics",
+                tenant_id=str(self._tenant_id),
+                reason="first_mint_without_states",
+            )
+            try:
+                await self.seed_preset("logistics")
+                state = await self._state_repo.get_initial_state(self._tenant_id)
+            except Exception as exc:
+                log.error(
+                    "auto_seed_failed",
+                    tenant_id=str(self._tenant_id),
+                    error=str(exc)[:200],
+                )
+            if state is None:
+                raise AssetStateError(
+                    "No initial workflow state configured and auto-seed failed. "
+                    "Run POST /api/v1/config/workflow/seed/logistics manually."
+                )
         return state
 
     async def create_state(

@@ -172,19 +172,38 @@ class SolanaClient:
         Request a devnet airdrop for the given pubkey (0.1 SOL by default).
         Returns ``(ok, error)``: ``(True, None)`` on success, ``(False, msg)``
         on failure. Never raises.
+
+        NOTA: el RPC privado de Helius (free tier) no permite ``requestAirdrop``
+        — devuelve 403. Para airdrops usamos el RPC público de Solana devnet,
+        que es donde vive el faucet. El RPC de Helius queda para todo lo demás.
+        Esto es no-bloqueante: el modelo C (sponsored tx con delegated signing)
+        no requiere SOL en la wallet del custodio porque la plataforma esponsorea
+        los fees. El airdrop es solo conveniencia.
         """
         try:
-            async def _call():
-                result = await self._rpc(
-                    "requestAirdrop",
-                    [pubkey, lamports],
-                )
-                return bool(result)
-            ok = await self._cb.call(_call)
-            return (bool(ok), None if ok else "airdrop RPC returned empty result")
+            airdrop_rpc = "https://api.devnet.solana.com"
+            http = await self._ensure_http()
+            payload = {
+                "jsonrpc": "2.0",
+                "id": str(uuid.uuid4()),
+                "method": "requestAirdrop",
+                "params": [pubkey, lamports],
+            }
+            resp = await http.post(airdrop_rpc, json=payload)
+            if resp.status_code != 200:
+                msg = f"airdrop HTTP {resp.status_code}"
+                log.info("airdrop_skipped", pubkey=pubkey, reason=msg)
+                return False, msg
+            body = resp.json()
+            if "error" in body:
+                msg = f"airdrop RPC error: {body['error'].get('message', '?')[:80]}"
+                log.info("airdrop_skipped", pubkey=pubkey, reason=msg)
+                return False, msg
+            result = body.get("result")
+            return (bool(result), None if result else "airdrop RPC returned empty result")
         except Exception as exc:
             err = str(exc)[:200]
-            log.warning("airdrop_failed", pubkey=pubkey, exc=err)
+            log.info("airdrop_skipped", pubkey=pubkey, exc=err)
             return False, err
 
     # ─── RPC JSON helpers ─────────────────────────────────────────────────────

@@ -55,6 +55,15 @@ class BlockchainService:
                 f"https://api.dicebear.com/9.x/shapes/svg"
                 f"?seed={asset_id}&backgroundColor=6366f1,3b82f6,22c55e,f59e0b,ef4444"
             )
+        else:
+            # Defensa: si el cliente envió un path relativo (ej. "/uploads/..."),
+            # lo convertimos a absoluto contra PUBLIC_BASE_URL. Helius/Solscan/XRAY
+            # no resuelven paths relativos.
+            img = str(result["image_url"]).strip()
+            if img and not img.startswith(("http://", "https://", "data:", "ipfs://")):
+                from app.core.settings import get_settings as _gs
+                base = _gs().PUBLIC_BASE_URL.rstrip("/")
+                result["image_url"] = f"{base}{img if img.startswith('/') else '/' + img}"
         return result
 
     def _compute_metadata_hash(self, metadata: dict[str, Any]) -> str:

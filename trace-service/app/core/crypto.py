@@ -41,7 +41,14 @@ def encrypt_secret(plaintext: str) -> str:
 
 
 def decrypt_secret(ciphertext: str) -> str:
-    """Decrypt a previously encrypted secret. Returns plaintext or raises InvalidToken."""
+    """Decrypt a previously encrypted secret.
+
+    - Si parece Fernet (empieza con `gAAAAA`) y no se decifra → lanza ValueError.
+      Eso EVITA devolver el ciphertext crudo como si fuera plaintext (bug donde
+      el worker recibía `gAAAAAB...` y lo intentaba parsear como base58).
+    - Si NO parece Fernet → asume legacy plaintext (registros viejos pre-encryption)
+      y lo devuelve tal cual.
+    """
     if not ciphertext:
         return ciphertext
     f = _get_fernet()
@@ -50,5 +57,11 @@ def decrypt_secret(ciphertext: str) -> str:
     try:
         return f.decrypt(ciphertext.encode()).decode()
     except InvalidToken:
-        # Could be a legacy plaintext value persisted before encryption was enabled.
+        if ciphertext.startswith("gAAAAA"):
+            raise ValueError(
+                "Fernet ciphertext no decifrable — posible mismatch entre "
+                "FERNET_KEY/JWT_SECRET de los servicios. Verifica que api y worker "
+                "compartan el mismo secret en docker-compose."
+            )
+        # Pre-encryption legacy plaintext: devolver tal cual.
         return ciphertext
