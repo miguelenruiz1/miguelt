@@ -270,51 +270,101 @@ class StockRepository:
         Filters by batch_id and location_id (when provided, or NULL otherwise)
         so a product+warehouse with multiple batches/locations doesn't get
         ALL its rows incremented at once.
+
+        When batch_id is None, walks every level (no-batch first, then batched
+        in oldest-first order) and reserves from each until the requested
+        quantity is satisfied. This lets production runs consume against
+        receipt-created batches without forcing the caller to enumerate them.
         """
         from sqlalchemy import update as _update
         now = datetime.now(timezone.utc)
 
-        conditions = [
-            StockLevel.product_id == product_id,
-            StockLevel.warehouse_id == warehouse_id,
-            (StockLevel.qty_on_hand - StockLevel.qty_reserved) >= qty,
-        ]
-        if variant_id is not None:
-            conditions.append(StockLevel.variant_id == variant_id)
-        else:
-            conditions.append(StockLevel.variant_id.is_(None))
-        if batch_id is not None:
-            conditions.append(StockLevel.batch_id == batch_id)
-        else:
-            conditions.append(StockLevel.batch_id.is_(None))
-        if location_id is not None:
-            conditions.append(StockLevel.location_id == location_id)
-        else:
-            conditions.append(StockLevel.location_id.is_(None))
-
-        stmt = (
-            _update(StockLevel)
-            .where(*conditions)
-            .values(
-                qty_reserved=StockLevel.qty_reserved + qty,
-                updated_at=now,
-            )
-            .returning(StockLevel.id)
-        )
-        result = await self.db.execute(stmt)
-        row = result.first()
-        if row is None:
-            level = await self.get_level(product_id, warehouse_id, batch_id, variant_id)
-            if not level:
-                raise ValueError(
-                    f"No stock level for product {product_id} in warehouse {warehouse_id}"
+        async def _try_reserve(target_batch_id: str | None, target_qty: Decimal) -> Decimal:
+            conditions = [
+                StockLevel.product_id == product_id,
+                StockLevel.warehouse_id == warehouse_id,
+                (StockLevel.qty_on_hand - StockLevel.qty_reserved) >= target_qty,
+            ]
+            if variant_id is not None:
+                conditions.append(StockLevel.variant_id == variant_id)
+            else:
+                conditions.append(StockLevel.variant_id.is_(None))
+            if target_batch_id is not None:
+                conditions.append(StockLevel.batch_id == target_batch_id)
+            else:
+                conditions.append(StockLevel.batch_id.is_(None))
+            if location_id is not None:
+                conditions.append(StockLevel.location_id == location_id)
+            else:
+                conditions.append(StockLevel.location_id.is_(None))
+            stmt = (
+                _update(StockLevel)
+                .where(*conditions)
+                .values(
+                    qty_reserved=StockLevel.qty_reserved + target_qty,
+                    updated_at=now,
                 )
-            available = level.qty_on_hand - level.qty_reserved
+                .returning(StockLevel.id)
+            )
+            result = await self.db.execute(stmt)
+            return target_qty if result.first() else Decimal("0")
+
+        if batch_id is not None:
+            reserved_qty = await _try_reserve(batch_id, qty)
+            if reserved_qty == 0:
+                level = await self.get_level(product_id, warehouse_id, batch_id, variant_id)
+                if not level:
+                    raise ValueError(
+                        f"No stock level for product {product_id} in warehouse {warehouse_id}"
+                    )
+                available = level.qty_on_hand - level.qty_reserved
+                raise ValueError(
+                    f"Insufficient available stock: {available} available, {qty} requested"
+                )
+            await self.db.flush()
+            return await self.get_level(product_id, warehouse_id, batch_id, variant_id)
+
+        # batch_id is None: try no-batch level first, then fall through to
+        # batched levels in FIFO (oldest first).
+        remaining = qty
+        if await _try_reserve(None, remaining):
+            await self.db.flush()
+            return await self.get_level(product_id, warehouse_id, None, variant_id)
+
+        # Walk batched levels FIFO
+        from sqlalchemy import select as _select
+        q = (
+            _select(StockLevel)
+            .where(
+                StockLevel.product_id == product_id,
+                StockLevel.warehouse_id == warehouse_id,
+                StockLevel.batch_id.is_not(None),
+                (StockLevel.qty_on_hand - StockLevel.qty_reserved) > 0,
+            )
+            .order_by(StockLevel.created_at.asc().nulls_last(), StockLevel.id)
+        )
+        if variant_id is not None:
+            q = q.where(StockLevel.variant_id == variant_id)
+        else:
+            q = q.where(StockLevel.variant_id.is_(None))
+        levels = (await self.db.execute(q)).scalars().all()
+        last_level: StockLevel | None = None
+        for lvl in levels:
+            if remaining <= 0:
+                break
+            chunk = min(remaining, lvl.qty_on_hand - lvl.qty_reserved)
+            if chunk <= 0:
+                continue
+            if await _try_reserve(lvl.batch_id, chunk):
+                remaining -= chunk
+                last_level = lvl
+        if remaining > 0:
+            available = qty - remaining
             raise ValueError(
                 f"Insufficient available stock: {available} available, {qty} requested"
             )
         await self.db.flush()
-        return await self.get_level(product_id, warehouse_id, batch_id, variant_id)
+        return last_level
 
     async def release_reservation(
         self,
