@@ -508,3 +508,32 @@ class AuthService:
                 permissions=tmpl["permissions"],
                 is_default=True,
             )
+
+        # Email templates: clonar del tenant 'default' al nuevo tenant si está
+        # vacío. Las 9 plantillas seedadas viven en 'default' como referencia
+        # editable; cada tenant nuevo recibe su propia copia para personalizar
+        # asunto/HTML sin afectar a otros tenants.
+        if tenant_id != "default":
+            from sqlalchemy import select, func
+            from app.db.models import EmailTemplate
+            count_q = await self.db.execute(
+                select(func.count()).select_from(EmailTemplate).where(
+                    EmailTemplate.tenant_id == tenant_id
+                )
+            )
+            if count_q.scalar() == 0:
+                src_q = await self.db.execute(
+                    select(EmailTemplate).where(EmailTemplate.tenant_id == "default")
+                )
+                import uuid as _uuid
+                for src in src_q.scalars().all():
+                    self.db.add(EmailTemplate(
+                        id=str(_uuid.uuid4()),
+                        tenant_id=tenant_id,
+                        slug=src.slug,
+                        subject=src.subject,
+                        html_body=src.html_body,
+                        description=src.description,
+                        is_active=src.is_active,
+                    ))
+                await self.db.flush()

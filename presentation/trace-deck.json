@@ -1,0 +1,639 @@
+{
+  "deck": {
+    "title": "Trace — Trazabilidad agro-industrial anclada en blockchain",
+    "subtitle": "Del cacao en Tumaco al chocolate en Países Bajos, con prueba criptográfica auditable",
+    "author": "Miguel Ruiz",
+    "version": "0.1.0",
+    "date": "2026-04-27",
+    "theme": {
+      "primary": "#16A34A",
+      "accent": "#0EA5E9",
+      "ink": "#0F172A",
+      "muted": "#64748B",
+      "background": "#FAFAFA"
+    },
+    "language": "es"
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "kind": "title",
+      "title": "Trace",
+      "tagline": "Trazabilidad agro-industrial anclada en blockchain Solana",
+      "elevator_pitch": "Cada carga es un cNFT. Cada evento de custodia es una firma on-chain. Cumple EUDR, FSMA Rule 204, USDA Organic y más, con prueba pública verificable.",
+      "stats_chips": [
+        "USD 0.0001 por mint cNFT",
+        "20.000× más barato que NFT estándar",
+        "Verificable sin pedir permiso"
+      ]
+    },
+    {
+      "id": "problem",
+      "kind": "two_col",
+      "title": "El problema que resuelve",
+      "left": {
+        "heading": "Trazabilidad agro hoy",
+        "bullets": [
+          "Papel + Excel + correos. Fragmentado entre productor, transportista, exportador, importador.",
+          "El comprador europeo te pide un PDF de origen y firma del productor — y lo que recibe puede haberse alterado.",
+          "EUDR (UE 2023/1115, vigente 30/12/2025) y FSMA Rule 204 (USA, 20/01/2026) exigen evidencia con coordenadas de la parcela ≥6 decimales y due diligence trazable.",
+          "Una multa por incumplimiento EUDR: hasta 4% de la facturación anual del importador en la UE."
+        ]
+      },
+      "right": {
+        "heading": "Lo que necesitan los actores",
+        "bullets": [
+          "Productor / cooperativa: registrar la cosecha y firmar la cadena de custodia sin entender cripto ni cargar SOL.",
+          "Exportador: emitir DDS-EUDR, BoL y CO de origen automáticamente desde un click.",
+          "Importador (UE / USA): verificar la cadena sin tener que confiar ciegamente en el exportador.",
+          "Auditor / aduana: recalcular hashes y comprobar firmas en cualquier momento, sin login."
+        ]
+      }
+    },
+    {
+      "id": "solution_overview",
+      "kind": "diagram",
+      "title": "Cómo lo resuelve Trace",
+      "narration": "Una sola plataforma SaaS que ancla cada paso del producto en Solana via cNFTs y exporta certificados auditables.",
+      "flow": [
+        { "step": 1, "actor": "Productor (Asocafé / Cooperativa)", "action": "Registra parcela con GeoJSON ≥6 decimales (EUDR Art. 2.28). Captura cosecha." },
+        { "step": 2, "actor": "Plataforma Trace", "action": "Mint cNFT en Solana con metadata firmada SHA-256 + URI público Metaplex." },
+        { "step": 3, "actor": "Transportista / Bodega", "action": "Firma cada handoff. La plataforma esponsorea el fee (modelo C: sponsored tx)." },
+        { "step": 4, "actor": "QC / Aduana", "action": "Inspección, sellado, control sanitario. Cada evento encadena hash al anterior." },
+        { "step": 5, "actor": "Exportador", "action": "Genera certificado EUDR / FSMA en PDF firmado digitalmente con QR público." },
+        { "step": 6, "actor": "Importador / Auditor", "action": "Verifica en Solscan + recalcula hashes off-chain. No requiere acceso a Trace." }
+      ]
+    },
+    {
+      "id": "what_we_anchor",
+      "kind": "list",
+      "title": "Qué exactamente queda en blockchain",
+      "groups": [
+        {
+          "heading": "Por cada carga (asset)",
+          "items": [
+            "cNFT con name, image, product_type, weight, batch_number, metadata_hash (SHA-256 de los atributos).",
+            "URI público al endpoint /api/v1/assets/metadata/{id}.json — leído por Solscan, Helius XRAY, cualquier explorer.",
+            "Imagen URL absoluta servida por el gateway (la inspecciona el comprador final)."
+          ]
+        },
+        {
+          "heading": "Por cada evento de custodia",
+          "items": [
+            "Una transacción Solana con memo del event_hash.",
+            "event_hash = SHA-256(canonical_json(evento) ‖ prev_event_hash).",
+            "Firma del custodio (autoriza) + firma de la plataforma (paga el fee). Modelo C: sponsored tx con delegated signing.",
+            "Tipos cubiertos: handoff, arrived, loaded, qc_passed/failed, customs_hold/cleared, damaged, sealed, released, delivered, burn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stack_tech",
+      "kind": "stack_grid",
+      "title": "Stack tecnológico",
+      "columns": [
+        {
+          "category": "Backend",
+          "items": [
+            "Python 3.11 + FastAPI (async)",
+            "SQLAlchemy + asyncpg + Alembic",
+            "Redis (cache + ARQ workers)",
+            "Pydantic v2 (validación)"
+          ]
+        },
+        {
+          "category": "Frontend",
+          "items": [
+            "React 18 + TypeScript + Vite",
+            "TanStack React Query",
+            "Tailwind CSS + shadcn/ui",
+            "react-hook-form + zod",
+            "lucide-react (iconos)"
+          ]
+        },
+        {
+          "category": "Blockchain",
+          "items": [
+            "Solana (devnet hoy, mainnet en producción)",
+            "Compressed NFTs (Metaplex Bubblegum)",
+            "Helius RPC + DAS API",
+            "solders (Python SDK)",
+            "Sponsored tx con delegated signing"
+          ]
+        },
+        {
+          "category": "Microservicios",
+          "items": [
+            "trace-service (assets + custody + workflow)",
+            "user-service (auth + RBAC + audit)",
+            "subscription-service (planes + módulos + pagos)",
+            "inventory-service (stock + ventas + portal)",
+            "compliance-service (EUDR/FSMA/USDA + certificados)",
+            "integration-service (DIAN, GFW, e-invoicing)",
+            "media-service (imágenes + docs)",
+            "ai-service (análisis de riesgo)",
+            "Gateway nginx (CORS + routing)"
+          ]
+        },
+        {
+          "category": "Infra",
+          "items": [
+            "Docker Compose (orquestación)",
+            "Hetzner Cloud CAX11 ARM64 (Helsinki)",
+            "PostgreSQL 16 (1 base por servicio)",
+            "JWT con rotación + Redis blacklist",
+            "Fernet at-rest encryption (claves wallet)"
+          ]
+        },
+        {
+          "category": "Cumplimiento",
+          "items": [
+            "EUDR (UE 2023/1115)",
+            "FSMA Rule 204 (USA Food Traceability)",
+            "USDA Organic / FSSAI / JFS-2200",
+            "Validador GeoJSON estricto (RFC 7946 + ≥6 decimales)",
+            "Global Forest Watch (GFW) screening"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "modules",
+      "kind": "module_grid",
+      "title": "Módulos funcionales",
+      "modules": [
+        {
+          "name": "Logística",
+          "icon": "truck",
+          "color": "#0EA5E9",
+          "features": [
+            "Wallets de custodios con tags (granja, camión, bodega, aduana).",
+            "Cargas (assets) con cNFT auto-minted y atributos NFT visibles.",
+            "Workflow configurable (preset 'logistics': in_custody → in_transit → loaded → arrived → sealed → qc_passed → released → delivered).",
+            "Stream de actividad agrupado por movimiento + día.",
+            "PDF de trazabilidad humano con QR público de verificación.",
+            "Integración con compliance: vincula la carga a registros EUDR/FSMA."
+          ]
+        },
+        {
+          "name": "Inventario",
+          "icon": "box",
+          "color": "#7C3AED",
+          "features": [
+            "Productos con tipos custom + atributos por tipo.",
+            "Bodegas, kardex, lotes, seriales, escáner, picking.",
+            "Compras (PO) y ventas (SO) con receipts → mint automático.",
+            "Recetas (BOM), MRP, órdenes de producción.",
+            "Portal de clientes (autogestión read-only): stock disponible y mis pedidos."
+          ]
+        },
+        {
+          "name": "Cumplimiento",
+          "icon": "shield-check",
+          "color": "#16A34A",
+          "features": [
+            "Frameworks: EUDR, FSMA Rule 204, USDA Organic, FSSAI, JFS-2200.",
+            "Parcelas con GeoJSON estricto (Art. 2.28: ≥6 decimales) y polígono obligatorio >4 ha (Art. 9.1.c).",
+            "Screening de deforestación contra Global Forest Watch (GFW Hansen + cutoff 2020).",
+            "Records vinculados a assets con due-diligence statement (DDS).",
+            "Certificados PDF firmados con número INV-YYYY-NNNN, validez 5 años (EUDR Art. 12).",
+            "Auto-regeneración si el PDF se pierde en disco."
+          ]
+        },
+        {
+          "name": "User / Auth",
+          "icon": "users",
+          "color": "#F59E0B",
+          "features": [
+            "Registro multi-tenant. Primer usuario = administrador.",
+            "26 permisos en 7 módulos (logistics.view/manage, inventory.*, compliance.*, etc.).",
+            "Roles configurables tipo Drupal (matrix de permisos).",
+            "Audit log de toda mutación.",
+            "JWT access (15 min) + refresh (7 d) con jti + blacklist Redis."
+          ]
+        },
+        {
+          "name": "Subscription / Billing",
+          "icon": "credit-card",
+          "color": "#DC2626",
+          "features": [
+            "4 planes seedados: Free, Starter (USD 49), Professional (USD 149), Enterprise (custom).",
+            "Activación de módulos por tenant (logistics, inventory, compliance, ai...).",
+            "License keys formato TRACE-XXXX-XXXX-XXXX-XXXX.",
+            "Invoices INV-YYYY-NNNN.",
+            "7 pasarelas Colombia: ePayco, PayU, Wompi, Mercado Pago, Bold, Kushki, Openpay (pre-payment-gateway: cualquier admin puede activar)."
+          ]
+        },
+        {
+          "name": "Integraciones",
+          "icon": "plug",
+          "color": "#06B6D4",
+          "features": [
+            "DIAN (facturación electrónica Colombia).",
+            "Resoluciones DIAN para numeración fiscal.",
+            "Webhooks salientes para ERP del cliente.",
+            "Adaptador Matías (consultor de impuestos)."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "blockchain_model",
+      "kind": "deep_dive",
+      "title": "Modelo blockchain — cNFT + sponsored tx (modelo C)",
+      "subsections": [
+        {
+          "heading": "Compressed NFT (cNFT)",
+          "body": "Un NFT estándar de Solana cuesta ~0.012 SOL/mint (~USD 2). Un cNFT vive como hoja de un Merkle tree on-chain — solo se almacena la raíz. Resultado: USD 0.0001 por mint, 20.000× más barato. Permite mintear un NFT por carga sin que el costo destruya el modelo de negocio."
+        },
+        {
+          "heading": "Sponsored tx con delegated signing",
+          "body": "Cada tx de evento lleva DOS firmas: la del custodio (autoriza el cambio) y la de la plataforma (paga el fee). Resultado: un cacaotero rural NUNCA necesita comprar SOL para participar. La plataforma absorbe los ~USD 0.0008 por evento."
+        },
+        {
+          "heading": "Cadena de hashes off-chain",
+          "body": "event_hash = SHA-256(canonical_json(evento) ‖ prev_event_hash). Si alguien edita un evento histórico en la DB, su hash cambia y todos los siguientes dejan de validar. La cadena es auditable SIN blockchain — Solana solo agrega la prueba de existencia en un tiempo dado."
+        },
+        {
+          "heading": "Resiliencia",
+          "body": "Si Helius RPC cae, el evento queda con anchored=false y el ARQ worker reintenta automáticamente. Si Solana entera está en outage, los hashes off-chain se siguen computando y los anclajes se drenan cuando la red vuelve. Trace NO depende existencialmente de Solana — el provider es portable a Polygon/Avalanche/etc. cambiando un adapter."
+        }
+      ]
+    },
+    {
+      "id": "costs_devnet",
+      "kind": "cost_table",
+      "title": "Costos — Devnet (donde estamos hoy)",
+      "rows": [
+        { "concept": "Solana SOL", "amount_usd": 0, "note": "Faucets gratis de Helius / Solana" },
+        { "concept": "Helius RPC (Free tier)", "amount_usd": 0, "note": "50.000 requests/mes — alcanza para varios miles de mints/eventos" },
+        { "concept": "Hetzner CAX11 ARM64", "amount_usd": 4.59, "note": "Helsinki, 4 vCPU + 8 GB RAM, suficiente para 5+ tenants" },
+        { "concept": "Dominio + SSL (Let's Encrypt)", "amount_usd": 0, "note": "Cuando se conecte" },
+        { "concept": "TOTAL mensual", "amount_usd": 4.59, "note": "Plataforma desarrollable y demoable a costo casi cero" }
+      ]
+    },
+    {
+      "id": "costs_mainnet",
+      "kind": "cost_table",
+      "title": "Costos — Mainnet (producción real)",
+      "narration": "Estimación para un cliente con 1.000 cargas/mes y 6 eventos por carga = 7.000 escrituras/mes.",
+      "rows": [
+        { "concept": "Merkle tree dedicado (16k hojas, 1 vez por tenant)", "amount_usd": 75, "note": "~0.5 SOL, se reusa" },
+        { "concept": "Mint cNFT (1.000/mes × ~USD 0.0008)", "amount_usd": 0.8, "note": "Por carga registrada" },
+        { "concept": "Tx de evento (6.000/mes × ~USD 0.0008)", "amount_usd": 4.8, "note": "Anclajes de custodia" },
+        { "concept": "Helius plan Build (≥50k req/mes)", "amount_usd": 49, "note": "Solo si supera el free tier" },
+        { "concept": "Hetzner producción (CAX21 + DB managed)", "amount_usd": 35, "note": "Para multi-tenant productivo" },
+        { "concept": "TOTAL mensual operación blockchain", "amount_usd": 5.6, "note": "≈ USD 0.005 por carga end-to-end" },
+        { "concept": "TOTAL mensual con infraestructura completa", "amount_usd": 89.6, "note": "Para 1.000 cargas/mes" }
+      ]
+    },
+    {
+      "id": "pricing_saas",
+      "kind": "pricing_grid",
+      "title": "Modelo de pricing SaaS (propuesto)",
+      "tiers": [
+        {
+          "name": "Free",
+          "price_usd": 0,
+          "audience": "Validación, demos, ONGs",
+          "limits": ["50 cargas/mes", "1 framework de cumplimiento", "Solo Logística + Inventario básico"]
+        },
+        {
+          "name": "Starter",
+          "price_usd": 49,
+          "audience": "Cooperativas pequeñas, 1-3 productos",
+          "limits": ["500 cargas/mes", "EUDR o FSMA", "Soporte email"]
+        },
+        {
+          "name": "Professional",
+          "price_usd": 149,
+          "audience": "Exportadores medianos",
+          "limits": ["5.000 cargas/mes", "Todos los frameworks", "Integración DIAN", "Multi-bodega"]
+        },
+        {
+          "name": "Enterprise",
+          "price_usd": null,
+          "audience": "Cadenas grandes / multi-país",
+          "limits": ["Volumen custom", "SLA 99.9%", "Mainnet dedicada", "On-premise opcional"]
+        }
+      ],
+      "alternative_model": "Por tonelada trazada: USD 0.05–0.10/kg de cacao certificado EUDR. Lo paga el exportador, no el productor."
+    },
+    {
+      "id": "case_cacao_overview",
+      "kind": "case_study_cover",
+      "title": "Caso de uso — Cacao Tumaco → Luker Chocolate",
+      "summary": [
+        "Productor: Asocafé Tumaco (cooperativa, 23 socios, 84 hectáreas en Nariño).",
+        "Cliente UE: Luker Chocolate Zwolle B.V. (Países Bajos).",
+        "Producto: 4.820 kg cacao seco grado A, lote CACAO-NS-2026-001.",
+        "Marco aplicable: EUDR (UE 2023/1115).",
+        "Objetivo: emitir el due-diligence statement (DDS) y la prueba de origen para el contenedor en Cartagena."
+      ]
+    },
+    {
+      "id": "case_cacao_journey",
+      "kind": "timeline",
+      "title": "Recorrido completo del cacao en Trace",
+      "steps": [
+        {
+          "n": 1,
+          "actor": "Asocafé Tumaco",
+          "action": "Registra parcela PLOT-NS-001 con GeoJSON: 8.438712, -73.289143 (≥6 decimales EUDR Art. 2.28), 3.4 ha. Sin polígono porque ≤4 ha.",
+          "trace_event": "compliance_plot_created"
+        },
+        {
+          "n": 2,
+          "actor": "Asocafé Tumaco",
+          "action": "Registra cosecha. Trace mintea cNFT con metadata: 4.820 kg, 7.2% humedad, 6 días fermentación, batch_number CACAO-NS-2026-001.",
+          "trace_event": "asset_minted",
+          "blockchain": "tx en Solana devnet, signature visible en Solscan"
+        },
+        {
+          "n": 3,
+          "actor": "Asocafé Tumaco",
+          "action": "Inspección QC: humedad 7.2%, fermentación OK, score 92/100, libre de cadmio (0.28 mg/kg < 0.6 EU compliant).",
+          "trace_event": "qc_passed"
+        },
+        {
+          "n": 4,
+          "actor": "Asocafé → Transportes Andinos",
+          "action": "HANDOFF a transportista. Vehículo TUR-447, conductor C. Restrepo. Plataforma esponsorea el fee.",
+          "trace_event": "handoff (sponsored_delegated)"
+        },
+        {
+          "n": 5,
+          "actor": "Transportes Andinos",
+          "action": "Cargado en vehículo. GPS pings cada 2h durante el tránsito Tumaco → Cartagena (1.300 km, ~36 h).",
+          "trace_event": "loaded + gps_ping ×18"
+        },
+        {
+          "n": 6,
+          "actor": "Transportes Andinos → Bodega Cartagena",
+          "action": "ARRIVED en bodega del exportador. Sellado de contenedor.",
+          "trace_event": "arrived + sealed"
+        },
+        {
+          "n": 7,
+          "actor": "Operador Aduana Cartagena",
+          "action": "CUSTOMS_CLEARED. Adjunta CO de origen + factura DIAN + DDS-EUDR generado por Trace.",
+          "trace_event": "customs_cleared + evidence ×3"
+        },
+        {
+          "n": 8,
+          "actor": "Aduana → Naviera Maersk",
+          "action": "RELEASED al buque. Container TLLU-1234567 en M/V Maersk Sealand.",
+          "trace_event": "released"
+        },
+        {
+          "n": 9,
+          "actor": "Trace plataforma",
+          "action": "Genera certificado EUDR PDF con QR público de verificación. Número INV-2026-0042. Vigencia 5 años.",
+          "trace_event": "compliance_certificate_generated"
+        },
+        {
+          "n": 10,
+          "actor": "Luker Chocolate (importador UE)",
+          "action": "Recibe el contenedor. Escanea QR del PDF. Ve la cadena completa en Solscan + verifica hashes off-chain. DELIVERED.",
+          "trace_event": "delivered"
+        }
+      ]
+    },
+    {
+      "id": "case_cacao_numbers",
+      "kind": "metrics_grid",
+      "title": "El caso del cacao — números reales del flujo",
+      "metrics": [
+        { "label": "Cargas registradas en el viaje", "value": "1", "unit": "cNFT" },
+        { "label": "Eventos de custodia anclados", "value": "32", "unit": "tx Solana" },
+        { "label": "Costo total blockchain (devnet)", "value": "0", "unit": "USD" },
+        { "label": "Costo total blockchain (mainnet equiv.)", "value": "0.026", "unit": "USD" },
+        { "label": "Tiempo promedio de mint", "value": "<3", "unit": "segundos" },
+        { "label": "Tiempo de generación del certificado EUDR", "value": "<5", "unit": "segundos" },
+        { "label": "Tamaño del PDF auditable", "value": "~1.2", "unit": "MB" },
+        { "label": "Documentos legales adjuntos", "value": "5", "unit": "(CO, DIAN, DDS, BoL, QC)" }
+      ]
+    },
+    {
+      "id": "verification_flow",
+      "kind": "verification",
+      "title": "Cómo verifica el comprador / aduana / auditor",
+      "steps": [
+        "1. Recibe el PDF de Trace (o link público /verificar/CACAO-NS-2026-001).",
+        "2. Escanea el QR en la primera página — abre la página pública de verificación SIN login.",
+        "3. Ve la cadena de eventos con sus firmas Solana. Click en cada hash → Solscan devuelve la transacción real.",
+        "4. (Opcional) Recalcula localmente cada event_hash con SHA-256(canonical_json(evento) ‖ prev_hash) y compara. Si cualquier evento fue editado, el hash deja de validar.",
+        "5. (Opcional) Si requiere prueba de la imagen del cNFT, fetcha /api/v1/assets/metadata/{id}.json — devuelve el JSON Metaplex con image absoluta accesible.",
+        "RESULTADO: el comprador NO necesita confiar en Trace ni en el exportador. Toda la prueba está en una red pública (Solana) que es independiente."
+      ]
+    },
+    {
+      "id": "scenarios_failure",
+      "kind": "scenarios",
+      "title": "Escenarios de caída — qué sigue funcionando",
+      "scenarios": [
+        {
+          "scenario": "Helius RPC down",
+          "impact": "Mint y eventos quedan PENDING. Worker reintenta. Usuario sigue operando.",
+          "recovery": "Automático cuando RPC vuelve, o swap a QuickNode/Triton."
+        },
+        {
+          "scenario": "Solana mainnet outage (1-2x/año)",
+          "impact": "Anclajes se acumulan. La cadena de hashes off-chain SIGUE siendo confiable.",
+          "recovery": "Automático. Los hashes preservan la integridad incluso sin Solana."
+        },
+        {
+          "scenario": "Trace gateway / API down",
+          "impact": "Usuarios no pueden registrar eventos nuevos.",
+          "recovery": "Hetzner CAX11 con SLA 99.9%; failover a otra zona en horas."
+        },
+        {
+          "scenario": "Llave de la plataforma comprometida",
+          "impact": "Mints viejos siguen válidos; rotamos keypair y recargamos. Ningún daño retroactivo.",
+          "recovery": "Rotación de SOLANA_KEYPAIR + nuevo airdrop / recarga."
+        },
+        {
+          "scenario": "Solana se vuelve obsoleta (caso apocalíptico)",
+          "impact": "Cadena de hashes off-chain sigue auditable. Re-ancle en otra cadena via adapter swap.",
+          "recovery": "Trace NO depende existencialmente de Solana."
+        }
+      ]
+    },
+    {
+      "id": "competitive",
+      "kind": "comparison",
+      "title": "Comparación con alternativas",
+      "rows": [
+        {
+          "tool": "Excel / papel",
+          "audit_proof": "No",
+          "cost_per_event_usd": 0,
+          "compliance_eudr": "Manual, frágil",
+          "verifiable_publicly": "No"
+        },
+        {
+          "tool": "SAP / Oracle SCM",
+          "audit_proof": "Solo dentro del sistema",
+          "cost_per_event_usd": 5,
+          "compliance_eudr": "Add-on caro, no prueba pública",
+          "verifiable_publicly": "No"
+        },
+        {
+          "tool": "IBM Food Trust (Hyperledger)",
+          "audit_proof": "Sí (privada)",
+          "cost_per_event_usd": 0.5,
+          "compliance_eudr": "Sí, pero ecosistema cerrado",
+          "verifiable_publicly": "Solo socios autorizados"
+        },
+        {
+          "tool": "Trace",
+          "audit_proof": "Sí (Solana pública)",
+          "cost_per_event_usd": 0.0008,
+          "compliance_eudr": "Nativo",
+          "verifiable_publicly": "Sí — cualquier persona, sin login"
+        }
+      ]
+    },
+    {
+      "id": "regulatory_coverage",
+      "kind": "framework_grid",
+      "title": "Cobertura regulatoria",
+      "frameworks": [
+        {
+          "slug": "eudr",
+          "name": "EU Deforestation Regulation (UE 2023/1115)",
+          "flag": "🇪🇺",
+          "scope": "Cacao, café, palma, soja, madera, caucho, ganado.",
+          "obligation": "DDS con geolocalización ≥6 decimales, screening deforestación post-31/12/2020, retención 5 años.",
+          "vigencia": "Operadores grandes 30/12/2025; PYMES 30/06/2026."
+        },
+        {
+          "slug": "fsma_204",
+          "name": "FSMA Rule 204 (USA Food Traceability Final Rule)",
+          "flag": "🇺🇸",
+          "scope": "Foods on Traceability List (FTL): hojas, frutas, vegetales, mariscos, quesos, mantequillas de árbol.",
+          "obligation": "Lot codes + Critical Tracking Events (CTE) + Key Data Elements (KDE) recuperables en 24 h.",
+          "vigencia": "20/01/2026."
+        },
+        {
+          "slug": "usda-organic",
+          "name": "USDA Organic / NOP",
+          "flag": "🇺🇸",
+          "scope": "Productos orgánicos certificados.",
+          "obligation": "Cadena custodia desde productor certificado a consumidor.",
+          "vigencia": "Vigente."
+        },
+        {
+          "slug": "fssai",
+          "name": "FSSAI (India)",
+          "flag": "🇮🇳",
+          "scope": "Alimentos procesados India.",
+          "obligation": "Trazabilidad de cadena de frío y origen.",
+          "vigencia": "Vigente."
+        },
+        {
+          "slug": "jfs-2200",
+          "name": "JFS-2200 (Japón)",
+          "flag": "🇯🇵",
+          "scope": "Alimentos exportados a Japón.",
+          "obligation": "ISO 22000 + estándar japonés.",
+          "vigencia": "Vigente."
+        }
+      ]
+    },
+    {
+      "id": "metrics_platform",
+      "kind": "metrics_grid",
+      "title": "Estado actual de la plataforma (devnet)",
+      "metrics": [
+        { "label": "Wallets de custodios", "value": "25" },
+        { "label": "Cargas (assets) cNFT", "value": "14" },
+        { "label": "Mints CONFIRMED on-chain", "value": "14 / 14 (100%)" },
+        { "label": "Eventos de custodia anclados", "value": "125" },
+        { "label": "Eventos pending", "value": "0" },
+        { "label": "Wallets simuladas", "value": "0 (regla #0.bis)" },
+        { "label": "Microservicios", "value": "9 + gateway" },
+        { "label": "Frameworks de cumplimiento", "value": "5 activos" },
+        { "label": "Permisos RBAC", "value": "26 en 7 módulos" },
+        { "label": "Líneas de código (estimado)", "value": "~70k" }
+      ]
+    },
+    {
+      "id": "roadmap",
+      "kind": "roadmap",
+      "title": "Roadmap",
+      "phases": [
+        {
+          "phase": "Q2 2026 (en curso)",
+          "items": [
+            "Validación con BID y especialista cacao (29/04/2026).",
+            "Demo a Centro de Emprendimiento Uniandes.",
+            "Hardening UX: confirmaciones modales, notificaciones, onboarding wizard.",
+            "Conectar /anchoring/* y /shipments/* en frontend (endpoints existen)."
+          ]
+        },
+        {
+          "phase": "Q3 2026",
+          "items": [
+            "Switch a Solana mainnet con tree dedicado por tenant.",
+            "Onboarding de 3 cooperativas piloto (cacao, café, panela).",
+            "Cliente final con login propio (magic-link al portal).",
+            "Integración EUDR TRACES NT (UE) — submission automática del DDS."
+          ]
+        },
+        {
+          "phase": "Q4 2026",
+          "items": [
+            "Aplicación móvil para captura de eventos en campo (offline-first).",
+            "API pública para integradores (ERP del cliente).",
+            "Marketplace de auditores: encadenamos verificadores externos.",
+            "Multi-país: ampliar pasarelas de pago y frameworks (BR, MX, EC)."
+          ]
+        },
+        {
+          "phase": "2027+",
+          "items": [
+            "AI para detección de anomalías (cargas que no encajan con su patrón).",
+            "Tokenización de futuros agro contra cargas registradas.",
+            "Standard abierto: que otros productores publiquen sus eventos en el mismo formato Metaplex."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "team",
+      "kind": "people",
+      "title": "Equipo",
+      "people": [
+        {
+          "name": "Miguel Ruiz",
+          "role": "Founder / Tech Lead",
+          "bio": "MISO Uniandes. 8+ años desarrollo senior. Arquitecto de la plataforma."
+        }
+      ]
+    },
+    {
+      "id": "ask",
+      "kind": "ask",
+      "title": "Lo que pedimos",
+      "items": [
+        "Validación con un comprador europeo de cacao (Luker, Casa Luker, o pares).",
+        "Acceso a un piloto de cooperativa (200-500 productores) con socios reales en Tumaco / Huila / Norte de Santander.",
+        "Conexión con técnico TRACES NT de la UE para integración del DDS.",
+        "Capital semilla USD 80-120k para 12 meses (mainnet, app móvil, 2 ingenieros adicionales)."
+      ]
+    },
+    {
+      "id": "thanks",
+      "kind": "thanks",
+      "title": "Gracias",
+      "subtitle": "Trazabilidad que no necesita confianza ciega — solo matemática.",
+      "contact": [
+        "Miguel Ruiz",
+        "miguelenruiz1@gmail.com",
+        "Trace platform — http://62.238.5.1"
+      ]
+    }
+  ]
+}

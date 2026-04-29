@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1200,user-scalable=no">
+<title>Trace — Deck de presentación</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
+<style>
+  :root { --pri:#16A34A; --acc:#0EA5E9; --ink:#0F172A; --mut:#64748B; --bg:#FAFAFA; }
+  .reveal { font-family: 'Inter', system-ui, sans-serif; color:var(--ink); letter-spacing:-0.011em; }
+  .reveal section { text-align:left; }
+  .reveal h1, .reveal h2, .reveal h3 { color:var(--ink); font-weight:700; letter-spacing:-0.02em; text-transform:none; }
+  .reveal h1 { font-size:2.5em; }
+  .reveal h2 { font-size:1.6em; margin-bottom:0.6em; }
+  .reveal h3 { font-size:1.1em; color:var(--pri); margin-bottom:0.3em; }
+  .reveal p, .reveal li { font-size:0.6em; line-height:1.55; }
+  .reveal ul { margin-left:1.2em; }
+  .reveal li { margin:0.25em 0; }
+  .reveal small { font-size:0.45em; color:var(--mut); }
+  .tag { display:inline-block; padding:3px 10px; margin:2px; border-radius:999px; background:#F1F5F9; color:var(--ink); font-size:0.55em; font-weight:600; }
+  .tag.pri { background:#DCFCE7; color:#15803D; }
+  .tag.acc { background:#E0F2FE; color:#075985; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:30px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .card { background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:14px 18px; box-shadow:0 1px 3px rgba(15,23,42,.04); }
+  .card h3 { color:var(--pri); margin-top:0; font-size:1em; }
+  .card.acc h3 { color:var(--acc); }
+  .card ul { margin-left:1em; }
+  .stat { background:linear-gradient(135deg,var(--pri),var(--acc)); color:#fff; padding:18px; border-radius:14px; text-align:center; }
+  .stat .v { font-size:1.6em; font-weight:800; display:block; }
+  .stat .l { font-size:0.5em; opacity:0.92; }
+  table { width:100%; border-collapse:collapse; font-size:0.55em; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid #E2E8F0; }
+  th { background:#F8FAFC; color:var(--mut); font-weight:600; text-transform:uppercase; font-size:0.85em; letter-spacing:0.04em; }
+  td.num, th.num { text-align:right; font-variant-numeric: tabular-nums; }
+  .step { display:flex; gap:14px; align-items:flex-start; padding:8px 0; border-top:1px dashed #E2E8F0; }
+  .step:first-child { border-top:0; }
+  .step .num { background:var(--pri); color:#fff; width:28px; height:28px; border-radius:999px; display:grid; place-items:center; font-weight:700; flex-shrink:0; font-size:0.55em; }
+  .step .actor { font-weight:700; color:var(--ink); font-size:0.6em; }
+  .step .body { font-size:0.55em; color:var(--mut); margin-top:2px; }
+  .step .ev { font-family: monospace; color:var(--acc); font-size:0.5em; margin-top:3px; }
+  .pill-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .cover-bg { background:linear-gradient(135deg,#0F172A 0%, #16A34A 100%); color:#fff; padding:60px; border-radius:0; min-height:520px; display:flex; flex-direction:column; justify-content:center; }
+  .cover-bg h1 { color:#fff; font-size:3.6em; margin:0; }
+  .cover-bg .sub { color:rgba(255,255,255,0.85); font-size:1em; margin-top:14px; max-width:780px; }
+  .cover-bg .pitch { color:rgba(255,255,255,0.75); font-size:0.7em; margin-top:24px; max-width:780px; line-height:1.6; }
+  .module { background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:14px; }
+  .module .head { display:flex; gap:10px; align-items:center; margin-bottom:8px; }
+  .module .dot { width:32px; height:32px; border-radius:8px; display:grid; place-items:center; color:#fff; font-weight:700; flex-shrink:0; font-size:0.7em; }
+  .module h3 { margin:0; font-size:1em; color:var(--ink); }
+  .module ul { margin-left:1em; margin-top:6px; }
+  .module li { font-size:0.5em; }
+  .scenario { background:#FFF7ED; border-left:4px solid #F97316; padding:10px 14px; border-radius:8px; margin:8px 0; }
+  .scenario b { color:#9A3412; }
+  .scenario .rec { color:#15803D; font-size:0.55em; }
+  .meter { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:14px; }
+  .totals-row { background:#DCFCE7; font-weight:700; }
+  ol { margin-left:1.2em; }
+  ol li { margin:0.3em 0; }
+  blockquote { border-left:4px solid var(--pri); padding:6px 18px; color:var(--mut); font-style:italic; margin:14px 0; }
+  .roadmap-phase { background:#fff; border-radius:10px; border:1px solid #E2E8F0; padding:12px 16px; margin:10px 0; }
+  .roadmap-phase h3 { margin-top:0; }
+  @media print {
+    .reveal section { page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+<div class="reveal"><div class="slides">
+
+<!-- 01 cover -->
+<section data-state="cover">
+  <div class="cover-bg">
+    <h1>Trace</h1>
+    <p class="sub">Trazabilidad agro-industrial anclada en blockchain Solana</p>
+    <p class="pitch">Cada carga es un cNFT. Cada evento de custodia es una firma criptográfica on-chain. Cumple EUDR, FSMA Rule 204, USDA Organic y más, con prueba pública verificable sin necesidad de confiar en nadie.</p>
+    <div class="pill-row" style="margin-top:30px">
+      <span class="tag" style="background:rgba(255,255,255,0.12); color:#fff">USD 0.0001 por mint cNFT</span>
+      <span class="tag" style="background:rgba(255,255,255,0.12); color:#fff">20.000× más barato que NFT estándar</span>
+      <span class="tag" style="background:rgba(255,255,255,0.12); color:#fff">Verificable sin pedir permiso</span>
+    </div>
+  </div>
+</section>
+
+<!-- 02 problema -->
+<section>
+  <h2>El problema que resuelve</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>Trazabilidad agro hoy</h3>
+      <ul>
+        <li>Papel + Excel + correos. Fragmentado entre productor, transportista, exportador, importador.</li>
+        <li>El comprador europeo te pide PDF de origen y firma — y lo que recibe puede haberse alterado.</li>
+        <li><b>EUDR</b> (UE 2023/1115) y <b>FSMA Rule 204</b> (USA, 20/01/2026) exigen evidencia con coordenadas ≥6 decimales y due diligence trazable.</li>
+        <li>Multa por incumplimiento EUDR: hasta <b>4% de la facturación anual</b> del importador.</li>
+      </ul>
+    </div>
+    <div class="card acc">
+      <h3>Lo que necesitan los actores</h3>
+      <ul>
+        <li><b>Productor / cooperativa:</b> registrar cosecha y firmar cadena de custodia sin entender cripto ni cargar SOL.</li>
+        <li><b>Exportador:</b> emitir DDS-EUDR, BoL y CO de origen en un click.</li>
+        <li><b>Importador (UE / USA):</b> verificar cadena sin tener que confiar ciegamente en el exportador.</li>
+        <li><b>Auditor / aduana:</b> recalcular hashes y comprobar firmas en cualquier momento, sin login.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 03 solución -->
+<section>
+  <h2>Cómo lo resuelve Trace</h2>
+  <p><small>Una sola plataforma SaaS que ancla cada paso del producto en Solana via cNFTs y exporta certificados auditables.</small></p>
+  <div class="step"><div class="num">1</div><div><div class="actor">Productor (Asocafé / Cooperativa)</div><div class="body">Registra parcela con GeoJSON ≥6 decimales (EUDR Art. 2.28). Captura cosecha.</div></div></div>
+  <div class="step"><div class="num">2</div><div><div class="actor">Plataforma Trace</div><div class="body">Mint cNFT en Solana con metadata firmada SHA-256 + URI público Metaplex.</div></div></div>
+  <div class="step"><div class="num">3</div><div><div class="actor">Transportista / Bodega</div><div class="body">Firma cada handoff. La plataforma esponsorea el fee (modelo C: sponsored tx).</div></div></div>
+  <div class="step"><div class="num">4</div><div><div class="actor">QC / Aduana</div><div class="body">Inspección, sellado, control sanitario. Cada evento encadena hash al anterior.</div></div></div>
+  <div class="step"><div class="num">5</div><div><div class="actor">Exportador</div><div class="body">Genera certificado EUDR / FSMA en PDF firmado digitalmente con QR público.</div></div></div>
+  <div class="step"><div class="num">6</div><div><div class="actor">Importador / Auditor</div><div class="body">Verifica en Solscan + recalcula hashes off-chain. <b>No requiere acceso a Trace.</b></div></div></div>
+</section>
+
+<!-- 04 qué se ancla -->
+<section>
+  <h2>Qué exactamente queda en blockchain</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>Por cada carga (asset)</h3>
+      <ul>
+        <li>cNFT con name, image, product_type, weight, batch_number, metadata_hash (SHA-256 de los atributos).</li>
+        <li>URI público al endpoint <code>/api/v1/assets/metadata/{id}.json</code> — leído por Solscan, Helius XRAY, cualquier explorer.</li>
+        <li>Imagen URL absoluta servida por el gateway (la inspecciona el comprador final).</li>
+      </ul>
+    </div>
+    <div class="card acc">
+      <h3>Por cada evento de custodia</h3>
+      <ul>
+        <li>Una transacción Solana con memo del <code>event_hash</code>.</li>
+        <li><code>event_hash = SHA-256(canonical_json(evento) ‖ prev_event_hash)</code>.</li>
+        <li>Firma del custodio (autoriza) + firma de la plataforma (paga el fee). Modelo C: sponsored tx con delegated signing.</li>
+        <li>Tipos: handoff, arrived, loaded, qc_passed/failed, customs_*, damaged, sealed, released, delivered, burn.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 05 stack -->
+<section>
+  <h2>Stack tecnológico</h2>
+  <div class="grid3">
+    <div class="card"><h3>Backend</h3><ul><li>Python 3.11 + FastAPI (async)</li><li>SQLAlchemy + asyncpg + Alembic</li><li>Redis (cache + ARQ workers)</li><li>Pydantic v2</li></ul></div>
+    <div class="card"><h3>Frontend</h3><ul><li>React 18 + TypeScript + Vite</li><li>TanStack React Query</li><li>Tailwind CSS + shadcn/ui</li><li>react-hook-form + zod</li><li>lucide-react</li></ul></div>
+    <div class="card"><h3>Blockchain</h3><ul><li>Solana (devnet → mainnet)</li><li>Compressed NFTs (Metaplex Bubblegum)</li><li>Helius RPC + DAS API</li><li>solders (Python SDK)</li><li>Sponsored tx con delegated signing</li></ul></div>
+    <div class="card"><h3>Microservicios</h3><ul><li>trace-service (assets+custody+workflow)</li><li>user-service (auth+RBAC+audit)</li><li>subscription-service</li><li>inventory-service</li><li>compliance-service</li><li>integration-service · media-service · ai-service</li><li>Gateway nginx</li></ul></div>
+    <div class="card"><h3>Infra</h3><ul><li>Docker Compose</li><li>Hetzner Cloud CAX11 ARM64 (Helsinki)</li><li>PostgreSQL 16 (1 base/servicio)</li><li>JWT + Redis blacklist</li><li>Fernet at-rest encryption</li></ul></div>
+    <div class="card"><h3>Cumplimiento</h3><ul><li>EUDR (UE 2023/1115)</li><li>FSMA Rule 204 (USA)</li><li>USDA Organic / FSSAI / JFS-2200</li><li>Validador GeoJSON estricto (RFC 7946 + ≥6 dec.)</li><li>Global Forest Watch screening</li></ul></div>
+  </div>
+</section>
+
+<!-- 06 módulos -->
+<section>
+  <h2>Módulos funcionales</h2>
+  <div class="grid3">
+    <div class="module"><div class="head"><div class="dot" style="background:#0EA5E9">L</div><h3>Logística</h3></div><ul><li>Wallets de custodios (granja, camión, bodega, aduana).</li><li>Cargas (assets) con cNFT auto-minted.</li><li>Workflow configurable (preset logistics).</li><li>Stream de actividad por movimiento + día.</li><li>PDF de trazabilidad humano con QR público.</li></ul></div>
+    <div class="module"><div class="head"><div class="dot" style="background:#7C3AED">I</div><h3>Inventario</h3></div><ul><li>Productos con tipos custom + atributos.</li><li>Bodegas, kardex, lotes, seriales, escáner, picking.</li><li>Compras (PO) y ventas (SO) → mint automático.</li><li>Recetas (BOM), MRP, órdenes de producción.</li><li>Portal cliente read-only.</li></ul></div>
+    <div class="module"><div class="head"><div class="dot" style="background:#16A34A">C</div><h3>Cumplimiento</h3></div><ul><li>EUDR, FSMA 204, USDA Organic, FSSAI, JFS-2200.</li><li>Parcelas con GeoJSON estricto (Art. 2.28).</li><li>Screening deforestación GFW.</li><li>Records vinculados a assets con DDS.</li><li>Certificados PDF firmados, vigencia 5 años.</li></ul></div>
+    <div class="module"><div class="head"><div class="dot" style="background:#F59E0B">U</div><h3>User / Auth</h3></div><ul><li>Multi-tenant. Primer usuario = administrador.</li><li>26 permisos en 7 módulos.</li><li>Roles tipo Drupal (matrix de permisos).</li><li>Audit log de toda mutación.</li><li>JWT access (15 min) + refresh (7 d).</li></ul></div>
+    <div class="module"><div class="head"><div class="dot" style="background:#DC2626">$</div><h3>Subscription / Billing</h3></div><ul><li>4 planes: Free, Starter, Professional, Enterprise.</li><li>Activación de módulos por tenant.</li><li>License keys TRACE-XXXX-XXXX-XXXX-XXXX.</li><li>Invoices INV-YYYY-NNNN.</li><li>7 pasarelas Colombia: ePayco, PayU, Wompi, Mercado Pago, Bold, Kushki, Openpay.</li></ul></div>
+    <div class="module"><div class="head"><div class="dot" style="background:#06B6D4">∞</div><h3>Integraciones</h3></div><ul><li>DIAN (facturación electrónica Colombia).</li><li>Resoluciones DIAN para numeración fiscal.</li><li>Webhooks salientes para ERP del cliente.</li><li>Adaptador Matías (consultor de impuestos).</li></ul></div>
+  </div>
+</section>
+
+<!-- 07 modelo blockchain -->
+<section>
+  <h2>Modelo blockchain — cNFT + sponsored tx</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>Compressed NFT (cNFT)</h3>
+      <p style="font-size:0.6em; color:var(--mut); line-height:1.6">Un NFT estándar Solana cuesta ~0.012 SOL/mint (~USD 2). Un cNFT vive como hoja de un Merkle tree on-chain — solo se almacena la raíz. Resultado: <b>USD 0.0001 por mint, 20.000× más barato</b>. Permite mintear un NFT por carga sin destruir el modelo de negocio.</p>
+    </div>
+    <div class="card acc">
+      <h3>Sponsored tx con delegated signing (modelo C)</h3>
+      <p style="font-size:0.6em; color:var(--mut); line-height:1.6">Cada tx de evento lleva DOS firmas: la del custodio (autoriza) y la de la plataforma (paga el fee). Resultado: <b>un cacaotero rural NUNCA necesita comprar SOL</b>. La plataforma absorbe los ~USD 0.0008 por evento.</p>
+    </div>
+    <div class="card">
+      <h3>Cadena de hashes off-chain</h3>
+      <p style="font-size:0.6em; color:var(--mut); line-height:1.6"><code>event_hash = SHA-256(canonical_json(evento) ‖ prev_event_hash)</code>. Si alguien edita un evento histórico en la DB, su hash cambia y todos los siguientes dejan de validar. <b>La cadena es auditable SIN blockchain</b> — Solana solo agrega prueba de existencia en un tiempo dado.</p>
+    </div>
+    <div class="card acc">
+      <h3>Resiliencia</h3>
+      <p style="font-size:0.6em; color:var(--mut); line-height:1.6">Si Helius RPC cae, el evento queda PENDING y el ARQ worker reintenta. Si Solana entera está en outage, los hashes off-chain se siguen computando y los anclajes se drenan cuando vuelve. <b>Trace NO depende existencialmente de Solana</b> — el provider es portable a Polygon/Avalanche/etc.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 08 costos devnet -->
+<section>
+  <h2>Costos — Devnet (donde estamos hoy)</h2>
+  <table>
+    <thead><tr><th>Concepto</th><th class="num">USD/mes</th><th>Nota</th></tr></thead>
+    <tbody>
+      <tr><td>Solana SOL</td><td class="num">0</td><td>Faucets gratis Helius / Solana</td></tr>
+      <tr><td>Helius RPC (Free tier)</td><td class="num">0</td><td>50.000 requests/mes — varios miles de mints/eventos</td></tr>
+      <tr><td>Hetzner CAX11 ARM64</td><td class="num">4.59</td><td>4 vCPU + 8 GB RAM, 5+ tenants</td></tr>
+      <tr><td>Dominio + SSL Let's Encrypt</td><td class="num">0</td><td>Cuando se conecte</td></tr>
+      <tr class="totals-row"><td>TOTAL mensual</td><td class="num">4.59</td><td>Plataforma demoable a costo casi cero</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 09 costos mainnet -->
+<section>
+  <h2>Costos — Mainnet (producción real)</h2>
+  <p><small>Estimación para un cliente con <b>1.000 cargas/mes</b> y 6 eventos por carga = 7.000 escrituras/mes.</small></p>
+  <table>
+    <thead><tr><th>Concepto</th><th class="num">USD</th><th>Nota</th></tr></thead>
+    <tbody>
+      <tr><td>Merkle tree dedicado (16k hojas, 1 vez)</td><td class="num">75</td><td>~0.5 SOL, se reusa</td></tr>
+      <tr><td>Mint cNFT (1.000/mes × ~USD 0.0008)</td><td class="num">0.8</td><td>Por carga registrada</td></tr>
+      <tr><td>Tx de evento (6.000/mes × ~USD 0.0008)</td><td class="num">4.8</td><td>Anclajes de custodia</td></tr>
+      <tr><td>Helius plan Build (≥50k req/mes)</td><td class="num">49</td><td>Solo si supera el free tier</td></tr>
+      <tr><td>Hetzner producción (CAX21 + DB managed)</td><td class="num">35</td><td>Multi-tenant productivo</td></tr>
+      <tr class="totals-row"><td>TOTAL operación blockchain (mensual)</td><td class="num">5.6</td><td>≈ USD 0.005 por carga end-to-end</td></tr>
+      <tr class="totals-row"><td>TOTAL infraestructura completa (mensual)</td><td class="num">89.6</td><td>Para 1.000 cargas/mes</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 10 pricing SaaS -->
+<section>
+  <h2>Modelo de pricing SaaS (propuesto)</h2>
+  <div class="grid3">
+    <div class="card"><h3>Free — USD 0</h3><p style="font-size:0.55em; color:var(--mut)">Validación, demos, ONGs</p><ul><li>50 cargas/mes</li><li>1 framework</li><li>Logística + Inventario básico</li></ul></div>
+    <div class="card"><h3>Starter — USD 49</h3><p style="font-size:0.55em; color:var(--mut)">Cooperativas pequeñas</p><ul><li>500 cargas/mes</li><li>EUDR o FSMA</li><li>Soporte email</li></ul></div>
+    <div class="card"><h3>Professional — USD 149</h3><p style="font-size:0.55em; color:var(--mut)">Exportadores medianos</p><ul><li>5.000 cargas/mes</li><li>Todos los frameworks</li><li>DIAN integrado</li><li>Multi-bodega</li></ul></div>
+  </div>
+  <div class="card" style="margin-top:18px"><h3>Enterprise — Custom</h3><p style="font-size:0.55em; color:var(--mut)">Cadenas grandes / multi-país. Volumen custom, SLA 99.9%, mainnet dedicada, on-premise opcional.</p></div>
+  <blockquote style="margin-top:20px">Modelo alternativo <b>por tonelada trazada</b>: USD 0.05–0.10/kg de cacao certificado EUDR. Lo paga el exportador, no el productor.</blockquote>
+</section>
+
+<!-- 11 caso cacao cover -->
+<section>
+  <h2>Caso de uso — Cacao Tumaco → Luker Chocolate</h2>
+  <ul>
+    <li><b>Productor:</b> Asocafé Tumaco (cooperativa, 23 socios, 84 hectáreas en Nariño).</li>
+    <li><b>Cliente UE:</b> Luker Chocolate Zwolle B.V. (Países Bajos).</li>
+    <li><b>Producto:</b> 4.820 kg cacao seco grado A, lote <code>CACAO-NS-2026-001</code>.</li>
+    <li><b>Marco aplicable:</b> EUDR (UE 2023/1115).</li>
+    <li><b>Objetivo:</b> emitir el due-diligence statement (DDS) y la prueba de origen para el contenedor en Cartagena.</li>
+  </ul>
+</section>
+
+<!-- 12 cacao journey -->
+<section>
+  <h2>Recorrido completo del cacao en Trace</h2>
+  <div class="step"><div class="num">1</div><div><div class="actor">Asocafé Tumaco</div><div class="body">Registra parcela PLOT-NS-001 con GeoJSON: 8.438712, -73.289143 (≥6 dec. EUDR Art. 2.28), 3.4 ha. Sin polígono porque ≤4 ha.</div><div class="ev">compliance_plot_created</div></div></div>
+  <div class="step"><div class="num">2</div><div><div class="actor">Asocafé Tumaco</div><div class="body">Registra cosecha. Trace mintea cNFT con metadata: 4.820 kg, 7.2% humedad, 6 días fermentación, batch CACAO-NS-2026-001.</div><div class="ev">asset_minted · tx en Solana devnet visible en Solscan</div></div></div>
+  <div class="step"><div class="num">3</div><div><div class="actor">Asocafé Tumaco</div><div class="body">Inspección QC: humedad 7.2%, fermentación OK, score 92/100, libre de cadmio (0.28 mg/kg < 0.6 EU compliant).</div><div class="ev">qc_passed</div></div></div>
+  <div class="step"><div class="num">4</div><div><div class="actor">Asocafé → Transportes Andinos</div><div class="body">HANDOFF a transportista. Vehículo TUR-447, conductor C. Restrepo. Plataforma esponsorea el fee.</div><div class="ev">handoff (sponsored_delegated)</div></div></div>
+  <div class="step"><div class="num">5</div><div><div class="actor">Transportes Andinos</div><div class="body">Cargado en vehículo. GPS pings cada 2h durante el tránsito Tumaco → Cartagena (1.300 km, ~36 h).</div><div class="ev">loaded + gps_ping ×18</div></div></div>
+  <div class="step"><div class="num">6</div><div><div class="actor">Transportes → Bodega Cartagena</div><div class="body">ARRIVED en bodega del exportador. Sellado de contenedor.</div><div class="ev">arrived + sealed</div></div></div>
+  <div class="step"><div class="num">7</div><div><div class="actor">Operador Aduana Cartagena</div><div class="body">CUSTOMS_CLEARED. Adjunta CO de origen + factura DIAN + DDS-EUDR generado por Trace.</div><div class="ev">customs_cleared + evidence ×3</div></div></div>
+  <div class="step"><div class="num">8</div><div><div class="actor">Aduana → Naviera Maersk</div><div class="body">RELEASED al buque. Container TLLU-1234567 en M/V Maersk Sealand.</div><div class="ev">released</div></div></div>
+  <div class="step"><div class="num">9</div><div><div class="actor">Trace plataforma</div><div class="body">Genera certificado EUDR PDF con QR público de verificación. Número INV-2026-0042. Vigencia 5 años.</div><div class="ev">compliance_certificate_generated</div></div></div>
+  <div class="step"><div class="num">10</div><div><div class="actor">Luker Chocolate (importador UE)</div><div class="body">Recibe el contenedor. Escanea QR del PDF. Ve cadena completa en Solscan + verifica hashes off-chain. DELIVERED.</div><div class="ev">delivered</div></div></div>
+</section>
+
+<!-- 13 cacao numbers -->
+<section>
+  <h2>El caso del cacao — números del flujo</h2>
+  <div class="meter">
+    <div class="stat"><span class="v">1</span><span class="l">Carga / cNFT</span></div>
+    <div class="stat"><span class="v">32</span><span class="l">Eventos custodia anclados</span></div>
+    <div class="stat"><span class="v">USD 0</span><span class="l">Costo blockchain (devnet)</span></div>
+    <div class="stat"><span class="v">USD 0.026</span><span class="l">Equivalente mainnet</span></div>
+  </div>
+  <div class="meter" style="margin-top:18px">
+    <div class="stat" style="background:linear-gradient(135deg,#7C3AED,#0EA5E9)"><span class="v">&lt;3 s</span><span class="l">Tiempo de mint</span></div>
+    <div class="stat" style="background:linear-gradient(135deg,#7C3AED,#0EA5E9)"><span class="v">&lt;5 s</span><span class="l">Generar cert EUDR</span></div>
+    <div class="stat" style="background:linear-gradient(135deg,#7C3AED,#0EA5E9)"><span class="v">~1.2 MB</span><span class="l">PDF auditable</span></div>
+    <div class="stat" style="background:linear-gradient(135deg,#7C3AED,#0EA5E9)"><span class="v">5</span><span class="l">Documentos legales (CO, DIAN, DDS, BoL, QC)</span></div>
+  </div>
+</section>
+
+<!-- 14 verificación -->
+<section>
+  <h2>Cómo verifica el comprador / aduana / auditor</h2>
+  <ol>
+    <li>Recibe el PDF de Trace (o link público <code>/verificar/CACAO-NS-2026-001</code>).</li>
+    <li>Escanea el QR en la primera página — abre la página de verificación SIN login.</li>
+    <li>Ve la cadena de eventos con sus firmas Solana. Click en cada hash → Solscan devuelve la transacción real.</li>
+    <li>(Opcional) Recalcula localmente cada <code>event_hash</code> con SHA-256(canonical_json(evento) ‖ prev_hash) y compara. Si cualquier evento fue editado, el hash deja de validar.</li>
+    <li>(Opcional) Si requiere prueba de la imagen del cNFT, fetcha <code>/api/v1/assets/metadata/{id}.json</code> — devuelve JSON Metaplex con image absoluta accesible.</li>
+  </ol>
+  <blockquote><b>Resultado:</b> el comprador NO necesita confiar en Trace ni en el exportador. Toda la prueba está en una red pública (Solana) que es independiente.</blockquote>
+</section>
+
+<!-- 15 escenarios caída -->
+<section>
+  <h2>Escenarios de caída — qué sigue funcionando</h2>
+  <div class="scenario"><b>Helius RPC down.</b> Mint y eventos quedan PENDING. Worker reintenta. <span class="rec">Recuperación: automática cuando RPC vuelve, o swap a QuickNode/Triton.</span></div>
+  <div class="scenario"><b>Solana mainnet outage (1-2×/año).</b> Anclajes se acumulan. La cadena de hashes off-chain SIGUE siendo confiable. <span class="rec">Recuperación: automática. Los hashes preservan integridad incluso sin Solana.</span></div>
+  <div class="scenario"><b>Trace gateway / API down.</b> Usuarios no pueden registrar eventos nuevos. <span class="rec">Recuperación: Hetzner SLA 99.9%; failover a otra zona en horas.</span></div>
+  <div class="scenario"><b>Llave de la plataforma comprometida.</b> Mints viejos siguen válidos; rotamos keypair y recargamos. <span class="rec">Recuperación: rotación de SOLANA_KEYPAIR + nuevo airdrop.</span></div>
+  <div class="scenario"><b>Solana se vuelve obsoleta (apocalíptico).</b> Cadena de hashes off-chain sigue auditable. <span class="rec">Recuperación: re-anclaje en otra cadena via adapter swap. Trace NO depende existencialmente de Solana.</span></div>
+</section>
+
+<!-- 16 comparación -->
+<section>
+  <h2>Comparación con alternativas</h2>
+  <table>
+    <thead><tr><th>Tool</th><th>Audit-proof</th><th class="num">USD/evento</th><th>EUDR</th><th>Verificable público</th></tr></thead>
+    <tbody>
+      <tr><td>Excel / papel</td><td>No</td><td class="num">0</td><td>Manual, frágil</td><td>No</td></tr>
+      <tr><td>SAP / Oracle SCM</td><td>Solo dentro del sistema</td><td class="num">5</td><td>Add-on caro</td><td>No</td></tr>
+      <tr><td>IBM Food Trust (Hyperledger)</td><td>Sí (privada)</td><td class="num">0.5</td><td>Sí, ecosistema cerrado</td><td>Solo socios autorizados</td></tr>
+      <tr class="totals-row"><td><b>Trace</b></td><td><b>Sí (Solana pública)</b></td><td class="num"><b>0.0008</b></td><td><b>Nativo</b></td><td><b>Sí — cualquier persona, sin login</b></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 17 cobertura regulatoria -->
+<section>
+  <h2>Cobertura regulatoria</h2>
+  <table>
+    <thead><tr><th>Marco</th><th>Alcance</th><th>Obligación clave</th><th>Vigencia</th></tr></thead>
+    <tbody>
+      <tr><td>🇪🇺 EUDR (UE 2023/1115)</td><td>Cacao, café, palma, soja, madera, caucho, ganado</td><td>DDS con geoloc ≥6 dec., screening deforestación post-31/12/2020, retención 5 años</td><td>30/12/2025 (PYMES 30/06/2026)</td></tr>
+      <tr><td>🇺🇸 FSMA Rule 204</td><td>FTL: hojas, frutas, vegetales, mariscos, quesos, mantequillas</td><td>Lot codes + CTE + KDE recuperables en 24 h</td><td>20/01/2026</td></tr>
+      <tr><td>🇺🇸 USDA Organic / NOP</td><td>Productos orgánicos certificados</td><td>Cadena custodia desde productor certificado</td><td>Vigente</td></tr>
+      <tr><td>🇮🇳 FSSAI</td><td>Alimentos procesados India</td><td>Cadena de frío y origen</td><td>Vigente</td></tr>
+      <tr><td>🇯🇵 JFS-2200</td><td>Alimentos exportados a Japón</td><td>ISO 22000 + estándar JP</td><td>Vigente</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 18 estado actual -->
+<section>
+  <h2>Estado actual de la plataforma (devnet)</h2>
+  <div class="meter">
+    <div class="stat"><span class="v">25</span><span class="l">Wallets de custodios</span></div>
+    <div class="stat"><span class="v">14</span><span class="l">Cargas cNFT</span></div>
+    <div class="stat"><span class="v">14/14</span><span class="l">Mints CONFIRMED on-chain (100%)</span></div>
+    <div class="stat"><span class="v">125</span><span class="l">Eventos custodia anclados</span></div>
+  </div>
+  <div class="meter" style="margin-top:18px">
+    <div class="stat" style="background:linear-gradient(135deg,#0F172A,#16A34A)"><span class="v">0</span><span class="l">Eventos pending</span></div>
+    <div class="stat" style="background:linear-gradient(135deg,#0F172A,#16A34A)"><span class="v">0</span><span class="l">Wallets simuladas</span></div>
+    <div class="stat" style="background:linear-gradient(135deg,#0F172A,#16A34A)"><span class="v">9 + GW</span><span class="l">Microservicios</span></div>
+    <div class="stat" style="background:linear-gradient(135deg,#0F172A,#16A34A)"><span class="v">26 / 7</span><span class="l">Permisos / módulos RBAC</span></div>
+  </div>
+</section>
+
+<!-- 19 roadmap -->
+<section>
+  <h2>Roadmap</h2>
+  <div class="roadmap-phase"><h3>Q2 2026 (en curso)</h3><ul><li>Validación con BID y especialista cacao (29/04/2026).</li><li>Demo a Centro de Emprendimiento Uniandes.</li><li>Hardening UX: confirmaciones modales, onboarding wizard.</li><li>Conectar /anchoring/* y /shipments/* en frontend.</li></ul></div>
+  <div class="roadmap-phase"><h3>Q3 2026</h3><ul><li>Switch a Solana mainnet con tree dedicado por tenant.</li><li>3 cooperativas piloto (cacao, café, panela).</li><li>Cliente final con login propio (magic-link al portal).</li><li>Integración EUDR TRACES NT (UE) — submission automática del DDS.</li></ul></div>
+  <div class="roadmap-phase"><h3>Q4 2026</h3><ul><li>App móvil para captura en campo (offline-first).</li><li>API pública para integradores.</li><li>Marketplace de auditores externos.</li><li>Multi-país: BR, MX, EC.</li></ul></div>
+  <div class="roadmap-phase"><h3>2027+</h3><ul><li>AI para detección de anomalías.</li><li>Tokenización de futuros agro contra cargas registradas.</li><li>Standard abierto Metaplex para terceros.</li></ul></div>
+</section>
+
+<!-- 20 ask -->
+<section>
+  <h2>Lo que pedimos</h2>
+  <ul>
+    <li>Validación con un comprador europeo de cacao (Luker, Casa Luker, o pares).</li>
+    <li>Acceso a un piloto de cooperativa (200-500 productores) en Tumaco / Huila / Norte de Santander.</li>
+    <li>Conexión con técnico TRACES NT de la UE para integración del DDS.</li>
+    <li>Capital semilla USD 80-120k para 12 meses (mainnet, app móvil, 2 ingenieros adicionales).</li>
+  </ul>
+</section>
+
+<!-- 21 thanks -->
+<section data-state="cover">
+  <div class="cover-bg" style="text-align:center; align-items:center; justify-content:center;">
+    <h1 style="font-size:4em">Gracias</h1>
+    <p class="sub" style="font-size:1.1em; max-width:none">Trazabilidad que no necesita confianza ciega — solo matemática.</p>
+    <div class="pitch" style="text-align:center; margin-top:40px">
+      <div><b>Miguel Ruiz</b></div>
+      <div>miguelenruiz1@gmail.com</div>
+      <div>Trace platform — http://62.238.5.1</div>
+    </div>
+  </div>
+</section>
+
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    width: 1280,
+    height: 720,
+    margin: 0.04,
+    controlsTutorial: false,
+    transition: 'slide',
+    pdfMaxPagesPerSlide: 1
+  });
+</script>
+</body>
+</html>

@@ -290,9 +290,21 @@ function TemplatesTab() {
     return <TemplateEditor template={selected} onBack={() => setSelectedId(null)} />
   }
 
+  if (!templates || templates.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center">
+        <Mail className="h-10 w-10 text-muted-foreground/60 mx-auto" />
+        <p className="text-sm font-semibold text-foreground mt-3">No hay plantillas de correo</p>
+        <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+          Tu tenant aún no tiene plantillas seedadas. Contactá a un administrador o vuelve a iniciar sesión para que el sistema las clone automáticamente.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {templates?.map((tpl) => (
+      {templates.map((tpl) => (
         <button
           key={tpl.id}
           onClick={() => setSelectedId(tpl.id)}

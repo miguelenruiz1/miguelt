@@ -60,3 +60,6 @@ qa/seed/*.jsonl
 qa/seed/seed_state.json
 qa/seed/seed_mega_state.json
 qa/seed/seed_mega_stdout.txt
+
+# Local QA/test scratch (contains JWTs y dumps de runtime)
+.invtest/
