@@ -237,7 +237,7 @@ class POService:
 
         for receipt in line_receipts:
             line = line_map.get(receipt["line_id"])
-            if not line or line.purchase_order_id != po_id:
+            if not line or line.po_id != po_id:
                 raise NotFoundError(f"PO line {receipt['line_id']!r} not found")
 
             qty = Decimal(str(receipt["qty_received"]))
