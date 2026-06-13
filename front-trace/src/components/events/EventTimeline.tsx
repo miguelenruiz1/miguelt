@@ -345,11 +345,6 @@ function EventRow({
                   <span className="truncate flex-1 font-medium">{f.title || f.original_filename}</span>
                   <span className="text-[10px] text-muted-foreground shrink-0">{link.document_type}</span>
                   <span className="text-[10px] text-muted-foreground shrink-0">{sizeStr}</span>
-                  {link.compliance_source && (
-                    <span className="text-[9px] px-1 py-0.5 bg-indigo-50 text-indigo-600 rounded border border-indigo-200 font-medium shrink-0">
-                      EUDR
-                    </span>
-                  )}
                   <ExternalLink className="h-2.5 w-2.5 text-slate-300 shrink-0" />
                 </a>
               )

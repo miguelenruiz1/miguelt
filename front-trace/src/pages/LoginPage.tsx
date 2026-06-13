@@ -39,7 +39,7 @@ export function LoginPage() {
             Tu operación bajo <span style={{ color: '#00E87A' }}>control total</span>
           </h2>
           <p className="text-base leading-relaxed" style={{ color: '#6B7A8D' }}>
-            Inventario, producción, logística con blockchain y cumplimiento EUDR. Todo en una plataforma.
+            Inventario, producción y logística con trazabilidad anclada en blockchain. Todo en una plataforma.
           </p>
         </div>
 
@@ -47,7 +47,7 @@ export function LoginPage() {
           {[
             { n: '6', l: 'Módulos' },
             { n: 'Blockchain', l: 'Verificable' },
-            { n: 'EUDR', l: 'Nativo' },
+            { n: 'Solana', l: 'Anclado' },
           ].map(s => (
             <div key={s.l}>
               <div className="text-lg font-extrabold text-white">{s.n}</div>

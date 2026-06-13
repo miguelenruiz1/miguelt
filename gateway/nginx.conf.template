@@ -74,9 +74,6 @@ map $uri $backend {
     ~^/api/v1/resolutions     https://${INTEGRATION_UPSTREAM};
     ~^/api/v1/webhooks        https://${INTEGRATION_UPSTREAM};
 
-    # Compliance Service
-    ~^/api/v1/compliance      https://${COMPLIANCE_UPSTREAM};
-
     # AI Service
     ~^/api/v1/analyze         https://${AI_UPSTREAM};
     ~^/api/v1/settings        https://${AI_UPSTREAM};

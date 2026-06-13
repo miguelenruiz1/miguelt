@@ -60,10 +60,6 @@ _PERMISSIONS = [
     ("production",    "production.approve",        "Aprobar o rechazar corridas"),
     ("production",    "production.manage",         "Gestionar producción"),
     ("production",    "production.admin",          "Administrar producción"),
-    # Compliance (EUDR, certifications)
-    ("compliance",    "compliance.view",           "Ver registros y certificados de cumplimiento"),
-    ("compliance",    "compliance.manage",         "Crear/editar registros y generar certificados"),
-    ("compliance",    "compliance.admin",          "Configurar integraciones de cumplimiento"),
 ]
 
 

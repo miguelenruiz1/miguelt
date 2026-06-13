@@ -88,7 +88,6 @@ class Settings(BaseSettings):
     # directly, since the gateway is the one that proxies /uploads/ to media-api.
     PUBLIC_BASE_URL: str = "http://localhost:9000"
     SUBSCRIPTION_SERVICE_URL: str = "http://subscription-api:8002"
-    COMPLIANCE_SERVICE_URL: str = "http://compliance-api:8005"
     MEDIA_SERVICE_URL: str = "http://media-api:8007"
     MODULE_CACHE_TTL: int = 300  # 5 minutes
     MODULE_SLUG: str = "logistics"

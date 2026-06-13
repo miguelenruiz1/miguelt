@@ -181,8 +181,19 @@ class ProductionService:
             for comp in recipe.components:
                 scrap_factor = Decimal("1") + comp.scrap_percentage / Decimal("100")
                 required_qty = comp.quantity_required * multiplier * scrap_factor
-                level = await self.stock_repo.get_level(comp.component_entity_id, run.warehouse_id)
-                available = (level.qty_on_hand - level.qty_reserved) if level else Decimal("0")
+                # Sum across all batches/variants for this product+warehouse
+                # — get_level() filters batch_id IS NULL by default and would
+                # report 0 even when stock was received with batch tracking.
+                levels, _ = await self.stock_repo.list_levels(
+                    tenant_id=run.tenant_id,
+                    product_id=comp.component_entity_id,
+                    warehouse_id=run.warehouse_id,
+                    limit=10000,
+                )
+                available = sum(
+                    (lvl.qty_on_hand - lvl.qty_reserved for lvl in levels),
+                    Decimal("0"),
+                )
                 if available < required_qty:
                     name = getattr(comp.component_entity, "name", None) or comp.component_entity_id[:8]
                     raise ValidationError(f"Stock insuficiente para {name}: disponible {available}, requerido {required_qty}")

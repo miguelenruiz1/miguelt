@@ -14,7 +14,7 @@ import {
 } from '@/hooks/useInventory'
 import { useToast } from '@/store/toast'
 import { useConfirm } from '@/store/confirm'
-import MediaPickerModal from '@/components/compliance/MediaPickerModal'
+import MediaPickerModal from '@/components/media/MediaPickerModal'
 import { mediaApi, mediaFileUrl } from '@/lib/media-api'
 import type { ProductionRun, ProductionRunStatus } from '@/types/inventory'
 

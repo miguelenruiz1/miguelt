@@ -18,14 +18,13 @@ import { useQuery } from '@tanstack/react-query'
 import { inventoryUoMApi } from '@/lib/inventory-api'
 import { useToast } from '@/store/toast'
 import { useFormValidation } from '@/hooks/useFormValidation'
-import { useIsModuleActive } from '@/hooks/useModules'
 import { cn } from '@/lib/utils'
 import { SafeSelect } from '@/components/ui/safeselect'
 import { CopyableId } from '@/components/inventory/CopyableId'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import type { CustomField, Product, ProductType, ProductVariant } from '@/types/inventory'
 import { inventoryProductsApi } from '@/lib/inventory-api'
-import MediaPickerModal from '@/components/compliance/MediaPickerModal'
+import MediaPickerModal from '@/components/media/MediaPickerModal'
 import { SkeletonTable } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 
@@ -302,7 +301,6 @@ function CreateProductForm({
   const ivaRates = taxRates.filter(r => r.tax_type === 'iva')
   const retentionRates = taxRates.filter(r => r.tax_type === 'retention')
   const { data: createSuppliers = [] } = useSuppliers()
-  const isComplianceActive = useIsModuleActive('compliance')
 
   const { formRef: createFormRef, handleSubmit: validateAndCreate } = useFormValidation(doCreate)
 
@@ -557,7 +555,7 @@ function CreateProductForm({
                 <span>
                   Rastrear lotes
                   <span className="block text-[10px] text-amber-700 mt-0.5">
-                    ⚠️ No se puede cambiar después. Necesario para FIFO por fecha de cosecha y fechas de vencimiento{isComplianceActive ? ', y para trazabilidad EUDR' : ''}.
+                    ⚠️ No se puede cambiar después. Necesario para FIFO por fecha de cosecha y fechas de vencimiento.
                   </span>
                 </span>
               </label>

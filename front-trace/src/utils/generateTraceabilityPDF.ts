@@ -6,9 +6,7 @@ import { drawLogo } from './pdfLogo'
 /**
  * Genera un PDF autocontenido de trazabilidad de una carga/lote.
  *
- * Diseñado para exportación a mercados que NO requieren EUDR (USA, resto del
- * mundo) — por eso no depende del módulo de compliance ni de tener un registro
- * EUDR creado. Los datos vienen del `/api/v1/assets/:id` + `/api/v1/assets/:id/events`,
+ * Los datos vienen del `/api/v1/assets/:id` + `/api/v1/assets/:id/events`,
  * que están disponibles siempre que el módulo Logística esté activo.
  *
  * Contenido:

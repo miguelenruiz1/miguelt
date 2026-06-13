@@ -3,14 +3,13 @@ import { z } from 'zod'
 import { Sparkles, FolderOpen, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useMintAsset } from '@/hooks/useAssets'
-import { usePlots } from '@/hooks/useCompliance'
 import { useOrganizations, useOrgWallets } from '@/hooks/useTaxonomy'
 import { useWalletList } from '@/hooks/useWallets'
 import { useToast } from '@/store/toast'
 import { LegacyDialog as Dialog } from '@/components/ui/legacy-dialog'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import MediaPickerModal from '@/components/compliance/MediaPickerModal'
+import MediaPickerModal from '@/components/media/MediaPickerModal'
 import { mediaFileUrl } from '@/lib/media-api'
 
 // ─── Product type catalog ──────────────────────────────────────────────────────
@@ -49,7 +48,6 @@ export function MintNFTModal({ open, onClose, preSelectedOrgId }: Props) {
   const [cargoName,         setCargoName]         = useState('')
   const [orgId,             setOrgId]             = useState(preSelectedOrgId ?? '')
   const [walletPubkey,      setWalletPubkey]      = useState('')
-  const [plotId,            setPlotId]            = useState('')
   const [weight,            setWeight]            = useState('')
   const [weightUnit,        setWeightUnit]        = useState('kg')
   const [qualityGrade,      setQualityGrade]      = useState('')
@@ -64,7 +62,6 @@ export function MintNFTModal({ open, onClose, preSelectedOrgId }: Props) {
   const { data: orgsData }       = useOrganizations()
   const { data: orgWalletsData } = useOrgWallets(orgId)
   const { data: allWalletsData } = useWalletList({ status: 'active', limit: 200 })
-  const { data: plotsData }      = usePlots({ is_active: true })
 
   const orgs = orgsData?.items ?? []
   const availableWallets = orgId
@@ -121,7 +118,6 @@ export function MintNFTModal({ open, onClose, preSelectedOrgId }: Props) {
         product_type:             finalProductType,
         initial_custodian_wallet: walletPubkey,
         metadata,
-        ...(plotId ? { plot_id: plotId } : {}),
       })
       toast.success('Carga registrada exitosamente')
       handleClose()
@@ -238,21 +234,6 @@ export function MintNFTModal({ open, onClose, preSelectedOrgId }: Props) {
           </div>
         </div>
 
-        {/* 3b — Plot (optional) */}
-        <div>
-          <label className={labelCls}>Parcela de origen (opcional)</label>
-          <select value={plotId} onChange={(e) => setPlotId(e.target.value)} className={fieldCls}>
-            <option value="">— Sin parcela —</option>
-            {(plotsData ?? []).map((p) => (
-              <option key={p.id} value={p.id}>
-                {`${p.plot_code ?? p.id.slice(0, 8)} — ${p.commodity_type ?? 'sin commodity'} — ${p.region ?? '-'}`}
-              </option>
-            ))}
-          </select>
-          <p className="text-[11px] text-muted-foreground mt-1">
-            Vincula la carga a una parcela EUDR para trazabilidad finca → lote.
-          </p>
-        </div>
 
         {/* 4 — Weight */}
         <div className="grid grid-cols-3 gap-3">

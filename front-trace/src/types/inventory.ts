@@ -29,8 +29,6 @@ export interface Product {
   preferred_currency: string
   weight_per_unit: number | null
   volume_per_unit: number | null
-  origin_plot_id?: string | null
-  origin_plot_code?: string | null
   commodity_type?: string | null
   tax_rate_id: string | null
   is_tax_exempt: boolean

@@ -1,13 +1,13 @@
 /**
  * MediaPickerModal — popup to browse the media library, upload new files,
- * and pick one to link to a compliance record or plot.
+ * and pick one to attach to an asset/record.
  *
  * Flow:
- *  1. User clicks "Adjuntar" on a record/plot
+ *  1. User clicks "Adjuntar" / "Seleccionar desde Media"
  *  2. This modal opens showing ALL files in media-service
  *  3. User can filter by category, search, or upload a new file directly from PC
  *  4. User clicks a file → selects document_type → confirms
- *  5. Only the media_file_id + document_type is sent to compliance-service
+ *  5. Only the media_file_id + document_type is returned to the caller
  */
 import { useRef, useState } from 'react'
 import {
@@ -19,31 +19,26 @@ import { useMediaFiles, useUploadMedia } from '@/hooks/useMedia'
 import { mediaFileUrl } from '@/lib/media-api'
 import { useToast } from '@/store/toast'
 import type { MediaFile } from '@/types/api'
-import type { EvidenceDocumentType } from '@/types/compliance'
+
+type MediaDocType = string
 
 const CATEGORIES = [
   { key: '', label: 'Todos' },
-  { key: 'compliance', label: 'Cumplimiento' },
   { key: 'general', label: 'General' },
   { key: 'custody_proof', label: 'Custodia' },
   { key: 'customs', label: 'Aduanas' },
 ]
 
-const DOC_TYPES: { value: EvidenceDocumentType; label: string }[] = [
-  { value: 'land_title', label: 'Titulo de tierra' },
-  { value: 'legal_cert', label: 'Certificado legal' },
-  { value: 'deforestation_report', label: 'Reporte deforestacion' },
-  { value: 'satellite_image', label: 'Imagen satelital' },
-  { value: 'supplier_declaration', label: 'Declaracion proveedor' },
+const DOC_TYPES: { value: MediaDocType; label: string }[] = [
+  { value: 'photo', label: 'Foto' },
   { value: 'transport_doc', label: 'Doc. transporte' },
-  { value: 'geojson_boundary', label: 'Poligono GeoJSON' },
   { value: 'other', label: 'Otro' },
 ]
 
 interface Props {
   open: boolean
   onClose: () => void
-  onSelect: (mediaFileId: string, documentType: EvidenceDocumentType, description?: string) => Promise<void>
+  onSelect: (mediaFileId: string, documentType: MediaDocType, description?: string) => Promise<void>
   excludeIds?: string[]
 }
 
@@ -61,7 +56,7 @@ export default function MediaPickerModal({ open, onClose, onSelect, excludeIds =
   const [category, setCategory] = useState('')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<MediaFile | null>(null)
-  const [docType, setDocType] = useState<EvidenceDocumentType>('other')
+  const [docType, setDocType] = useState<MediaDocType>('other')
   const [description, setDescription] = useState('')
   const [linking, setLinking] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -273,7 +268,7 @@ export default function MediaPickerModal({ open, onClose, onSelect, excludeIds =
 
               <select
                 value={docType}
-                onChange={e => setDocType(e.target.value as EvidenceDocumentType)}
+                onChange={e => setDocType(e.target.value as MediaDocType)}
                 className="text-sm border border-border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20"
               >
                 {DOC_TYPES.map(d => (

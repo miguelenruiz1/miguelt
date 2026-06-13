@@ -22,8 +22,6 @@ class SupplierCreate(BaseModel):
     is_active: bool = True
     notes: str | None = Field(default=None, max_length=2000)
     custom_attributes: dict[str, Any] = {}
-    origin_plot_id: str | None = Field(default=None, max_length=36)
-    origin_plot_code: str | None = Field(default=None, max_length=64)
 
 
 class SupplierUpdate(BaseModel):
@@ -39,8 +37,6 @@ class SupplierUpdate(BaseModel):
     is_active: bool | None = None
     notes: str | None = Field(default=None, max_length=2000)
     custom_attributes: dict[str, Any] | None = None
-    origin_plot_id: str | None = Field(default=None, max_length=36)
-    origin_plot_code: str | None = Field(default=None, max_length=64)
 
 
 class SupplierOut(OrmBase):
@@ -58,8 +54,6 @@ class SupplierOut(OrmBase):
     is_active: bool
     notes: str | None
     custom_attributes: dict[str, Any]
-    origin_plot_id: str | None = None
-    origin_plot_code: str | None = None
     created_by: str | None = None
     updated_by: str | None = None
     created_at: datetime
