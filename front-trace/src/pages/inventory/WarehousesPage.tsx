@@ -6,7 +6,6 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFormValidation } from '@/hooks/useFormValidation'
-import { useIsModuleActive } from '@/hooks/useModules'
 import { CopyableId } from '@/components/inventory/CopyableId'
 import {
   useWarehouses, useCreateWarehouse, useUpdateWarehouse, useDeleteWarehouse,
@@ -35,7 +34,6 @@ function WarehouseModal({
   const create = useCreateWarehouse()
   const update = useUpdateWarehouse()
   const remove = useDeleteWarehouse()
-  const isComplianceActive = useIsModuleActive('compliance')
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   // Address is stored as a JSONB blob server-side. We expose individual
@@ -162,7 +160,7 @@ function WarehouseModal({
               Dirección (opcional)
             </h3>
             <p className="text-xs text-muted-foreground mb-3">
-              Útil para documentos de remisión, ruteo logístico e ICA municipal{isComplianceActive ? ', y trazabilidad EUDR' : ''}.
+              Útil para documentos de remisión, ruteo logístico e ICA municipal.
             </p>
             <div className="space-y-3">
               <div>
@@ -240,9 +238,7 @@ function WarehouseModal({
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                {isComplianceActive
-                  ? 'Las coordenadas GPS son opcionales pero recomendadas si necesitás cumplir EUDR (regulación europea de deforestación) o trazabilidad geográfica de cadena de frío.'
-                  : 'Las coordenadas GPS son opcionales y se usan para mapas y geolocalización en reportes.'}
+                Las coordenadas GPS son opcionales y se usan para mapas y geolocalización en reportes.
               </p>
             </div>
           </div>

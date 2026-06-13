@@ -392,74 +392,6 @@ services:
       retries: 5
       start_period: 20s
 
-  # ─── Compliance Service ────────────────────────────────────────────────────
-  compliance-postgres:
-    image: postgres:16-alpine
-    container_name: compliance-postgres
-    environment:
-      POSTGRES_USER: cmp_svc
-      POSTGRES_PASSWORD: ${CMP_DB_PASSWORD:-cmppass}
-      POSTGRES_DB: compliancedb
-    volumes:
-      - compliance-postgres-data:/var/lib/postgresql/data
-    ports:
-      - "5476:5432"
-    networks:
-      - trace-net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cmp_svc -d compliancedb"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  compliance-api:
-    build:
-      context: ./compliance-service
-      dockerfile: Dockerfile
-    image: compliance-service:latest
-    container_name: compliance-api
-    logging: *default-logging
-    environment:
-      DATABASE_URL: postgresql+asyncpg://cmp_svc:${CMP_DB_PASSWORD:-cmppass}@compliance-postgres:5432/compliancedb
-      REDIS_URL: redis://redis:6379/6
-      USER_SERVICE_URL: http://user-api:8001
-      SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
-      TRACE_SERVICE_URL: http://trace-api:8000
-      MEDIA_SERVICE_URL: http://media-api:8007
-      JWT_SECRET: ${JWT_SECRET:-super-secret-dev-key-change-in-prod}
-      S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN:-s2s-change-me-in-production}
-      GFW_API_KEY: ${GFW_API_KEY:-}
-      SOLANA_NETWORK: ${SOLANA_NETWORK:-devnet}
-      LOG_LEVEL: INFO
-    ports:
-      - "9005:8005"
-    depends_on:
-      compliance-postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      user-api:
-        condition: service_healthy
-      subscription-api:
-        condition: service_healthy
-    networks:
-      - trace-net
-    restart: unless-stopped
-    volumes:
-      - compliance-uploads:/app/uploads
-    command: >
-      sh -c "
-        alembic upgrade head &&
-        uvicorn app.main:app --host 0.0.0.0 --port 8005 --workers 2
-      "
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8005/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
   adminer:
     image: adminer:latest
     container_name: trace-adminer
@@ -610,7 +542,6 @@ services:
       - subscription-api
       - inventory-api
       - integration-api
-      - compliance-api
       - ai-api
       - media-api
     networks:
@@ -636,8 +567,6 @@ volumes:
   subscription-postgres-data:
   inventory-postgres-data:
   integration-postgres-data:
-  compliance-postgres-data:
-  compliance-uploads:
   ai-postgres-data:
   media-postgres-data:
   media-uploads:

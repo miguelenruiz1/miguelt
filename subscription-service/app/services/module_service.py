@@ -66,14 +66,6 @@ MODULE_CATALOG: list[dict] = [
         "dependencies": ["inventory"],
     },
     {
-        "slug": "compliance",
-        "name": "Cumplimiento Normativo",
-        "description": "Gestión de normas regulatorias internacionales (EUDR, USDA, FSSAI). Parcelas, records, validación automática y certificados PDF.",
-        "category": "compliance",
-        "dependencies": ["logistics"],
-        "icon": "ShieldCheck",
-    },
-    {
         "slug": "ai-analysis",
         "name": "Inteligencia Artificial",
         "description": "Análisis de rentabilidad con IA. Insights automáticos, alertas de margen, oportunidades y recomendaciones accionables.",

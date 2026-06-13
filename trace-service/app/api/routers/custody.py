@@ -320,56 +320,6 @@ async def mint_asset(
             except Exception as inner_exc:
                 log.error("mint_failed_status_update_error", asset_id=str(asset.id), exc=str(inner_exc))
 
-        # Auto-create EUDR compliance record if compliance module is active
-        try:
-            from app.core.settings import get_settings
-            settings = get_settings()
-            compliance_url = getattr(settings, 'COMPLIANCE_SERVICE_URL', '')
-            if compliance_url:
-                # Pull quantity from any of the common metadata keys clients
-                # use. Older code only checked "weight", which silently
-                # zero'd out 500 kg lots tagged with "quantity_kg".
-                meta = body.metadata or {}
-                quantity = (
-                    meta.get("quantity_kg")
-                    or meta.get("quantityKg")
-                    or meta.get("weight_kg")
-                    or meta.get("weight")
-                    or meta.get("quantity")
-                    or 0
-                )
-                try:
-                    quantity = float(quantity)
-                except (TypeError, ValueError):
-                    quantity = 0
-                import httpx as _httpx
-                async with _httpx.AsyncClient(timeout=10.0) as hc:
-                    resp = await hc.post(
-                        f"{compliance_url}/api/v1/compliance/records/",
-                        json={
-                            "framework_slug": "eudr",
-                            "asset_id": str(asset.id),
-                            "commodity_type": meta.get("commodity_type")
-                                or meta.get("commodity")
-                                or body.product_type
-                                or "cafe",
-                            "product_description": meta.get("description", body.product_type),
-                            "country_of_production": meta.get("country") or meta.get("country_of_production") or "CO",
-                            "quantity_kg": quantity,
-                            "activity_type": "export",
-                        },
-                        headers={
-                            "X-Tenant-Id": request.headers.get("X-Tenant-Id", "default"),
-                            "X-Service-Token": settings.S2S_SERVICE_TOKEN,
-                        },
-                    )
-                    if resp.status_code == 201:
-                        log.info("auto_compliance_record_created", asset_id=str(asset.id))
-                    else:
-                        log.info("auto_compliance_record_skipped", asset_id=str(asset.id), status=resp.status_code)
-        except Exception as exc:
-            log.warning("auto_compliance_record_failed", asset_id=str(asset.id), exc=str(exc))
-
         # Re-read asset from a fresh session to get updated blockchain fields
         async with get_db() as read_session:
             from app.repositories.custody_repo import AssetRepository
@@ -631,87 +581,9 @@ async def burn(
             user_id=request.headers.get("X-User-Id", "unknown"),
             tenant_id=str(tenant_id),
         )
-        # Auto-generate EUDR compliance certificate if a ready record exists
-        await _try_auto_certificate(asset_id, tenant_id)
 
     code = status.HTTP_200_OK if was_cached else status.HTTP_201_CREATED
     return ORJSONResponse(status_code=code, content=result)
-
-
-async def _try_auto_certificate(asset_id: uuid.UUID, tenant_id: uuid.UUID) -> None:
-    """Fire-and-forget: check compliance-service for a ready record and auto-generate certificate."""
-    try:
-        import httpx
-        from app.core.settings import get_settings
-        settings = get_settings()
-        base = settings.COMPLIANCE_SERVICE_URL.rstrip("/")
-
-        async with httpx.AsyncClient(timeout=15.0) as http:
-            # 1. Get compliance records for this asset
-            resp = await http.get(
-                f"{base}/api/v1/compliance/assets/{asset_id}",
-                headers={"X-Tenant-Id": str(tenant_id), "X-Service-Token": settings.S2S_SERVICE_TOKEN},
-            )
-            if resp.status_code != 200:
-                return
-
-            records = resp.json()
-            if not records:
-                return
-
-            for record in records:
-                rid = record.get("id")
-                status_val = record.get("compliance_status", "")
-
-                # 2. Validate the record first (this persists the status)
-                await http.get(
-                    f"{base}/api/v1/compliance/records/{rid}/validate",
-                    headers={"X-Tenant-Id": str(tenant_id), "X-Service-Token": settings.S2S_SERVICE_TOKEN},
-                )
-
-                # 3. Re-check status
-                rec_resp = await http.get(
-                    f"{base}/api/v1/compliance/records/{rid}",
-                    headers={"X-Tenant-Id": str(tenant_id), "X-Service-Token": settings.S2S_SERVICE_TOKEN},
-                )
-                if rec_resp.status_code != 200:
-                    continue
-                updated = rec_resp.json()
-                status_val = updated.get("compliance_status", "")
-
-                if status_val not in ("ready", "declared", "compliant"):
-                    log.info("auto_cert_skipped", asset_id=str(asset_id), record_id=rid, status=status_val)
-                    continue
-
-                # 4. Check if certificate already exists
-                cert_resp = await http.get(
-                    f"{base}/api/v1/compliance/records/{rid}/certificate",
-                    headers={"X-Tenant-Id": str(tenant_id), "X-Service-Token": settings.S2S_SERVICE_TOKEN},
-                )
-                if cert_resp.status_code == 200:
-                    existing = cert_resp.json()
-                    if existing.get("status") == "active":
-                        log.info("auto_cert_exists", asset_id=str(asset_id), cert=existing.get("certificate_number"))
-                        continue
-
-                # 5. Generate certificate
-                gen_resp = await http.post(
-                    f"{base}/api/v1/compliance/records/{rid}/certificate",
-                    headers={"X-Tenant-Id": str(tenant_id), "X-Service-Token": settings.S2S_SERVICE_TOKEN},
-                )
-                if gen_resp.status_code in (200, 201):
-                    cert_data = gen_resp.json()
-                    log.info(
-                        "auto_cert_generated",
-                        asset_id=str(asset_id),
-                        record_id=rid,
-                        certificate_number=cert_data.get("certificate_number"),
-                    )
-                else:
-                    log.warning("auto_cert_failed", asset_id=str(asset_id), record_id=rid, status=gen_resp.status_code, body=gen_resp.text[:200])
-
-    except Exception as exc:
-        log.warning("auto_cert_error", asset_id=str(asset_id), exc=str(exc))
 
 
 # ─── Generic Event Endpoint (Phase 1A) ────────────────────────────────────────

@@ -314,21 +314,15 @@ export function WorkflowEventModal({ asset, action, open, onClose }: Props) {
             files={stagedFiles['evidence'] ?? []}
             onAdd={(files) => addFiles('evidence', files)}
             onRemove={(idx) => removeFile('evidence', idx)}
-            isCompliance={false}
           />
         </div>
 
-        {/* Compliance document uploads */}
+        {/* Document uploads */}
         {requirements.length > 0 && (
           <div className="border-t border-border pt-3 mt-1">
             <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5" />
               Documentación
-              {docReqs?.compliance_active && (
-                <span className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-full border border-amber-200 font-medium">
-                  EUDR
-                </span>
-              )}
             </p>
             <div className="flex flex-col gap-2.5">
               {requirements.map((req) => (
@@ -338,7 +332,6 @@ export function WorkflowEventModal({ asset, action, open, onClose }: Props) {
                   files={stagedFiles[req.type] ?? []}
                   onAdd={(files) => addFiles(req.type, files)}
                   onRemove={(idx) => removeFile(req.type, idx)}
-                  isCompliance={docReqs?.compliance_requirements?.some(r => r.type === req.type) ?? false}
                 />
               ))}
             </div>
@@ -357,13 +350,11 @@ function DocumentDropZone({
   files,
   onAdd,
   onRemove,
-  isCompliance,
 }: {
   requirement: DocumentRequirement
   files: File[]
   onAdd: (files: FileList | null) => void
   onRemove: (idx: number) => void
-  isCompliance: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const maxCount = requirement.max_count ?? 1
@@ -391,11 +382,6 @@ function DocumentDropZone({
           <span className="text-xs font-medium text-foreground">{requirement.label}</span>
           {requirement.required && (
             <span className="text-[9px] font-bold text-amber-600">*</span>
-          )}
-          {isCompliance && (
-            <span className="text-[9px] px-1 py-0.5 bg-indigo-50 text-indigo-600 rounded border border-indigo-200 font-medium">
-              EUDR
-            </span>
           )}
         </div>
         {files.length > 0 && (
@@ -456,7 +442,7 @@ function DocumentDropZone({
       {requirement.required && files.length === 0 && (
         <div className="flex items-center gap-1 mt-1">
           <AlertTriangle className="h-3 w-3 text-amber-500" />
-          <span className="text-[10px] text-amber-600">Requerido{isCompliance ? ' por normativa EUDR' : ''}</span>
+          <span className="text-[10px] text-amber-600">Requerido</span>
         </div>
       )}
     </div>

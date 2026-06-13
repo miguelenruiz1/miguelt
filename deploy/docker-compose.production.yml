@@ -61,8 +61,6 @@ services:
         condition: service_healthy
       integration-api:
         condition: service_healthy
-      compliance-api:
-        condition: service_healthy
       media-api:
         condition: service_healthy
     restart: unless-stopped
@@ -85,7 +83,6 @@ services:
       HELIUS_API_KEY: ${HELIUS_API_KEY}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
       SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
-      COMPLIANCE_SERVICE_URL: http://compliance-api:8005
       MEDIA_SERVICE_URL: http://media-api:8007
       STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
@@ -263,45 +260,6 @@ services:
       start_period: 20s
     command: >
       sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8004 --workers 2"
-
-  # ── Compliance API ───────────────────────────────────────────────────────
-  compliance-api:
-    build: ../compliance-service
-    environment:
-      DATABASE_URL: ${COMPLIANCE_DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}/6
-      JWT_SECRET: ${JWT_SECRET}
-      S2S_SERVICE_TOKEN: ${S2S_SERVICE_TOKEN}
-      USER_SERVICE_URL: http://user-api:8001
-      SUBSCRIPTION_SERVICE_URL: http://subscription-api:8002
-      TRACE_SERVICE_URL: http://trace-api:8000
-      MEDIA_SERVICE_URL: http://media-api:8007
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
-      GFW_API_KEY: ${GFW_API_KEY:-}
-      SOLANA_NETWORK: ${SOLANA_NETWORK:-devnet}
-      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      AWS_BUCKET_NAME: ${AWS_S3_BUCKET:-tracelog-certificates}
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      user-api:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - trace-net
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8005/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-    command: >
-      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8005 --workers 2"
 
   # ── AI API ───────────────────────────────────────────────────────────────
   ai-api:

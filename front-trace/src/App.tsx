@@ -109,23 +109,7 @@ const MediaPage = lazy(() => import('@/pages/MediaPage'))
 
 // Guards (synchronous — used as wrappers, not pages)
 import { ModuleGuard } from '@/components/inventory/ModuleGuard'
-import { ComplianceGuard } from '@/components/compliance/ComplianceGuard'
 import { FeatureGuard } from '@/components/inventory/FeatureGuard'
-
-// ── Compliance pages (lazy) ────────────────────────────────────────────────
-const FrameworksPage = lazy(() => import('@/pages/compliance/FrameworksPage'))
-const ActivationsPage = lazy(() => import('@/pages/compliance/ActivationsPage'))
-const PlotsPage = lazy(() => import('@/pages/compliance/PlotsPage'))
-const CreatePlotPage = lazy(() => import('@/pages/compliance/CreatePlotPage'))
-const PlotDetailPage = named(() => import('@/pages/compliance/PlotDetailPage'), 'PlotDetailPage')
-const RecordsPage = lazy(() => import('@/pages/compliance/RecordsPage'))
-const RecordDetailPage = lazy(() => import('@/pages/compliance/RecordDetailPage'))
-const DDSStatusPage = lazy(() => import('@/pages/compliance/DDSStatusPage'))
-const CertificatesPage = lazy(() => import('@/pages/compliance/CertificatesPage'))
-const VerifyCertificatePage = lazy(() => import('@/pages/compliance/VerifyCertificatePage'))
-const ComplianceIntegrationsPage = named(() => import('@/pages/compliance/IntegrationsPage'), 'ComplianceIntegrationsPage')
-const CertificationsPage = lazy(() => import('@/pages/compliance/CertificationsPage'))
-const LegalResourcesPage = lazy(() => import('@/pages/compliance/LegalResourcesPage'))
 
 // ── Platform pages (lazy) ──────────────────────────────────────────────────
 const PlatformDashboardPage = named(() => import('@/pages/platform/PlatformDashboardPage'), 'PlatformDashboardPage')
@@ -150,7 +134,6 @@ const router = createBrowserRouter([
   // ─── Landing routes retired — marketing lives in Drupal externally.
   //     Redirect old paths to /login so stale links don't 404. ──────────────
   { path: '/home',               element: <Navigate to="/login" replace /> },
-  { path: '/eudr',               element: <Navigate to="/login" replace /> },
   { path: '/landing',            element: <Navigate to="/login" replace /> },
 
   // ─── Public routes (no layout) ──────────────────────────────────────────────
@@ -159,7 +142,6 @@ const router = createBrowserRouter([
   { path: '/accept-invitation',  element: <AcceptInvitationPage /> },
   { path: '/forgot-password',    element: <ForgotPasswordPage /> },
   { path: '/reset-password',     element: <ResetPasswordPage /> },
-  { path: '/verify/:certificateNumber', element: <React.Suspense fallback={null}><VerifyCertificatePage /></React.Suspense> },
   { path: '/verificar', element: <PublicVerifyPage /> },
   { path: '/verificar/:batchNumber', element: <PublicVerifyPage /> },
 
@@ -845,103 +827,6 @@ const router = createBrowserRouter([
       {
         path: 'configuracion/flujo-de-trabajo',
         element: <ProtectedRoute><WorkflowBuilderPage /></ProtectedRoute>,
-      },
-      // ── Cumplimiento (compliance module-gated) ──────────────────────────────
-      {
-        path: 'cumplimiento/frameworks',
-        element: (
-          <React.Suspense fallback={null}>
-            <ComplianceGuard><FrameworksPage /></ComplianceGuard>
-          </React.Suspense>
-        ),
-      },
-      {
-        path: 'cumplimiento/activaciones',
-        element: (
-          <React.Suspense fallback={null}>
-            <ComplianceGuard><ActivationsPage /></ComplianceGuard>
-          </React.Suspense>
-        ),
-      },
-      {
-        path: 'cumplimiento/parcelas',
-        element: (
-          <React.Suspense fallback={null}>
-            <ComplianceGuard><PlotsPage /></ComplianceGuard>
-          </React.Suspense>
-        ),
-      },
-      {
-        path: 'cumplimiento/parcelas/nueva',
-        element: (
-          <React.Suspense fallback={null}>
-            <ComplianceGuard><CreatePlotPage /></ComplianceGuard>
-          </React.Suspense>
-        ),
-      },
-      {
-        path: 'cumplimiento/parcelas/:plotId',
-        element: (
-          <React.Suspense fallback={null}>
-            <ComplianceGuard><PlotDetailPage /></ComplianceGuard>
-          </React.Suspense>
-        ),
-      },
-      {
-        path: 'cumplimiento/registros',
-        element: (
-          <React.Suspense fallback={null}>
-            <ComplianceGuard><RecordsPage /></ComplianceGuard>
-          </React.Suspense>
-        ),
-      },
-      {
-        path: 'cumplimiento/registros/:id',
-        element: (
-          <React.Suspense fallback={null}>
-            <ComplianceGuard><RecordDetailPage /></ComplianceGuard>
-          </React.Suspense>
-        ),
-      },
-      {
-        path: 'cumplimiento/dds-status',
-        element: (
-          <React.Suspense fallback={null}>
-            <ComplianceGuard><DDSStatusPage /></ComplianceGuard>
-          </React.Suspense>
-        ),
-      },
-      {
-        path: 'cumplimiento/certificados',
-        element: (
-          <React.Suspense fallback={null}>
-            <ComplianceGuard><CertificatesPage /></ComplianceGuard>
-          </React.Suspense>
-        ),
-      },
-      {
-        path: 'cumplimiento/certificaciones',
-        element: (
-          <React.Suspense fallback={null}>
-            <ComplianceGuard><CertificationsPage /></ComplianceGuard>
-          </React.Suspense>
-        ),
-      },
-      {
-        path: 'cumplimiento/biblioteca-legal',
-        element: (
-          <React.Suspense fallback={null}>
-            <ComplianceGuard><LegalResourcesPage /></ComplianceGuard>
-          </React.Suspense>
-        ),
-      },
-      {
-        path: 'cumplimiento/integraciones',
-        element: (
-          <React.Suspense fallback={null}>
-            <ComplianceGuard><ComplianceIntegrationsPage /></ComplianceGuard>
-          </React.Suspense>
-        ),
       },
 
       { path: '*', element: <NotFoundPage /> },

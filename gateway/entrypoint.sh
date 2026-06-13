@@ -106,9 +106,6 @@ server {
     location /api/v1/resolutions     { proxy_pass https://${INTEGRATION_UPSTREAM}; proxy_set_header Host ${INTEGRATION_UPSTREAM}; }
     location /api/v1/webhooks        { proxy_pass https://${INTEGRATION_UPSTREAM}; proxy_set_header Host ${INTEGRATION_UPSTREAM}; }
 
-    # Compliance Service
-    location /api/v1/compliance      { proxy_pass https://${COMPLIANCE_UPSTREAM}; proxy_set_header Host ${COMPLIANCE_UPSTREAM}; }
-
     # AI Service
     location /api/v1/analyze         { proxy_pass https://${AI_UPSTREAM}; proxy_set_header Host ${AI_UPSTREAM}; }
     location /api/v1/settings        { proxy_pass https://${AI_UPSTREAM}; proxy_set_header Host ${AI_UPSTREAM}; }

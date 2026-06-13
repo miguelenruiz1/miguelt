@@ -3,13 +3,15 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutGrid, Wallet, Box, Activity, Building2, Kanban, FileText, FolderTree,
   Settings, ChevronRight, CircleHelp, Users, ShieldCheck, Eye, ListChecks,
-  LogOut, CreditCard, Grid3x3, Warehouse, ArrowLeftRight, ShoppingCart,
+  LogOut, CreditCard, Warehouse, ArrowLeftRight, ShoppingCart,
   Percent, BarChart3, Banknote, Zap, Fingerprint, ScrollText, Factory, Mail, Send,
   Crown, Store, TrendingUp, UserCog, UserPlus, FlaskConical,
   ShoppingBag, Tag, BellRing, BookText, Shapes,
-  Users2, Globe, ScanLine, PackageCheck, RefreshCw, Scale, Search,
+  Users2, Globe, ScanLine, PackageCheck, RefreshCw, Scale,
   CheckCircle, MapPin, Award, ChevronsUpDown, Sparkles,
-  Ship, Plane, Shield, FolderOpen, Link2, Key,
+  Ship, Plane, Shield, Link2, Key,
+  Home, Images, Layers, Handshake, ClipboardCheck, ClipboardList, Network, Workflow, Receipt,
+  Truck, Boxes, UsersRound,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLiveness } from '@/hooks/useHealth'
@@ -23,11 +25,11 @@ import { useFeatureToggles } from '@/hooks/useInventory'
 const topItems = [
   { to: '/marketplace', icon: Store, label: 'Marketplace' },
   { to: '/', icon: LayoutGrid, label: 'Dashboard' },
-  { to: '/media', icon: FolderOpen, label: 'Media' },
+  { to: '/media', icon: Images, label: 'Media' },
 ]
 
 const invTop = [
-  { to: '/inventario', icon: LayoutGrid, label: 'Inicio', permission: 'inventory.view' },
+  { to: '/inventario', icon: Home, label: 'Inicio', permission: 'inventory.view' },
   { to: '/inventario/rentabilidad', icon: TrendingUp, label: 'Rentabilidad', permission: 'inventory.view' },
   { to: '/inventario/alertas', icon: BellRing, label: 'Alertas', permission: 'inventory.view' },
 ]
@@ -45,7 +47,7 @@ const invGroups = [
     items: [
       { to: '/inventario/bodegas', icon: Warehouse, label: 'Bodegas', permission: 'inventory.view' },
       { to: '/inventario/movimientos', icon: ArrowLeftRight, label: 'Movimientos', permission: 'inventory.view' },
-      { to: '/inventario/lotes', icon: Grid3x3, label: 'Lotes', permission: 'inventory.view', feature: 'lotes' },
+      { to: '/inventario/lotes', icon: Layers, label: 'Lotes', permission: 'inventory.view', feature: 'lotes' },
       { to: '/inventario/seriales', icon: Fingerprint, label: 'Seriales', permission: 'inventory.view', feature: 'seriales' },
       { to: '/inventario/conteos', icon: ListChecks, label: 'Conteo', permission: 'inventory.view', feature: 'conteo' },
       { to: '/inventario/escaner', icon: ScanLine, label: 'Escaner', permission: 'inventory.view', feature: 'escaner' },
@@ -54,14 +56,14 @@ const invGroups = [
     ],
   },
   {
-    key: 'comercial', icon: Users2, label: 'Compras y Ventas',
+    key: 'comercial', icon: Handshake, label: 'Compras y Ventas',
     items: [
       { to: '/inventario/socios', icon: Users2, label: 'Socios', permission: 'inventory.view' },
       { to: '/inventario/compras', icon: ShoppingCart, label: 'Compras', permission: 'inventory.view' },
       { to: '/inventario/ventas', icon: ShoppingBag, label: 'Ventas', permission: 'inventory.view' },
       { to: '/inventario/portal', icon: Globe, label: 'Portal Clientes', permission: 'inventory.view' },
       { to: '/inventario/precios-clientes', icon: Tag, label: 'Precios', permission: 'inventory.view', feature: 'precios' },
-      { to: '/inventario/aprobaciones', icon: ShieldCheck, label: 'Aprobaciones', permission: 'inventory.view', feature: 'aprobaciones' },
+      { to: '/inventario/aprobaciones', icon: ClipboardCheck, label: 'Aprobaciones', permission: 'inventory.view', feature: 'aprobaciones' },
     ],
   },
   {
@@ -85,27 +87,16 @@ const invGroups = [
 ]
 
 const produccionItems = [
-  { to: '/produccion', icon: LayoutGrid, label: 'Inicio', permission: 'production.view' },
-  { to: '/produccion/ordenes', icon: Factory, label: 'Ordenes', permission: 'production.view' },
+  { to: '/produccion', icon: Home, label: 'Inicio', permission: 'production.view' },
+  { to: '/produccion/ordenes', icon: ClipboardList, label: 'Ordenes', permission: 'production.view' },
   { to: '/produccion/recetas', icon: ScrollText, label: 'Recetas (BOM)', permission: 'production.view' },
   { to: '/produccion/recursos', icon: Users2, label: 'Recursos', permission: 'production.view' },
-  { to: '/produccion/mrp', icon: Search, label: 'MRP', permission: 'production.view' },
+  { to: '/produccion/mrp', icon: Network, label: 'MRP', permission: 'production.view' },
   { to: '/produccion/emisiones', icon: Send, label: 'Emisiones', permission: 'production.view' },
   { to: '/produccion/recibos', icon: PackageCheck, label: 'Recibos', permission: 'production.view' },
   { to: '/produccion/reportes', icon: BarChart3, label: 'Reportes', permission: 'production.view' },
 ]
 
-const cumplimientoItems = [
-  { to: '/cumplimiento/frameworks', icon: Globe, label: 'Marcos Normativos' },
-  { to: '/cumplimiento/activaciones', icon: CheckCircle, label: 'Mis Normas' },
-  { to: '/cumplimiento/parcelas', icon: MapPin, label: 'Parcelas' },
-  { to: '/cumplimiento/registros', icon: FileText, label: 'Registros' },
-  { to: '/cumplimiento/dds-status', icon: Send, label: 'DDS TRACES NT' },
-  { to: '/cumplimiento/certificados', icon: Award, label: 'Certificados' },
-  { to: '/cumplimiento/certificaciones', icon: Shield, label: 'Certificaciones' },
-  { to: '/cumplimiento/biblioteca-legal', icon: CircleHelp, label: 'Biblioteca legal' },
-  { to: '/cumplimiento/integraciones', icon: Key, label: 'Integraciones' },
-]
 
 const logisticaItems = [
   { to: '/tracking', icon: Kanban, label: 'Seguimiento' },
@@ -113,18 +104,18 @@ const logisticaItems = [
   { to: '/wallets', icon: Wallet, label: 'Custodios' },
   { to: '/organizations', icon: Building2, label: 'Organizaciones' },
   { to: '/logistica/analiticas', icon: BarChart3, label: 'Analiticas' },
-  { to: '/configuracion/flujo-de-trabajo', icon: Settings, label: 'Flujo de trabajo' },
+  { to: '/configuracion/flujo-de-trabajo', icon: Workflow, label: 'Flujo de trabajo' },
 ]
 
 
 const empresaAlwaysItems = [
   { to: '/empresa/suscripcion', icon: CreditCard, label: 'Suscripción', permission: 'subscription.view' },
-  { to: '/settings/billing',    icon: Banknote,    label: 'Facturación', permission: 'subscription.view' },
+  { to: '/settings/billing',    icon: Receipt,     label: 'Facturación', permission: 'subscription.view' },
 ]
 const empresaModuleItems: typeof empresaAlwaysItems = []
 
 const equipoItems = [
-  { to: '/equipo/usuarios',  icon: Users,         label: 'Usuarios',  permission: 'admin.users' },
+  { to: '/equipo/usuarios',  icon: UserCog,       label: 'Usuarios',  permission: 'admin.users' },
   { to: '/equipo/roles',     icon: ShieldCheck,   label: 'Roles',     permission: 'admin.roles' },
   { to: '/equipo/auditoria', icon: Eye,           label: 'Auditoria', permission: 'admin.audit' },
 ]
@@ -150,10 +141,10 @@ function SubNavLink({ to, label, onClick }: { to: string; label: string; onClick
   return (
     <NavLink key={to} to={to} onClick={handleClick}
       className={({ isActive }) => cn(
-        'flex items-center rounded-md py-1.5 pl-9 pr-2.5 text-[13px] transition-colors duration-150',
+        'flex items-center py-1.5 pl-11 pr-3.5 text-[13px] border-l-2 transition-colors duration-150',
         isActive
-          ? 'text-[color:var(--sidebar-foreground-strong)] font-medium bg-[color:var(--sidebar-item-active)]'
-          : 'text-[color:var(--sidebar-foreground)] hover:text-[color:var(--sidebar-foreground-strong)] hover:bg-[color:var(--sidebar-item-hover)]',
+          ? 'text-[color:var(--sidebar-foreground-strong)] font-medium bg-[color:var(--sidebar-item-active)] border-[color:var(--sidebar-icon-active)]'
+          : 'border-transparent text-[color:var(--sidebar-foreground)] hover:text-[color:var(--sidebar-foreground-strong)] hover:bg-[color:var(--sidebar-item-hover)]',
       )}>
       {label}
     </NavLink>
@@ -200,10 +191,10 @@ function NavItem({ to, icon: Icon, label, onClick, collapsed }: {
       onClick={handleClick}
       className={({ isActive }) =>
         cn(
-          'flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors duration-150',
+          'flex items-center gap-2.5 px-3.5 py-2 text-[13px] border-l-2 transition-colors duration-150',
           isActive
-            ? 'bg-[color:var(--sidebar-item-active)] text-[color:var(--sidebar-foreground-strong)] font-medium border-l-[2px] border-[color:var(--sidebar-icon-active)] -ml-[2px]'
-            : 'text-[color:var(--sidebar-foreground)] hover:bg-[color:var(--sidebar-item-hover)] hover:text-[color:var(--sidebar-foreground-strong)] font-normal',
+            ? 'bg-[color:var(--sidebar-item-active)] text-[color:var(--sidebar-foreground-strong)] font-medium border-[color:var(--sidebar-icon-active)]'
+            : 'border-transparent text-[color:var(--sidebar-foreground)] hover:bg-[color:var(--sidebar-item-hover)] hover:text-[color:var(--sidebar-foreground-strong)] font-normal',
         )
       }
     >
@@ -221,7 +212,7 @@ function NavItem({ to, icon: Icon, label, onClick, collapsed }: {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="px-3 pt-4 pb-1 text-[10.5px] font-medium uppercase tracking-[0.14em] select-none text-[color:var(--sidebar-muted)]">
+    <p className="px-3 pt-4 pb-1 text-[14px] font-semibold uppercase tracking-[0.10em] select-none text-[color:var(--sidebar-muted)]">
       {children}
     </p>
   )
@@ -229,20 +220,30 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 /* ── Collapsible section ──────────────────────────────────────────────────── */
 
-function Section({ label, isOpen, onToggle, children, collapsed }: {
-  label: string; isOpen: boolean; onToggle: () => void; children: React.ReactNode; accent?: string; collapsed?: boolean
+function Section({ label, icon: Icon, isOpen, onToggle, children, collapsed }: {
+  label: string; icon: React.ElementType; isOpen: boolean; onToggle: () => void; children: React.ReactNode; accent?: string; collapsed?: boolean
 }) {
   if (collapsed) {
-    return <div className="pt-2 space-y-0.5">{children}</div>
+    return (
+      <div className="pt-2 space-y-0.5">
+        <div className="flex justify-center pb-1" title={label}>
+          <Icon strokeWidth={1.5} className="h-4 w-4 text-[color:var(--sidebar-muted)]" />
+        </div>
+        {children}
+      </div>
+    )
   }
   return (
     <div>
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-3 pt-4 pb-1 text-[10.5px] font-medium uppercase tracking-[0.14em] select-none text-[color:var(--sidebar-muted)] hover:text-[color:var(--sidebar-foreground)] transition-colors"
+        className="w-full flex items-center justify-between gap-2 px-3.5 py-2 mt-2 text-[14px] font-semibold uppercase tracking-[0.10em] select-none border-l-2 border-transparent text-[color:var(--sidebar-muted)] hover:bg-[color:var(--sidebar-item-hover)] hover:text-[color:var(--sidebar-foreground)] transition-colors"
       >
-        <span>{label}</span>
-        <ChevronRight className={cn('h-3 w-3 transition-transform duration-200', isOpen && 'rotate-90')} />
+        <span className="flex items-center gap-2 min-w-0">
+          <Icon strokeWidth={1.75} className="h-4 w-4 shrink-0" />
+          <span className="truncate">{label}</span>
+        </span>
+        <ChevronRight className={cn('h-3 w-3 shrink-0 transition-transform duration-200', isOpen && 'rotate-90')} />
       </button>
       <div className={cn(
         'overflow-hidden transition-all duration-200',
@@ -303,13 +304,12 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
     }
   }, [isDragging, width])
 
-  const [logisticaOpen, setLogisticaOpen] = useState(true)
-  const [inventarioOpen, setInventarioOpen] = useState(true)
-  const [equipoOpen, setEquipoOpen] = useState(true)
+  const [logisticaOpen, setLogisticaOpen] = useState(false)
+  const [inventarioOpen, setInventarioOpen] = useState(false)
+  const [equipoOpen, setEquipoOpen] = useState(false)
   const [empresaOpen, setEmpresaOpen] = useState(false)
-  const [plataformaOpen, setPlataformaOpen] = useState(true)
-  const [produccionOpen, setProduccionOpen] = useState(true)
-  const [cumplimientoOpen, setCumplimientoOpen] = useState(true)
+  const [plataformaOpen, setPlataformaOpen] = useState(false)
+  const [produccionOpen, setProduccionOpen] = useState(false)
   const [openInvGroup, setOpenInvGroup] = useState<string | null>(null)
   const collapsed = width < COLLAPSE_W
 
@@ -330,10 +330,9 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
   const isInventoryActive = useIsModuleActive('inventory')
   const isEInvoicingActive = useIsModuleActive('electronic-invoicing')
   const isProductionActive = useIsModuleActive('production')
-  const isComplianceActive = useIsModuleActive('compliance')
 
   const visibleEquipoItems = equipoItems.filter((item) => hasPermission(item.permission))
-  const anyModuleActive = isLogisticsActive || isInventoryActive || isEInvoicingActive || isProductionActive || isComplianceActive
+  const anyModuleActive = isLogisticsActive || isInventoryActive || isEInvoicingActive || isProductionActive
   const visibleEmpresaItems = [
     ...empresaAlwaysItems.filter((item) => hasPermission(item.permission)),
     ...(anyModuleActive ? empresaModuleItems.filter((item) => hasPermission(item.permission)) : []),
@@ -400,7 +399,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       {!collapsed && <div className="mx-3 h-px bg-[color:var(--sidebar-divider)]" />}
 
       {/* ── Navigation ──────────────────────────────────────────────── */}
-      <nav className="flex-1 px-2 py-2 overflow-y-auto sidebar-scroll">
+      <nav className="flex-1 px-0 py-2 overflow-y-auto sidebar-scroll">
         <div className="space-y-0.5">
           {topItems.map(({ to, icon, label }) => (
             <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
@@ -409,7 +408,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
         {/* Logistica */}
         {isLogisticsActive && (
-          <Section label="Logistica" isOpen={logisticaOpen} onToggle={() => setLogisticaOpen(o => !o)} collapsed={collapsed}>
+          <Section label="Logistica" icon={Truck} isOpen={logisticaOpen} onToggle={() => setLogisticaOpen(o => !o)} collapsed={collapsed}>
             {logisticaItems.map(({ to, icon, label }) => (
               <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
             ))}
@@ -418,7 +417,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
         {/* Inventario */}
         {isInventoryActive && hasAnyInvItem && (
-          <Section label="Inventario" isOpen={inventarioOpen} onToggle={() => setInventarioOpen(o => !o)} collapsed={collapsed}>
+          <Section label="Inventario" icon={Boxes} isOpen={inventarioOpen} onToggle={() => setInventarioOpen(o => !o)} collapsed={collapsed}>
             {filterPerm(invTop).map(({ to, icon, label }) => (
               <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
             ))}
@@ -438,9 +437,9 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                       <button
                         onClick={() => setOpenInvGroup(isGroupOpen ? null : group.key)}
                         className={cn(
-                          'w-full flex items-center gap-2.5 px-2.5 py-1.5 text-[13px] rounded-md transition-colors duration-150',
+                          'w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] border-l-2 border-transparent transition-colors duration-150',
                           isGroupOpen
-                            ? 'bg-[color:var(--sidebar-item-active)] text-[color:var(--sidebar-foreground-strong)] font-medium'
+                            ? 'text-[color:var(--sidebar-foreground-strong)] font-medium hover:bg-[color:var(--sidebar-item-hover)]'
                             : 'text-[color:var(--sidebar-foreground)] hover:bg-[color:var(--sidebar-item-hover)] hover:text-[color:var(--sidebar-foreground-strong)]',
                         )}
                       >
@@ -464,28 +463,16 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
         {/* Produccion (modulo independiente) */}
         {isProductionActive && (
-          <Section label="Produccion" isOpen={produccionOpen} onToggle={() => setProduccionOpen(o => !o)} collapsed={collapsed}>
+          <Section label="Produccion" icon={Factory} isOpen={produccionOpen} onToggle={() => setProduccionOpen(o => !o)} collapsed={collapsed}>
             {produccionItems.filter(i => hasPermission(i.permission)).map(({ to, icon, label }) => (
               <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
             ))}
           </Section>
         )}
 
-        {/* Cumplimiento */}
-        {isComplianceActive && (
-          <Section label="Cumplimiento" isOpen={cumplimientoOpen} onToggle={() => setCumplimientoOpen(o => !o)} collapsed={collapsed}>
-            {cumplimientoItems.map(({ to, icon, label }) => (
-              <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
-            ))}
-          </Section>
-        )}
-
-        {/* Separador */}
-        {!collapsed && <div className="mx-3 my-2 h-px bg-card/[0.06]" />}
-
         {/* Mi Equipo */}
         {visibleEquipoItems.length > 0 && (
-          <Section label="Equipo" isOpen={equipoOpen} onToggle={() => setEquipoOpen(o => !o)} collapsed={collapsed}>
+          <Section label="Equipo" icon={UsersRound} isOpen={equipoOpen} onToggle={() => setEquipoOpen(o => !o)} collapsed={collapsed}>
             {visibleEquipoItems.map(({ to, icon, label }) => (
               <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
             ))}
@@ -494,7 +481,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
         {/* Mi Empresa */}
         {visibleEmpresaItems.length > 0 && (
-          <Section label="Empresa" isOpen={empresaOpen} onToggle={() => setEmpresaOpen(o => !o)} collapsed={collapsed}>
+          <Section label="Empresa" icon={Building2} isOpen={empresaOpen} onToggle={() => setEmpresaOpen(o => !o)} collapsed={collapsed}>
             {visibleEmpresaItems.map(({ to, icon, label }) => (
               <NavItem key={to} to={to} icon={icon} label={label} onClick={onClose} collapsed={collapsed} />
             ))}
@@ -503,15 +490,15 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
         {/* Plataforma */}
         {isSuperuser && (
-          <Section label="Plataforma" isOpen={plataformaOpen} onToggle={() => setPlataformaOpen(o => !o)} collapsed={collapsed}>
+          <Section label="Plataforma" icon={Crown} isOpen={plataformaOpen} onToggle={() => setPlataformaOpen(o => !o)} collapsed={collapsed}>
             <NavItem to="/platform" icon={BarChart3} label="Panel" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/system" icon={Activity} label="Sistema" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/tenants" icon={Building2} label="Empresas" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/analytics" icon={TrendingUp} label="Analitica" onClick={onClose} collapsed={collapsed} />
-            <NavItem to="/platform/sales" icon={TrendingUp} label="Ventas" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/sales" icon={ShoppingBag} label="Ventas" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/plans" icon={Box} label="Planes" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/subscriptions" icon={CreditCard} label="Suscripciones" onClick={onClose} collapsed={collapsed} />
-            <NavItem to="/platform/users" icon={Globe} label="Usuarios" onClick={onClose} collapsed={collapsed} />
+            <NavItem to="/platform/users" icon={Users} label="Usuarios" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/team" icon={UserCog} label="Equipo" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/onboard" icon={UserPlus} label="Onboarding" onClick={onClose} collapsed={collapsed} />
             <NavItem to="/platform/payments" icon={Banknote} label="Pagos" onClick={onClose} collapsed={collapsed} />
