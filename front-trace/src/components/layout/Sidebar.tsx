@@ -46,7 +46,8 @@ const invGroups = [
     key: 'bodega', icon: Warehouse, label: 'Bodega y Despacho',
     items: [
       { to: '/inventario/bodegas', icon: Warehouse, label: 'Bodegas', permission: 'inventory.view' },
-      { to: '/inventario/movimientos', icon: ArrowLeftRight, label: 'Movimientos', permission: 'inventory.view' },
+      { to: '/inventario/wm', icon: Boxes, label: 'Almacén (WM)', permission: 'inventory.view' },
+      { to: '/inventario/movimientos', icon: ArrowLeftRight, label: 'Movimientos de stock', permission: 'inventory.view' },
       { to: '/inventario/lotes', icon: Layers, label: 'Lotes', permission: 'inventory.view', feature: 'lotes' },
       { to: '/inventario/seriales', icon: Fingerprint, label: 'Seriales', permission: 'inventory.view', feature: 'seriales' },
       { to: '/inventario/conteos', icon: ListChecks, label: 'Conteo', permission: 'inventory.view', feature: 'conteo' },

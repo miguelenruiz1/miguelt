@@ -18,6 +18,13 @@ from app.db.models.category import Category
 from app.db.models.entity import Product
 from app.db.models.tax import TaxRate, TaxCategory, SalesOrderLineTax
 from app.db.models.warehouse import Warehouse, WarehouseLocation
+from app.db.models.wm import StorageType, StorageSection
+from app.db.models.wm_transfer import (
+    OperationType, TransferRequirement, TransferOrder, TransferOrderLine,
+)
+from app.db.models.wm_route import WMWarehouseConfig, Route, RouteRule
+from app.db.models.wm_putaway import PutawayRule, PackageType, HandlingUnit
+from app.db.models.wm_material import ProductWarehouseData
 from app.db.models.stock import StockLevel, StockMovement, StockReservation
 from app.db.models.supplier import Supplier
 from app.db.models.purchase_order import PurchaseOrder, PurchaseOrderLine, POApprovalLog
@@ -71,6 +78,16 @@ __all__ = [
     "TaxRate", "TaxCategory", "SalesOrderLineTax",
     # Warehouse
     "Warehouse", "WarehouseLocation",
+    # WM (warehouse management foundations)
+    "StorageType", "StorageSection",
+    # WM movement documents (internal bin→bin; NOT freight — that's logistics)
+    "OperationType", "TransferRequirement", "TransferOrder", "TransferOrderLine",
+    # WM multi-step routes
+    "WMWarehouseConfig", "Route", "RouteRule",
+    # WM putaway / packaging
+    "PutawayRule", "PackageType", "HandlingUnit",
+    # WM material master (SAP Gestión de almacenes 1 & 2)
+    "ProductWarehouseData",
     # Stock
     "StockLevel", "StockMovement", "StockReservation",
     # Supplier

@@ -25,6 +25,9 @@ class Warehouse(Base):
     tenant_id:          Mapped[str]           = mapped_column(String(255), nullable=False)
     name:               Mapped[str]           = mapped_column(String(150), nullable=False)
     code:               Mapped[str]           = mapped_column(String(50), nullable=False)
+    # WM: short code used as a prefix in document sequences (transfer orders,
+    # etc.) — SAP "número de almacén" / Odoo warehouse short name.
+    short_code:         Mapped[str | None]    = mapped_column(String(10), nullable=True)
     type:               Mapped[WarehouseType] = mapped_column(
         Enum(WarehouseType, native_enum=False), nullable=False, server_default="main"
     )
@@ -76,6 +79,21 @@ class WarehouseLocation(Base):
     location_type:      Mapped[str]        = mapped_column(
         String(20), nullable=False, server_default="bin"
     )
+    # WM foundations — bin sits under a storage type + section, can be a
+    # physical bin, a logical aggregation, or an interim (SAP 9xx) zone.
+    storage_type_id:    Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("wm_storage_types.id", ondelete="SET NULL"), nullable=True
+    )
+    storage_section_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("wm_storage_sections.id", ondelete="SET NULL"), nullable=True
+    )
+    location_kind:      Mapped[str]        = mapped_column(
+        String(20), nullable=False, server_default="physical"
+    )  # physical|logical|interim
+    height_m:           Mapped[float | None] = mapped_column(Numeric(8, 2), nullable=True)
+    max_volume_m3:      Mapped[float | None] = mapped_column(Numeric(10, 3), nullable=True)
+    is_fixed_bin:       Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="false")
+    barcode:            Mapped[str | None] = mapped_column(String(100), nullable=True)
     is_active:          Mapped[bool]       = mapped_column(Boolean, nullable=False, server_default="true")
     max_weight_kg:      Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
     max_capacity:       Mapped[int | None]   = mapped_column(Integer, nullable=True)

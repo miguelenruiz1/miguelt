@@ -427,7 +427,7 @@ export function MovementsPage() {
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Movimientos</h1>
+        <h1 className="text-2xl font-bold text-foreground">Movimientos de stock (Kardex)</h1>
         <button onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 ">
           <Plus className="h-4 w-4" /> Nuevo movimiento

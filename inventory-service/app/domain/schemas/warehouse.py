@@ -68,6 +68,14 @@ class LocationCreate(BaseModel):
     blocked_outbound: bool = False
     block_reason: str | None = None
     sort_order: int = 0
+    # WM attributes
+    storage_type_id: str | None = None
+    storage_section_id: str | None = None
+    location_kind: str = "physical"
+    height_m: float | None = None
+    max_volume_m3: float | None = None
+    is_fixed_bin: bool = False
+    barcode: str | None = None
 
 
 class LocationUpdate(BaseModel):
@@ -83,6 +91,14 @@ class LocationUpdate(BaseModel):
     blocked_outbound: bool | None = None
     block_reason: str | None = None
     sort_order: int | None = None
+    # WM attributes
+    storage_type_id: str | None = None
+    storage_section_id: str | None = None
+    location_kind: str | None = None
+    height_m: float | None = None
+    max_volume_m3: float | None = None
+    is_fixed_bin: bool | None = None
+    barcode: str | None = None
 
 
 class LocationOut(OrmBase):
@@ -101,3 +117,11 @@ class LocationOut(OrmBase):
     blocked_outbound: bool = False
     block_reason: str | None = None
     sort_order: int
+    # WM attributes
+    storage_type_id: str | None = None
+    storage_section_id: str | None = None
+    location_kind: str = "physical"
+    height_m: float | None = None
+    max_volume_m3: float | None = None
+    is_fixed_bin: bool = False
+    barcode: str | None = None
