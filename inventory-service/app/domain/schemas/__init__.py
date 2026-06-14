@@ -6,6 +6,31 @@ from app.domain.schemas.warehouse import (
     WarehouseCreate, WarehouseUpdate, WarehouseOut,
     LocationCreate, LocationUpdate, LocationOut,
 )
+from app.domain.schemas.wm import (
+    StorageTypeCreate, StorageTypeUpdate, StorageTypeOut,
+    StorageSectionCreate, StorageSectionUpdate, StorageSectionOut,
+    BinSegment, BinBulkCreate, BinBulkResult,
+    EmptyBinReport, EmptyBinReportItem,
+)
+from app.domain.schemas.wm_transfer import (
+    OperationTypeCreate, OperationTypeUpdate, OperationTypeOut,
+    MovementOrderLineCreate, MovementOrderCreate,
+    MovementOrderLineOut, MovementOrderOut, ConfirmLineIn,
+)
+from app.domain.schemas.wm_route import (
+    WMConfigUpdate, WMConfigOut, RouteRuleOut, RouteOut,
+    GenerateChainLine, GenerateChainIn, GeneratedOrder, GenerateChainResult,
+)
+from app.domain.schemas.wm_putaway import (
+    PutawayRuleCreate, PutawayRuleOut, PackageTypeCreate, PackageTypeOut,
+    PutawayProposeIn, PutawayProposeOut,
+    RemovalPlanIn, RemovalAllocation, RemovalPlanOut,
+)
+from app.domain.schemas.wm_inventory import (
+    BinBlockIn, SetStockStateIn, StockStatusBucket, StockStatusOut,
+    ERIOut, LocationStateOut,
+)
+from app.domain.schemas.wm_material import ProductWMDataIn, ProductWMDataOut
 from app.domain.schemas.stock import (
     StockLevelOut, ReceiveStockIn, IssueStockIn, TransferStockIn, AdjustStockIn,
     AdjustInStockIn, AdjustOutStockIn,

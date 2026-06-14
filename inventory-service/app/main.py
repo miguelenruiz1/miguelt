@@ -218,6 +218,12 @@ def create_app() -> FastAPI:
     from app.api.routers.quality_tests import router as quality_tests_router
     from app.api.routers.batch_origins import router as batch_origins_router
     from app.api.routers.public_verify import router as public_verify_router
+    from app.api.routers.wm import router as wm_router
+    from app.api.routers.wm_movement import router as wm_movement_router
+    from app.api.routers.wm_route import router as wm_route_router
+    from app.api.routers.wm_putaway import router as wm_putaway_router
+    from app.api.routers.wm_inventory import router as wm_inventory_router
+    from app.api.routers.wm_material import router as wm_material_router
 
     # ─── Static files (uploads) ──────────────────────────────────────────────
     from pathlib import Path
@@ -262,6 +268,12 @@ def create_app() -> FastAPI:
     app.include_router(quality_tests_router)
     app.include_router(batch_origins_router)
     app.include_router(public_verify_router)
+    app.include_router(wm_router)
+    app.include_router(wm_movement_router)
+    app.include_router(wm_route_router)
+    app.include_router(wm_putaway_router)
+    app.include_router(wm_inventory_router)
+    app.include_router(wm_material_router)
 
     # ─── Prometheus metrics (optional) ────────────────────────────────────────
     try:

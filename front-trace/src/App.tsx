@@ -50,6 +50,7 @@ const EInvoicingResolutionPage = named(() => import('@/pages/EInvoicingResolutio
 // ── Inventory pages (lazy) ──────────────────────────────────────────────────
 const InventoryDashboardPage = named(() => import('@/pages/inventory/InventoryDashboardPage'), 'InventoryDashboardPage')
 const ProductsPage = named(() => import('@/pages/inventory/ProductsPage'), 'ProductsPage')
+const WMPage = lazy(() => import('@/pages/inventory/WMPage'))
 const WarehousesPage = named(() => import('@/pages/inventory/WarehousesPage'), 'WarehousesPage')
 const WarehouseDetailPage = named(() => import('@/pages/inventory/WarehouseDetailPage'), 'WarehouseDetailPage')
 const MovementsPage = named(() => import('@/pages/inventory/MovementsPage'), 'MovementsPage')
@@ -408,6 +409,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute permission="inventory.view">
             <ModuleGuard><ProductsPage /></ModuleGuard>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inventario/wm',
+        element: (
+          <ProtectedRoute permission="inventory.view">
+            <ModuleGuard><WMPage /></ModuleGuard>
           </ProtectedRoute>
         ),
       },

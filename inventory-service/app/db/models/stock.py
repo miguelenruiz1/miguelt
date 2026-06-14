@@ -51,6 +51,9 @@ class StockLevel(Base):
     reorder_point: Mapped[int]     = mapped_column(Integer, nullable=False, server_default="0")
     max_stock:         Mapped[int]     = mapped_column(Integer, nullable=False, server_default="-1")
     qc_status:         Mapped[str]     = mapped_column(String(20), nullable=False, server_default="approved")
+    # WM stock type (SAP): available|quality|blocked|consignment. The quant's
+    # availability state — only `available` is free for picking/reservation.
+    stock_type:        Mapped[str]     = mapped_column(String(15), nullable=False, server_default="available")
     weighted_avg_cost: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
     last_count_at:     Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at:    Mapped[DateTime] = mapped_column(
